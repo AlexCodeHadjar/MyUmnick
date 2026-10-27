@@ -46,6 +46,8 @@
 ## src/vtuber/application/pipeline
 Конвейер ответа: LLM → разбор тегов → нарезка фраз → TTS.
 
+- `ChunkerConfig` — `src/vtuber/application/pipeline/chunker.py:29` — Секция `[pipeline.chunker]`.
+- `SentenceChunker` — `src/vtuber/application/pipeline/chunker.py:57` — Один экземпляр на ход: `feed(дельта)` отдаёт готовые фразы, `flush()` — хвост.
 - `ReplyPipeline` — `src/vtuber/application/pipeline/reply_pipeline.py:12` — Стримит ответ LLM получателю по мере генерации (T-01): ни одна стадия не ждёт конца.
 - `TextDelta` — `src/vtuber/application/pipeline/stream_parser.py:20` — Порция текста: `text` — для чата, `spoken_text` — для TTS (без эмодзи и разметки).
 - `EmotionCue` — `src/vtuber/application/pipeline/stream_parser.py:32` — В ответе встретился тег эмоции; озвучивать нечего.
@@ -59,6 +61,18 @@
 - `Prompt` — `src/vtuber/application/prompting/prompt_builder.py:14` — Сообщения для LLM; первые `prefix_length` — неизменный префикс (персона и примеры).
 - `PromptBuilder` — `src/vtuber/application/prompting/prompt_builder.py:21` — Строит промпт: [персона + примеры] → [история] → [справка + реплика] (T-03).
 - `render_system_prompt` — `src/vtuber/application/prompting/prompt_builder.py:45` — Системный промпт персоны; `{emotions}` в правилах → теги всех эмоций из `Emotion`.
+
+## src/vtuber/application/speech
+Подготовка текста к синтезу речи: числа, сокращения, латиница, разметка (S-7.2).
+
+- `spell` — `src/vtuber/application/speech/latin.py:39` — По названиям букв: «GPU» → «джи пи ю».
+- `latin_word_to_russian` — `src/vtuber/application/speech/latin.py:58` — Одно латинское слово по-русски: словарь, аббревиатура по буквам или транслит.
+- `transliterate_latin` — `src/vtuber/application/speech/latin.py:67` — Все латинские слова текста — по-русски; остальное без изменений.
+- `normalize_for_speech` — `src/vtuber/application/speech/normalizer.py:102` — Фраза для TTS: только слова, пробелы и знаки препинания, задающие интонацию.
+- `plural` — `src/vtuber/application/speech/numbers.py:46` — Форма слова после числа: 1 тысяча, 3 тысячи, 5 тысяч, 11 тысяч, 21 тысяча.
+- `digits_to_words` — `src/vtuber/application/speech/numbers.py:69` — По цифрам: «007» → «ноль ноль семь».
+- `integer_to_words` — `src/vtuber/application/speech/numbers.py:74` — Целое словами; `feminine` — род единиц («одна целая», «две десятых»).
+- `decimal_to_words` — `src/vtuber/application/speech/numbers.py:91` — Дробь из цифр до и после разделителя: «3», «5» → «три целых пять десятых».
 
 ## src/vtuber/bootstrap
 Корень композиции: конфиг, персона, сборка графа объектов и точка входа.

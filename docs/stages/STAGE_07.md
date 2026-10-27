@@ -34,8 +34,8 @@
 - **Scope:** `application/pipeline/chunker.py`, `application/speech/`
 - **Читать:** `docs/architecture.md` (SentenceChunker), `docs/performance.md` (T-02)
 - **Готово, когда:**
-  - [ ] Тест `test_first_phrase_is_cut_after_four_words_at_comma`; `3.5` и `т.е.` не режутся.
-- **Статус:** не начата
+  - [x] Тест `test_first_phrase_is_cut_after_four_words_at_comma`; `3.5` и `т.е.` не режутся.
+- **Статус:** готово
 
 ### S-7.3 — Адаптер Silero
 - **Цель:** `SileroTTS`: модель грузится один раз (R-40), синтез в `asyncio.to_thread`,
