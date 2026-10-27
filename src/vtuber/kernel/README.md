@@ -10,7 +10,7 @@ ports/application/adapters/gateway/bootstrap.
 | Символ | Назначение |
 |---|---|
 | `ConfigSection`, `ConfigFiles`, `load_config` | default < user < `VTUBER_<СЕКЦИЯ>__<ПОЛЕ>`; бросает `ConfigError` |
-| `LoggingConfig`, `configure_logging`, `get_logger` | `[logging]` (`level`, `file`); JSON-строка на событие; логгер можно брать при импорте |
+| `LoggingConfig`, `configure_logging`, `logging_to`, `get_logger` | `[logging]`; JSON-строка на событие; `logging_to(cfg, stream)` — на время блока, затем сброс; логгер можно брать при импорте |
 | `turn_context`, `current_turn` | Текущий ход для логов (`turn_id`) и метрик; наследуется задачами |
 | `EventBus`, `Handler` | Шина управляющих событий: точный тип, параллельно, ошибки изолированы |
 | `Registry[A, T]` | Имя → фабрика `A → T`; `add`, `create`; неизвестное имя → `ConfigError` |
@@ -33,6 +33,9 @@ ports/application/adapters/gateway/bootstrap.
 - `Span` пишет метрику только при нормальном выходе; прерванный исключением/отменой — нет.
 - Очередь метрик ограничена `MAX_PENDING_METRICS`; при переполнении метрика теряется, ход — нет.
 - `Telemetry` — только из потока event loop (asyncio.Queue не потокобезопасна).
+
+- Логгеры не кэшируются: иначе логгеры модулей навсегда привязались бы к первому (потом
+  закрытому) потоку; `logging_to` сбрасывает настройку раньше, чем владелец закроет файл.
 
 ## Производительность
 - `span()` ≈ 1.2–1.5 мкс на замер (предел 5 мкс, `pytest -m slow`), `current_turn()` — чтение

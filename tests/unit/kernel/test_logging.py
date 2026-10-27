@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import structlog
 
-from vtuber.kernel import LoggingConfig, configure_logging, get_logger
+from vtuber.kernel import LoggingConfig, configure_logging, get_logger, logging_to
 
 
 @pytest.fixture
@@ -56,3 +56,16 @@ def test_cyrillic_is_written_readable(stream: io.StringIO) -> None:
     get_logger("tests").info("ответ", text="Привет")
 
     assert "Привет" in stream.getvalue()
+
+
+def test_module_logger_follows_reconfiguration_and_reset() -> None:
+    cfg = LoggingConfig(level="INFO", file=Path("logs/app.jsonl"))
+    first, second = io.StringIO(), io.StringIO()
+
+    with logging_to(cfg, first):
+        MODULE_LOGGER.info("one")
+    first.close()  # как файл, закрытый владельцем после выхода из блока
+    with logging_to(cfg, second):
+        MODULE_LOGGER.info("two")
+
+    assert [record["event"] for record in _records(second)] == ["two"]

@@ -63,14 +63,15 @@
 ## src/vtuber/bootstrap
 Корень композиции: конфиг, персона, сборка графа объектов и точка входа.
 
-- `AppConfig` — `src/vtuber/bootstrap/config.py:12` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:22` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `AppConfig` — `src/vtuber/bootstrap/config.py:13` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:24` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
 - `Core` — `src/vtuber/bootstrap/container.py:17` — Общие механизмы, которые получают все: шина событий и телеметрия.
 - `llm_backends` — `src/vtuber/bootstrap/container.py:24` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
 - `build_conversation` — `src/vtuber/bootstrap/container.py:35` — Собирает сервис хода; `PromptBuilder` отдаётся и наружу — для прогрева кэша (T-06).
-- `Console` — `src/vtuber/bootstrap/main.py:25` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
-- `main` — `src/vtuber/bootstrap/main.py:38` — Код возврата: 0 — чат завершён, 1 — ошибка конфига, 2 — LLM-сервер недоступен.
-- `run` — `src/vtuber/bootstrap/main.py:86` — Запуск из консоли: `python -m vtuber [--root путь]`.
+- `LineSource` — `src/vtuber/bootstrap/main.py:38` — Откуда читать строки: `sys.stdin` или его тестовая замена.
+- `Console` — `src/vtuber/bootstrap/main.py:45` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
+- `main` — `src/vtuber/bootstrap/main.py:58` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
+- `run` — `src/vtuber/bootstrap/main.py:153` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
 
@@ -106,7 +107,7 @@
 - `next_state` — `src/vtuber/domain/turn_state.py:30` — Возвращает `target`, если переход из `current` разрешён.
 
 ## src/vtuber/gateway
-Шлюз: протокол UI ↔ Ядро, кодек, терминальный чат (M1); далее — WebSocket-сервер (S-4.2).
+Шлюз: протокол UI ↔ Ядро, кодек, WebSocket-сервер и терминальный чат (M1).
 
 - `AudioFrame` — `src/vtuber/gateway/codec.py:20` — Разобранный аудиокадр.
 - `decode_inbound` — `src/vtuber/gateway/codec.py:28` — Сообщение от UI; проверка один раз на границе (принцип 6 архитектуры).
@@ -133,6 +134,9 @@
 - `MetricsSpan` — `src/vtuber/gateway/protocol.py:173` — Ядро → UI: замер стадии; `turn` — None вне хода (прогрев).
 - `Status` — `src/vtuber/gateway/protocol.py:187` — Ядро → UI: состояние бэкенда (вне хода).
 - `ErrorMessage` — `src/vtuber/gateway/protocol.py:200` — Ядро → UI: ошибка; `turn` — None, если не относится к ходу (битое сообщение).
+- `GatewayConfig` — `src/vtuber/gateway/server.py:44` — Секция `[gateway]`: где слушать UI (только localhost, ADR-0002).
+- `GatewayServer` — `src/vtuber/gateway/server.py:51` — Шлюз для UI: `async with GatewayServer(...) as server: await server.serve_forever()`.
+- `WsReplySink` — `src/vtuber/gateway/sink.py:12` — ReplySink для WebSocket: текст → `chat.delta`, эмоция → `avatar.emotion`.
 - `TerminalSink` — `src/vtuber/gateway/terminal.py:21` — ReplySink для консоли: печатает ответ по мере генерации и помнит время первой порции.
 - `TerminalChat` — `src/vtuber/gateway/terminal.py:55` — Цикл чата: строка → ход; новая строка во время ответа прерывает его (T-14).
 
@@ -145,9 +149,10 @@
 - `load_config` — `src/vtuber/kernel/config.py:45` — Собирает конфиг из файлов и окружения и проверяет его моделью `model`.
 - `current_turn` — `src/vtuber/kernel/context.py:14` — Номер текущего хода или None вне хода; чтение — десятки наносекунд (горячий путь).
 - `turn_context` — `src/vtuber/kernel/context.py:20` — Внутри блока ход `turn_id` — текущий для метрик, а логи несут поле `turn_id`.
-- `LoggingConfig` — `src/vtuber/kernel/logging.py:14` — Секция `[logging]`; `file` открывает bootstrap (относительно корня проекта).
-- `configure_logging` — `src/vtuber/kernel/logging.py:21` — Настраивает structlog: одна JSON-строка на событие в `stream`.
-- `get_logger` — `src/vtuber/kernel/logging.py:41` — Логгер модуля; имя попадает в поле `module` каждого события.
+- `LoggingConfig` — `src/vtuber/kernel/logging.py:16` — Секция `[logging]`; `file` открывает bootstrap (относительно корня проекта).
+- `configure_logging` — `src/vtuber/kernel/logging.py:23` — Настраивает structlog: одна JSON-строка на событие в `stream`.
+- `logging_to` — `src/vtuber/kernel/logging.py:45` — Логи идут в `stream` на время блока; на выходе — настройка по умолчанию.
+- `get_logger` — `src/vtuber/kernel/logging.py:58` — Логгер модуля; имя попадает в поле `module` каждого события.
 - `Registry` — `src/vtuber/kernel/registry.py:8` — Имя → фабрика `A → T`; например, `Registry[TTSConfig, TTSPort]` для движков TTS.
 - `TelemetryConfig` — `src/vtuber/kernel/telemetry.py:23` — Секция `[telemetry]`; `traces_file` открывает bootstrap (относительно корня проекта).
 - `Telemetry` — `src/vtuber/kernel/telemetry.py:29` — Замеряет стадии хода и отдаёт метрики в шину фоновой задачей `run`.

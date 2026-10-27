@@ -7,8 +7,8 @@
 Этап 3.
 
 ## Критерии приёмки этапа
-- [ ] Задержка «сообщение от FakeLLM → кадр у клиента» ≤ 3 мс p95 (localhost).
-- [ ] Неверное сообщение клиента → `error` с кодом, соединение не рвётся.
+- [x] Задержка «сообщение от FakeLLM → кадр у клиента» ≤ 3 мс p95 (localhost) — тест.
+- [x] Неверное сообщение клиента → `error` с кодом, соединение не рвётся.
 - [ ] Сгенерированные TS-типы компилируются в `ui/`.
 
 ## Сессии
@@ -32,9 +32,10 @@
   режим сервера в `bootstrap/main.py`
 - **Читать:** карточки `gateway`, `application/conversation`
 - **Готово, когда:**
-  - [ ] e2e с FakeLLM: `chat.send` → `turn.started` → `chat.delta`… → `turn.finished`.
-  - [ ] Замер p95 ≤ 3 мс.
-- **Статус:** не начата
+  - [x] e2e с FakeLLM: `chat.send` → `turn.started` → `chat.delta`… → `turn.finished`.
+  - [x] Замер p95 ≤ 3 мс.
+  - [x] Режим `python -m vtuber serve`: статус LLM, выход по концу stdin (sidecar Tauri).
+- **Статус:** готова (журнал: `docs/ai/sessions/2026-10-27_S-4.2.md`)
 
 ### S-4.3 — Генератор TS-типов и docs/protocol.md
 - **Цель:** `tools/gen_protocol.py`: JSON Schema → `ui/src/core/protocol.gen.ts` +

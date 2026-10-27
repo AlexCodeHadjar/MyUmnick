@@ -40,7 +40,7 @@ async def test_chat_answers_writes_logs_and_traces(tmp_path: Path) -> None:
     paths = [path for path, _ in stub.requests]
     assert paths[:2] == ["/apply-template", "/completion"]  # прогрев префикса (T-06)
     assert "/v1/chat/completions" in paths
-    assert "chat.ready" in (tmp_path / "app.jsonl").read_text(encoding="utf-8")
+    assert "llm.ready" in (tmp_path / "app.jsonl").read_text(encoding="utf-8")
     traces = (tmp_path / "traces.jsonl").read_text(encoding="utf-8").splitlines()
     assert {json.loads(line)["name"] for line in traces} >= {"llm.first_token", "llm.stream"}
 

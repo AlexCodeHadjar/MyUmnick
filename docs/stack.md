@@ -9,9 +9,9 @@
 | Менеджер пакетов | uv | poetry | Быстрый, lock-файл, управление версиями Python |
 | Асинхронность | asyncio | trio | Стандарт, совместим со всеми библиотеками |
 | HTTP-клиент к LLM | httpx (async, stream; ADR-0007) | aiohttp, SDK openai | Чистый API стриминга, тайм-ауты, пул соединений, MockTransport |
-| WebSocket-сервер | websockets | Starlette | Минимум накладных расходов |
+| WebSocket-сервер | websockets (ADR-0008) | Starlette | Минимум накладных расходов |
 | Валидация/конфиг | pydantic v2 + свой загрузчик TOML/env (ADR-0006) | pydantic-settings, msgspec | Валидация на границах, JSON Schema, ошибка с источником значения |
-| Сериализация | orjson | stdlib json | В разы быстрее stdlib ⏱ |
+| Сериализация | pydantic-core (`model_dump_json`, ADR-0008) | orjson, stdlib json | Нативный код без промежуточного dict; одна точка правды о формате ⏱ |
 | Логи | structlog (JSON, ADR-0006) | stdlib logging | Структурированные логи с turn_id |
 | LLM-рантайм | llama.cpp (llama-server) | Ollama, LM Studio, vLLM, TabbyAPI | Контроль KV-кэша, speculative decoding, flash attention, слоты |
 | Формат модели | GGUF Q4_K_M / Q5_K_M | EXL2 (TabbyAPI) | Баланс скорость/качество; выбор — бенчмарком |

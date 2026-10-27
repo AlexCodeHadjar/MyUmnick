@@ -3,7 +3,7 @@
 from vtuber.kernel.bus import EventBus, Handler
 from vtuber.kernel.config import ConfigFiles, ConfigSection, load_config
 from vtuber.kernel.context import current_turn, turn_context
-from vtuber.kernel.logging import LoggingConfig, configure_logging, get_logger
+from vtuber.kernel.logging import LoggingConfig, configure_logging, get_logger, logging_to
 from vtuber.kernel.registry import Registry
 from vtuber.kernel.telemetry import (
     MAX_PENDING_METRICS,
@@ -29,5 +29,6 @@ __all__ = [
     "current_turn",
     "get_logger",
     "load_config",
+    "logging_to",
     "turn_context",
 ]

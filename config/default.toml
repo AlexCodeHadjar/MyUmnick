@@ -10,6 +10,10 @@ file = "logs/app.jsonl"        # относительно корня проек�
 [telemetry]
 traces_file = "logs/traces.jsonl"  # замеры стадий хода (MetricRecorded), строка JSON на замер
 
+[gateway]
+host = "127.0.0.1"             # только localhost: UI и ядро на одной машине (ADR-0002)
+port = 8765                    # `python -m vtuber serve`; UI подключается по ws://host:port
+
 [persona]
 file = "personas/default.toml" # характер, манера речи, правила; меняется без правки кода (FR-11)
 

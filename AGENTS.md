@@ -43,6 +43,7 @@
 - Все проверки: `uv run pre-commit run --all-files`
 - Карта проекта: `uv run python tools/gen_map.py`
 - Терминальный чат (веха M1, нужен llama-server): `uv run python -m vtuber`
+- Шлюз для UI: `uv run python -m vtuber serve` (ws://127.0.0.1:8765, выход — конец stdin)
 - Бенчмарк (с Этапа 2): `uv run python tools/bench_latency.py`
 - LLM-сервер (с Этапа 2): `scripts/start_llm.ps1`
 - UI (с Этапа 5): `cd ui && pnpm tauri dev`

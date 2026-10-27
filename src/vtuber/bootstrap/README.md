@@ -3,18 +3,18 @@
 ## Ответственность
 Единственное место, где создаются и связываются объекты приложения (ADR-0001), и граница
 чтения файлов настроек. Читает конфиг и персону, открывает файлы логов и трасс, собирает реестр
-LLM-адаптеров и сервис хода, прогревает кэш промпта, запускает терминальный чат. Бизнес-логики
+LLM-адаптеров и сервис хода, прогревает кэш промпта, запускает терминальный чат или шлюз UI. Бизнес-логики
 не содержит.
 
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
-| `AppConfig` | Корень конфига: `logging`, `telemetry`, `llm`, `persona`, `context` |
+| `AppConfig` | Корень конфига: `logging`, `telemetry`, `llm`, `persona`, `context`, `gateway` |
 | `load_app_config(root, env)` | Читает `<root>/config/default.toml` и `user.toml` поверх `env` |
 | `PersonaConfig`, `load_persona(path)` | `[persona].file` → доменная `Persona`; ошибки — `ConfigError` |
 | `llm_backends()` | Реестр LLM-адаптеров: `llamacpp`, `openai_compat` (одна строка на адаптер) |
 | `Core(bus, telemetry)`, `build_conversation(cfg, persona, llm, core)` | Сборка сервиса хода и `PromptBuilder` |
-| `main(argv, env, console)`, `run()`, `Console` | Точка входа `python -m vtuber`; коды 0 / 1 (конфиг) / 2 (LLM недоступна) |
+| `main(argv, env, console)`, `run()`, `Console`, `LineSource` | `python -m vtuber [chat или serve] [--root]`; коды 0 / 1 (конфиг) / 2 (LLM недоступна в чате) |
 
 ## Зависимости
 - Всё (верхний слой): kernel, domain, application, adapters/llm, gateway.
@@ -26,15 +26,18 @@ LLM-адаптеров и сервис хода, прогревает кэш п�
 - В `AppConfig` нет умолчаний: всё приходит из `config/default.toml`; он и
   `personas/default.toml` всегда валидны (`tests/unit/bootstrap/`).
 - Неизвестный `[llm].backend` — `ConfigError` со списком доступных, код 1.
-- Старт: прогрев префикса промпта (`llm.prefill(prompts.prefix)`, T-06); LLM недоступна — код 2.
+- Старт: прогрев префикса промпта (T-06) со статусом LLM `loading → ready | failed` на шине.
+  Чат: LLM недоступна — код 2. Сервер: поднимается до прогрева (UI видит статус), при недоступной
+  LLM продолжает работать; живёт, пока открыт stdin (родитель Tauri умер — pipe закрыт — выход).
+- Логи — через `kernel.logging_to`: настройка сбрасывается раньше, чем закрывается файл.
 - Файлы логов и трасс открываются до `asyncio.run` и живут до выхода; пути — от `--root`.
-- Сквозной тест `tests/integration/test_terminal_app.py` — против заглушки сервера.
+- Сквозные тесты против заглушки сервера: `tests/integration/test_terminal_app.py`, `test_serve_app.py`.
 
 ## Как расширять
 - Новый модуль со своей секцией → поле в `AppConfig` + секция в `config/default.toml`.
 - Новый LLM-адаптер → строка `add` в `llm_backends()`.
 - Новая персона — файл в `personas/` и путь в `[persona].file` (FR-11).
-- Этап 4: режим WebSocket-сервера рядом с терминальным чатом.
+- Новый режим запуска — значение `mode` в `_parse` и ветка в `_run`.
 
 ## Связанные документы
 ADR-0001, ADR-0005, ADR-0006, ADR-0007

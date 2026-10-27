@@ -1,4 +1,4 @@
-"""Шлюз: протокол UI ↔ Ядро, кодек, терминальный чат (M1); далее — WebSocket-сервер (S-4.2)."""
+"""Шлюз: протокол UI ↔ Ядро, кодек, WebSocket-сервер и терминальный чат (M1)."""
 
 from vtuber.gateway.codec import (
     AUDIO_FRAME_HEADER_SIZE,
@@ -34,6 +34,8 @@ from vtuber.gateway.protocol import (
     TurnStartedMessage,
     turn_ref,
 )
+from vtuber.gateway.server import REPLACED_CODE, GatewayConfig, GatewayServer
+from vtuber.gateway.sink import WsReplySink
 from vtuber.gateway.terminal import EXIT_COMMAND, STOP_COMMAND, TerminalChat, TerminalSink
 
 __all__ = [
@@ -41,6 +43,7 @@ __all__ = [
     "AUDIO_FRAME_TYPE",
     "EXIT_COMMAND",
     "PROTOCOL_VERSION",
+    "REPLACED_CODE",
     "STOP_COMMAND",
     "AudioFrame",
     "AvatarEmotion",
@@ -54,6 +57,8 @@ __all__ = [
     "ErrorCode",
     "ErrorData",
     "ErrorMessage",
+    "GatewayConfig",
+    "GatewayServer",
     "InboundMessage",
     "MetricsSpan",
     "OutboundMessage",
@@ -66,6 +71,7 @@ __all__ = [
     "TurnCancelledMessage",
     "TurnFinishedMessage",
     "TurnStartedMessage",
+    "WsReplySink",
     "decode_audio_frame",
     "decode_inbound",
     "encode_audio_frame",

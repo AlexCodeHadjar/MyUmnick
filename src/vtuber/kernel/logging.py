@@ -1,5 +1,7 @@
 """Структурные JSON-логи на structlog; turn_id добавляет `kernel.context.turn_context`."""
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Literal, TextIO, cast
 
@@ -21,8 +23,9 @@ class LoggingConfig(ConfigSection):
 def configure_logging(cfg: LoggingConfig, stream: TextIO) -> None:
     """Настраивает structlog: одна JSON-строка на событие в `stream`.
 
-    Вызывается один раз при старте из bootstrap, который владеет потоком (файлом).
-    События ниже `cfg.level` отсекаются до форматирования — DEBUG-вызовы почти бесплатны (T-15).
+    События ниже `cfg.level` отсекаются до форматирования (T-15). Логгеры не кэшируются:
+    кэш навсегда привязал бы логгеры модулей к первому потоку — после его закрытия или смены
+    настройки они писали бы в закрытый файл. Логи — события жизненного цикла, не горячий путь.
     """
     structlog.configure(
         processors=[
@@ -34,15 +37,29 @@ def configure_logging(cfg: LoggingConfig, stream: TextIO) -> None:
         ],
         wrapper_class=structlog.make_filtering_bound_logger(cfg.level),
         logger_factory=structlog.WriteLoggerFactory(file=stream),
-        cache_logger_on_first_use=True,
+        cache_logger_on_first_use=False,
     )
+
+
+@contextmanager
+def logging_to(cfg: LoggingConfig, stream: TextIO) -> Iterator[None]:
+    """Логи идут в `stream` на время блока; на выходе — настройка по умолчанию.
+
+    Сброс происходит до закрытия потока владельцем, поэтому поздние события не пишут в
+    закрытый файл.
+    """
+    configure_logging(cfg, stream)
+    try:
+        yield
+    finally:
+        structlog.reset_defaults()
 
 
 def get_logger(name: str) -> FilteringBoundLogger:
     """Логгер модуля; имя попадает в поле `module` каждого события.
 
     Можно брать на уровне модуля, до `configure_logging`: имя — начальное значение ленивого
-    прокси, настройка подхватывается при первом событии. (`.bind()` у прокси, наоборот,
+    прокси, настройка подхватывается при каждом событии. (`.bind()` у прокси, наоборот,
     зафиксировал бы настройку по умолчанию в момент импорта.)
     """
     return cast("FilteringBoundLogger", structlog.get_logger(module=name))
