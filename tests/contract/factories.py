@@ -5,7 +5,7 @@ from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager, nullcontext
 from dataclasses import dataclass
 
-from tests.fakes import FakeLLM
+from tests.fakes import FakeLLM, FakeTTS
 from tests.llm_stub import LLMStub
 from vtuber.adapters.llm import (
     GenerationConfig,
@@ -14,7 +14,7 @@ from vtuber.adapters.llm import (
     LLMConfig,
     OpenAICompatLLM,
 )
-from vtuber.ports import LLMPort
+from vtuber.ports import LLMPort, TTSPort
 
 LONG_REPLY = (
     "Привет! Сегодня отличный день, чтобы поболтать о играх, аниме и всяких глупостях. " * 4
@@ -91,5 +91,32 @@ def llm_cases() -> list[LLMCase]:
         *(
             LLMCase(name, available=_on_stub(adapter), unavailable=_on_closed_port(adapter))
             for name, adapter in http_adapters.items()
+        ),
+    ]
+
+
+type TTSFactory = Callable[[], AbstractAsyncContextManager[TTSPort]]
+
+
+@dataclass(frozen=True, slots=True)
+class TTSCase:
+    """Как получить адаптер TTSPort: рабочий и с недоступным движком.
+
+    Реальный адаптер добавляется сюда, а если его модели нет на машине — пропускается
+    (`pytest.param(..., marks=pytest.mark.skip(reason=...))`), фейк проверяется всегда.
+    """
+
+    name: str
+    available: TTSFactory
+    unavailable: TTSFactory
+
+
+def tts_cases() -> list[TTSCase]:
+    """Фейк в темпе целевого движка (RTF 0.3); реальные адаптеры — с S-7.3."""
+    return [
+        TTSCase(
+            name="fake",
+            available=lambda: nullcontext(FakeTTS(rtf=0.3, chunk_ms=200)),
+            unavailable=lambda: nullcontext(FakeTTS(fail_after=0)),
         ),
     ]

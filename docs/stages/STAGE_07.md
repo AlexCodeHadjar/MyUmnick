@@ -25,8 +25,8 @@
 - **Цель:** `TTSPort`, `FakeTTS(rtf)`, `tests/contract/test_tts_contract.py`.
 - **Scope:** `src/vtuber/ports/tts.py`, `tests/fakes/`, `tests/contract/`
 - **Читать:** `docs/testing.md` (Контрактные тесты)
-- **Готово, когда:** [ ] контракт (формат, отмена) проходит для FakeTTS.
-- **Статус:** не начата
+- **Готово, когда:** [x] контракт (формат, отмена) проходит для FakeTTS.
+- **Статус:** готово
 
 ### S-7.2 — SentenceChunker и нормализатор
 - **Цель:** `SentenceChunker` (T-02) с property-based тестами; `application/speech/normalizer.py`

@@ -38,39 +38,23 @@
 пропускается с причиной).
 
 ```python
-# tests/contract/test_tts_contract.py
-"""Любой адаптер TTSPort обязан пройти эти тесты."""
-
-import asyncio
-
-import pytest
-
-from tests.contract.factories import tts_adapters
-from vtuber.ports.tts import TTSPort
+# tests/contract/test_tts_contract.py (сокращённо)
+@pytest.fixture(params=tts_cases(), ids=lambda case: case.name)
+def case(request: pytest.FixtureRequest) -> TTSCase:
+    return request.param
 
 
-@pytest.fixture(params=tts_adapters(), ids=lambda factory: factory.__name__)
-def tts(request: pytest.FixtureRequest) -> TTSPort:
-    return request.param()
-
-
-async def test_returns_pcm_in_declared_format(tts: TTSPort) -> None:
-    chunks = [chunk async for chunk in tts.synthesize("Привет, как дела?")]
-    assert chunks
-    assert all(chunk.format == tts.audio_format for chunk in chunks)
-
-
-async def test_cancellation_propagates(tts: TTSPort) -> None:
-    async def consume() -> None:
-        async for _ in tts.synthesize("Длинная фраза для проверки отмены синтеза речи."):
-            await asyncio.sleep(0)
-
-    task = asyncio.create_task(consume())
-    await asyncio.sleep(0)
-    task.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await task
+async def test_returns_pcm_in_declared_format(case: TTSCase) -> None:
+    async with case.available() as tts:
+        chunks = [chunk async for chunk in tts.synthesize("Привет! Как дела?")]
+        assert chunks
+        assert all(chunk.format == tts.audio_format for chunk in chunks)
 ```
+
+`TTSCase` (как `LLMCase`) даёт адаптер в двух состояниях — рабочем и недоступном. Кроме формата
+контракт проверяет пустую фразу, отмену ≤ 50 мс, чистое закрытие через `aclosing` и
+`TTSUnavailable`. Фейк (`FakeTTS(rtf=0.3)`) проверяется всегда, реальный адаптер без модели
+на машине — пропускается с причиной.
 
 ## Оценка качества ответов
 

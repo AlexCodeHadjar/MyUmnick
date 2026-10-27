@@ -2,6 +2,7 @@
 
 from tests.fakes.clock import FakeClock
 from tests.fakes.fake_llm import FakeLLM
+from tests.fakes.fake_tts import FakeTTS
 from tests.fakes.recording_sink import RecordingSink
 
-__all__ = ["FakeClock", "FakeLLM", "RecordingSink"]
+__all__ = ["FakeClock", "FakeLLM", "FakeTTS", "RecordingSink"]
