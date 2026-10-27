@@ -32,11 +32,20 @@
 ## src/vtuber/application
 Прикладной слой: сценарии диалога и конвейер ответа поверх портов.
 
+## src/vtuber/application/prompting
+Сборка промпта: персона, история, динамический блок — от неизменного к изменчивому (T-03).
+
+- `Prompt` — `src/vtuber/application/prompting/prompt_builder.py:14` — Сообщения для LLM; первые `prefix_length` — неизменный префикс (персона и примеры).
+- `PromptBuilder` — `src/vtuber/application/prompting/prompt_builder.py:21` — Строит промпт: [персона + примеры] → [история] → [справка + реплика] (T-03).
+- `render_system_prompt` — `src/vtuber/application/prompting/prompt_builder.py:40` — Системный промпт персоны; `{emotions}` в правилах → теги всех эмоций из `Emotion`.
+
 ## src/vtuber/bootstrap
 Корень композиции: сборка графа объектов и точка входа.
 
-- `AppConfig` — `src/vtuber/bootstrap/config.py:10` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:17` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `AppConfig` — `src/vtuber/bootstrap/config.py:11` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:19` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
+- `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
 
 ## src/vtuber/domain
 Доменный слой: неизменяемые сущности и значения диалога, речи и эмоций.

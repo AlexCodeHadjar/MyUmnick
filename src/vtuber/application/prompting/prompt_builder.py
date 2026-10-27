@@ -1,0 +1,58 @@
+"""Сборка промпта хода от неизменного к изменчивому — чтобы KV-кэш префикса жил между ходами."""
+
+from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import Final
+
+from vtuber.domain import Emotion, Message, Persona, Role
+
+EMOTIONS_PLACEHOLDER: Final = "{emotions}"
+CONTEXT_TEMPLATE: Final = "(Справка для тебя, пользователь её не видит: {context})\n{user_text}"
+
+
+@dataclass(frozen=True, slots=True)
+class Prompt:
+    """Сообщения для LLM; первые `prefix_length` — неизменный префикс (персона и примеры)."""
+
+    messages: tuple[Message, ...]
+    prefix_length: int
+
+
+class PromptBuilder:
+    """Строит промпт: [персона + примеры] → [история] → [справка + реплика] (T-03).
+
+    Префикс собирается один раз в конструкторе и потом не меняется — поэтому он байт-в-байт
+    одинаков на всех ходах, и llama-server пересчитывает только хвост. Динамика (время,
+    найденные факты) — только в последней реплике, никогда не в системном промпте.
+    """
+
+    def __init__(self, persona: Persona) -> None:
+        self._prefix = (Message(Role.SYSTEM, render_system_prompt(persona)), *persona.examples)
+
+    def build(
+        self, history: Sequence[Message], user_text: str, context: Sequence[str] = ()
+    ) -> Prompt:
+        """Промпт хода. `history` только дописывается между ходами (её ведёт память, T-04)."""
+        user = Message(Role.USER, _with_context(user_text, context))
+        return Prompt((*self._prefix, *history, user), len(self._prefix))
+
+
+def render_system_prompt(persona: Persona) -> str:
+    """Системный промпт персоны; `{emotions}` в правилах → теги всех эмоций из `Emotion`."""
+    tags = ", ".join(emotion.tag for emotion in Emotion)
+    rules = [f"- {rule.replace(EMOTIONS_PLACEHOLDER, tags)}" for rule in persona.rules]
+    parts = [
+        f"Ты — {persona.name}.",
+        persona.description,
+        f"Манера речи: {persona.speech_style}" if persona.speech_style else "",
+        f"Язык общения: {persona.language}.",
+        "Правила:" if rules else "",
+        *rules,
+    ]
+    return "\n".join(part for part in parts if part)
+
+
+def _with_context(user_text: str, context: Sequence[str]) -> str:
+    if not context:
+        return user_text
+    return CONTEXT_TEMPLATE.format(context=" ".join(context), user_text=user_text)

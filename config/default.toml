@@ -6,6 +6,9 @@
 [logging]
 level = "INFO"                 # DEBUG | INFO | WARNING | ERROR; DEBUG — потоковые детали (T-15)
 
+[persona]
+file = "personas/default.toml" # характер, манера речи, правила; меняется без правки кода (FR-11)
+
 [llm]
 base_url = "http://127.0.0.1:8080"   # llama-server (scripts/start_llm.ps1)
 model = "local"                # имя модели в запросе; llama-server принимает любое

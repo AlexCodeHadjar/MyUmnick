@@ -13,6 +13,7 @@ def test_repository_default_config_is_valid(tmp_path: Path) -> None:
 
     assert cfg.logging.level == "INFO"
     assert cfg.llm.base_url == "http://127.0.0.1:8080"
+    assert (ROOT / cfg.persona.file).is_file()
 
 
 def test_env_reaches_section_of_app_config() -> None:
