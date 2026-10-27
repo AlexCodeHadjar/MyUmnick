@@ -32,8 +32,8 @@
 - `pnpm lint`, `pnpm check` (svelte-check), `pnpm format:check`, `pnpm test` (vitest),
   `pnpm build`.
 - Ядро в разработке — отдельно: `uv run python -m vtuber serve` из корня.
-- Live2D (ADR-0011): `public/live2d/live2dcubismcore.min.js` — из Cubism SDK for Web
-  (`Core/live2dcubismcore.min.js`); модель — в `public/avatars/<имя>/` целиком
+- Live2D (ADR-0011): `public/live2d/live2dcubismcore.min.js` — из Cubism SDK for Web **5-r.4**
+  (`Core/live2dcubismcore.min.js`; Core 6 из 5-r.5 движок не поддерживает); модель — в `public/avatars/<имя>/` целиком
   (`<имя>.model3.json`, `.moc3`, текстуры, моушены, выражения, физика).
 
 ## Инварианты

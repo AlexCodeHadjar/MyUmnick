@@ -243,9 +243,12 @@
 
 - `CUBISM_CORE_URL` — `ui/src/features/avatar/live2d/core-loader.ts:8` — Где Vite отдаёт Core из `ui/public/live2d/`.
 - `CORE_MISSING_MESSAGE` — `ui/src/features/avatar/live2d/core-loader.ts:10` — —
-- `ScriptHost` — `ui/src/features/avatar/live2d/core-loader.ts:14` — Части `window`/`document`, нужные загрузчику: в тестах — подмена.
-- `browserHost` — `ui/src/features/avatar/live2d/core-loader.ts:19` — —
-- `loadCubismCore` — `ui/src/features/avatar/live2d/core-loader.ts:34` — Подключить Core один раз на окно; повторные вызовы ждут ту же загрузку.
+- `MAX_CORE_MAJOR` — `ui/src/features/avatar/live2d/core-loader.ts:18` — Старший номер Core, с которым работает движок: Core 6 (SDK 5-r.5) убрал
+- `formatCoreVersion` — `ui/src/features/avatar/live2d/core-loader.ts:21` — Версия Core из `csmGetVersion()`: 0xMMmmpppp.
+- `unsupportedCoreMessage` — `ui/src/features/avatar/live2d/core-loader.ts:25` — —
+- `ScriptHost` — `ui/src/features/avatar/live2d/core-loader.ts:33` — Части `window`/`document`, нужные загрузчику: в тестах — подмена.
+- `browserHost` — `ui/src/features/avatar/live2d/core-loader.ts:55` — —
+- `loadCubismCore` — `ui/src/features/avatar/live2d/core-loader.ts:82` — Подключить Core один раз на окно; повторные вызовы ждут ту же загрузку.
 - `Size` — `ui/src/features/avatar/live2d/fit.ts:3` — —
 - `Placement` — `ui/src/features/avatar/live2d/fit.ts:8` — —
 - `FIT_MARGIN` — `ui/src/features/avatar/live2d/fit.ts:16` — Поля вокруг модели, доля сцены: не упираться в края при наклонах головы и физике волос.

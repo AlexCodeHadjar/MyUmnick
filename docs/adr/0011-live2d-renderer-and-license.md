@@ -37,9 +37,11 @@
   распространением — новое решение: (б), (г) или (в) (`AvatarRenderer` оставляет дорогу к VRM).
 - **Файлы вне git:** Cubism Core — проприетарный (Live2D Proprietary Software License), модели
   — права у авторов. Пользователь скачивает их сам:
-  - Core: `ui/public/live2d/live2dcubismcore.min.js` (Cubism SDK for Web,
-    https://www.live2d.com/download/cubism-sdk/download-web/ — архив `CubismSdkForWeb-5-*`,
-    файл `Core/live2dcubismcore.min.js`);
+  - Core: `ui/public/live2d/live2dcubismcore.min.js` из **Cubism SDK for Web 5-r.4** (Core
+    5.1): https://cubism.live2d.com/sdk-web/bin/CubismSdkForWeb-5-r.4.zip, файл
+    `Core/live2dcubismcore.min.js`. Текущий SDK 5-r.5 несёт Core 6.0.1 — в нём нет
+    `drawables.renderOrders`, движок 1.4 падает в каждом кадре (issue #11 движка, Blocked);
+    загрузчик отказывает Core ≥ 6 с подсказкой. Поднять — вместе с версией движка;
   - модель: `ui/public/avatars/<имя>/` — `<имя>.model3.json` и всё, на что он ссылается
     (`.moc3`, текстуры, `.motion3.json`, `.exp3.json`, `.physics3.json`); там же — наш
     `mapping.json` (S-6.3).

@@ -39,7 +39,7 @@
 | Образцовая модель Haru (Live2D Inc.) | аватар для разработки | Free Material License (Live2D original character) | частным лицам и малому бизнесу — с согласием на условия; не в git | проверено (ReadMe в архиве) |
 | untitled-pixi-live2d-engine 1.4 | Live2D для PixiJS 8 (ADR-0011) | MIT | — | проверено (npm) |
 | Cubism Web Framework (внутри движка) | загрузка и анимация моделей | Live2D Open Software License | вместе с лицензией Core | по документации |
-| Cubism Core for Web 5 | ядро Live2D | Live2D Proprietary Software License | не в git; пользователь скачивает сам | проверено |
+| Cubism Core for Web 5.1 (SDK 5-r.4) | ядро Live2D | Live2D Proprietary Software License | не в git; пользователь скачивает сам | проверено |
 | PixiJS 8 | рендер | MIT | — | проверено (npm) |
 | @pixi/sound | звук моушенов (транзитивно, не используется) | MIT | — | по памяти |
 | three.js, @pixiv/three-vrm | VRM (альтернатива) | MIT | — | по памяти |
