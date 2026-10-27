@@ -37,6 +37,13 @@
 
 - `ShortTermMemory` — `src/vtuber/application/memory/short_term.py:21` — История ходов для промпта (T-04).
 
+## src/vtuber/application/pipeline
+Конвейер ответа: LLM → разбор тегов → нарезка фраз → TTS.
+
+- `TextDelta` — `src/vtuber/application/pipeline/stream_parser.py:19` — Порция текста: `text` — для чата, `spoken_text` — для TTS (без эмодзи и разметки).
+- `EmotionCue` — `src/vtuber/application/pipeline/stream_parser.py:27` — В ответе встретился тег эмоции; озвучивать нечего.
+- `StreamParser` — `src/vtuber/application/pipeline/stream_parser.py:37` — Разбирает дельты одного ответа по мере поступления (один экземпляр на ход).
+
 ## src/vtuber/application/prompting
 Сборка промпта: персона, история, динамический блок — от неизменного к изменчивому (T-03).
 
