@@ -9,6 +9,12 @@ level = "INFO"                 # DEBUG | INFO | WARNING | ERROR; DEBUG — по�
 [persona]
 file = "personas/default.toml" # характер, манера речи, правила; меняется без правки кода (FR-11)
 
+[context]
+max_history_tokens = 6000      # история в промпте; превысила — усечение блоком (T-04)
+trim_ratio = 0.5               # какую долю лимита отрезать за раз: кэш ломается редко
+chars_per_token = 3.0          # оценка для русского; калибровать по токенизатору модели (S-9.1)
+message_overhead_tokens = 4    # служебные токены шаблона чата на сообщение
+
 [llm]
 base_url = "http://127.0.0.1:8080"   # llama-server (scripts/start_llm.ps1)
 model = "local"                # имя модели в запросе; llama-server принимает любое

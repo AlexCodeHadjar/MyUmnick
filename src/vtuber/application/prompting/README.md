@@ -12,9 +12,11 @@ S-3.2), не читает файлы (персону загружает bootstra
 | `PromptBuilder(persona)` | `build(history, user_text, context=()) → Prompt` |
 | `Prompt` | `messages` и `prefix_length` — сколько первых сообщений неизменны |
 | `render_system_prompt(persona)` | Системный промпт персоны; `{emotions}` → теги из `Emotion` |
+| `ContextConfig` | Секция `[context]`: `max_history_tokens`, `trim_ratio`, `chars_per_token`, `message_overhead_tokens` |
+| `ContextBudget(cfg)` | `tokens(messages)` — оценка без сервера; `max_history_tokens`, `trim_target` |
 
 ## Зависимости
-- domain: `Persona`, `Message`, `Role`, `Emotion`
+- domain: `Persona`, `Message`, `Role`, `Emotion`; kernel: `ConfigSection`
 
 ## События
 - Публикует: —
@@ -27,6 +29,8 @@ S-3.2), не читает файлы (персону загружает bootstra
 - Динамика (время, факты) — только в последней реплике пользователя, никогда в системном
   промпте; без `context` реплика уходит как есть.
 - Список эмоций в промпте — из `Emotion`, а не из файла персоны.
+- `ContextBudget.tokens` = Σ (⌈символы / `chars_per_token`⌉ + `message_overhead_tokens`);
+  `trim_target` = ⌊лимит × (1 − `trim_ratio`)⌋. Оценка приближённая: калибровка — S-9.1.
 
 ## Производительность
 - Горячий путь: да, но лёгкий — сборка кортежа из готового префикса, истории и одной строки.

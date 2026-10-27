@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from vtuber.adapters.llm import LLMConfig
+from vtuber.application.prompting import ContextConfig
 from vtuber.bootstrap.persona import PersonaConfig
 from vtuber.kernel import ConfigFiles, ConfigSection, LoggingConfig, load_config
 
@@ -14,6 +15,7 @@ class AppConfig(ConfigSection):
     logging: LoggingConfig
     llm: LLMConfig
     persona: PersonaConfig
+    context: ContextConfig
 
 
 def load_app_config(root: Path, env: Mapping[str, str]) -> AppConfig:

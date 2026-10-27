@@ -32,9 +32,16 @@
 ## src/vtuber/application
 Прикладной слой: сценарии диалога и конвейер ответа поверх портов.
 
+## src/vtuber/application/memory
+Память витюбера: история текущего разговора (далее — долговременная память, Этап 10).
+
+- `ShortTermMemory` — `src/vtuber/application/memory/short_term.py:21` — История ходов для промпта (T-04).
+
 ## src/vtuber/application/prompting
 Сборка промпта: персона, история, динамический блок — от неизменного к изменчивому (T-03).
 
+- `ContextConfig` — `src/vtuber/application/prompting/context_budget.py:12` — Секция `[context]`.
+- `ContextBudget` — `src/vtuber/application/prompting/context_budget.py:26` — Приближённый счёт токенов — без запроса к серверу, чтобы не тормозить горячий путь.
 - `Prompt` — `src/vtuber/application/prompting/prompt_builder.py:14` — Сообщения для LLM; первые `prefix_length` — неизменный префикс (персона и примеры).
 - `PromptBuilder` — `src/vtuber/application/prompting/prompt_builder.py:21` — Строит промпт: [персона + примеры] → [история] → [справка + реплика] (T-03).
 - `render_system_prompt` — `src/vtuber/application/prompting/prompt_builder.py:40` — Системный промпт персоны; `{emotions}` в правилах → теги всех эмоций из `Emotion`.
@@ -42,8 +49,8 @@
 ## src/vtuber/bootstrap
 Корень композиции: сборка графа объектов и точка входа.
 
-- `AppConfig` — `src/vtuber/bootstrap/config.py:11` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:19` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `AppConfig` — `src/vtuber/bootstrap/config.py:12` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:21` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
 

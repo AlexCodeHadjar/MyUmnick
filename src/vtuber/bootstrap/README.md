@@ -9,14 +9,15 @@
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
-| `AppConfig` | Корень конфига: секции `logging`, `llm`, `persona` |
+| `AppConfig` | Корень конфига: секции `logging`, `llm`, `persona`, `context` |
 | `load_app_config(root, env)` | Читает `<root>/config/default.toml` и `user.toml` поверх `env` |
 | `PersonaConfig` | Секция `[persona]`: `file` — путь к персоне относительно корня проекта |
 | `load_persona(path)` | TOML персоны → доменная `Persona`; ошибки — `ConfigError` с путём |
 
 ## Зависимости
 - kernel: `ConfigSection`, `ConfigFiles`, `load_config`, `LoggingConfig`
-- adapters/llm: `LLMConfig`; domain: `Persona`, `Message`, `ConfigError`
+- adapters/llm: `LLMConfig`; application/prompting: `ContextConfig`
+- domain: `Persona`, `Message`, `ConfigError`
 
 ## События
 - Публикует: —

@@ -36,8 +36,9 @@
 - **Scope:** `application/prompting/context_budget.py`, `application/memory/short_term.py`
 - **Читать:** карточка `application/prompting`, `docs/performance.md` (T-04)
 - **Готово, когда:**
-  - [ ] Тест: при превышении лимита отрезается блок `trim_ratio`, а не одно сообщение.
-- **Статус:** не начата
+  - [x] Тест: при превышении лимита отрезается блок `trim_ratio`, а не одно сообщение.
+  - [x] Property-тест: чередование ролей, бюджет, новый ход не отрезается, счёт токенов.
+- **Статус:** готова (журнал: `docs/ai/sessions/2026-10-27_S-3.2.md`)
 
 ### S-3.3 — StreamParser
 - **Цель:** разбор потока: теги эмоций → события, `display_text`/`spoken_text`/`full_text`.
