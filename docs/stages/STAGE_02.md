@@ -52,11 +52,15 @@
 - **Заметка:** строится поверх `OpenAICompatLLM` (тот же httpx-клиент и разбор SSE). Тест `@gpu`
   выполняется на целевой машине (RTX 5070 Ti); здесь — заглушка и MockTransport.
 - **Готово, когда:**
-  - [ ] Скрипт запускает llama-server; флаги сверены с `llama-server --help` установленной
-        версии. Ориентир: `-ngl 99 -c 16384 --parallel 2 -fa on --host 127.0.0.1 --port 8080
-        --jinja` (слот 0 — диалог, слот 1 — фон Этапа 10).
-  - [ ] Интеграционный тест `@gpu`: реальный стрим, отмена останавливает генерацию.
-- **Статус:** не начата
+  - [x] Скрипт `scripts/start_llm.ps1` собран; флаги сверены с README llama-server (2026-10-27):
+        `--n-gpu-layers 99 --ctx-size 16384 --parallel 2 --flash-attn on --jinja
+        --reasoning-budget 0 --metrics --no-webui`.
+  - [x] `LlamaCppLLM`: слот, `cache_prompt`, `chat_template_kwargs`, настоящий `prefill`
+        (`/apply-template` → `/completion` с `n_predict: 0`); контракт LLM на заглушке.
+  - [ ] **На целевой машине:** запуск скрипта с установленной версией (`llama-server --help`),
+        `uv run pytest -m gpu` — ответ без `<think>`, слот освобождается после отмены (T-14);
+        проверить `n_ctx` на слот в `GET /slots`.
+- **Статус:** готова, кроме прогона на целевой машине (журнал: `docs/ai/sessions/2026-10-27_S-2.3.md`)
 
 ### S-2.4 — Бенчмарк задержки и eval-заготовка
 - **Цель:** `tools/bench_latency.py` (TTFT, TPS, p50/p95), `bench/prompts_ru.jsonl` (30–50

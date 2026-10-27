@@ -11,8 +11,12 @@
 ## src/vtuber/adapters/llm
 Адаптеры языковых моделей (LLMPort).
 
-- `LLMConfig` — `src/vtuber/adapters/llm/config.py:6` — Адрес и тайм-ауты LLM-сервера (R-36).
+- `LlamaCppOptions` — `src/vtuber/adapters/llm/config.py:6` — Подсекция `[llm.llamacpp]`: особенности llama-server.
+- `LLMConfig` — `src/vtuber/adapters/llm/config.py:17` — Адрес и тайм-ауты LLM-сервера (R-36).
+- `LlamaCppLLM` — `src/vtuber/adapters/llm/llamacpp.py:21` — OpenAI-совместимый стрим + особенности llama-server.
 - `OpenAICompatLLM` — `src/vtuber/adapters/llm/openai_compat.py:21` — Стрим ответа по HTTP/SSE; один httpx-клиент на всё время жизни (R-40, ADR-0007).
+- `wire_messages` — `src/vtuber/adapters/llm/openai_compat.py:99` — Сообщения в формате OpenAI Chat API.
+- `check_status` — `src/vtuber/adapters/llm/openai_compat.py:104` — Переводит HTTP-код ошибки в доменную: 503 (модель грузится) — недоступность, иное — сбой.
 - `data_of` — `src/vtuber/adapters/llm/sse.py:12` — Полезная нагрузка строки `data: …` или None для пустых строк, комментариев и прочих полей.
 - `delta_text` — `src/vtuber/adapters/llm/sse.py:19` — Текст дельты первого варианта ответа; пустая строка, если в порции текста нет.
 

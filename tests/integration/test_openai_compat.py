@@ -3,7 +3,7 @@
 import asyncio
 
 from tests.contract.factories import llm_config
-from tests.llm_stub import LLMStub
+from tests.llm_stub import CHAT_PATH, LLMStub
 from vtuber.adapters.llm import OpenAICompatLLM
 from vtuber.domain import Message, Role
 from vtuber.ports import GenerationParams
@@ -17,7 +17,8 @@ async def test_full_reply_arrives_and_request_reaches_server() -> None:
         text = "".join([delta async for delta in llm.stream(MESSAGES, PARAMS)])
 
     assert text == "Привет-привет!"
-    [body] = stub.requests
+    [body] = stub.bodies(CHAT_PATH)
+    assert isinstance(body, dict)
     assert body["messages"] == [{"role": "user", "content": "Привет"}]
     assert body["stream"] is True
 

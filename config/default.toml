@@ -11,3 +11,7 @@ base_url = "http://127.0.0.1:8080"   # llama-server (scripts/start_llm.ps1)
 model = "local"                # имя модели в запросе; llama-server принимает любое
 connect_timeout_s = 1.0        # localhost: соединение — доли миллисекунды; больше — сервер не запущен
 read_timeout_s = 30.0          # максимум ожидания следующей порции, включая prefill длинного промпта
+
+[llm.llamacpp]
+slot_id = 0                    # слот диалога: его KV-кэш живёт между ходами (T-03); 1 — фон (Этап 10)
+enable_thinking = false        # reasoning-режим шаблона чата — выключен в горячем пути (T-08)

@@ -4,11 +4,17 @@ from collections.abc import Callable
 import httpx
 import pytest
 
-from vtuber.adapters.llm import LLMConfig, OpenAICompatLLM
+from vtuber.adapters.llm import LlamaCppOptions, LLMConfig, OpenAICompatLLM
 from vtuber.domain import GenerationFailed, LLMUnavailable, Message, Role
 from vtuber.ports import GenerationParams
 
-CFG = LLMConfig(base_url="http://llm.test", model="local", connect_timeout_s=1, read_timeout_s=5)
+CFG = LLMConfig(
+    base_url="http://llm.test",
+    model="local",
+    connect_timeout_s=1,
+    read_timeout_s=5,
+    llamacpp=LlamaCppOptions(slot_id=0, enable_thinking=False),
+)
 MESSAGES = (Message(Role.SYSTEM, "Ты Мика."), Message(Role.USER, "Привет!"))
 PARAMS = GenerationParams(max_tokens=32, temperature=0.5)
 

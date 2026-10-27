@@ -15,7 +15,7 @@ CHAT_PATH: Final = "/v1/chat/completions"
 MODELS_PATH: Final = "/v1/models"
 MODEL_LOADING_STATUS: Final = 503
 ERROR_BODY_LIMIT: Final = 300
-_UNREACHABLE = (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout)
+UNREACHABLE: Final = (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout)
 
 
 class OpenAICompatLLM:
@@ -23,7 +23,8 @@ class OpenAICompatLLM:
 
     Использовать как `async with OpenAICompatLLM(cfg) as llm` — выход закрывает соединения.
     Отмена потребителя закрывает ответ, сервер видит обрыв и прекращает генерацию (T-14).
-    `transport` — подмена транспорта httpx (тесты).
+    `transport` — подмена транспорта httpx (тесты). Наследники дополняют тело запроса
+    через `_request_body`.
     """
 
     def __init__(self, cfg: LLMConfig, transport: httpx.AsyncBaseTransport | None = None) -> None:
@@ -50,17 +51,17 @@ class OpenAICompatLLM:
         self, messages: Sequence[Message], params: GenerationParams
     ) -> AsyncIterator[str]:
         """Дельты текста ответа; см. `LLMPort.stream`."""
-        body = _chat_body(self._cfg.model, messages, params)
+        body = self._request_body(messages, params)
         try:
             async with self._client.stream("POST", CHAT_PATH, json=body) as response:
-                await _check_status(response)
+                await check_status(response)
                 async for line in response.aiter_lines():
                     payload = data_of(line)
                     if payload == SSE_DONE:
                         return
                     if payload and (text := delta_text(payload)):
                         yield text
-        except _UNREACHABLE as exc:
+        except UNREACHABLE as exc:
             raise self._unavailable() from exc
         except httpx.HTTPError as exc:
             msg = f"Ответ LLM-сервера оборвался: {exc!r}"
@@ -75,28 +76,39 @@ class OpenAICompatLLM:
         if response.is_error:
             raise self._unavailable()
 
+    def _request_body(
+        self, messages: Sequence[Message], params: GenerationParams
+    ) -> dict[str, object]:
+        body: dict[str, object] = {
+            "model": self._cfg.model,
+            "messages": wire_messages(messages),
+            "stream": True,
+            "max_tokens": params.max_tokens,
+            "temperature": params.temperature,
+        }
+        if params.stop:
+            body["stop"] = list(params.stop)
+        return body
+
     def _unavailable(self) -> LLMUnavailable:
         return LLMUnavailable(
             f"LLM-сервер не отвечает на {self._cfg.base_url} — запущен ли scripts/start_llm.ps1?"
         )
 
 
-def _chat_body(
-    model: str, messages: Sequence[Message], params: GenerationParams
-) -> dict[str, object]:
-    body: dict[str, object] = {
-        "model": model,
-        "messages": [{"role": message.role.value, "content": message.text} for message in messages],
-        "stream": True,
-        "max_tokens": params.max_tokens,
-        "temperature": params.temperature,
-    }
-    if params.stop:
-        body["stop"] = list(params.stop)
-    return body
+def wire_messages(messages: Sequence[Message]) -> list[dict[str, str]]:
+    """Сообщения в формате OpenAI Chat API."""
+    return [{"role": message.role.value, "content": message.text} for message in messages]
 
 
-async def _check_status(response: httpx.Response) -> None:
+async def check_status(response: httpx.Response) -> None:
+    """Переводит HTTP-код ошибки в доменную: 503 (модель грузится) — недоступность, иное — сбой.
+
+    Raises:
+        LLMUnavailable: HTTP 503.
+        GenerationFailed: другой код ошибки; текст ответа сервера — в сообщении.
+
+    """
     if response.status_code == MODEL_LOADING_STATUS:
         msg = "LLM-сервер ещё загружает модель — повторите через несколько секунд"
         raise LLMUnavailable(msg)

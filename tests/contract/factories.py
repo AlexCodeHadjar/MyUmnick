@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from tests.fakes import FakeLLM
 from tests.llm_stub import LLMStub
-from vtuber.adapters.llm import LLMConfig, OpenAICompatLLM
+from vtuber.adapters.llm import LlamaCppLLM, LlamaCppOptions, LLMConfig, OpenAICompatLLM
 from vtuber.ports import LLMPort
 
 LONG_REPLY = (
@@ -15,6 +15,7 @@ LONG_REPLY = (
 )
 
 type AdapterFactory = Callable[[], AbstractAsyncContextManager[LLMPort]]
+type HttpAdapter = type[OpenAICompatLLM]
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,7 +29,13 @@ class LLMCase:
 
 def llm_config(base_url: str) -> LLMConfig:
     """Конфиг для тестов: короткий connect — на Windows закрытый порт отвечает не сразу."""
-    return LLMConfig(base_url=base_url, model="stub", connect_timeout_s=0.2, read_timeout_s=5)
+    return LLMConfig(
+        base_url=base_url,
+        model="stub",
+        connect_timeout_s=0.2,
+        read_timeout_s=5,
+        llamacpp=LlamaCppOptions(slot_id=0, enable_thinking=False),
+    )
 
 
 def closed_port_url() -> str:
@@ -39,29 +46,42 @@ def closed_port_url() -> str:
     return f"http://127.0.0.1:{port}"
 
 
-@asynccontextmanager
-async def _openai_available() -> AsyncIterator[LLMPort]:
-    # Порции крупнее: на Windows sleep(0.002) длится ~15 мс (разрешение таймера).
-    async with (
-        LLMStub(LONG_REPLY, chunk_size=12) as stub,
-        OpenAICompatLLM(llm_config(stub.url)) as llm,
-    ):
-        yield llm
+def _on_stub(adapter: HttpAdapter) -> AdapterFactory:
+    @asynccontextmanager
+    async def factory() -> AsyncIterator[LLMPort]:
+        # Порции крупнее: на Windows sleep(0.002) длится ~15 мс (разрешение таймера).
+        async with (
+            LLMStub(LONG_REPLY, chunk_size=12) as stub,
+            adapter(llm_config(stub.url)) as llm,
+        ):
+            yield llm
+
+    return factory
 
 
-@asynccontextmanager
-async def _openai_unavailable() -> AsyncIterator[LLMPort]:
-    async with OpenAICompatLLM(llm_config(closed_port_url())) as llm:
-        yield llm
+def _on_closed_port(adapter: HttpAdapter) -> AdapterFactory:
+    @asynccontextmanager
+    async def factory() -> AsyncIterator[LLMPort]:
+        async with adapter(llm_config(closed_port_url())) as llm:
+            yield llm
+
+    return factory
 
 
 def llm_cases() -> list[LLMCase]:
-    """Фейк и OpenAI-совместимый адаптер на заглушке; llama.cpp добавляется в S-2.3."""
+    """Фейк и HTTP-адаптеры на заглушке llama-server/OpenAI API."""
+    http_adapters: dict[str, HttpAdapter] = {
+        "openai_compat": OpenAICompatLLM,
+        "llamacpp": LlamaCppLLM,
+    }
     return [
         LLMCase(
             name="fake",
             available=lambda: nullcontext(FakeLLM(LONG_REPLY, chunk_size=12, delay_ms=2)),
             unavailable=lambda: nullcontext(FakeLLM(LONG_REPLY, fail_after=0)),
         ),
-        LLMCase(name="openai_compat", available=_openai_available, unavailable=_openai_unavailable),
+        *(
+            LLMCase(name, available=_on_stub(adapter), unavailable=_on_closed_port(adapter))
+            for name, adapter in http_adapters.items()
+        ),
     ]
