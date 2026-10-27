@@ -2,7 +2,7 @@
 export { CoreClient, type AudioSink, type CoreClientOptions } from "./client";
 export { type AudioFrame } from "./frames";
 export { FIRST_CHAR_SPAN } from "./probe";
-export type { BackendState, Component } from "./protocol.gen";
+export type { BackendState, Component, Emotion } from "./protocol.gen";
 export {
   AppStore,
   SPAN_HISTORY,

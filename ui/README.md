@@ -21,7 +21,9 @@
 | `src/core/protocol.gen.ts` | типы протокола — генерирует `tools/gen_protocol.py`, не править |
 | `src/features/chat/` | `Chat` (index.ts): виртуализированная история, ввод, «Стоп», «печатает» |
 | `src/features/metrics/` | `MetricsPanel` по Ctrl+Shift+M: последний, p50, p95, норма (FR-15) |
-| `src/features/` | avatar (Этап 6), audio (Этап 8) |
+| `src/features/avatar/` | контракт `AvatarRenderer` (ADR-0011); Live2D-реализация — S-6.2 |
+| `public/live2d/`, `public/avatars/<имя>/` | Cubism Core и файлы модели — кладёт пользователь, не в git |
+| `src/features/` | audio (Этап 8) |
 | `src-tauri/` | оболочка Tauri: `tauri.conf.json`, права окна в `capabilities/` |
 
 ## Команды (из `ui/`)
@@ -29,6 +31,9 @@
 - `pnpm lint`, `pnpm check` (svelte-check), `pnpm format:check`, `pnpm test` (vitest),
   `pnpm build`.
 - Ядро в разработке — отдельно: `uv run python -m vtuber serve` из корня.
+- Live2D (ADR-0011): `public/live2d/live2dcubismcore.min.js` — из Cubism SDK for Web
+  (`Core/live2dcubismcore.min.js`); модель — в `public/avatars/<имя>/` целиком
+  (`<имя>.model3.json`, `.moc3`, текстуры, моушены, выражения, физика).
 
 ## Инварианты
 - tsconfig строгий (R-61); `any` и `as` — ошибки eslint (R-62); фичи не импортируют друг
@@ -73,5 +78,5 @@
   экспорта — первая строка JSDoc над ним, компонента — первый `//` в `<script>`.
 
 ## Связанные документы
-ADR-0002, ADR-0003, ADR-0008, ADR-0009, ADR-0010; `docs/architecture.md` (Фронтенд);
+ADR-0002, ADR-0003, ADR-0008, ADR-0009, ADR-0010, ADR-0011; `docs/architecture.md` (Фронтенд);
 правила J (R-61…R-67)

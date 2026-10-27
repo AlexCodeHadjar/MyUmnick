@@ -31,6 +31,12 @@ ui/dist/
 ui/src-tauri/target/
 # Схемы прав, которые tauri-build пересоздаёт при каждой сборке
 ui/src-tauri/gen/
+# Live2D (ADR-0011): проприетарный Cubism Core и модели — пользователь кладёт сам, в git не идут.
+# mapping.json — наш файл, его храним.
+ui/public/live2d/
+ui/public/avatars/**
+!ui/public/avatars/*/
+!ui/public/avatars/*/mapping.json
 
 # Локальные настройки ИИ-инструментов
 .claude/settings.local.json

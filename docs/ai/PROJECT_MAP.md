@@ -219,6 +219,14 @@
 - `TransportOptions` — `ui/src/core/transport.ts:43` — —
 - `Transport` — `ui/src/core/transport.ts:66` — —
 
+## ui/src/features/avatar
+Публичный API фичи аватара: контракт рендера (ADR-0011); реализации — live2d/ (S-6.2).
+
+- `AvatarSource` — `ui/src/features/avatar/AvatarRenderer.ts:13` — Что загрузить: файлы модели в `ui/public/avatars/<имя>/` (ADR-0011).
+- `AvatarReaction` — `ui/src/features/avatar/AvatarRenderer.ts:24` — Реакция на ход разговора, не зависящая от текста: «слушаю» (пользователь печатает),
+- `StageSize` — `ui/src/features/avatar/AvatarRenderer.ts:27` — Размер области сцены в CSS-пикселях; рендер сам учитывает devicePixelRatio.
+- `AvatarRenderer` — `ui/src/features/avatar/AvatarRenderer.ts:32` — —
+
 ## ui/src/features/chat
 Публичный API фичи чата: приложение монтирует только панель (R-63).
 

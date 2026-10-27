@@ -28,8 +28,9 @@
 - **Scope:** `ui/src/features/avatar/AvatarRenderer.ts`, `docs/adr/`, `docs/licenses.md`
 - **Читать:** `docs/licenses.md`, `docs/architecture.md` (Фронтенд)
 - **Готово, когда:**
-  - [ ] ADR: выбранные версии и решение по Expandable Application.
-- **Статус:** не начата
+  - [x] ADR: выбранные версии и решение по Expandable Application (ADR-0011: PixiJS 8 +
+    untitled-pixi-live2d-engine 1.4 + Cubism Core 5; личное использование без распространения).
+- **Статус:** готово
 
 ### S-6.2 — Live2D: загрузка, idle, моргание, дыхание, взгляд
 - **Цель:** загрузка `.model3.json`, idle-моушены, авто-моргание, дыхание, слежение за курсором,
@@ -40,9 +41,9 @@
 - **Статус:** не начата
 
 ### S-6.3 — Маппинг эмоций, реакции на события
-- **Цель:** `avatar/<model>/mapping.json` (эмоция → выражение/моушен); реакция на
+- **Цель:** `ui/public/avatars/<model>/mapping.json` (ADR-0011) (эмоция → выражение/моушен); реакция на
   `turn.started` в том же кадре (T-17).
-- **Scope:** `ui/src/features/avatar/`, `avatar/`
+- **Scope:** `ui/src/features/avatar/`, `ui/public/avatars/` (только `mapping.json`)
 - **Готово, когда:**
   - [ ] Замена модели без правки кода (ручной сценарий с образцовой моделью Live2D).
 - **Статус:** не начата
