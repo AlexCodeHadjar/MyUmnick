@@ -2,6 +2,7 @@ import pytest
 
 from vtuber.domain import (
     BackendUnavailable,
+    ConfigError,
     GenerationFailed,
     LLMUnavailable,
     ProtocolError,
@@ -15,7 +16,9 @@ def test_backend_errors_are_caught_as_backend_unavailable(error: type[VtuberErro
     assert issubclass(error, BackendUnavailable)
 
 
-@pytest.mark.parametrize("error", [BackendUnavailable, GenerationFailed, ProtocolError])
+@pytest.mark.parametrize(
+    "error", [BackendUnavailable, GenerationFailed, ProtocolError, ConfigError]
+)
 def test_every_domain_error_is_a_vtuber_error(error: type[Exception]) -> None:
     assert issubclass(error, VtuberError)
 

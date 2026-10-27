@@ -3,7 +3,10 @@ name = "vtuber"
 version = "0.1.0"
 description = "Локальный ИИ-витюбер: ядро (оркестратор, конвейер ответа, память)."
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "pydantic>=2.9",
+    "structlog>=24.4",
+]
 
 [dependency-groups]
 dev = [
@@ -34,6 +37,7 @@ ignore = [
   "COM812", "ISC001",            # конфликтуют с форматтером
   "RUF001", "RUF002", "RUF003",  # кириллица в строках/комментариях — норма для проекта
   "CPY001",                      # заголовок копирайта в каждом файле не требуется
+  "TRY003",                      # R-45: сообщение «что делать» пишется на месте raise
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -51,6 +55,7 @@ max-branches = 8
 max-returns = 4                # R-16
 
 [tool.mypy]
+plugins = ["pydantic.mypy"]
 strict = true
 warn_unreachable = true
 disallow_any_explicit = true   # R-18

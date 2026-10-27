@@ -4,6 +4,7 @@ from vtuber.domain.dialogue import Message, Persona, Role, Turn, TurnId
 from vtuber.domain.emotion import MAX_TAG_LENGTH, TAG_CLOSE, TAG_OPEN, Emotion, parse_tag
 from vtuber.domain.errors import (
     BackendUnavailable,
+    ConfigError,
     GenerationFailed,
     LLMUnavailable,
     ProtocolError,
@@ -34,6 +35,7 @@ __all__ = [
     "BackendUnavailable",
     "CancelReason",
     "Component",
+    "ConfigError",
     "Emotion",
     "EmotionChanged",
     "GenerationFailed",

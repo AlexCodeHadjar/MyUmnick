@@ -17,7 +17,7 @@
 ## Подводные камни
 - Не тащить pydantic в domain (контракт `domain-pure`): доменные типы — чистые dataclass,
   pydantic только на границах (kernel/config, gateway).
-- Telemetry публикует метрику, но kernel не может импортировать domain — решить в S-1.3 (ADR).
+- Telemetry публикует `MetricRecorded` — событие кладётся в `domain/events.py` (ADR-0005).
 
 ## Сессии
 
@@ -42,20 +42,19 @@
   `tests/unit/kernel/`, ADR на зависимости (pydantic, pydantic-settings, structlog)
 - **Читать:** `docs/architecture.md` (Конфигурация, Телеметрия и логи)
 - **Готово, когда:**
-  - [ ] Решено, где живёт ConfigError (kernel не импортирует domain): в kernel/config, либо
-        ADR, разрешающий kernel → domain (тогда и MetricRecorded из S-1.3 — в domain).
-  - [ ] Неверный тип в user.toml → ConfigError с путём к полю и ожидаемым типом.
-  - [ ] `config/user.example.toml` в репозитории.
-  - [ ] Лог содержит turn_id, выставленный в contextvar.
-- **Статус:** не начата
+  - [x] ConfigError — в domain; kernel → domain разрешён (ADR-0005).
+  - [x] Неверный тип в user.toml → ConfigError с путём к полю, ожидаемым типом и источником.
+  - [x] `config/user.example.toml` в репозитории.
+  - [x] Лог содержит turn_id, выставленный в contextvar.
+- **Статус:** готова (журнал: `docs/ai/sessions/2026-10-27_S-1.2.md`)
 
 ### S-1.3 — Телеметрия, шина, реестр, фейки
 - **Цель:** `span()`, `EventBus`, `Registry[T]`; фейки `RecordingSink`, `FakeClock`.
 - **Scope:** `src/vtuber/kernel/telemetry.py`, `kernel/bus.py`, `kernel/registry.py`,
-  `tests/fakes/`, `tests/unit/kernel/`, ADR по публикации метрик из kernel
-- **Читать:** `docs/architecture.md` (Шина событий, Реестр, Телеметрия; открытый вопрос в «Слоях»)
+  `domain/events.py` (`MetricRecorded`), `tests/fakes/`, `tests/unit/kernel/`
+- **Читать:** карточка `kernel`, `docs/architecture.md` (Шина событий, Реестр, Телеметрия), ADR-0005
 - **Готово, когда:**
-  - [ ] Решение «как span() публикует метрику без импорта domain» оформлено ADR.
+  - [ ] `MetricRecorded` в domain; span() публикует его через шину (ADR-0005).
   - [ ] Микробенчмарк: накладные расходы span() ≤ 5 мкс.
   - [ ] Registry: повторная регистрация и неизвестное имя — ошибки со списком доступных.
 - **Статус:** не начата

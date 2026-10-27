@@ -26,6 +26,9 @@
 ## src/vtuber/bootstrap
 Корень композиции: сборка графа объектов и точка входа.
 
+- `AppConfig` — `src/vtuber/bootstrap/config.py:9` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:15` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+
 ## src/vtuber/domain
 Доменный слой: неизменяемые сущности и значения диалога, речи и эмоций.
 
@@ -41,6 +44,7 @@
 - `TTSUnavailable` — `src/vtuber/domain/errors.py:16` — Движок синтеза речи недоступен.
 - `GenerationFailed` — `src/vtuber/domain/errors.py:20` — Бэкенд ответил, но генерация сорвалась посреди хода.
 - `ProtocolError` — `src/vtuber/domain/errors.py:24` — Сообщение от UI не соответствует протоколу.
+- `ConfigError` — `src/vtuber/domain/errors.py:28` — Конфигурация не читается или не проходит проверку; приложение не стартует.
 - `CancelReason` — `src/vtuber/domain/events.py:10` — Почему ход прерван.
 - `Component` — `src/vtuber/domain/events.py:18` — Бэкенд, о состоянии которого сообщается в UI.
 - `BackendState` — `src/vtuber/domain/events.py:25` — Состояние бэкенда для статус-бара UI.
@@ -57,6 +61,14 @@
 
 ## src/vtuber/kernel
 Общие механизмы ядра: шина событий, реестр, телеметрия, конфиг, логи.
+
+- `ConfigSection` — `src/vtuber/kernel/config.py:21` — База секции конфига: неизменяема, лишний ключ — ошибка (опечатка не пройдёт молча).
+- `ConfigFiles` — `src/vtuber/kernel/config.py:32` — Файлы конфигурации: `default` обязателен, `user` — если существует.
+- `load_config` — `src/vtuber/kernel/config.py:45` — Собирает конфиг из файлов и окружения и проверяет его моделью `model`.
+- `LoggingConfig` — `src/vtuber/kernel/logging.py:16` — Секция `[logging]`.
+- `configure_logging` — `src/vtuber/kernel/logging.py:22` — Настраивает structlog: одна JSON-строка на событие в `stream`.
+- `get_logger` — `src/vtuber/kernel/logging.py:42` — Логгер модуля; имя попадает в поле `logger` каждого события.
+- `turn_context` — `src/vtuber/kernel/logging.py:48` — Все события внутри блока несут `turn_id`, включая задачи asyncio, созданные в нём.
 
 ## src/vtuber/ports
 Порты: Protocol-интерфейсы, через которые ядро обращается к внешнему миру.

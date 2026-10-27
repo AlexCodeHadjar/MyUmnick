@@ -23,3 +23,7 @@ class GenerationFailed(VtuberError):
 
 class ProtocolError(VtuberError):
     """Сообщение от UI не соответствует протоколу."""
+
+
+class ConfigError(VtuberError):
+    """Конфигурация не читается или не проходит проверку; приложение не стартует."""

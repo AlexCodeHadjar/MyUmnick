@@ -20,8 +20,8 @@
 
 ## Правила кода
 `docs/rules/code-rules.md` (R-01…R-71), ревью — `docs/rules/review-checklist.md`. Ключевое:
-- Слои: domain ← ports ← application ← adapters | gateway ← bootstrap; kernel не зависит ни от
-  кого. Контракты — `.importlinter`.
+- Слои: domain ← ports ← application ← adapters | gateway ← bootstrap; kernel зависит только
+  от domain (ADR-0005). Контракты — `.importlinter`. Импорт — через `__init__` пакета (R-06).
 - Адаптеры создаются только в bootstrap. Зависимости — через конструктор.
 - `mypy --strict`, без Any. Функция ≤ 20 инструкций, сложность ≤ 8, ≤ 4 аргументов,
   файл ≤ 250 строк кода.

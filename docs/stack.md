@@ -10,9 +10,9 @@
 | Асинхронность | asyncio | trio | Стандарт, совместим со всеми библиотеками |
 | HTTP-клиент к LLM | httpx (async, stream) | aiohttp | Чистый API стриминга, тайм-ауты, пул соединений |
 | WebSocket-сервер | websockets | Starlette | Минимум накладных расходов |
-| Валидация/конфиг | pydantic v2 + pydantic-settings | msgspec | Валидация на границах, JSON Schema |
+| Валидация/конфиг | pydantic v2 + свой загрузчик TOML/env (ADR-0006) | pydantic-settings, msgspec | Валидация на границах, JSON Schema, ошибка с источником значения |
 | Сериализация | orjson | stdlib json | В разы быстрее stdlib ⏱ |
-| Логи | structlog (JSON) | stdlib logging | Структурированные логи с turn_id |
+| Логи | structlog (JSON, ADR-0006) | stdlib logging | Структурированные логи с turn_id |
 | LLM-рантайм | llama.cpp (llama-server) | Ollama, LM Studio, vLLM, TabbyAPI | Контроль KV-кэша, speculative decoding, flash attention, слоты |
 | Формат модели | GGUF Q4_K_M / Q5_K_M | EXL2 (TabbyAPI) | Баланс скорость/качество; выбор — бенчмарком |
 | Размер модели | 7–14B instruct с сильным русским | 3–4B для слабого железа | Отбор на Этапе 2 по «скорость × качество» |

@@ -53,13 +53,13 @@ source_modules =
 forbidden_modules =
     vtuber.kernel
 
+; ADR-0005: kernel может импортировать domain (цикла нет — domain ничего не импортирует).
 [importlinter:contract:kernel-independent]
-name = Kernel не зависит от слоёв проекта
+name = Kernel зависит только от домена
 type = forbidden
 source_modules =
     vtuber.kernel
 forbidden_modules =
-    vtuber.domain
     vtuber.ports
     vtuber.application
     vtuber.adapters

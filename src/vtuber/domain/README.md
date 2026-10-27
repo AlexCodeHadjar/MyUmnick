@@ -4,7 +4,8 @@
 Словарь ядра: роли, сообщения, ходы, персона, эмоции и формат их тегов, формат звука, события
 шины, доменные ошибки. Только данные и чистые функции. НЕ делает ввода-вывода, не валидирует
 внешние данные (это границы: kernel/config, gateway, адаптеры), не знает о pydantic, httpx,
-websockets, torch и о kernel (контракт `domain-pure`).
+websockets, torch и о kernel (контракт `domain-pure`). Ошибка — только сообщение «что делать»
+(R-45), без кодов.
 
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
@@ -17,7 +18,7 @@ websockets, torch и о kernel (контракт `domain-pure`).
 | `AudioFormat`, `AudioChunk`, `SAMPLE_WIDTH_BYTES` | PCM s16le моно; `duration_s` для RTF и пауз |
 | `TurnStarted`, `TurnFinished`, `TurnCancelled`, `EmotionChanged`, `BackendStatusChanged` | События шины |
 | `CancelReason`, `Component`, `BackendState` | Значения событий |
-| `VtuberError` → `BackendUnavailable` (`LLMUnavailable`, `TTSUnavailable`), `GenerationFailed`, `ProtocolError` | Доменные ошибки |
+| `VtuberError` → `BackendUnavailable` (`LLMUnavailable`, `TTSUnavailable`), `GenerationFailed`, `ProtocolError`, `ConfigError` | Доменные ошибки |
 
 ## Зависимости
 - Только stdlib.
@@ -43,10 +44,9 @@ websockets, torch и о kernel (контракт `domain-pure`).
 - Новая ошибка — подкласс `VtuberError`; адаптер переводит в неё чужие исключения.
 - Состояние хода (Enum + таблица переходов) появится в S-3.5.
 
-## Не здесь
-- `ConfigError` — kernel не может импортировать domain; где живёт ошибка конфига, решается в
-  S-1.2.
-- `MetricRecorded` — ADR в S-1.3 (публикация метрик из kernel).
+## Кто использует
+- Все слои, включая kernel (ADR-0005): `ConfigError` бросает `kernel.load_config`, `TurnId`
+  привязывает `kernel.turn_context`; `MetricRecorded` добавится в S-1.3.
 
 ## Связанные документы
 `docs/architecture.md` (Слои, StreamParser, Ошибки, Протокол), ADR-0001, ADR-0003, T-15, T-17

@@ -35,6 +35,8 @@
 | Стабильный префикс промпта для KV-кэша (T-03) | `docs/performance.md` |
 | Единый источник схемы протокола: pydantic → JSON Schema → TypeScript | этот документ |
 | Плагины через реестр и точки расширения, без правки ядра | этот документ |
+| kernel может импортировать domain | ADR-0005 |
+| Конфиг: pydantic + свой загрузчик TOML/env; логи: structlog | ADR-0006 |
 
 Сознательно **не** делаем:
 
@@ -103,7 +105,7 @@
                          │ domain                │
                          └───────────────────────┘
    kernel (шина, реестр, телеметрия, конфиг-база) — доступен application, adapters, gateway,
-   bootstrap; сам не зависит ни от одного слоя проекта
+   bootstrap; сам зависит только от domain (ADR-0005)
 ```
 
 | Слой | Содержит | Может импортировать | Не может |
@@ -113,14 +115,10 @@
 | application | ConversationService, ReplyPipeline, PromptBuilder, SentenceChunker, StreamParser, MemoryService, IdleScheduler | ports, domain, kernel | adapters, gateway, внешние SDK |
 | adapters | LlamaCppLLM, OpenAICompatLLM, SileroTTS, PiperTTS, FasterWhisperSTT, SqliteVecStore | ports, domain, kernel, внешние SDK | application, gateway, другие адаптеры |
 | gateway | WebSocket-сервер, схема протокола, кодеки, WsReplySink | application, ports, domain, kernel | adapters |
-| kernel | EventBus, Registry, telemetry, базовые классы конфига, логирование | stdlib, structlog, pydantic | все слои проекта |
-| bootstrap | container.py, main.py, загрузка плагинов | всё | — |
+| kernel | EventBus, Registry, telemetry, базовые классы конфига, логирование | stdlib, structlog, pydantic, domain (ADR-0005) | ports, application, adapters, gateway, bootstrap |
+| bootstrap | container.py, main.py, AppConfig, загрузка плагинов | всё | — |
 
 Проверяется `lint-imports` по контрактам в `.importlinter`; нарушение — красный CI.
-
-> **Открытый вопрос (решить ADR в S-1.3).** `telemetry.span()` должен публиковать
-> `MetricRecorded`, а события лежат в `domain/events.py`, но kernel не импортирует domain.
-> Варианты: событие метрики — в kernel; либо `span()` получает функцию публикации снаружи.
 
 ## Карта модулей ядра
 
@@ -160,9 +158,10 @@ vtuber/
 │   ├── bus.py           EventBus
 │   ├── registry.py      Registry[T] — реестр адаптеров/плагинов
 │   ├── telemetry.py     span(), метрики
-│   ├── config.py        AppConfig и секции
+│   ├── config.py        ConfigSection, load_config (TOML + env)
 │   └── logging.py       настройка structlog
 └── bootstrap/
+    ├── config.py        AppConfig — агрегирует секции модулей
     ├── container.py     сборка графа объектов
     ├── plugins.py       загрузка плагинов (entry points)
     └── main.py          точка входа
@@ -457,8 +456,8 @@ from vtuber.adapters import LLM_REGISTRY, TTS_REGISTRY
 from vtuber.application.conversation import ConversationService
 from vtuber.application.pipeline import ReplyPipeline
 from vtuber.application.prompting import PromptBuilder
+from vtuber.bootstrap.config import AppConfig
 from vtuber.kernel.bus import EventBus
-from vtuber.kernel.config import AppConfig
 
 
 def build_conversation(cfg: AppConfig, bus: EventBus) -> ConversationService:
@@ -474,7 +473,10 @@ def build_conversation(cfg: AppConfig, bus: EventBus) -> ConversationService:
 ## Конфигурация
 
 `config/default.toml` (в репозитории) + `config/user.toml` (локальный, в `.gitignore`) +
-переменные `VTUBER_*`. Приоритет: env > user > default.
+переменные `VTUBER_<СЕКЦИЯ>__<ПОЛЕ>`. Приоритет: env > user > default (ADR-0006).
+
+Целевой вид конфига (эскиз; секции появляются в `config/default.toml` вместе со своими модулями —
+лишний ключ — ошибка старта):
 
 ```toml
 [llm]
@@ -507,9 +509,10 @@ port = 8765
 traces_file = "logs/traces.jsonl"
 ```
 
-Каждая секция — свой pydantic-класс в модуле, которому она нужна (адаптер Silero сам описывает
-`SileroConfig`); `AppConfig` их только агрегирует. Ошибка в конфиге — понятное сообщение при
-старте, а не падение посреди диалога.
+Каждая секция — наследник `kernel.ConfigSection` в модуле, которому она нужна (адаптер Silero
+сам описывает `SileroConfig`); `bootstrap.AppConfig` их только агрегирует. Умолчаний в коде нет —
+только в `config/default.toml`. Ошибка в конфиге — `ConfigError` при старте с полем, значением
+и источником, где исправить, а не падение посреди диалога.
 
 ## Протокол UI ↔ Ядро
 
@@ -623,7 +626,7 @@ ui/src/
 
 - structlog → JSON в `logs/app.jsonl`; каждый лог несёт `turn_id` (contextvars).
 - `telemetry.span(name)` — контекстный менеджер на `perf_counter_ns`, пишет
-  `logs/traces.jsonl` и публикует метрику (см. открытый вопрос в «Слоях»).
+  `logs/traces.jsonl` и публикует `MetricRecorded` из domain (ADR-0005).
 - ERROR — сломалось; WARNING — деградация (TTFA выше бюджета, повтор); INFO — жизненный цикл;
   DEBUG — потоковые детали (выключено по умолчанию).
 
