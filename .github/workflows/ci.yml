@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    name: Ядро (Python)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Установка зависимостей
+        run: uv sync --locked
+
+      - name: ruff check
+        run: uv run --frozen ruff check
+
+      - name: ruff format --check
+        run: uv run --frozen ruff format --check
+
+      - name: mypy --strict
+        run: uv run --frozen mypy
+
+      - name: pytest + покрытие
+        run: uv run --frozen pytest --cov --cov-report=term

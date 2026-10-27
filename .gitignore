@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/
+
+# Инструменты
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.import_linter_cache/
+
+# Веса моделей и рантайм-данные (раздел 9.6)
+models/
+logs/
+data/
+
+# Локальный конфиг пользователя (раздел 5.12)
+config/user.toml
+
+# UI (Этап 5)
+node_modules/
+ui/dist/
+ui/src-tauri/target/
+
+# Локальные настройки ИИ-инструментов
+.claude/settings.local.json
+
+# ОС и редакторы
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

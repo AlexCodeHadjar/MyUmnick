@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./models/**)",
+      "Read(./ui/node_modules/**)",
+      "Read(./ui/src-tauri/target/**)",
+      "Read(./logs/**)",
+      "Read(./uv.lock)",
+      "Read(./ui/pnpm-lock.yaml)"
+    ]
+  }
+}

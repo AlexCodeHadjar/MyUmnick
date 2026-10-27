@@ -1,0 +1,72 @@
+[project]
+name = "vtuber"
+version = "0.1.0"
+description = "Локальный ИИ-витюбер: ядро (оркестратор, конвейер ответа, память)."
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "hypothesis>=6.100",
+  "import-linter>=2.1",
+  "mypy>=1.13",
+  "pre-commit>=4.0",
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "pytest-cov>=6.0",
+  "ruff>=0.8",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["docs/archive"]  # ruff форматирует код в .md; архивные примеры не трогаем
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "D203", "D213",                # конфликтующие пары правил docstring
+  "COM812", "ISC001",            # конфликтуют с форматтером
+  "RUF001", "RUF002", "RUF003",  # кириллица в строках/комментариях — норма для проекта
+  "CPY001",                      # заголовок копирайта в каждом файле не требуется
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "D", "PLR2004", "ANN"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 8             # R-12
+
+[tool.ruff.lint.pylint]
+max-args = 5                   # R-13: 4 + self
+max-statements = 20            # R-11
+max-branches = 8
+max-returns = 4                # R-16
+
+[tool.mypy]
+strict = true
+warn_unreachable = true
+disallow_any_explicit = true   # R-18
+files = ["src", "tests"]
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = ["gpu: требует видеокарту", "slow: долгий тест"]
+addopts = "-m 'not gpu and not slow' --strict-markers --strict-config"
+
+[tool.coverage.run]
+source = ["vtuber"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 85                # NFR-08
+show_missing = true
+skip_covered = true
