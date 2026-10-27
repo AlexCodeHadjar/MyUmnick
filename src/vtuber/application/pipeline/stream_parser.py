@@ -5,13 +5,14 @@ from dataclasses import dataclass
 from typing import Final
 
 from vtuber.domain import TAG_CLOSE, TAG_OPEN, Emotion, parse_tag
+from vtuber.ports import ReplySink
 
 HOLD_LIMIT: Final = 32
 """Сколько символов после «<» ждать «>»: дальше это уже не тег, а текст (T-01: не задерживать)."""
 
 _TAG_LIKE: Final = re.compile(r"<\s*[A-Za-z_]+\s*>")
 _TAG_PREFIX: Final = re.compile(r"<\s*[A-Za-z_]*\s*")
-_SPEECH_NOISE: Final = re.compile("[*_`#~\U0001f300-\U0001faff☀-➿️‍]")
+_SPEECH_NOISE: Final = re.compile("[*_`#~\U0001f300-\U0001faff\u2600-\u27bf\ufe0f\u200d]")
 _KNOWN_TAGS: Final = tuple(emotion.tag for emotion in Emotion)
 
 
@@ -22,6 +23,10 @@ class TextDelta:
     text: str
     spoken_text: str
 
+    async def deliver(self, sink: ReplySink) -> None:
+        """Отдаёт текст получателю."""
+        await sink.text(self.text)
+
 
 @dataclass(frozen=True, slots=True)
 class EmotionCue:
@@ -29,6 +34,10 @@ class EmotionCue:
 
     emotion: Emotion
     spoken_text: str = ""
+
+    async def deliver(self, sink: ReplySink) -> None:
+        """Отдаёт смену эмоции получателю."""
+        await sink.emotion(self.emotion)
 
 
 type ParseEvent = TextDelta | EmotionCue

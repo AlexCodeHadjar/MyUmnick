@@ -1,7 +1,7 @@
 """FakeLLM: детерминированный стрим ответа без сервера и GPU (R-56)."""
 
 import asyncio
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, Sequence
 from dataclasses import dataclass, field
 
 from vtuber.domain import LLMUnavailable, Message, VtuberError
@@ -28,7 +28,7 @@ class FakeLLM:
 
     async def stream(
         self, messages: Sequence[Message], params: GenerationParams
-    ) -> AsyncIterator[str]:
+    ) -> AsyncGenerator[str]:
         self.calls.append((messages, params))
         chunks = [
             self.text[i : i + self.chunk_size] for i in range(0, len(self.text), self.chunk_size)

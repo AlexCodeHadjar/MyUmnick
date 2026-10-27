@@ -1,6 +1,6 @@
 """Адаптер LLMPort для OpenAI-совместимого API (`/v1/chat/completions`, стрим SSE)."""
 
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, Sequence
 from types import TracebackType
 from typing import Final, Self
 
@@ -49,7 +49,7 @@ class OpenAICompatLLM:
 
     async def stream(
         self, messages: Sequence[Message], params: GenerationParams
-    ) -> AsyncIterator[str]:
+    ) -> AsyncGenerator[str]:
         """Дельты текста ответа; см. `LLMPort.stream`."""
         body = self._request_body(messages, params)
         try:

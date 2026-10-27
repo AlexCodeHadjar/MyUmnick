@@ -1,6 +1,6 @@
 """Порт языковой модели: потоковая генерация ответа и прогрев KV-кэша."""
 
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncGenerator, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -22,11 +22,12 @@ class LLMPort(Protocol):
     Контракт для каждого адаптера — `tests/contract/test_llm_contract.py` (R-57).
     """
 
-    def stream(self, messages: Sequence[Message], params: GenerationParams) -> AsyncIterator[str]:
+    def stream(self, messages: Sequence[Message], params: GenerationParams) -> AsyncGenerator[str]:
         """Отдаёт текстовые дельты ответа по мере генерации (T-01).
 
         Отмена задачи-потребителя обязана закрыть поток генерации, чтобы бэкенд перестал
-        работать впустую (T-14); `CancelledError` не подавляется (R-38).
+        работать впустую (T-14); `CancelledError` не подавляется (R-38). Генератор, а не просто
+        итератор: потребитель закрывает его через `contextlib.aclosing` при любом выходе (R-37).
 
         Raises:
             LLMUnavailable: бэкенд не отвечает или не загружен.

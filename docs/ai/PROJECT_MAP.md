@@ -40,9 +40,10 @@
 ## src/vtuber/application/pipeline
 Конвейер ответа: LLM → разбор тегов → нарезка фраз → TTS.
 
-- `TextDelta` — `src/vtuber/application/pipeline/stream_parser.py:19` — Порция текста: `text` — для чата, `spoken_text` — для TTS (без эмодзи и разметки).
-- `EmotionCue` — `src/vtuber/application/pipeline/stream_parser.py:27` — В ответе встретился тег эмоции; озвучивать нечего.
-- `StreamParser` — `src/vtuber/application/pipeline/stream_parser.py:37` — Разбирает дельты одного ответа по мере поступления (один экземпляр на ход).
+- `ReplyPipeline` — `src/vtuber/application/pipeline/reply_pipeline.py:12` — Стримит ответ LLM получателю по мере генерации (T-01): ни одна стадия не ждёт конца.
+- `TextDelta` — `src/vtuber/application/pipeline/stream_parser.py:20` — Порция текста: `text` — для чата, `spoken_text` — для TTS (без эмодзи и разметки).
+- `EmotionCue` — `src/vtuber/application/pipeline/stream_parser.py:32` — В ответе встретился тег эмоции; озвучивать нечего.
+- `StreamParser` — `src/vtuber/application/pipeline/stream_parser.py:46` — Разбирает дельты одного ответа по мере поступления (один экземпляр на ход).
 
 ## src/vtuber/application/prompting
 Сборка промпта: персона, история, динамический блок — от неизменного к изменчивому (T-03).
@@ -114,3 +115,4 @@
 
 - `GenerationParams` — `src/vtuber/ports/llm.py:11` — Параметры генерации; значения приходят из конфига (`[llm.generation]`, ADR-0006).
 - `LLMPort` — `src/vtuber/ports/llm.py:19` — Локальная LLM; адаптеры бросают только доменные ошибки (R-43).
+- `ReplySink` — `src/vtuber/ports/sink.py:8` — Получатель результатов одного хода; конвейер не знает, что за ним.

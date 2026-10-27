@@ -11,7 +11,7 @@ _MARKDOWN: Final = re.compile(
     r"\*\*|__|`|^\s{0,3}#{1,6}\s|^\s*[-*•]\s|^\s*\d+[.)]\s|\[[^\]]+\]\([^)]+\)",
     re.MULTILINE,
 )
-_EMOJI: Final = re.compile("[\U0001f300-\U0001faff☀-➿️]")
+_EMOJI: Final = re.compile("[\U0001f300-\U0001faff\u2600-\u27bf\ufe0f]")
 _CYRILLIC: Final = re.compile("[а-яё]")
 _LATIN: Final = re.compile("[a-z]")
 REFUSAL_MARKERS: Final = (

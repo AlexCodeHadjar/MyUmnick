@@ -57,9 +57,9 @@
 - **Scope:** `ports/sink.py`, `tests/fakes/`, `application/pipeline/reply_pipeline.py`
 - **Читать:** `docs/architecture.md` (Конвейер ответа)
 - **Готово, когда:**
-  - [ ] Тест с FakeLLM и RecordingSink: дельты в sink до конца генерации; отмена останавливает
+  - [x] Тест с FakeLLM и RecordingSink: дельты в sink до конца генерации; отмена останавливает
         LLM-стрим.
-- **Статус:** не начата
+- **Статус:** готова (журнал: `docs/ai/sessions/2026-10-27_S-3.4.md`)
 
 ### S-3.5 — ConversationService, отмена, CLI
 - **Цель:** жизненный цикл хода (Enum + таблица переходов), отмена предыдущего хода, события,

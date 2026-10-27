@@ -8,8 +8,9 @@
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
-| `LLMPort` | `stream(messages, params)` — дельты текста; `prefill(messages)` — прогрев KV-кэша |
+| `LLMPort` | `stream(messages, params)` → `AsyncGenerator[str]` (закрывать через `aclosing`); `prefill(messages)` |
 | `GenerationParams` | `max_tokens`, `temperature`, `stop`; значения — из конфига |
+| `ReplySink` | Получатель хода: `text(delta)`, `emotion(e)`, `done()` (`done` — только при полном ответе); `audio` — S-7.5 |
 
 ## Зависимости
 - Только domain (`Message`, доменные ошибки).
@@ -29,7 +30,7 @@
 - Новый адаптер LLM: класс в `adapters/llm/`, `LLMCase` в `tests/contract/factories.py`
   (рабочий и недоступный вариант) — контракт прогонится автоматически.
 - Новый порт: Protocol + фейк в `tests/fakes/` + контрактный тест (порядок из WORKFLOW).
-- Дальше появятся: `TTSPort` (S-7.1), `ReplySink` (S-3.4), `STTPort` (S-11.2), порты памяти
+- Дальше появятся: `TTSPort` (S-7.1), `STTPort` (S-11.2), порты памяти
   (S-10.1).
 
 ## Связанные документы
