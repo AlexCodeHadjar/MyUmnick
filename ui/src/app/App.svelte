@@ -1,7 +1,8 @@
 <script lang="ts">
-  // Каркас окна: чат слева, сцена справа. Раскладка с разделителем и статус-бар — S-5.4,
-  // чат — S-5.3, аватар — Этап 6.
+  // Окно: чат слева, сцена справа. Раскладка с разделителем и статус-бар — S-5.4,
+  // аватар — Этап 6.
   import type { ConnectionState, CoreClient } from "../core";
+  import { Chat } from "../features/chat";
 
   const { client }: { client: CoreClient } = $props();
 
@@ -14,14 +15,14 @@
 </script>
 
 <main class="layout">
-  <section class="chat" aria-label="Чат">
-    <p class="placeholder">Чат появится в S-5.3</p>
+  <div class="chat-pane">
+    <Chat {client} />
+  </div>
+  <section class="stage" aria-label="Сцена">
+    <p class="placeholder">Здесь будет модель (Этап 6)</p>
     <p class="placeholder" data-testid="connection">
       Ядро: {CONNECTION_TEXT[client.store.connection]}
     </p>
-  </section>
-  <section class="stage" aria-label="Сцена">
-    <p class="placeholder">Здесь будет модель (Этап 6)</p>
   </section>
 </main>
 
@@ -41,14 +42,15 @@
     height: 100vh;
   }
 
-  .chat {
+  .chat-pane {
+    min-height: 0;
     border-right: 1px solid #2c2c38;
   }
 
-  .chat,
   .stage {
     display: grid;
-    place-items: center;
+    place-content: center;
+    text-align: center;
   }
 
   .placeholder {

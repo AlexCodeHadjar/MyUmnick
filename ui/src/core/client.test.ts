@@ -19,15 +19,42 @@ class FakeSocket implements SocketLike {
   close(): void {
     this.onclose?.(new CloseEvent("close", { code: 1000 }));
   }
+
+  receive(data: unknown): void {
+    this.onmessage?.(new MessageEvent("message", { data }));
+  }
 }
 
-function connected(): { client: CoreClient; socket: FakeSocket } {
+/** Ручные «кадры»: колбэки копятся, пока тест не вызовет `next()`. */
+class Frames {
+  readonly queued: (() => void)[] = [];
+  readonly schedule = (callback: () => void): void => {
+    this.queued.push(callback);
+  };
+
+  next(): void {
+    for (const callback of this.queued.splice(0)) {
+      callback();
+    }
+  }
+}
+
+function connected(): { client: CoreClient; socket: FakeSocket; frames: Frames } {
   const socket = new FakeSocket();
-  const client = new CoreClient({ url: "ws://test", socketFactory: () => socket });
+  const frames = new Frames();
+  const client = new CoreClient({
+    url: "ws://test",
+    socketFactory: () => socket,
+    scheduleFrame: frames.schedule,
+  });
   client.start();
   socket.onopen?.(new Event("open"));
-  return { client, socket };
+  frames.next();
+  return { client, socket, frames };
 }
+
+const delta = (text: string): string =>
+  JSON.stringify({ v: 1, type: "chat.delta", turn: "t-000003", data: { text } });
 
 describe("CoreClient", () => {
   it("say(): реплика в историю сразу и ядру — chat.send", () => {
@@ -45,26 +72,46 @@ describe("CoreClient", () => {
     expect(socket.sent).toEqual([{ v: 1, type: "chat.cancel", data: {} }]);
   });
 
-  it("сообщения ядра попадают в store, аудио — в подключённый приёмник", () => {
+  it("сообщения ядра применяются пачкой раз в кадр (T-16)", () => {
+    const { client, socket, frames } = connected();
+    socket.receive('{"v": 1, "type": "turn.started", "turn": "t-000003", "data": {}}');
+    for (let i = 0; i < 100; i += 1) {
+      socket.receive(delta(String(i % 10)));
+    }
+    expect(frames.queued).toHaveLength(1);
+    expect(client.store.messages).toEqual([]);
+    frames.next();
+    expect(client.store.messages[0]?.text).toBe("0123456789".repeat(10));
+    expect(frames.queued).toHaveLength(0);
+  });
+
+  it("разрыв встаёт в ту же очередь после уже пришедших сообщений", () => {
+    const { client, socket, frames } = connected();
+    socket.receive('{"v": 1, "type": "turn.started", "turn": "t-000003", "data": {}}');
+    socket.receive(delta("Начало"));
+    socket.close();
+    frames.next();
+    expect(client.store.connection).toBe("closed");
+    expect(client.store.messages.map(({ text, status }) => [text, status])).toEqual([
+      ["Начало", "cancelled"],
+    ]);
+  });
+
+  it("аудио — сразу в приёмник, мимо пачки", () => {
     const { client, socket } = connected();
-    const frames: AudioFrame[] = [];
-    client.onAudio((frame) => frames.push(frame));
-    socket.onmessage?.(
-      new MessageEvent("message", {
-        data: '{"v": 1, "type": "turn.started", "turn": "t-000003", "data": {}}',
-      }),
-    );
+    const received: AudioFrame[] = [];
+    client.onAudio((frame) => received.push(frame));
     const buffer = new ArrayBuffer(AUDIO_HEADER_SIZE);
     new DataView(buffer).setUint8(0, 0x01);
     new DataView(buffer).setUint8(1, 1);
-    socket.onmessage?.(new MessageEvent("message", { data: buffer }));
-    expect(client.store.turn).toBe("t-000003");
-    expect(frames).toHaveLength(1);
+    socket.receive(buffer);
+    expect(received).toHaveLength(1);
   });
 
   it("dispose() закрывает связь", () => {
-    const { client } = connected();
+    const { client, frames } = connected();
     client.dispose();
+    frames.next();
     expect(client.store.connection).toBe("closed");
   });
 });
