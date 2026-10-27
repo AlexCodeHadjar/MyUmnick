@@ -28,7 +28,7 @@ build-backend = "uv_build"
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src", "tests"]
+src = ["src", "."]  # "." — чтобы tools и tests считались своими пакетами при сортировке импортов
 extend-exclude = ["docs/archive"]  # ruff форматирует код в .md; архивные примеры не трогаем
 
 [tool.ruff.lint]
@@ -43,7 +43,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "D", "PLR2004", "ANN", "EM"]
+"tests/**" = ["S101", "D", "PLR2004", "ANN", "EM", "FBT001"]  # FBT001: bool в parametrize
 "tools/**" = ["T201"]          # CLI-скрипты пишут результат в консоль
 "src/vtuber/domain/errors.py" = ["N818"]  # имена ошибок закреплены в docs/architecture.md
 
