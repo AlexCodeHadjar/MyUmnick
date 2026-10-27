@@ -8,7 +8,7 @@
 | Язык ядра | Python 3.12 | — | Экосистема ИИ; TaskGroup, современные дженерики |
 | Менеджер пакетов | uv | poetry | Быстрый, lock-файл, управление версиями Python |
 | Асинхронность | asyncio | trio | Стандарт, совместим со всеми библиотеками |
-| HTTP-клиент к LLM | httpx (async, stream) | aiohttp | Чистый API стриминга, тайм-ауты, пул соединений |
+| HTTP-клиент к LLM | httpx (async, stream; ADR-0007) | aiohttp, SDK openai | Чистый API стриминга, тайм-ауты, пул соединений, MockTransport |
 | WebSocket-сервер | websockets | Starlette | Минимум накладных расходов |
 | Валидация/конфиг | pydantic v2 + свой загрузчик TOML/env (ADR-0006) | pydantic-settings, msgspec | Валидация на границах, JSON Schema, ошибка с источником значения |
 | Сериализация | orjson | stdlib json | В разы быстрее stdlib ⏱ |

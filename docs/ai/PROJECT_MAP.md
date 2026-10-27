@@ -11,6 +11,11 @@
 ## src/vtuber/adapters/llm
 Адаптеры языковых моделей (LLMPort).
 
+- `LLMConfig` — `src/vtuber/adapters/llm/config.py:6` — Адрес и тайм-ауты LLM-сервера (R-36).
+- `OpenAICompatLLM` — `src/vtuber/adapters/llm/openai_compat.py:21` — Стрим ответа по HTTP/SSE; один httpx-клиент на всё время жизни (R-40, ADR-0007).
+- `data_of` — `src/vtuber/adapters/llm/sse.py:12` — Полезная нагрузка строки `data: …` или None для пустых строк, комментариев и прочих полей.
+- `delta_text` — `src/vtuber/adapters/llm/sse.py:19` — Текст дельты первого варианта ответа; пустая строка, если в порции текста нет.
+
 ## src/vtuber/adapters/memory
 Адаптеры долговременной памяти: эмбеддеры и хранилища.
 
@@ -26,8 +31,8 @@
 ## src/vtuber/bootstrap
 Корень композиции: сборка графа объектов и точка входа.
 
-- `AppConfig` — `src/vtuber/bootstrap/config.py:9` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:15` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `AppConfig` — `src/vtuber/bootstrap/config.py:10` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:17` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
 
 ## src/vtuber/domain
 Доменный слой: неизменяемые сущности и значения диалога, речи и эмоций.

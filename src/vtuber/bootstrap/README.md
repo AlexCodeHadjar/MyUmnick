@@ -8,11 +8,12 @@
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
-| `AppConfig` | Корень конфига: поле на каждую секцию модуля (сейчас `logging`) |
+| `AppConfig` | Корень конфига: поле на каждую секцию модуля (сейчас `logging`, `llm`) |
 | `load_app_config(root, env)` | Читает `<root>/config/default.toml` и `user.toml` поверх `env` |
 
 ## Зависимости
 - kernel: `ConfigSection`, `ConfigFiles`, `load_config`, `LoggingConfig`
+- adapters/llm: `LLMConfig`
 
 ## События
 - Публикует: —

@@ -5,3 +5,9 @@
 
 [logging]
 level = "INFO"                 # DEBUG | INFO | WARNING | ERROR; DEBUG — потоковые детали (T-15)
+
+[llm]
+base_url = "http://127.0.0.1:8080"   # llama-server (scripts/start_llm.ps1)
+model = "local"                # имя модели в запросе; llama-server принимает любое
+connect_timeout_s = 1.0        # localhost: соединение — доли миллисекунды; больше — сервер не запущен
+read_timeout_s = 30.0          # максимум ожидания следующей порции, включая prefill длинного промпта

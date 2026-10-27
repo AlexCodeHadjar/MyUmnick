@@ -38,16 +38,19 @@
   `tests/contract/factories.py` (новый `LLMCase`), секция конфига `[llm]`, ADR на httpx
 - **Читать:** карточка `ports`, ADR-0002
 - **Готово, когда:**
-  - [ ] Контрактный тест проходит (сервер-заглушка на localhost; «недоступный» — закрытый порт).
-  - [ ] Проверено, что после отмены заглушка видит закрытие соединения (T-14).
-  - [ ] httpx-исключения не выходят за адаптер (R-43).
-- **Статус:** не начата
+  - [x] Контрактный тест проходит (сервер-заглушка на localhost; «недоступный» — закрытый порт).
+  - [x] Проверено, что после отмены заглушка видит закрытие соединения (T-14).
+  - [x] httpx-исключения не выходят за адаптер (R-43).
+- **Статус:** готова (журнал: `docs/ai/sessions/2026-10-27_S-2.2.md`)
 
 ### S-2.3 — Адаптер llama.cpp, прогрев, скрипт запуска
 - **Цель:** `LlamaCppLLM` (слот `id_slot`, `cache_prompt`, `prefill()` — можно заглушкой до
   Этапа 9), отключение reasoning-режима (T-08), прогрев при старте (T-06), `scripts/start_llm.ps1`.
-- **Scope:** `src/vtuber/adapters/llm/llamacpp.py`, `scripts/`
+- **Scope:** `src/vtuber/adapters/llm/llamacpp.py`, `scripts/`, `tests/contract/factories.py`
+  (`LLMCase` на заглушке `tests/llm_stub.py`), `tests/unit/adapters/llm/`
 - **Читать:** карточка `adapters/llm`, `docs/performance.md` (T-06, T-08, T-10)
+- **Заметка:** строится поверх `OpenAICompatLLM` (тот же httpx-клиент и разбор SSE). Тест `@gpu`
+  выполняется на целевой машине (RTX 5070 Ti); здесь — заглушка и MockTransport.
 - **Готово, когда:**
   - [ ] Скрипт запускает llama-server; флаги сверены с `llama-server --help` установленной
         версии. Ориентир: `-ngl 99 -c 16384 --parallel 2 -fa on --host 127.0.0.1 --port 8080

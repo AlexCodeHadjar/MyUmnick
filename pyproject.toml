@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Локальный ИИ-витюбер: ядро (оркестратор, конвейер ответа, память)."
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "httpx>=0.27",
     "pydantic>=2.9",
     "structlog>=24.4",
 ]

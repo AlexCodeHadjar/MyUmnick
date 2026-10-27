@@ -3,6 +3,7 @@
 from collections.abc import Mapping
 from pathlib import Path
 
+from vtuber.adapters.llm import LLMConfig
 from vtuber.kernel import ConfigFiles, ConfigSection, LoggingConfig, load_config
 
 
@@ -10,6 +11,7 @@ class AppConfig(ConfigSection):
     """Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна."""
 
     logging: LoggingConfig
+    llm: LLMConfig
 
 
 def load_app_config(root: Path, env: Mapping[str, str]) -> AppConfig:
