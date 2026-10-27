@@ -46,3 +46,51 @@ jobs:
 
       - name: pytest + покрытие
         run: uv run --frozen pytest --cov --cov-report=term
+
+  ui:
+    name: UI (Svelte + Tauri)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: ui/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: ui/pnpm-lock.yaml
+
+      - name: Установка зависимостей
+        run: pnpm install --frozen-lockfile
+
+      - name: eslint
+        run: pnpm lint
+
+      - name: prettier --check
+        run: pnpm format:check
+
+      - name: svelte-check
+        run: pnpm check
+
+      - name: Сборка фронтенда
+        run: pnpm build
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ui/src-tauri
+
+      - name: cargo fmt --check
+        run: cargo fmt --check --manifest-path src-tauri/Cargo.toml
+
+      - name: cargo clippy
+        run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml -- -D warnings

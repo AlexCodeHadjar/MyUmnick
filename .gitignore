@@ -29,9 +29,12 @@ config/user.toml
 node_modules/
 ui/dist/
 ui/src-tauri/target/
+# Схемы прав, которые tauri-build пересоздаёт при каждой сборке
+ui/src-tauri/gen/
 
 # Локальные настройки ИИ-инструментов
 .claude/settings.local.json
+.claude/launch.json
 
 # ОС и редакторы
 .DS_Store

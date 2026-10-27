@@ -21,8 +21,8 @@
 | STT | faster-whisper + Silero VAD | Vosk, GigaAM | Качество + скорость на GPU/CPU |
 | Эмбеддинги | multilingual-e5-small | bge-m3 | Быстро на CPU, русский |
 | Векторное хранилище | SQLite + sqlite-vec | hnswlib, FAISS | Один файл, транзакции, факты и векторы вместе |
-| UI-оболочка | Tauri 2 | Electron | Лёгкий, sidecar для ядра |
-| UI-фреймворк | Svelte 5 + TypeScript + Vite | React, Solid | Минимум шаблонного кода, быстрый DOM |
+| UI-оболочка | Tauri 2 (ADR-0009) | Electron | Лёгкий, sidecar для ядра |
+| UI-фреймворк | Svelte 5 + TypeScript 6.0 + Vite 8, pnpm (ADR-0009) | React, Solid | Минимум шаблонного кода, быстрый DOM |
 | Аватар | Live2D Cubism: PixiJS + pixi-live2d-display | VRM: three.js + @pixiv/three-vrm | Самый распространённый формат витюберов — **см. лицензии** |
 | Звук в UI | WebAudio (AudioWorklet, AnalyserNode) | — | Точное воспроизведение и анализ громкости |
 | Качество Python | ruff, mypy --strict, import-linter, pytest, pytest-asyncio, hypothesis | pyright | Линт + типы + архитектурные контракты |

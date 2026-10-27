@@ -1,0 +1,8 @@
+dist/
+node_modules/
+src-tauri/
+pnpm-lock.yaml
+# Генерирует tools/gen_protocol.py — форматирование принадлежит генератору (R-64).
+src/core/protocol.gen.ts
+# Markdown в репозитории един для ядра и UI — не переформатировать только здесь
+*.md

@@ -5,6 +5,8 @@ repos:
     hooks:
       - id: check-toml
       - id: check-yaml
+        # pnpm 12 пишет pnpm-lock.yaml несколькими YAML-документами.
+        args: [--allow-multiple-documents]
       - id: check-merge-conflict
       - id: check-added-large-files
         args: ["--maxkb=1024"]
@@ -61,4 +63,30 @@ repos:
         entry: uv run --frozen python tools/gen_protocol.py --check
         language: system
         files: ^(src/vtuber/(gateway|domain)/|tools/gen_protocol\.py$|docs/protocol\.md$|ui/src/core/protocol\.gen\.ts$)
+        pass_filenames: false
+      # UI (S-5.1): инструменты из ui/pnpm-lock.yaml. Каждый хук проверяет весь ui/ — eslint с
+      # projectService и svelte-check всё равно строят программу целиком.
+      - id: ui-eslint
+        name: eslint (ui)
+        entry: pnpm --dir ui lint
+        language: system
+        files: ^ui/(src/|[^/]+\.(js|ts|json)$)
+        pass_filenames: false
+      - id: ui-prettier
+        name: prettier --check (ui)
+        entry: pnpm --dir ui format:check
+        language: system
+        files: ^ui/(src/|[^/]+\.(js|ts|json|html)$)
+        pass_filenames: false
+      - id: ui-svelte-check
+        name: svelte-check (ui)
+        entry: pnpm --dir ui check
+        language: system
+        files: ^ui/(src/|tsconfig\.json$|svelte\.config\.js$)
+        pass_filenames: false
+      - id: ui-cargo-fmt
+        name: cargo fmt --check (ui/src-tauri)
+        entry: cargo fmt --check --manifest-path ui/src-tauri/Cargo.toml
+        language: system
+        files: ^ui/src-tauri/.*\.rs$
         pass_filenames: false
