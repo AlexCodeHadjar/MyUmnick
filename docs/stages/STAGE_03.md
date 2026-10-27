@@ -48,8 +48,9 @@
 - **Статус:** не начата
 
 ### S-3.4 — ReplyPipeline (текстовая ветка)
-- **Цель:** конвейер LLM → StreamParser → sink; TTS-ветка — через NullTTS до Этапа 7.
-- **Scope:** `application/pipeline/reply_pipeline.py`
+- **Цель:** порт `ReplySink` и фейк `RecordingSink` (записи с отметками времени из
+  `FakeClock`); конвейер LLM → StreamParser → sink; TTS-ветка — через NullTTS до Этапа 7.
+- **Scope:** `ports/sink.py`, `tests/fakes/`, `application/pipeline/reply_pipeline.py`
 - **Читать:** `docs/architecture.md` (Конвейер ответа)
 - **Готово, когда:**
   - [ ] Тест с FakeLLM и RecordingSink: дельты в sink до конца генерации; отмена останавливает

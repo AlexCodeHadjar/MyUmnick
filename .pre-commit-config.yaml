@@ -23,14 +23,16 @@ repos:
         pass_filenames: false
       - id: ruff-check
         name: ruff check
-        entry: uv run --frozen ruff check --fix
+        entry: uv run --frozen ruff check --fix --force-exclude
         language: system
         types_or: [python, pyi]
       - id: ruff-format
         name: ruff format
-        entry: uv run --frozen ruff format
+        # --force-exclude: исключения из pyproject (docs/archive) действуют и на явно переданные
+        # файлы; markdown — потому что ruff 0.17 форматирует код в .md, как и CI.
+        entry: uv run --frozen ruff format --force-exclude
         language: system
-        types_or: [python, pyi]
+        types_or: [python, pyi, markdown]
       - id: mypy
         name: mypy --strict
         entry: uv run --frozen mypy

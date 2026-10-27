@@ -61,6 +61,15 @@ class EmotionChanged:
 
 
 @dataclass(frozen=True, slots=True)
+class MetricRecorded:
+    """Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев)."""
+
+    name: str
+    duration_ns: int
+    turn_id: TurnId | None
+
+
+@dataclass(frozen=True, slots=True)
 class BackendStatusChanged:
     """Бэкенд загрузился, упал или восстановился."""
 

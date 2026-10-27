@@ -52,7 +52,8 @@
 - `TurnFinished` — `src/vtuber/domain/events.py:41` — Ход завершён полностью.
 - `TurnCancelled` — `src/vtuber/domain/events.py:48` — Ход прерван; UI сбрасывает аудиобуфер.
 - `EmotionChanged` — `src/vtuber/domain/events.py:56` — В ответе встретился тег эмоции.
-- `BackendStatusChanged` — `src/vtuber/domain/events.py:64` — Бэкенд загрузился, упал или восстановился.
+- `MetricRecorded` — `src/vtuber/domain/events.py:64` — Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев).
+- `BackendStatusChanged` — `src/vtuber/domain/events.py:73` — Бэкенд загрузился, упал или восстановился.
 - `AudioFormat` — `src/vtuber/domain/speech.py:11` — Формат звука: PCM s16le, моно — так звук передаётся в UI (ADR-0003).
 - `AudioChunk` — `src/vtuber/domain/speech.py:23` — Непрерывный фрагмент PCM в формате `format`.
 
@@ -62,13 +63,19 @@
 ## src/vtuber/kernel
 Общие механизмы ядра: шина событий, реестр, телеметрия, конфиг, логи.
 
+- `EventBus` — `src/vtuber/kernel/bus.py:15` — Доставляет событие подписчикам его точного типа (не подклассов), параллельно.
 - `ConfigSection` — `src/vtuber/kernel/config.py:21` — База секции конфига: неизменяема, лишний ключ — ошибка (опечатка не пройдёт молча).
 - `ConfigFiles` — `src/vtuber/kernel/config.py:32` — Файлы конфигурации: `default` обязателен, `user` — если существует.
 - `load_config` — `src/vtuber/kernel/config.py:45` — Собирает конфиг из файлов и окружения и проверяет его моделью `model`.
-- `LoggingConfig` — `src/vtuber/kernel/logging.py:16` — Секция `[logging]`.
-- `configure_logging` — `src/vtuber/kernel/logging.py:22` — Настраивает structlog: одна JSON-строка на событие в `stream`.
-- `get_logger` — `src/vtuber/kernel/logging.py:42` — Логгер модуля; имя попадает в поле `logger` каждого события.
-- `turn_context` — `src/vtuber/kernel/logging.py:48` — Все события внутри блока несут `turn_id`, включая задачи asyncio, созданные в нём.
+- `current_turn` — `src/vtuber/kernel/context.py:14` — Номер текущего хода или None вне хода; чтение — десятки наносекунд (горячий путь).
+- `turn_context` — `src/vtuber/kernel/context.py:20` — Внутри блока ход `turn_id` — текущий для метрик, а логи несут поле `turn_id`.
+- `LoggingConfig` — `src/vtuber/kernel/logging.py:13` — Секция `[logging]`.
+- `configure_logging` — `src/vtuber/kernel/logging.py:19` — Настраивает structlog: одна JSON-строка на событие в `stream`.
+- `get_logger` — `src/vtuber/kernel/logging.py:39` — Логгер модуля; имя попадает в поле `logger` каждого события.
+- `Registry` — `src/vtuber/kernel/registry.py:8` — Имя → фабрика `A → T`; например, `Registry[TTSConfig, TTSPort]` для движков TTS.
+- `Telemetry` — `src/vtuber/kernel/telemetry.py:21` — Замеряет стадии хода и отдаёт метрики в шину фоновой задачей `run`.
+- `Span` — `src/vtuber/kernel/telemetry.py:55` — Контекстный менеджер одного замера; создаётся `Telemetry.span`.
+- `TraceWriter` — `src/vtuber/kernel/telemetry.py:80` — Подписчик шины: пишет каждую метрику JSON-строкой в поток (`logs/traces.jsonl`).
 
 ## src/vtuber/ports
 Порты: Protocol-интерфейсы, через которые ядро обращается к внешнему миру.

@@ -17,6 +17,7 @@ websockets, torch и о kernel (контракт `domain-pure`). Ошибка �
 | `parse_tag`, `TAG_OPEN`, `TAG_CLOSE`, `MAX_TAG_LENGTH` | Разбор тега эмоции; предел буфера для StreamParser |
 | `AudioFormat`, `AudioChunk`, `SAMPLE_WIDTH_BYTES` | PCM s16le моно; `duration_s` для RTF и пауз |
 | `TurnStarted`, `TurnFinished`, `TurnCancelled`, `EmotionChanged`, `BackendStatusChanged` | События шины |
+| `MetricRecorded` | Замер стадии: `name`, `duration_ns`, `turn_id` (None вне хода) |
 | `CancelReason`, `Component`, `BackendState` | Значения событий |
 | `VtuberError` → `BackendUnavailable` (`LLMUnavailable`, `TTSUnavailable`), `GenerationFailed`, `ProtocolError`, `ConfigError` | Доменные ошибки |
 
@@ -46,7 +47,7 @@ websockets, torch и о kernel (контракт `domain-pure`). Ошибка �
 
 ## Кто использует
 - Все слои, включая kernel (ADR-0005): `ConfigError` бросает `kernel.load_config`, `TurnId`
-  привязывает `kernel.turn_context`; `MetricRecorded` добавится в S-1.3.
+  привязывает `kernel.turn_context`, `MetricRecorded` публикует `kernel.Telemetry`.
 
 ## Связанные документы
 `docs/architecture.md` (Слои, StreamParser, Ошибки, Протокол), ADR-0001, ADR-0003, T-15, T-17

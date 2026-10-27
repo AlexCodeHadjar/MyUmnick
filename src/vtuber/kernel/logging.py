@@ -1,13 +1,10 @@
-"""Структурные JSON-логи на structlog с turn_id текущего хода через contextvars."""
+"""Структурные JSON-логи на structlog; turn_id добавляет `kernel.context.turn_context`."""
 
-from collections.abc import Iterator
-from contextlib import contextmanager
 from typing import Literal, TextIO, cast
 
 import structlog
 from structlog.typing import FilteringBoundLogger
 
-from vtuber.domain import TurnId
 from vtuber.kernel.config import ConfigSection
 
 type LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR"]
@@ -42,10 +39,3 @@ def configure_logging(cfg: LoggingConfig, stream: TextIO) -> None:
 def get_logger(name: str) -> FilteringBoundLogger:
     """Логгер модуля; имя попадает в поле `logger` каждого события."""
     return cast("FilteringBoundLogger", structlog.get_logger().bind(logger=name))
-
-
-@contextmanager
-def turn_context(turn_id: TurnId) -> Iterator[None]:
-    """Все события внутри блока несут `turn_id`, включая задачи asyncio, созданные в нём."""
-    with structlog.contextvars.bound_contextvars(turn_id=turn_id):
-        yield

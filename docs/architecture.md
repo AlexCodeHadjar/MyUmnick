@@ -156,8 +156,9 @@ vtuber/
 │   └── cli.py           терминальный клиент для вехи M1
 ├── kernel/
 │   ├── bus.py           EventBus
-│   ├── registry.py      Registry[T] — реестр адаптеров/плагинов
-│   ├── telemetry.py     span(), метрики
+│   ├── registry.py      Registry[A, T] — реестр адаптеров/плагинов
+│   ├── context.py       turn_context, current_turn — текущий ход для логов и метрик
+│   ├── telemetry.py     Telemetry.span(), TraceWriter
 │   ├── config.py        ConfigSection, load_config (TOML + env)
 │   └── logging.py       настройка structlog
 └── bootstrap/
@@ -203,6 +204,7 @@ UI: chat.send ──► gateway.server ──► ConversationService.handle(user
 ```python
 # vtuber/ports/llm.py
 """Порт языковой модели: потоковая генерация и прогрев кэша."""
+
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Protocol
@@ -230,6 +232,7 @@ class LLMPort(Protocol):
 ```python
 # vtuber/ports/tts.py
 """Порт синтеза речи."""
+
 from collections.abc import AsyncIterator
 from typing import Protocol
 
@@ -248,6 +251,7 @@ class TTSPort(Protocol):
 ```python
 # vtuber/ports/sink.py
 """Куда конвейер отдаёт результаты хода: WebSocket, файл или тест — конвейеру всё равно."""
+
 from typing import Protocol
 
 from vtuber.domain.emotion import Emotion
@@ -269,24 +273,26 @@ class ReplySink(Protocol):
 ```python
 # vtuber/application/pipeline/reply_pipeline.py
 """Конвейер хода: LLM → разбор тегов → нарезка фраз → TTS. Стадии работают параллельно."""
+
 import asyncio
 
 from vtuber.application.pipeline.chunker import SentenceChunker
 from vtuber.application.pipeline.stream_parser import StreamParser
-from vtuber.domain.dialogue import Message
-from vtuber.kernel.telemetry import span
-from vtuber.ports.llm import GenerationParams, LLMPort
-from vtuber.ports.sink import ReplySink
-from vtuber.ports.tts import TTSPort
+from vtuber.domain import Message
+from vtuber.kernel import Telemetry
+from vtuber.ports import GenerationParams, LLMPort, ReplySink, TTSPort
 
 _END = None  # маркер конца очереди фраз
 
 
 class ReplyPipeline:
-    def __init__(self, llm: LLMPort, tts: TTSPort, params: GenerationParams) -> None:
+    def __init__(
+        self, llm: LLMPort, tts: TTSPort, params: GenerationParams, telemetry: Telemetry
+    ) -> None:
         self._llm = llm
         self._tts = tts
         self._params = params
+        self._telemetry = telemetry
 
     async def run(self, messages: list[Message], sink: ReplySink) -> str:
         phrases: asyncio.Queue[str | None] = asyncio.Queue()
@@ -300,7 +306,7 @@ class ReplyPipeline:
         self, messages: list[Message], sink: ReplySink, out: asyncio.Queue[str | None]
     ) -> str:
         parser, chunker = StreamParser(), SentenceChunker()
-        with span("llm.stream"):
+        with self._telemetry.span("llm.stream"):
             async for delta in self._llm.stream(messages, self._params):
                 for event in parser.feed(delta):
                     await event.deliver(sink)
@@ -313,7 +319,7 @@ class ReplyPipeline:
 
     async def _speak(self, sink: ReplySink, phrases: asyncio.Queue[str | None]) -> None:
         while (phrase := await phrases.get()) is not _END:
-            with span("tts.phrase"):
+            with self._telemetry.span("tts.phrase"):
                 async for chunk in self._tts.synthesize(phrase):
                     await sink.audio(chunk)
 ```
@@ -327,6 +333,7 @@ class ReplyPipeline:
 ```python
 # vtuber/application/pipeline/chunker.py
 """Режет поток текста на фразы для TTS. Первая фраза отрезается раньше (T-02)."""
+
 from collections.abc import Iterator
 from dataclasses import dataclass
 
@@ -385,73 +392,51 @@ LLM вставляет теги эмоций прямо в текст: `<happy>�
 Формат тегов и список эмоций — только в `domain/emotion.py`; промпт персоны строится из того же
 списка.
 
-## Шина событий (эскиз)
+## Шина событий
 
-```python
-# vtuber/kernel/bus.py
-"""Шина управляющих событий. НЕ для горячего пути: токены и аудио идут очередями (T-15)."""
-import asyncio
-from collections import defaultdict
-from collections.abc import Awaitable, Callable
+Реализация — `kernel/bus.py` (`EventBus`). Не для горячего пути: токены и аудио идут очередями
+(T-15).
 
-type Handler[E] = Callable[[E], Awaitable[None]]
-
-
-class EventBus:
-    def __init__(self) -> None:
-        self._handlers: defaultdict[type, list[Handler[object]]] = defaultdict(list)
-
-    def subscribe[E](self, event_type: type[E], handler: Handler[E]) -> None:
-        self._handlers[event_type].append(handler)  # type: ignore[arg-type]
-
-    async def publish(self, event: object) -> None:
-        await asyncio.gather(*(handler(event) for handler in self._handlers[type(event)]))
-```
+- `subscribe(EventType, handler)`; `publish(event)` доставляет событие подписчикам его **точного**
+  типа (не подклассов), параллельно, и ждёт всех.
+- Ошибка подписчика логируется (`bus.handler_failed`) и не мешает ни остальным, ни издателю —
+  плагин не уронит ход. Отмена `publish` отменяет подписчиков и пролетает дальше (R-38).
 
 События — `dataclass(frozen=True, slots=True)` в `domain/events.py`: `TurnStarted`,
 `TurnFinished`, `TurnCancelled`, `EmotionChanged`, `MetricRecorded`, `BackendStatusChanged`.
-Подписчики — UI-шлюз, планировщик фона, плагины. Главный механизм расширения: плагин реагирует на
-любое событие, не меняя ядро (OCP).
+Подписчики — UI-шлюз, планировщик фона, запись трасс, плагины. Главный механизм расширения:
+плагин реагирует на любое событие, не меняя ядро (OCP).
 
-## Реестр адаптеров и плагинов (эскиз)
+## Реестр адаптеров и плагинов
 
-```python
-# vtuber/kernel/registry.py
-"""Реестр фабрик по имени: позволяет выбирать реализацию порта строкой в конфиге."""
-from collections.abc import Callable
+Реализация — `kernel/registry.py` (`Registry[A, T]`: имя → фабрика `A → T`, где `A` — то, что
+передаёт bootstrap, обычно секция конфига).
 
+- Адаптер регистрирует себя одной строкой в своём модуле: `TTS.add("silero", SileroTTS)`.
+  Декоратор не используется: mypy не умеет типизировать его без `Any` (R-18).
+- bootstrap создаёт выбранный по конфигу: `TTS.create(cfg.tts.backend, cfg.tts)`.
+- Занятое имя → `ValueError`; неизвестное имя из конфига → `ConfigError` со списком доступных.
 
-class Registry[T]:
-    def __init__(self, kind: str) -> None:
-        self._kind = kind
-        self._factories: dict[str, Callable[..., T]] = {}
-
-    def register[F: Callable[..., T]](self, name: str) -> Callable[[F], F]:
-        def decorator(factory: F) -> F:
-            if name in self._factories:
-                raise ValueError(f"{self._kind} '{name}' уже зарегистрирован")
-            self._factories[name] = factory
-            return factory
-
-        return decorator
-
-    def create(self, name: str, /, *args: object, **kwargs: object) -> T:
-        try:
-            return self._factories[name](*args, **kwargs)
-        except KeyError:
-            known = ", ".join(sorted(self._factories))
-            raise ValueError(f"Неизвестный {self._kind} '{name}'. Доступны: {known}") from None
-```
-
-Адаптер регистрируется декоратором `@TTS_REGISTRY.register("silero")`. Сторонние плагины —
-через entry points (`[project.entry-points."vtuber.plugins"]`), их загружает
+Сторонние плагины — через entry points (`[project.entry-points."vtuber.plugins"]`), их загружает
 `bootstrap/plugins.py`.
+
+## Телеметрия
+
+Реализация — `kernel/telemetry.py`.
+
+- `Telemetry(bus, clock)`: `span(name)` замеряет блок `with`, `record(name, ns)` — готовый замер
+  (например, TTFT от начала хода). `turn_id` берётся из `kernel.context.current_turn()`.
+- Запись — только `put_nowait` в ограниченную очередь (~1.3 мкс на span, R-08); при переполнении
+  метрика теряется, ход продолжается. Блок, прерванный исключением или отменой, не пишется.
+- `Telemetry.run()` — фоновая задача (владелец — TaskGroup в bootstrap): публикует
+  `MetricRecorded` в шину. `TraceWriter(stream)` — подписчик, пишет `logs/traces.jsonl`.
 
 ## Корень композиции (эскиз)
 
 ```python
 # vtuber/bootstrap/container.py
 """Единственное место, где создаются и связываются объекты приложения."""
+
 from vtuber.adapters import LLM_REGISTRY, TTS_REGISTRY
 from vtuber.application.conversation import ConversationService
 from vtuber.application.pipeline import ReplyPipeline
@@ -625,8 +610,8 @@ ui/src/
 ## Телеметрия и логи
 
 - structlog → JSON в `logs/app.jsonl`; каждый лог несёт `turn_id` (contextvars).
-- `telemetry.span(name)` — контекстный менеджер на `perf_counter_ns`, пишет
-  `logs/traces.jsonl` и публикует `MetricRecorded` из domain (ADR-0005).
+- Метрики — `Telemetry` (раздел «Телеметрия»): `MetricRecorded` в шину, `TraceWriter` →
+  `logs/traces.jsonl`.
 - ERROR — сломалось; WARNING — деградация (TTFA выше бюджета, повтор); INFO — жизненный цикл;
   DEBUG — потоковые детали (выключено по умолчанию).
 

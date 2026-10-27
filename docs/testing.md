@@ -40,6 +40,7 @@
 ```python
 # tests/contract/test_tts_contract.py
 """Любой адаптер TTSPort обязан пройти эти тесты."""
+
 import asyncio
 
 import pytest
