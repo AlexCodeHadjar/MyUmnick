@@ -1,0 +1,52 @@
+# domain — неизменяемые сущности и значения диалога, речи и эмоций
+
+## Ответственность
+Словарь ядра: роли, сообщения, ходы, персона, эмоции и формат их тегов, формат звука, события
+шины, доменные ошибки. Только данные и чистые функции. НЕ делает ввода-вывода, не валидирует
+внешние данные (это границы: kernel/config, gateway, адаптеры), не знает о pydantic, httpx,
+websockets, torch и о kernel (контракт `domain-pure`).
+
+## Публичный API (`__init__.py`)
+| Символ | Назначение |
+|---|---|
+| `Role`, `Message` | Роль (`system`/`user`/`assistant`) и сообщение контекста LLM |
+| `TurnId`, `Turn` | Номер хода (uint64 в аудиокадре) и завершённый ход; `is_interrupted` — ответ прерван |
+| `Persona` | Характер витюбера из `personas/*.toml`; в `rules` возможен `{emotions}` |
+| `Emotion` | Единственный список эмоций; `.tag` → `<happy>` |
+| `parse_tag`, `TAG_OPEN`, `TAG_CLOSE`, `MAX_TAG_LENGTH` | Разбор тега эмоции; предел буфера для StreamParser |
+| `AudioFormat`, `AudioChunk`, `SAMPLE_WIDTH_BYTES` | PCM s16le моно; `duration_s` для RTF и пауз |
+| `TurnStarted`, `TurnFinished`, `TurnCancelled`, `EmotionChanged`, `BackendStatusChanged` | События шины |
+| `CancelReason`, `Component`, `BackendState` | Значения событий |
+| `VtuberError` → `BackendUnavailable` (`LLMUnavailable`, `TTSUnavailable`), `GenerationFailed`, `ProtocolError` | Доменные ошибки |
+
+## Зависимости
+- Только stdlib.
+
+## События
+- Определяет события шины; сам ничего не публикует и не слушает.
+
+## Инварианты
+- Все dataclass — `frozen=True, slots=True` (проверяет `tests/unit/domain/test_package.py`).
+- Каждый публичный класс и функция модулей пакета перечислены в `__all__` (тот же тест).
+- `parse_tag(emotion.tag) is emotion` для каждой эмоции; регистр и пробелы в скобках не важны.
+- Значения `Emotion` — строчные латинские слова: они же имена тегов и ключи `mapping.json`.
+- Значения Enum-ов — строки протокола UI; их смена — изменение протокола.
+
+## Производительность
+- Горячий путь: `parse_tag` и `MAX_TAG_LENGTH` использует StreamParser; `AudioChunk` идёт по
+  очереди TTS → sink. Без копирования PCM (R-41).
+
+## Как расширять
+- Новая эмоция — значение в `Emotion` + выражение в `avatar/<model>/mapping.json`.
+- Новый бэкенд в статус-баре — значение в `Component` (STT — Этап 11, память — Этап 10).
+- Причина отмены barge-in — `CancelReason` (Этап 11).
+- Новая ошибка — подкласс `VtuberError`; адаптер переводит в неё чужие исключения.
+- Состояние хода (Enum + таблица переходов) появится в S-3.5.
+
+## Не здесь
+- `ConfigError` — kernel не может импортировать domain; где живёт ошибка конфига, решается в
+  S-1.2.
+- `MetricRecorded` — ADR в S-1.3 (публикация метрик из kernel).
+
+## Связанные документы
+`docs/architecture.md` (Слои, StreamParser, Ошибки, Протокол), ADR-0001, ADR-0003, T-15, T-17

@@ -28,11 +28,12 @@
 - **Scope:** `src/vtuber/domain/`, `tests/unit/domain/`, карточка `domain/README.md`
 - **Читать:** `docs/architecture.md` (слои, ошибки, StreamParser — про формат тегов эмоций)
 - **Готово, когда:**
-  - [ ] Типы frozen+slots; Emotion — единственный источник списка эмоций и формата тега.
-  - [ ] Иерархия: VtuberError → BackendUnavailable (LLMUnavailable, TTSUnavailable),
-        GenerationFailed, ConfigError, ProtocolError.
-  - [ ] Тесты: неизменяемость, разбор имени тега в Emotion.
-- **Статус:** не начата
+  - [x] Типы frozen+slots; Emotion — единственный источник списка эмоций и формата тега.
+  - [x] Иерархия: VtuberError → BackendUnavailable (LLMUnavailable, TTSUnavailable),
+        GenerationFailed, ProtocolError. ConfigError перенесён в S-1.2: kernel не может
+        импортировать domain.
+  - [x] Тесты: неизменяемость, разбор имени тега в Emotion.
+- **Статус:** готова (журнал: `docs/ai/sessions/2026-10-27_S-1.1.md`)
 
 ### S-1.2 — Конфиг и логирование
 - **Цель:** `AppConfig` из `config/default.toml` + `config/user.toml` + `VTUBER_*`
@@ -41,6 +42,8 @@
   `tests/unit/kernel/`, ADR на зависимости (pydantic, pydantic-settings, structlog)
 - **Читать:** `docs/architecture.md` (Конфигурация, Телеметрия и логи)
 - **Готово, когда:**
+  - [ ] Решено, где живёт ConfigError (kernel не импортирует domain): в kernel/config, либо
+        ADR, разрешающий kernel → domain (тогда и MetricRecorded из S-1.3 — в domain).
   - [ ] Неверный тип в user.toml → ConfigError с путём к полю и ожидаемым типом.
   - [ ] `config/user.example.toml` в репозитории.
   - [ ] Лог содержит turn_id, выставленный в contextvar.
