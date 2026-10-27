@@ -8,8 +8,16 @@ import svelteConfig from "./svelte.config.js";
 
 export default defineConfig(
   {
-    // Сгенерированное не правится руками (R-64); сборки и Rust-часть — не наши исходники.
-    ignores: ["dist/", "node_modules/", "src-tauri/", "src/core/protocol.gen.ts"],
+    // Сгенерированное не правится руками (R-64); сборки, Rust-часть и файлы Live2D от
+    // пользователя (Cubism Core, модели — ADR-0011) — не наши исходники.
+    ignores: [
+      "dist/",
+      "node_modules/",
+      "src-tauri/",
+      "public/live2d/",
+      "public/avatars/",
+      "src/core/protocol.gen.ts",
+    ],
   },
   js.configs.recommended,
   ts.configs.strictTypeChecked,

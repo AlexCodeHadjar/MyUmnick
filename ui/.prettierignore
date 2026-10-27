@@ -6,3 +6,6 @@ pnpm-lock.yaml
 src/core/protocol.gen.ts
 # Markdown в репозитории един для ядра и UI — не переформатировать только здесь
 *.md
+# Файлы Live2D от пользователя (ADR-0011) — не наш код.
+public/live2d/
+public/avatars/

@@ -36,6 +36,7 @@
 | Live2D Cubism SDK / Core | рендер аватара | Live2D Proprietary Software License + SDK Release License | Expandable Application: проверка и соглашение для всех издателей; без соглашения — только разработка/личное использование | проверено |
 | Live2D образцовые модели | разработка | Free Material License | коммерческое использование для малых издателей, кроме Unity-chan и Hatsune Miku | проверено |
 | Модель витюбера | аватар | зависит от автора/покупки | права на конкретную модель — отдельно | не выбрана |
+| Образцовая модель Haru (Live2D Inc.) | аватар для разработки | Free Material License (Live2D original character) | частным лицам и малому бизнесу — с согласием на условия; не в git | проверено (ReadMe в архиве) |
 | untitled-pixi-live2d-engine 1.4 | Live2D для PixiJS 8 (ADR-0011) | MIT | — | проверено (npm) |
 | Cubism Web Framework (внутри движка) | загрузка и анимация моделей | Live2D Open Software License | вместе с лицензией Core | по документации |
 | Cubism Core for Web 5 | ядро Live2D | Live2D Proprietary Software License | не в git; пользователь скачивает сам | проверено |

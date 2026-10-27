@@ -1,7 +1,8 @@
 <script lang="ts">
-  // Окно: чат слева, сцена справа (FR-01), статус-бар внизу, панель метрик по горячей клавише
-  // (FR-15). Аватар на сцене — Этап 6.
+  // Окно: чат слева, сцена с аватаром справа (FR-01), статус-бар внизу, панель метрик по горячей
+  // клавише (FR-15).
   import type { CoreClient } from "../core";
+  import { AvatarStage } from "../features/avatar";
   import { Chat } from "../features/chat";
   import { isMetricsHotkey, METRICS_HOTKEY_LABEL, MetricsPanel } from "../features/metrics";
   import SplitLayout from "./SplitLayout.svelte";
@@ -37,7 +38,7 @@
     {/snippet}
     {#snippet right()}
       <section class="stage" aria-label="Сцена">
-        <p class="placeholder">Здесь будет модель (Этап 6)</p>
+        <AvatarStage name={import.meta.env.VITE_AVATAR} />
         {#if showMetrics}
           <MetricsPanel
             store={client.store}
@@ -76,9 +77,5 @@
     place-content: center;
     height: 100%;
     text-align: center;
-  }
-
-  .placeholder {
-    opacity: 0.6;
   }
 </style>

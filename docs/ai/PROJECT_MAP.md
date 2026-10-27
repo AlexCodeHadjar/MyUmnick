@@ -169,7 +169,7 @@
 ## ui/src/app
 —
 
-- `App.svelte` — `ui/src/app/App.svelte:1` — Окно: чат слева, сцена справа (FR-01), статус-бар внизу, панель метрик по горячей клавише
+- `App.svelte` — `ui/src/app/App.svelte:1` — Окно: чат слева, сцена с аватаром справа (FR-01), статус-бар внизу, панель метрик по горячей
 - `DEFAULT_RATIO` — `ui/src/app/split.ts:7` — Чат 2 : сцена 3 — как в каркасе S-5.1.
 - `MIN_CHAT_PX` — `ui/src/app/split.ts:9` — Уже — чат не читается, сцена теряет модель.
 - `MIN_STAGE_PX` — `ui/src/app/split.ts:10` — —
@@ -220,12 +220,38 @@
 - `Transport` — `ui/src/core/transport.ts:66` — —
 
 ## ui/src/features/avatar
-Публичный API фичи аватара: контракт рендера (ADR-0011); реализации — live2d/ (S-6.2).
+Публичный API фичи аватара: сцена и контракт рендера (ADR-0011).
 
 - `AvatarSource` — `ui/src/features/avatar/AvatarRenderer.ts:13` — Что загрузить: файлы модели в `ui/public/avatars/<имя>/` (ADR-0011).
 - `AvatarReaction` — `ui/src/features/avatar/AvatarRenderer.ts:24` — Реакция на ход разговора, не зависящая от текста: «слушаю» (пользователь печатает),
 - `StageSize` — `ui/src/features/avatar/AvatarRenderer.ts:27` — Размер области сцены в CSS-пикселях; рендер сам учитывает devicePixelRatio.
 - `AvatarRenderer` — `ui/src/features/avatar/AvatarRenderer.ts:32` — —
+- `AvatarStage.svelte` — `ui/src/features/avatar/AvatarStage.svelte:1` — Сцена с аватаром: холст Live2D на всю панель, статус загрузки или ошибки поверх. Логика —
+- `MAX_DELTA_MS` — `ui/src/features/avatar/loop.ts:7` — Шаг после паузы или подвисания ограничен: иначе физика волос «выстрелит» за один кадр.
+- `FrameSource` — `ui/src/features/avatar/loop.ts:10` — Источник кадров: в окне — `requestAnimationFrame`, в тестах — ручной.
+- `Visibility` — `ui/src/features/avatar/loop.ts:16` — Видимость окна: `onChange` возвращает функцию отписки.
+- `browserFrames` — `ui/src/features/avatar/loop.ts:21` — —
+- `browserVisibility` — `ui/src/features/avatar/loop.ts:28` — —
+- `AvatarLoop` — `ui/src/features/avatar/loop.ts:38` — —
+- `avatarSource` — `ui/src/features/avatar/session.ts:10` — Файлы модели `<имя>` в `ui/public/avatars/<имя>/` (ADR-0011).
+- `AvatarStatus` — `ui/src/features/avatar/session.ts:18` — —
+- `RendererFactory` — `ui/src/features/avatar/session.ts:22` — Создатель рендера: Live2D в окне, фейк в тестах.
+- `AvatarSession` — `ui/src/features/avatar/session.ts:28` — —
+
+## ui/src/features/avatar/live2d
+—
+
+- `CUBISM_CORE_URL` — `ui/src/features/avatar/live2d/core-loader.ts:8` — Где Vite отдаёт Core из `ui/public/live2d/`.
+- `CORE_MISSING_MESSAGE` — `ui/src/features/avatar/live2d/core-loader.ts:10` — —
+- `ScriptHost` — `ui/src/features/avatar/live2d/core-loader.ts:14` — Части `window`/`document`, нужные загрузчику: в тестах — подмена.
+- `browserHost` — `ui/src/features/avatar/live2d/core-loader.ts:19` — —
+- `loadCubismCore` — `ui/src/features/avatar/live2d/core-loader.ts:34` — Подключить Core один раз на окно; повторные вызовы ждут ту же загрузку.
+- `Size` — `ui/src/features/avatar/live2d/fit.ts:3` — —
+- `Placement` — `ui/src/features/avatar/live2d/fit.ts:8` — —
+- `FIT_MARGIN` — `ui/src/features/avatar/live2d/fit.ts:16` — Поля вокруг модели, доля сцены: не упираться в края при наклонах головы и физике волос.
+- `fitModel` — `ui/src/features/avatar/live2d/fit.ts:19` — Масштаб «вписать целиком» с полями; модель по центру. Пустая сцена или модель — масштаб 0.
+- `gazeAt` — `ui/src/features/avatar/live2d/fit.ts:35` — Курсор → взгляд: -1…1 по осям, y вверх (как `AvatarRenderer.lookAt`). За пределами сцены
+- `Live2DRenderer` — `ui/src/features/avatar/live2d/Live2DRenderer.ts:49` — —
 
 ## ui/src/features/chat
 Публичный API фичи чата: приложение монтирует только панель (R-63).

@@ -21,7 +21,8 @@
 | `src/core/protocol.gen.ts` | типы протокола — генерирует `tools/gen_protocol.py`, не править |
 | `src/features/chat/` | `Chat` (index.ts): виртуализированная история, ввод, «Стоп», «печатает» |
 | `src/features/metrics/` | `MetricsPanel` по Ctrl+Shift+M: последний, p50, p95, норма (FR-15) |
-| `src/features/avatar/` | контракт `AvatarRenderer` (ADR-0011); Live2D-реализация — S-6.2 |
+| `src/features/avatar/` | `AvatarStage` (сцена), `session.ts` (жизнь модели), `loop.ts` (кадры вне Svelte, R-66), контракт `AvatarRenderer` |
+| `src/features/avatar/live2d/` | `Live2DRenderer` (PixiJS 8 + движок, ADR-0011), загрузчик Cubism Core, геометрия сцены |
 | `public/live2d/`, `public/avatars/<имя>/` | Cubism Core и файлы модели — кладёт пользователь, не в git |
 | `src/features/` | audio (Этап 8) |
 | `src-tauri/` | оболочка Tauri: `tauri.conf.json`, права окна в `capabilities/` |
@@ -50,6 +51,11 @@
 - У каждого компонента есть `<script lang="ts">`, хоть и пустой: иначе svelte-check 4.7 не
   выдаёт типы модуля (ADR-0009).
 - CSP окна пускает сеть только на `ws://127.0.0.1:*`.
+- Аватар: Pixi, движок и Core грузятся динамически — основной бандл (63 КБ) их не ждёт, чат
+  работает и без модели. Нет Core или файлов модели — сцена пишет, что и куда положить.
+- Модель — `VITE_AVATAR` в `ui/.env` (каталог `public/avatars/<имя>/`); смена модели — без кода.
+- Рот (липсинк) — параметры группы `LipSync` из model3.json (иначе `ParamMouthOpenY`), индексы
+  ищутся один раз при загрузке. Взгляд — `lookAt`, слежение движка за курсором выключено.
 - Ширина чата — доля окна, не уже 320 px у каждой панели; хранится в localStorage
   (`vtuber.layout.chatRatio`), недоступное хранилище не ломает раскладку. Разделитель двигается
   и стрелками (WAI-ARIA window splitter).
