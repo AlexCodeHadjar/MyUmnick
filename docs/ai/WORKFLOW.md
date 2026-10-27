@@ -64,7 +64,7 @@
 - [ ] `uv run pre-commit run --all-files` зелёный (ruff, mypy, lint-imports, длина файлов,
       gen_map) и `uv run pytest --cov` зелёный.
 - [ ] Обновлены карточки изменённых модулей.
-- [ ] `uv run python tools/gen_map.py` (и `tools/gen_protocol.py`, если менялся протокол).
+- [ ] `uv run python -m tools.gen_map` (и `tools/gen_protocol.py`, если менялся протокол).
 - [ ] Создан журнал сессии.
 - [ ] Перезаписан STATE.md: следующая сессия, открытые проблемы.
 - [ ] Отмечены галочки и статус сессии в STAGE_XX.md.

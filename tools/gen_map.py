@@ -1,6 +1,6 @@
-"""Генерирует docs/ai/PROJECT_MAP.md из docstring-ов и публичных символов пакетов.
+"""Генерирует docs/ai/PROJECT_MAP.md: пакеты ядра (docstring-и, символы) и каталоги `ui/src`.
 
-Запуск: `python tools/gen_map.py`; `--check` — код 1, если карта устарела (для pre-commit и CI).
+Запуск: `python -m tools.gen_map`; `--check` — код 1, если карта устарела (для pre-commit и CI).
 """
 
 import ast
@@ -8,13 +8,16 @@ import sys
 from collections.abc import Iterator
 from pathlib import Path
 
+from tools.ui_map import render_ui
+
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src" / "vtuber"
+UI_SRC = ROOT / "ui" / "src"
 OUT = ROOT / "docs" / "ai" / "PROJECT_MAP.md"
 HEADER = (
     "# PROJECT MAP",
     "",
-    "> Автогенерация: `python tools/gen_map.py`. Не редактировать.",
+    "> Автогенерация: `python -m tools.gen_map`. Не редактировать.",
     "",
 )
 _SYMBOLS = (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)
@@ -36,8 +39,8 @@ def _entries(module: Path, root: Path) -> Iterator[str]:
             yield f"- `{node.name}` — `{location}:{node.lineno}` — {_summary(node)}"
 
 
-def render(src: Path, root: Path) -> str:
-    """Строит текст карты: раздел на каждый пакет в src, публичные символы его модулей."""
+def render(src: Path, root: Path, ui_src: Path | None = None) -> str:
+    """Строит текст карты: раздел на каждый пакет в src, затем — каталоги UI, если заданы."""
     lines = list(HEADER)
     for init in sorted(src.rglob("__init__.py")):
         package = init.parent
@@ -46,6 +49,8 @@ def render(src: Path, root: Path) -> str:
         if entries := [entry for module in modules for entry in _entries(module, root)]:
             lines += ["", *entries]
         lines.append("")
+    if ui_src is not None and ui_src.is_dir():
+        lines += render_ui(ui_src, root)
     return "\n".join(lines)
 
 
@@ -56,13 +61,13 @@ def is_up_to_date(content: str, out: Path) -> bool:
 
 def main(argv: list[str]) -> int:
     """Пишет карту или, с `--check`, сообщает об устаревшей карте кодом 1."""
-    content = render(SRC, ROOT)
+    content = render(SRC, ROOT, UI_SRC)
     if "--check" not in argv:
         OUT.write_text(content, encoding="utf-8", newline="\n")
         return 0
     if is_up_to_date(content, OUT):
         return 0
-    print("docs/ai/PROJECT_MAP.md устарел — запустите: uv run python tools/gen_map.py")
+    print("docs/ai/PROJECT_MAP.md устарел — запустите: uv run python -m tools.gen_map")
     return 1
 
 

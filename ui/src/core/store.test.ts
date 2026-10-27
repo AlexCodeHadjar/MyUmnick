@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { OutboundMessage } from "./protocol.gen";
-import { AppStore } from "./store.svelte";
+import { AppStore, SPAN_HISTORY } from "./store.svelte";
 
 const T1 = "t-000001";
 const T2 = "t-000002";
@@ -112,9 +112,21 @@ describe("служебные сообщения", () => {
       data: { code: "llm_unavailable", message: "LLM недоступна" },
     });
     expect(store.backends.llm).toBe("ready");
-    expect(store.spans).toEqual({ "llm.ttft": 95 });
+    expect(store.spans).toEqual({ "llm.ttft": [95] });
     expect(store.error?.code).toBe("llm_unavailable");
     store.addUserMessage("ещё раз");
     expect(store.error).toBeNull();
+  });
+});
+
+describe("замеры", () => {
+  it("история стадии ограничена, старые вытесняются", () => {
+    for (let i = 0; i < SPAN_HISTORY + 5; i += 1) {
+      store.recordSpan("ui.first_char", i);
+    }
+    const history = store.spans["ui.first_char"] ?? [];
+    expect(history).toHaveLength(SPAN_HISTORY);
+    expect(history[0]).toBe(5);
+    expect(history.at(-1)).toBe(SPAN_HISTORY + 4);
   });
 });

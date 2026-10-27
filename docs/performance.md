@@ -167,7 +167,7 @@ DEBUG, выключено по умолчанию.
 - Каждый ход получает `turn_id`; каждая стадия открывает span
   (`telemetry.span("llm.first_token")`) с `time.perf_counter_ns()`.
 - Спаны пишутся в `logs/traces.jsonl` и уходят в UI на панель метрик (FR-15).
-- `uv run python tools/bench_latency.py [--runs 3] [--out замеры.json]` прогоняет
+- `uv run python -m tools.bench_latency [--runs 3] [--out замеры.json]` прогоняет
   `bench/prompts_ru.jsonl` (40 реплик: короткие, средние, длинные, о памяти) и выводит
   p50/p95/max для TTFT, ответа целиком и TPS (дельт/с после первой; у llama-server дельта ≈ токен).
   - Прогрев (T-06): `prefill` системного промпта и один неучитываемый ответ.

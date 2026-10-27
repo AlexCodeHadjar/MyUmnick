@@ -108,6 +108,25 @@ describe("CoreClient", () => {
     expect(received).toHaveLength(1);
   });
 
+  it("замер UI: от say() до кадра с первым символом ответа", () => {
+    const socket = new FakeSocket();
+    const frames = new Frames();
+    const clock = [1000, 1042];
+    const client = new CoreClient({
+      url: "ws://test",
+      socketFactory: () => socket,
+      scheduleFrame: frames.schedule,
+      now: () => clock.shift() ?? Number.NaN,
+    });
+    client.start();
+    socket.onopen?.(new Event("open"));
+    client.say("привет");
+    socket.receive('{"v": 1, "type": "turn.started", "turn": "t-000003", "data": {}}');
+    socket.receive(delta("П"));
+    frames.next();
+    expect(client.store.spans["ui.first_char"]).toEqual([42]);
+  });
+
   it("dispose() закрывает связь", () => {
     const { client, frames } = connected();
     client.dispose();

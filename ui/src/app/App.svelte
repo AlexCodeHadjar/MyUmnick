@@ -1,29 +1,55 @@
 <script lang="ts">
-  // Окно: чат слева, сцена справа. Раскладка с разделителем и статус-бар — S-5.4,
-  // аватар — Этап 6.
-  import type { ConnectionState, CoreClient } from "../core";
+  // Окно: чат слева, сцена справа (FR-01), статус-бар внизу, панель метрик по горячей клавише
+  // (FR-15). Аватар на сцене — Этап 6.
+  import type { CoreClient } from "../core";
   import { Chat } from "../features/chat";
+  import { isMetricsHotkey, METRICS_HOTKEY_LABEL, MetricsPanel } from "../features/metrics";
+  import SplitLayout from "./SplitLayout.svelte";
+  import StatusBar from "./StatusBar.svelte";
 
   const { client }: { client: CoreClient } = $props();
 
-  const CONNECTION_TEXT: Record<ConnectionState, string> = {
-    connecting: "подключение…",
-    open: "на связи",
-    closed: "нет связи — переподключаюсь",
-    replaced: "открыто другое окно",
-  };
+  let showMetrics = $state(false);
+
+  function onkeydown(event: KeyboardEvent): void {
+    if (isMetricsHotkey(event)) {
+      event.preventDefault();
+      showMetrics = !showMetrics;
+    }
+  }
+
+  /** localStorage недоступен (политика WebView, приватный режим) — ширина просто не запомнится. */
+  function layoutStorage(): Storage | undefined {
+    try {
+      return window.localStorage;
+    } catch {
+      return undefined;
+    }
+  }
 </script>
 
-<main class="layout">
-  <div class="chat-pane">
-    <Chat {client} />
-  </div>
-  <section class="stage" aria-label="Сцена">
-    <p class="placeholder">Здесь будет модель (Этап 6)</p>
-    <p class="placeholder" data-testid="connection">
-      Ядро: {CONNECTION_TEXT[client.store.connection]}
-    </p>
-  </section>
+<svelte:window {onkeydown} />
+
+<main class="app">
+  <SplitLayout storage={layoutStorage()}>
+    {#snippet left()}
+      <Chat {client} />
+    {/snippet}
+    {#snippet right()}
+      <section class="stage" aria-label="Сцена">
+        <p class="placeholder">Здесь будет модель (Этап 6)</p>
+        {#if showMetrics}
+          <MetricsPanel
+            store={client.store}
+            onclose={() => {
+              showMetrics = false;
+            }}
+          />
+        {/if}
+      </section>
+    {/snippet}
+  </SplitLayout>
+  <StatusBar store={client.store} hint={METRICS_HOTKEY_LABEL} />
 </main>
 
 <style>
@@ -32,24 +58,23 @@
     margin: 0;
     height: 100%;
     font-family: system-ui, sans-serif;
+    /* Полосы прокрутки и поля ввода — в тёмной гамме WebView. */
+    color-scheme: dark;
     background: #15151c;
     color: #e8e8f0;
   }
 
-  .layout {
+  .app {
     display: grid;
-    grid-template-columns: minmax(320px, 2fr) 3fr;
+    grid-template-rows: minmax(0, 1fr) auto;
     height: 100vh;
   }
 
-  .chat-pane {
-    min-height: 0;
-    border-right: 1px solid #2c2c38;
-  }
-
   .stage {
+    position: relative;
     display: grid;
     place-content: center;
+    height: 100%;
     text-align: center;
   }
 

@@ -39,7 +39,7 @@ jobs:
         run: uv run --frozen python tools/check_file_length.py
 
       - name: PROJECT_MAP.md актуален
-        run: uv run --frozen python tools/gen_map.py --check
+        run: uv run --frozen python -m tools.gen_map --check
 
       - name: protocol.gen.ts и protocol.md актуальны
         run: uv run --frozen python tools/gen_protocol.py --check

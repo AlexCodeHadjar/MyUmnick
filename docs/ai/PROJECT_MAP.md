@@ -1,6 +1,6 @@
 # PROJECT MAP
 
-> Автогенерация: `python tools/gen_map.py`. Не редактировать.
+> Автогенерация: `python -m tools.gen_map`. Не редактировать.
 
 ## src/vtuber
 Ядро локального ИИ-витюбера.
@@ -165,3 +165,87 @@
 - `GenerationParams` — `src/vtuber/ports/llm.py:11` — Параметры генерации; значения приходят из конфига (`[llm.generation]`, ADR-0006).
 - `LLMPort` — `src/vtuber/ports/llm.py:19` — Локальная LLM; адаптеры бросают только доменные ошибки (R-43).
 - `ReplySink` — `src/vtuber/ports/sink.py:8` — Получатель результатов одного хода; конвейер не знает, что за ним.
+
+## ui/src/app
+—
+
+- `App.svelte` — `ui/src/app/App.svelte:1` — Окно: чат слева, сцена справа (FR-01), статус-бар внизу, панель метрик по горячей клавише
+- `DEFAULT_RATIO` — `ui/src/app/split.ts:7` — Чат 2 : сцена 3 — как в каркасе S-5.1.
+- `MIN_CHAT_PX` — `ui/src/app/split.ts:9` — Уже — чат не читается, сцена теряет модель.
+- `MIN_STAGE_PX` — `ui/src/app/split.ts:10` — —
+- `KEYBOARD_STEP` — `ui/src/app/split.ts:12` — Шаг стрелками на разделителе — доступность с клавиатуры.
+- `RatioStorage` — `ui/src/app/split.ts:17` — Минимальное хранилище: в тестах — Map-подобная подмена.
+- `clampRatio` — `ui/src/app/split.ts:20` — Доля в пределах, при которых обе панели не уже своего минимума.
+- `ratioAt` — `ui/src/app/split.ts:30` — Доля по положению указателя внутри раскладки.
+- `loadRatio` — `ui/src/app/split.ts:35` — Сохранённая доля или умолчание; битое значение или недоступное хранилище — умолчание.
+- `saveRatio` — `ui/src/app/split.ts:45` — Запомнить долю; ошибка хранилища (переполнено, запрещено) не ломает раскладку.
+- `SplitLayout.svelte` — `ui/src/app/SplitLayout.svelte:1` — Две панели с перетаскиваемым разделителем (FR-01). Доля — в split.ts: ограничение минимумами
+- `Tone` — `ui/src/app/status.ts:8` — —
+- `Indicator` — `ui/src/app/status.ts:10` — —
+- `connectionIndicator` — `ui/src/app/status.ts:15` — —
+- `backendIndicator` — `ui/src/app/status.ts:37` — Состояние бэкенда, пока связи нет, — устаревшее: показываем «—», а не последнее известное.
+- `StatusBar.svelte` — `ui/src/app/StatusBar.svelte:1` — Статус-бар: связь с ядром и состояние бэкендов (LLM, TTS). Тексты и цвета — status.ts.
+
+## ui/src/core
+Публичный API core: фичи импортируют отсюда, а не из модулей пакета (R-63).
+
+- `FrameScheduler` — `ui/src/core/batch.ts:8` — Запланировать вызов перед следующей отрисовкой; в окне — `requestAnimationFrame`.
+- `animationFrame` — `ui/src/core/batch.ts:10` — —
+- `FrameBatch` — `ui/src/core/batch.ts:20` — Очередь изменений до следующего кадра. Порядок сохраняется: смена связи и сообщения ядра идут
+- `AudioSink` — `ui/src/core/client.ts:17` — —
+- `CoreClientOptions` — `ui/src/core/client.ts:19` — —
+- `CoreClient` — `ui/src/core/client.ts:28` — —
+- `AUDIO_HEADER_SIZE` — `ui/src/core/frames.ts:11` — Заголовок аудиокадра `<BBHIQ`: тип, версия, seq, sample_rate, turn_id — docs/protocol.md.
+- `AudioFrame` — `ui/src/core/frames.ts:17` — Аудиокадр ядра. `turn` — в том же виде, что в JSON-сообщениях, чтобы их сопоставлять.
+- `FrameError` — `ui/src/core/frames.ts:25` — Кадр не соответствует протоколу: ядро другой версии или повреждённые данные.
+- `turnRef` — `ui/src/core/frames.ts:45` — Номер хода из аудиокадра в виде JSON-сообщений.
+- `parseMessage` — `ui/src/core/frames.ts:69` — Текстовый кадр → сообщение ядра; `FrameError`, если это не сообщение протокола.
+- `decodeAudioFrame` — `ui/src/core/frames.ts:86` — Бинарный кадр → аудиокадр. PCM не копируется: `Int16Array` смотрит в тот же буфер
+- `FIRST_CHAR_SPAN` — `ui/src/core/probe.ts:8` — —
+- `FirstCharProbe` — `ui/src/core/probe.ts:10` — —
+- `protocol.gen.ts` — `ui/src/core/protocol.gen.ts:1` — Автогенерация: `uv run python tools/gen_protocol.py`. Не редактировать.
+- `Role` — `ui/src/core/store.svelte.ts:16` — —
+- `MessageStatus` — `ui/src/core/store.svelte.ts:17` — —
+- `TurnPhase` — `ui/src/core/store.svelte.ts:19` — Фаза хода для аватара и кнопки «Стоп»: ждём первый токен / идёт ответ / ничего.
+- `ChatMessage` — `ui/src/core/store.svelte.ts:21` — —
+- `SPAN_HISTORY` — `ui/src/core/store.svelte.ts:31` — Сколько последних замеров стадии хранить: хватает на p95, память — копейки.
+- `AppStore` — `ui/src/core/store.svelte.ts:33` — —
+- `CLOSE_REPLACED` — `ui/src/core/transport.ts:10` — Код закрытия «вытеснен новым клиентом» — `gateway/server.py` (ADR-0008).
+- `SocketLike` — `ui/src/core/transport.ts:14` — Часть WebSocket, нужная транспорту: в тестах подменяется фейком.
+- `SocketFactory` — `ui/src/core/transport.ts:24` — —
+- `ConnectionState` — `ui/src/core/transport.ts:27` — `replaced` — ядро приняло другое окно; переподключаться нельзя, иначе окна вытесняют друг друга.
+- `TransportListener` — `ui/src/core/transport.ts:29` — —
+- `Backoff` — `ui/src/core/transport.ts:37` — Пауза перед попыткой n (с нуля): `min(maxMs, initialMs · factor^n)`.
+- `TransportOptions` — `ui/src/core/transport.ts:43` — —
+- `Transport` — `ui/src/core/transport.ts:66` — —
+
+## ui/src/features/chat
+Публичный API фичи чата: приложение монтирует только панель (R-63).
+
+- `Chat.svelte` — `ui/src/features/chat/Chat.svelte:1` — Панель чата: история, индикатор «печатает», ошибка ядра, поле ввода. Состояние — только из
+- `Composer.svelte` — `ui/src/features/chat/Composer.svelte:1` — Поле ввода: Enter — отправить, Shift+Enter — перенос, Esc или «Стоп» — прервать ответ.
+- `isSendKey` — `ui/src/features/chat/keys.ts:6` — Enter во время набора через IME (выбор иероглифа и т. п.) подтверждает ввод, а не отправляет.
+- `isStopKey` — `ui/src/features/chat/keys.ts:10` — —
+- `ESTIMATED_HEIGHT` — `ui/src/features/chat/layout.ts:8` — Оценка высоты не измеренного сообщения, px: реплика в 2–3 строки с отступами.
+- `OVERSCAN_PX` — `ui/src/features/chat/layout.ts:10` — Запас над и под экраном, px: быстрая прокрутка не показывает пустоту до догрузки.
+- `STICK_TOLERANCE_PX` — `ui/src/features/chat/layout.ts:12` — Насколько можно не докрутить до низа, чтобы список всё ещё «прилипал» к новым сообщениям.
+- `Viewport` — `ui/src/features/chat/layout.ts:14` — —
+- `Placed` — `ui/src/features/chat/layout.ts:19` — —
+- `ListWindow` — `ui/src/features/chat/layout.ts:24` — —
+- `computeWindow` — `ui/src/features/chat/layout.ts:56` — —
+- `isAtBottom` — `ui/src/features/chat/layout.ts:76` — Пользователь внизу списка — новые сообщения прокручивают к себе; ушёл читать выше — нет.
+- `MeasureTarget` — `ui/src/features/chat/measure.ts:7` — —
+- `measureHeight` — `ui/src/features/chat/measure.ts:27` — —
+- `MessageList.svelte` — `ui/src/features/chat/MessageList.svelte:1` — Виртуализированная история: в DOM только окно вокруг экрана (layout.ts), строки
+
+## ui/src/features/metrics
+Публичный API фичи метрик: панель и её горячая клавиша (R-63).
+
+- `METRICS_HOTKEY_LABEL` — `ui/src/features/metrics/hotkey.ts:5` — Горячая клавиша панели метрик (FR-15): Ctrl+Shift+M. F12 занят инструментами разработчика
+- `isMetricsHotkey` — `ui/src/features/metrics/hotkey.ts:10` — По `code`, а не `key`: в русской раскладке `key` для этой клавиши — «Ь».
+- `MetricsPanel.svelte` — `ui/src/features/metrics/MetricsPanel.svelte:1` — Панель метрик для разработчика (FR-15): задержки стадий хода — от ядра (`metrics.span`) и
+- `Summary` — `ui/src/features/metrics/stats.ts:7` — —
+- `percentile` — `ui/src/features/metrics/stats.ts:27` — Перцентиль по ближайшему рангу: значение из выборки, без интерполяции — честно для малых n.
+- `summarize` — `ui/src/features/metrics/stats.ts:35` — —
+- `summarizeAll` — `ui/src/features/metrics/stats.ts:48` — Строки панели: сначала стадии с бюджетом (главное), затем остальные по имени.
+- `overBudget` — `ui/src/features/metrics/stats.ts:57` — —

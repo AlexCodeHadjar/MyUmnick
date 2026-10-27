@@ -1,0 +1,55 @@
+/**
+ * Замер UI «реплика отправлена → первый символ ответа применён к DOM» — TTFT плюс накладные
+ * расходы UI (критерий Этапа 5: ≤ 20 мс сверх TTFT). Снимается в кадре применения дельты, то есть
+ * прямо перед отрисовкой.
+ */
+import type { OutboundMessage } from "./protocol.gen";
+
+export const FIRST_CHAR_SPAN = "ui.first_char";
+
+export class FirstCharProbe {
+  readonly #now: () => number;
+  #sentAt: number | null = null;
+  /** Ход, начатый ядром после отправки; дельты прежнего хода (хвост отменённого) не в счёт. */
+  #turn: string | null = null;
+
+  constructor(now: () => number) {
+    this.#now = now;
+  }
+
+  sent(): void {
+    this.#sentAt = this.#now();
+    this.#turn = null;
+  }
+
+  /** Возвращает замер, мс, когда сообщение несёт первый символ ответа на отправленную реплику. */
+  observe(message: OutboundMessage): number | null {
+    if (this.#sentAt === null) {
+      return null;
+    }
+    switch (message.type) {
+      case "turn.started":
+        this.#turn = message.turn;
+        return null;
+      case "chat.delta":
+        return message.turn === this.#turn && message.data.text !== "" ? this.#finish() : null;
+      case "turn.finished":
+      case "turn.cancelled":
+        if (message.turn === this.#turn) this.#reset();
+        return null;
+      default:
+        return null;
+    }
+  }
+
+  #finish(): number {
+    const ms = this.#now() - (this.#sentAt ?? 0);
+    this.#reset();
+    return ms;
+  }
+
+  #reset(): void {
+    this.#sentAt = null;
+    this.#turn = null;
+  }
+}

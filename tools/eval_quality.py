@@ -1,6 +1,6 @@
 """Оценка качества ответов LLM на эталонных вопросах: правила-проверки, таблица по категориям.
 
-Запуск: `uv run python tools/eval_quality.py [--cases eval/qa_ru.jsonl] [--out отчёт.json]`.
+Запуск: `uv run python -m tools.eval_quality [--cases eval/qa_ru.jsonl] [--out отчёт.json]`.
 Формат кейса и категории — docs/testing.md («Оценка качества»).
 """
 

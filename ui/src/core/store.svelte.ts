@@ -27,6 +27,9 @@ export interface ChatMessage {
   status: MessageStatus;
 }
 
+/** Сколько последних замеров стадии хранить: хватает на p95, память — копейки. */
+export const SPAN_HISTORY = 100;
+
 export class AppStore {
   connection = $state<ConnectionState>("closed");
   backends = $state<Record<Component, BackendState | "unknown">>({
@@ -38,8 +41,8 @@ export class AppStore {
   turn = $state<string | null>(null);
   emotion = $state<Emotion>("neutral");
   error = $state<ErrorData | null>(null);
-  /** Последний замер каждой стадии, мс (панель метрик — S-5.4). */
-  spans = $state<Record<string, number>>({});
+  /** Последние замеры каждой стадии, мс, от старых к новым (панель метрик, FR-15). */
+  spans = $state<Record<string, number[]>>({});
 
   #nextId = 0;
   /** Индекс сообщения текущего хода в `messages`: массив только растёт, индекс не сдвигается. */
@@ -48,6 +51,19 @@ export class AppStore {
   addUserMessage(text: string): void {
     this.#push("user", text, null, "done");
     this.error = null;
+  }
+
+  /** Замер стадии: от ядра (`metrics.span`) или измеренный самим UI (`ui.*`). */
+  recordSpan(name: string, ms: number): void {
+    const history = this.spans[name];
+    if (history === undefined) {
+      this.spans[name] = [ms];
+      return;
+    }
+    history.push(ms);
+    if (history.length > SPAN_HISTORY) {
+      history.shift();
+    }
   }
 
   /** Разрыв посреди хода: ядро отменяет ход само (T-14), а `turn.cancelled` уже не дойдёт. */
@@ -76,7 +92,7 @@ export class AppStore {
         this.#cancelTurn(message);
         break;
       case "metrics.span":
-        this.spans[message.data.name] = message.data.ms;
+        this.recordSpan(message.data.name, message.data.ms);
         break;
       case "status":
         this.backends[message.data.component] = message.data.state;

@@ -54,7 +54,7 @@
       >
         <p class="bubble" class:cancelled={item.status === "cancelled"}>
           {item.text}{#if item.status === "streaming"}<span class="caret" aria-hidden="true"
-            ></span>{/if}{#if item.status === "cancelled"}<span class="mark"> — прервано</span>{/if}
+            ></span>{/if}{#if item.status === "cancelled"}<span class="mark">— прервано</span>{/if}
         </p>
       </div>
     {/each}
@@ -105,6 +105,8 @@
   }
 
   .mark {
+    /* Отступ — CSS: Svelte срезает ведущий пробел в тексте элемента. */
+    margin-left: 0.3em;
     font-size: 0.85em;
     opacity: 0.7;
   }

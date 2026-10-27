@@ -4,6 +4,7 @@
  */
 import { animationFrame, FrameBatch, type FrameScheduler } from "./batch";
 import type { AudioFrame } from "./frames";
+import { FIRST_CHAR_SPAN, FirstCharProbe } from "./probe";
 import { PROTOCOL_VERSION } from "./protocol.gen";
 import { AppStore } from "./store.svelte";
 import { Transport, type Backoff, type SocketFactory } from "./transport";
@@ -20,6 +21,8 @@ export interface CoreClientOptions {
   socketFactory?: SocketFactory;
   /** Когда применять входящие к store; по умолчанию — раз в кадр (T-16). */
   scheduleFrame?: FrameScheduler;
+  /** Часы для замеров UI, мс; по умолчанию — `performance.now`. */
+  now?: () => number;
 }
 
 export class CoreClient {
@@ -27,10 +30,14 @@ export class CoreClient {
   readonly #transport: Transport;
   /** Аудиоплеер подключается на Этапе 8; до него кадры отбрасываются. */
   #audio: AudioSink = () => undefined;
+  readonly #probe: FirstCharProbe;
 
-  constructor({ url, socketFactory, scheduleFrame = animationFrame }: CoreClientOptions) {
+  constructor(options: CoreClientOptions) {
+    const { url, socketFactory, scheduleFrame = animationFrame } = options;
     const store = this.store;
     const batch = new FrameBatch(scheduleFrame);
+    const probe = new FirstCharProbe(options.now ?? (() => performance.now()));
+    this.#probe = probe;
     this.#transport = new Transport(
       {
         url,
@@ -42,6 +49,8 @@ export class CoreClient {
         message: (message) => {
           batch.run(() => {
             store.apply(message);
+            const ms = probe.observe(message);
+            if (ms !== null) store.recordSpan(FIRST_CHAR_SPAN, ms);
           });
         },
         // Звук — мимо пачки: плееру важна каждая миллисекунда (TTFA), DOM он не трогает.
@@ -79,6 +88,7 @@ export class CoreClient {
       return;
     }
     this.store.addUserMessage(trimmed);
+    this.#probe.sent();
     this.#transport.send({ v: PROTOCOL_VERSION, type: "chat.send", data: { text: trimmed } });
   }
 

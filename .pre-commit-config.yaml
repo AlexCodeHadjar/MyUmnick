@@ -54,9 +54,9 @@ repos:
         types: [python]
       - id: gen-map
         name: PROJECT_MAP.md актуален
-        entry: uv run --frozen python tools/gen_map.py --check
+        entry: uv run --frozen python -m tools.gen_map --check
         language: system
-        files: ^(src/|tools/gen_map\.py$|docs/ai/PROJECT_MAP\.md$)
+        files: ^(src/|ui/src/|tools/(gen_map|ui_map)\.py$|docs/ai/PROJECT_MAP\.md$)
         pass_filenames: false
       - id: gen-protocol
         name: protocol.gen.ts и protocol.md актуальны

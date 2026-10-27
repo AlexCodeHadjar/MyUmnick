@@ -1,6 +1,6 @@
 """Бенчмарк задержки LLM: TTFT, ответ целиком и TPS по эталонным репликам (p50/p95/max).
 
-Запуск: `uv run python tools/bench_latency.py [--runs 3] [--backend llamacpp] [--out файл.json]`.
+Запуск: `uv run python -m tools.bench_latency [--runs 3] [--backend llamacpp] [--out файл.json]`.
 Сервер и адрес — из `[llm]` конфига (`scripts/start_llm.ps1`). Методика — docs/performance.md.
 """
 

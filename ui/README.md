@@ -8,16 +8,20 @@
 ## Структура
 | Путь | Назначение |
 |---|---|
-| `src/app/` | `main.ts` (создаёт `CoreClient`, монтирует), `App.svelte` (раскладка) |
+| `src/app/` | `main.ts` (создаёт `CoreClient`), `App.svelte` (окно, горячие клавиши) |
+| `src/app/SplitLayout.svelte`, `split.ts` | две панели, разделитель; доля в localStorage |
+| `src/app/StatusBar.svelte`, `status.ts` | статус-бар: ядро, LLM, TTS |
 | `src/core/index.ts` | публичный API core — фичи импортируют только его (R-63) |
 | `src/core/client.ts` | `CoreClient`: `store`, `say()`, `stop()`, `onAudio()`, `start()`/`dispose()` |
 | `src/core/batch.ts` | `FrameBatch`: входящие применяются к store раз в кадр (T-16) |
+| `src/core/probe.ts` | замер UI `ui.first_char`: реплика → первый символ ответа в DOM |
 | `src/core/transport.ts` | WebSocket: переподключение 250 мс ×2 до 5 с, очередь ≤ 16, код 4000 |
 | `src/core/frames.ts` | разбор JSON-конверта и аудиокадра (граница транспорта, R-62) |
 | `src/core/store.svelte.ts` | `AppStore` на рунах: связь, бэкенды, ход, история, эмоция, замеры |
 | `src/core/protocol.gen.ts` | типы протокола — генерирует `tools/gen_protocol.py`, не править |
 | `src/features/chat/` | `Chat` (index.ts): виртуализированная история, ввод, «Стоп», «печатает» |
-| `src/features/` | metrics (S-5.4), avatar (Этап 6), audio (Этап 8) |
+| `src/features/metrics/` | `MetricsPanel` по Ctrl+Shift+M: последний, p50, p95, норма (FR-15) |
+| `src/features/` | avatar (Этап 6), audio (Этап 8) |
 | `src-tauri/` | оболочка Tauri: `tauri.conf.json`, права окна в `capabilities/` |
 
 ## Команды (из `ui/`)
@@ -41,6 +45,12 @@
 - У каждого компонента есть `<script lang="ts">`, хоть и пустой: иначе svelte-check 4.7 не
   выдаёт типы модуля (ADR-0009).
 - CSP окна пускает сеть только на `ws://127.0.0.1:*`.
+- Ширина чата — доля окна, не уже 320 px у каждой панели; хранится в localStorage
+  (`vtuber.layout.chatRatio`), недоступное хранилище не ломает раскладку. Разделитель двигается
+  и стрелками (WAI-ARIA window splitter).
+- Статус-бар: потеря уже бывшей связи — «нет связи — переподключаюсь», состояние бэкендов без
+  связи — «—» (последнее известное устарело).
+- Ctrl+Shift+M — по `code`, работает в русской раскладке.
 
 ## Производительность
 - Токены в DOM — батчем раз в кадр (T-16, R-65): `CoreClient` копит входящие сообщения и
@@ -49,13 +59,18 @@
 - История виртуализирована (`features/chat/layout.ts`): в DOM — экран ±600 px, высоты строк
   меряет один общий ResizeObserver. 1000 сообщений — 17–22 строки в DOM.
 - Замер в окне Tauri (S-5.3): Enter → первый символ 2–14 мс (бюджет — TTFT + 20 мс);
-  прокрутка 1000 сообщений — медиана кадра 6,9 мс, p95 9 мс.
+  прокрутка 1000 сообщений — медиана кадра 6,9 мс, p95 9 мс. Тот же замер UI собирает сам
+  (`ui.first_char` в панели метрик; норма p50 — 270 мс = NFR-01 + 20 мс).
 - PCM аудиокадра не копируется: `Int16Array` поверх буфера сокета.
 
 ## Как расширять
 - Новый тип сообщения ядра: перегенерировать `protocol.gen.ts` → компилятор потребует строку
   в `OUTBOUND_TYPES` (`frames.ts`) и ветку в `AppStore.apply`.
 - Тесты — рядом с кодом (`*.test.ts`), сокет — через `socketFactory` (ADR-0010).
+- Новая стадия в панели метрик появляется сама, как только ядро шлёт её `metrics.span`; норму
+  добавить в `BUDGETS` (`features/metrics/stats.ts`).
+- Карта модулей — раздел `ui/src` в `docs/ai/PROJECT_MAP.md` (`tools/ui_map.py`): описание
+  экспорта — первая строка JSDoc над ним, компонента — первый `//` в `<script>`.
 
 ## Связанные документы
 ADR-0002, ADR-0003, ADR-0008, ADR-0009, ADR-0010; `docs/architecture.md` (Фронтенд);
