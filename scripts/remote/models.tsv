@@ -1,0 +1,14 @@
+# Кандидаты S-2.5 (8–14B, сильный русский, открытый доступ на Hugging Face) — сверено 2026-10-27.
+# Ревизия закреплена: тот же файл при повторном прогоне. Размер и sha256 — из API Hugging Face.
+# Поля через TAB: имя	квант	репозиторий	ревизия	файл	байт	sha256	лицензия
+qwen3.5-9b	Q4_K_M	bartowski/Qwen_Qwen3.5-9B-GGUF	182be2fd6c7bc44887d88a91cb03ff009cc9f549	Qwen_Qwen3.5-9B-Q4_K_M.gguf	6169341984	d784ce9eda1a5a7b51e8f705a9e6310844bf4f173654d115823c775fdea56d43	apache-2.0
+qwen3.5-9b	Q5_K_M	bartowski/Qwen_Qwen3.5-9B-GGUF	182be2fd6c7bc44887d88a91cb03ff009cc9f549	Qwen_Qwen3.5-9B-Q5_K_M.gguf	7111487520	a686d88ec1e6881f9bf161526826cd6d6874b7f0e80e0f79acf6144a132c5d7e	apache-2.0
+gemma4-12b	Q4_K_M	bartowski/gemma-4-12B-it-GGUF	2ae7d41be21ca62de00a2d320ee9cec50daa3aa6	gemma-4-12B-it-Q4_K_M.gguf	7662533088	3962624dcd25b947d889dc9ae1bf275b61db6cd4dbe694057f34fffef1671509	apache-2.0
+gemma4-12b	Q5_K_M	bartowski/gemma-4-12B-it-GGUF	2ae7d41be21ca62de00a2d320ee9cec50daa3aa6	gemma-4-12B-it-Q5_K_M.gguf	8774965728	24fe88d9e6bba6a1805629a09e40d4d837a894d559c7708055f7a03211e2a25e	apache-2.0
+t-lite2.1-8b	Q4_K_M	t-tech/T-lite-it-2.1-GGUF	fc10186e59064c2e74f59c3d5dbce233931b3b81	T-lite-it-2.1-Q4_K_M.gguf	5027750240	68c75f5940c36baca18113058ad3d55f6d1d3e1123a8053bb4bba8481805c960	apache-2.0
+t-lite2.1-8b	Q5_K_M	t-tech/T-lite-it-2.1-GGUF	fc10186e59064c2e74f59c3d5dbce233931b3b81	T-lite-it-2.1-Q5_K_M.gguf	5850952544	5ff7c6c37f3046b92ca65cd16f6161ed47d73395a9c4b9721db11e685d017a38	apache-2.0
+gigachat3.1-10b-a1.8b	Q4_K_M	ai-sage/GigaChat3.1-10B-A1.8B-GGUF	97045b260251cfa86f5ad25638fa2dd074153446	GigaChat3.1-10B-A1.8B-q4_K_M.gguf	6474702976	68a8732fb5cee04f83ebffd7924e15c534d4442c5a43d2ba9e2041fe310b8deb	mit
+# Q5_K_M у ai-sage нет — сторонняя сборка с imatrix (i1): квант чуть точнее «обычного».
+gigachat3.1-10b-a1.8b	Q5_K_M	mradermacher/GigaChat3.1-10B-A1.8B-bf16-i1-GGUF	d2c3eb0c6da092956a75efabfca386cbd51f8eef	GigaChat3.1-10B-A1.8B-bf16.i1-Q5_K_M.gguf	7587005824	dd602c79b41cc55f9f604573f2473c8604a4fdc08a2f7d10416c9533843c4b82	mit
+ministral3-14b	Q4_K_M	bartowski/mistralai_Ministral-3-14B-Instruct-2512-GGUF	9289ba93995b2a15fd72b1a9fe4f85697199ed1f	mistralai_Ministral-3-14B-Instruct-2512-Q4_K_M.gguf	8239068576	a95aea79c3043039306f9c3957aa091baf24d428507eb7596c59ddc54ff75b80	apache-2.0
+ministral3-14b	Q5_K_M	bartowski/mistralai_Ministral-3-14B-Instruct-2512-GGUF	9289ba93995b2a15fd72b1a9fe4f85697199ed1f	mistralai_Ministral-3-14B-Instruct-2512-Q5_K_M.gguf	9620567456	d6ab2abd228ed45c7d85b4896d6d6d86a40421e741aaf8add9da61c4a0563a0f	apache-2.0
