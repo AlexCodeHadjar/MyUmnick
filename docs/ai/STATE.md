@@ -17,7 +17,7 @@ _Обновлено: 2026-10-27, сессия S-5.1_
 - [x] S-4.2 WebSocket-шлюз (`python -m vtuber serve`), `WsReplySink`, ADR-0008
 - [x] S-4.3 `tools/gen_protocol.py` → `ui/src/core/protocol.gen.ts`, `docs/protocol.md`
 - [x] S-5.1 Каркас `ui/` (Tauri 2 + Svelte 5 + TS 6.0 + Vite 8, pnpm), хуки и CI-job `ui`,
-  ADR-0009 (кроме открытия окна: нет WebView2 на машине разработки)
+  ADR-0009; `pnpm tauri dev` открывает окно
 
 ## Последние метрики
 - `span()`: ≈ 1.2–1.5 мкс на замер (машина разработки).
@@ -44,11 +44,10 @@ _Обновлено: 2026-10-27, сессия S-5.1_
 - [P3] Rust и Node не в PATH Git Bash: `~/.cargo/bin`, `C:\Program Files\nodejs`,
   `%APPDATA%\npm` (pnpm) — добавлять вручную.
 - [P3] uv через `pip --user`: `C:\Users\Alast\AppData\Roaming\Python\Python312\Scripts` не в PATH.
-- [P1] На машине разработки нет WebView2 Runtime: Edge вырезан, а в реестре осталась запись
-  `EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}` (pv 144) — winget видит её и не
-  ставит. `pnpm tauri dev` падает «Could not find the webview runtime». Решение пользователя:
-  удалить ключ и переустановить, либо проверять окно на целевой машине. Фронтенд — в браузере
-  (`.claude/launch.json`, `ui-vite`, порт 1420).
+- [P3] WebView2 на машине разработки стоит в профиле пользователя (`%LOCALAPPDATA%`, v156): Edge
+  из системы вырезан, устаревшая запись HKLM удалена. Если окно снова не найдёт рантайм —
+  `winget install -e --id Microsoft.EdgeWebView2Runtime`. Фронтенд без окна — предпросмотр
+  `ui-vite` (`.claude/launch.json`, порт 1420).
 
 ## Важно помнить
 - Целевое железо: RTX 5070 Ti 16 ГБ VRAM, 32 ГБ RAM (Blackwell → llama.cpp с CUDA 12.8+).

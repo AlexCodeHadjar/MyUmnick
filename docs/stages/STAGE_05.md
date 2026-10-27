@@ -19,11 +19,9 @@
 - **Scope:** `ui/` (каркас), `ui/src-tauri/`, `.pre-commit-config.yaml`, CI
 - **Читать:** `docs/architecture.md` (Фронтенд), `docs/rules/code-rules.md` (J)
 - **Готово, когда:**
-  - [ ] `pnpm tauri dev` открывает окно — оболочка собирается (`cargo build`, clippy чистый),
-    фронтенд проверен в браузере; окно не открыто: на машине разработки нет WebView2 Runtime
-    (Edge вырезан из системы). Проверить на целевой машине.
+  - [x] `pnpm tauri dev` открывает окно (проверено после переустановки WebView2 Runtime).
   - [x] eslint/svelte-check/prettier зелёные; хуки и CI-job `ui`.
-- **Статус:** готово, кроме открытия окна на машине с WebView2
+- **Статус:** готово
 
 ### S-5.2 — Transport и store
 - **Цель:** `core/transport.ts` (переподключение с экспоненциальной паузой, разбор JSON и
