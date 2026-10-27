@@ -106,8 +106,33 @@
 - `next_state` — `src/vtuber/domain/turn_state.py:30` — Возвращает `target`, если переход из `current` разрешён.
 
 ## src/vtuber/gateway
-Шлюз: интерфейсы к ядру — терминальный чат (M1), далее WebSocket-сервер для UI (Этап 4).
+Шлюз: протокол UI ↔ Ядро, кодек, терминальный чат (M1); далее — WebSocket-сервер (S-4.2).
 
+- `AudioFrame` — `src/vtuber/gateway/codec.py:20` — Разобранный аудиокадр.
+- `decode_inbound` — `src/vtuber/gateway/codec.py:28` — Сообщение от UI; проверка один раз на границе (принцип 6 архитектуры).
+- `encode_outbound` — `src/vtuber/gateway/codec.py:43` — JSON-строка сообщения для UI (сериализация pydantic-core, без лишних пробелов).
+- `encode_audio_frame` — `src/vtuber/gateway/codec.py:48` — Бинарный кадр: 16 байт заголовка + PCM s16le моно; `seq` по модулю 2^16.
+- `decode_audio_frame` — `src/vtuber/gateway/codec.py:56` — Разбирает аудиокадр (тесты; кадры микрофона — Этап 11).
+- `turn_ref` — `src/vtuber/gateway/protocol.py:15` — Номер хода в JSON-сообщениях: `t-000042` (в аудиокадре — uint64).
+- `ErrorCode` — `src/vtuber/gateway/protocol.py:20` — Что пошло не так — UI выбирает реакцию по коду, текст показывает пользователю.
+- `EmptyData` — `src/vtuber/gateway/protocol.py:33` — Сообщение без полезной нагрузки.
+- `SendData` — `src/vtuber/gateway/protocol.py:37` — Реплика пользователя.
+- `DeltaData` — `src/vtuber/gateway/protocol.py:43` — Порция текста ответа.
+- `EmotionData` — `src/vtuber/gateway/protocol.py:49` — Эмоция аватара; `intensity` 0…1 (затухание — Этап 8).
+- `CancelledData` — `src/vtuber/gateway/protocol.py:56` — Почему ход прерван; `message` — текст ошибки при `reason == "error"`.
+- `SpanData` — `src/vtuber/gateway/protocol.py:63` — Замер стадии хода для панели метрик (FR-15).
+- `StatusData` — `src/vtuber/gateway/protocol.py:70` — Состояние бэкенда для статус-бара.
+- `ErrorData` — `src/vtuber/gateway/protocol.py:77` — Ошибка для пользователя.
+- `ChatSend` — `src/vtuber/gateway/protocol.py:84` — UI → Ядро: новая реплика; прерывает текущий ход.
+- `ChatCancel` — `src/vtuber/gateway/protocol.py:92` — UI → Ядро: остановить ответ.
+- `TurnStartedMessage` — `src/vtuber/gateway/protocol.py:103` — Ядро → UI: ход начат — аватар «думает» (T-17).
+- `ChatDelta` — `src/vtuber/gateway/protocol.py:117` — Ядро → UI: порция текста ответа.
+- `AvatarEmotion` — `src/vtuber/gateway/protocol.py:131` — Ядро → UI: сменить выражение аватара.
+- `TurnFinishedMessage` — `src/vtuber/gateway/protocol.py:145` — Ядро → UI: ответ закончен полностью.
+- `TurnCancelledMessage` — `src/vtuber/gateway/protocol.py:159` — Ядро → UI: ход прерван — UI сбрасывает аудиобуфер.
+- `MetricsSpan` — `src/vtuber/gateway/protocol.py:173` — Ядро → UI: замер стадии; `turn` — None вне хода (прогрев).
+- `Status` — `src/vtuber/gateway/protocol.py:187` — Ядро → UI: состояние бэкенда (вне хода).
+- `ErrorMessage` — `src/vtuber/gateway/protocol.py:200` — Ядро → UI: ошибка; `turn` — None, если не относится к ходу (битое сообщение).
 - `TerminalSink` — `src/vtuber/gateway/terminal.py:21` — ReplySink для консоли: печатает ответ по мере генерации и помнит время первой порции.
 - `TerminalChat` — `src/vtuber/gateway/terminal.py:55` — Цикл чата: строка → ход; новая строка во время ответа прерывает его (T-14).
 

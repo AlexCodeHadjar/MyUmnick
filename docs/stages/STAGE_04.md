@@ -14,19 +14,22 @@
 ## Сессии
 
 ### S-4.1 — Протокол и кодек
-- **Цель:** pydantic-модели всех сообщений с версией протокола; кодек JSON (orjson) и бинарных
-  аудиокадров.
-- **Scope:** `src/vtuber/gateway/protocol.py`, `gateway/codec.py`, ADR на orjson/websockets
+- **Цель:** pydantic-модели сообщений с версией протокола; кодек JSON и бинарных аудиокадров.
+- **Scope:** `src/vtuber/gateway/protocol.py`, `gateway/codec.py`
 - **Читать:** `docs/architecture.md` (Протокол UI ↔ Ядро)
 - **Готово, когда:**
-  - [ ] Тесты: круговое кодирование всех типов; бинарный кадр по таблице смещений.
-- **Статус:** не начата
+  - [x] Тесты: круговое кодирование всех типов; бинарный кадр по таблице смещений.
+  - [x] Сообщения — те, что нужны сейчас; `input.typing`, `audio.played`, `settings.*`,
+        `mic.frame` добавляются вместе с кодом, который их использует (Этапы 7, 9, 11).
+  - [x] orjson не нужен: JSON сериализует и разбирает pydantic-core (нативный код).
+- **Статус:** готова (журнал: `docs/ai/sessions/2026-10-27_S-4.1.md`)
 
 ### S-4.2 — Сервер и WsReplySink, e2e-тест
 - **Цель:** WebSocket-сервер (один клиент; второй отклоняется или заменяет первого),
   маршрутизация в ConversationService, подписка на шину для `turn.*`, `status`, `metrics.span`;
   `WsReplySink`.
-- **Scope:** `gateway/server.py`, `gateway/sink.py`, `tests/integration/`
+- **Scope:** `gateway/server.py`, `gateway/sink.py`, `tests/integration/`, ADR на websockets,
+  режим сервера в `bootstrap/main.py`
 - **Читать:** карточки `gateway`, `application/conversation`
 - **Готово, когда:**
   - [ ] e2e с FakeLLM: `chat.send` → `turn.started` → `chat.delta`… → `turn.finished`.
