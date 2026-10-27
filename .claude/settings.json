@@ -5,6 +5,7 @@
       "Read(./ui/node_modules/**)",
       "Read(./ui/src-tauri/target/**)",
       "Read(./logs/**)",
+      "Read(./docs/archive/**)",
       "Read(./uv.lock)",
       "Read(./ui/pnpm-lock.yaml)"
     ]
