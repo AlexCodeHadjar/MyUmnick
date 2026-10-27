@@ -36,7 +36,8 @@
   конверт `{"v":1,"type":…,"turn":…,"data":{…}}`; от UI — строгая проверка (лишнее поле, пустой
   текст, другая версия, неизвестный тип → `ProtocolError`); аудиокадр — по таблице смещений
   `docs/architecture.md`, `seq` по модулю 2^16.
-- Протокол меняется только в `protocol.py`; TS-типы и `docs/protocol.md` генерируются (S-4.3).
+- Протокол меняется только в `protocol.py`; `ui/src/core/protocol.gen.ts` и `docs/protocol.md`
+  генерирует `tools/gen_protocol.py` (хук и CI роняют сборку, если файлы устарели).
 - Сервер (`tests/integration/test_ws_server.py`): ход по сокету `turn.started → chat.delta… →
   turn.finished`; битое или бинарное сообщение → `error bad_message`, соединение живёт;
   `chat.cancel` останавливает ход; новый клиент вытесняет старого (4000); отключение посреди

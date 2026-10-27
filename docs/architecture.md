@@ -549,7 +549,8 @@ offset  size  поле
 16      …     PCM s16le, mono
 ```
 
-**Единый источник схемы.** Сообщения — pydantic-модели в `gateway/protocol.py`.
+**Единый источник схемы.** Сообщения — pydantic-модели в `gateway/protocol.py`; полный
+сгенерированный перечень — `docs/protocol.md`.
 `tools/gen_protocol.py` генерирует JSON Schema → `ui/src/core/protocol.gen.ts` и
 `docs/protocol.md`. Сгенерированное руками не правится; CI проверяет актуальность.
 
