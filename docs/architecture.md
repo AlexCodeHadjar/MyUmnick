@@ -576,10 +576,12 @@ offset  size  поле
 
 ```text
 ui/src/
-├── core/
-│   ├── transport.ts         WebSocket-клиент: переподключение, очередь, разбор кадров
+├── core/                    фичи импортируют только `core/index.ts`
+│   ├── client.ts            CoreClient: store + действия (say, stop), связывает транспорт
+│   ├── transport.ts         WebSocket-клиент: переподключение, очередь, вытеснение (4000)
+│   ├── frames.ts            разбор JSON-конверта и бинарного аудиокадра
 │   ├── protocol.gen.ts      сгенерированные типы протокола (не править)
-│   └── store.ts             состояние приложения (Svelte runes)
+│   └── store.svelte.ts      состояние приложения (Svelte runes)
 ├── features/
 │   ├── chat/                список сообщений, ввод, батчинг токенов по кадрам (T-16)
 │   ├── avatar/
@@ -594,8 +596,8 @@ ui/src/
     └── main.ts
 ```
 
-Фичи общаются через store и transport, а не импортируют друг друга. Аватар знает только
-`AvatarRenderer` — смена Live2D на VRM не трогает чат и звук.
+Фичи общаются через `CoreClient` (store и действия), а не импортируют друг друга. Аватар
+знает только `AvatarRenderer` — смена Live2D на VRM не трогает чат и звук.
 
 **Липсинк** (ADR-0003): плеер воспроизводит PCM через AudioWorklet, AnalyserNode раз в кадр
 отдаёт RMS-громкость → сглаживание (attack/release) → `ParamMouthOpenY`. Позже — визем-липсинк

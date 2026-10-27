@@ -1,12 +1,24 @@
 <script lang="ts">
-  // Каркас окна (S-5.1): чат слева, сцена справа. Раскладка с разделителем — S-5.4,
-  // чат — S-5.3, транспорт к ядру — S-5.2, аватар — Этап 6.
-  // Блок <script> нужен и пустым: без него svelte-check 4.7 не выдаёт типы модуля (TS7016).
+  // Каркас окна: чат слева, сцена справа. Раскладка с разделителем и статус-бар — S-5.4,
+  // чат — S-5.3, аватар — Этап 6.
+  import type { ConnectionState, CoreClient } from "../core";
+
+  const { client }: { client: CoreClient } = $props();
+
+  const CONNECTION_TEXT: Record<ConnectionState, string> = {
+    connecting: "подключение…",
+    open: "на связи",
+    closed: "нет связи — переподключаюсь",
+    replaced: "открыто другое окно",
+  };
 </script>
 
 <main class="layout">
   <section class="chat" aria-label="Чат">
     <p class="placeholder">Чат появится в S-5.3</p>
+    <p class="placeholder" data-testid="connection">
+      Ядро: {CONNECTION_TEXT[client.store.connection]}
+    </p>
   </section>
   <section class="stage" aria-label="Сцена">
     <p class="placeholder">Здесь будет модель (Этап 6)</p>

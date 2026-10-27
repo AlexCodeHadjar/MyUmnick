@@ -78,6 +78,9 @@ jobs:
       - name: svelte-check
         run: pnpm check
 
+      - name: vitest
+        run: pnpm test
+
       - name: Сборка фронтенда
         run: pnpm build
 

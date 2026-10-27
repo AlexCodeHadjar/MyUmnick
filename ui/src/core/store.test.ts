@@ -1,0 +1,120 @@
+import { beforeEach, describe, expect, it } from "vitest";
+
+import type { OutboundMessage } from "./protocol.gen";
+import { AppStore } from "./store.svelte";
+
+const T1 = "t-000001";
+const T2 = "t-000002";
+
+const started = (turn: string): OutboundMessage => ({ v: 1, type: "turn.started", turn, data: {} });
+const delta = (turn: string, text: string): OutboundMessage => ({
+  v: 1,
+  type: "chat.delta",
+  turn,
+  data: { text },
+});
+const finished = (turn: string): OutboundMessage => ({
+  v: 1,
+  type: "turn.finished",
+  turn,
+  data: {},
+});
+const cancelled = (turn: string): OutboundMessage => ({
+  v: 1,
+  type: "turn.cancelled",
+  turn,
+  data: { reason: "new_message", message: "" },
+});
+
+let store: AppStore;
+
+beforeEach(() => {
+  store = new AppStore();
+});
+
+describe("ход", () => {
+  it("started → delta → finished собирает ответ", () => {
+    store.addUserMessage("привет");
+    store.apply(started(T1));
+    expect(store.phase).toBe("thinking");
+    expect(store.turn).toBe(T1);
+    store.apply(delta(T1, "При"));
+    store.apply(delta(T1, "вет!"));
+    expect(store.phase).toBe("speaking");
+    store.apply(finished(T1));
+    expect(store.phase).toBe("idle");
+    expect(store.turn).toBeNull();
+    expect(store.messages.map(({ role, text, status }) => [role, text, status])).toEqual([
+      ["user", "привет", "done"],
+      ["assistant", "Привет!", "done"],
+    ]);
+    expect(new Set(store.messages.map((m) => m.id)).size).toBe(2);
+  });
+
+  it("отмена помечает ответ, поздние дельты отменённого хода отбрасываются", () => {
+    store.apply(started(T1));
+    store.apply(delta(T1, "Начало"));
+    store.addUserMessage("стой");
+    store.apply(cancelled(T1));
+    store.apply(delta(T1, " хвост"));
+    store.apply(started(T2));
+    store.apply(delta(T1, " ещё хвост"));
+    store.apply(delta(T2, "Новый"));
+    expect(store.messages.map(({ text, status }) => [text, status])).toEqual([
+      ["Начало", "cancelled"],
+      ["стой", "done"],
+      ["Новый", "streaming"],
+    ]);
+  });
+
+  it("сообщения чужого хода не трогают текущий", () => {
+    store.apply(started(T2));
+    store.apply(finished(T1));
+    store.apply(cancelled(T1));
+    store.apply({ v: 1, type: "avatar.emotion", turn: T1, data: { emotion: "sad", intensity: 1 } });
+    expect(store.turn).toBe(T2);
+    expect(store.emotion).toBe("neutral");
+    store.apply({
+      v: 1,
+      type: "avatar.emotion",
+      turn: T2,
+      data: { emotion: "happy", intensity: 1 },
+    });
+    expect(store.emotion).toBe("happy");
+  });
+
+  it("новый turn.started без конца прошлого закрывает прошлый как отменённый", () => {
+    store.apply(started(T1));
+    store.apply(started(T2));
+    expect(store.messages.map((m) => m.status)).toEqual(["cancelled", "streaming"]);
+  });
+
+  it("разрыв связи посреди хода отменяет ход", () => {
+    store.apply(started(T1));
+    store.setConnection("connecting");
+    expect(store.turn).toBe(T1);
+    store.setConnection("closed");
+    expect(store.connection).toBe("closed");
+    expect(store.phase).toBe("idle");
+    expect(store.messages[0]?.status).toBe("cancelled");
+  });
+});
+
+describe("служебные сообщения", () => {
+  it("status, metrics.span, error", () => {
+    expect(store.backends).toEqual({ llm: "unknown", tts: "unknown" });
+    store.apply({ v: 1, type: "status", data: { component: "llm", state: "ready" } });
+    store.apply({ v: 1, type: "metrics.span", turn: null, data: { name: "llm.ttft", ms: 95 } });
+    store.apply({
+      v: 1,
+      type: "error",
+      turn: null,
+      data: { code: "llm_unavailable", message: "LLM недоступна" },
+    });
+    expect(store.backends.llm).toBe("ready");
+    expect(store.spans).toEqual({ "llm.ttft": 95 });
+    expect(store.error?.code).toBe("llm_unavailable");
+    store.addUserMessage("ещё раз");
+    expect(store.error).toBeNull();
+  });
+});

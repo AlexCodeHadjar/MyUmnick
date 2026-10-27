@@ -41,3 +41,6 @@ ui/src-tauri/gen/
 Thumbs.db
 .idea/
 .vscode/
+
+# Локальные переопределения Vite (ui/.env.local)
+ui/.env*.local

@@ -84,6 +84,12 @@ repos:
         language: system
         files: ^ui/(src/|tsconfig\.json$|svelte\.config\.js$)
         pass_filenames: false
+      - id: ui-vitest
+        name: vitest (ui)
+        entry: pnpm --dir ui test
+        language: system
+        files: ^ui/(src/|vite\.config\.ts$|package\.json$)
+        pass_filenames: false
       - id: ui-cargo-fmt
         name: cargo fmt --check (ui/src-tauri)
         entry: cargo fmt --check --manifest-path ui/src-tauri/Cargo.toml

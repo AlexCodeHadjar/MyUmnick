@@ -1,33 +1,52 @@
 # ui — окно приложения: чат слева, сцена справа (Tauri 2 + Svelte 5)
 
 ## Ответственность
-Показывает чат и сцену с моделью, говорит с ядром по WebSocket (`ws://127.0.0.1:8765`,
-протокол — `docs/protocol.md`). Логики диалога и LLM здесь нет: всё решает ядро. Оболочка Rust
-(`src-tauri/`) только открывает окно; ядро как sidecar — S-13.1 (ADR-0009).
+Показывает чат и сцену с моделью, говорит с ядром по WebSocket (адрес — `VITE_CORE_URL` в
+`ui/.env`, протокол — `docs/protocol.md`). Логики диалога и LLM здесь нет: всё решает ядро.
+Оболочка Rust (`src-tauri/`) только открывает окно; ядро как sidecar — S-13.1 (ADR-0009).
 
 ## Структура
 | Путь | Назначение |
 |---|---|
-| `src/app/` | `main.ts` (монтирование), `App.svelte` (раскладка) |
+| `src/app/` | `main.ts` (создаёт `CoreClient`, монтирует), `App.svelte` (раскладка) |
+| `src/core/index.ts` | публичный API core — фичи импортируют только его (R-63) |
+| `src/core/client.ts` | `CoreClient`: `store`, `say()`, `stop()`, `onAudio()`, `start()`/`dispose()` |
+| `src/core/transport.ts` | WebSocket: переподключение 250 мс ×2 до 5 с, очередь ≤ 16, код 4000 |
+| `src/core/frames.ts` | разбор JSON-конверта и аудиокадра (граница транспорта, R-62) |
+| `src/core/store.svelte.ts` | `AppStore` на рунах: связь, бэкенды, ход, история, эмоция, замеры |
 | `src/core/protocol.gen.ts` | типы протокола — генерирует `tools/gen_protocol.py`, не править |
-| `src/core/` | transport и store — S-5.2 |
 | `src/features/` | chat (S-5.3), metrics (S-5.4), avatar (Этап 6), audio (Этап 8) |
 | `src-tauri/` | оболочка Tauri: `tauri.conf.json`, права окна в `capabilities/` |
 
 ## Команды (из `ui/`)
 - `pnpm install` — зависимости; `pnpm tauri dev` — окно с горячей перезагрузкой.
-- `pnpm lint`, `pnpm check` (svelte-check), `pnpm format:check`, `pnpm build`.
+- `pnpm lint`, `pnpm check` (svelte-check), `pnpm format:check`, `pnpm test` (vitest),
+  `pnpm build`.
 - Ядро в разработке — отдельно: `uv run python -m vtuber serve` из корня.
 
 ## Инварианты
 - tsconfig строгий (R-61); `any` и `as` — ошибки eslint (R-62); фичи не импортируют друг
   друга (R-63); типы сообщений — только из `protocol.gen.ts` (R-64).
+- Всё, что пришло по сокету, проверяется в `frames.ts`; битый кадр — `protocolError`, связь
+  живёт. Список типов сверяется с `OutboundMessage` через `satisfies`.
+- Store меняется только своими методами. Сообщения чужого хода (хвост отменённого ответа)
+  отбрасываются; разрыв связи посреди хода отменяет ход.
+- Код 4000 (ядро приняло другое окно) — без переподключения, иначе окна вытесняют друг друга.
+- `chat.cancel` не ставится в очередь: разрыв сам отменяет ход на ядре (T-14).
 - У каждого компонента есть `<script lang="ts">`, хоть и пустой: иначе svelte-check 4.7 не
   выдаёт типы модуля (ADR-0009).
 - CSP окна пускает сеть только на `ws://127.0.0.1:*`.
 
 ## Производительность
 - Токены в DOM — батчем раз в кадр (T-16, R-65); бюджет «ядро → экран» — ≤ 20 мс сверх TTFT.
+  Пока store применяет дельты по одной — батчинг в S-5.3.
+- PCM аудиокадра не копируется: `Int16Array` поверх буфера сокета.
+
+## Как расширять
+- Новый тип сообщения ядра: перегенерировать `protocol.gen.ts` → компилятор потребует строку
+  в `OUTBOUND_TYPES` (`frames.ts`) и ветку в `AppStore.apply`.
+- Тесты — рядом с кодом (`*.test.ts`), сокет — через `socketFactory` (ADR-0010).
 
 ## Связанные документы
-ADR-0002, ADR-0003, ADR-0009; `docs/architecture.md` (Фронтенд); правила J (R-61…R-67)
+ADR-0002, ADR-0003, ADR-0008, ADR-0009, ADR-0010; `docs/architecture.md` (Фронтенд);
+правила J (R-61…R-67)
