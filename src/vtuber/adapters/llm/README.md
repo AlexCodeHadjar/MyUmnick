@@ -8,7 +8,8 @@
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
-| `LLMConfig` | Секция `[llm]`: `base_url`, `model`, `connect_timeout_s`, `read_timeout_s`, `llamacpp` |
+| `LLMConfig` | Секция `[llm]`: `backend`, `base_url`, `model`, тайм-ауты, `llamacpp`, `generation` |
+| `GenerationConfig` | `[llm.generation]`: `max_tokens`, `temperature` (T-07) |
 | `LlamaCppOptions` | `[llm.llamacpp]`: `slot_id` (слот диалога), `enable_thinking` |
 | `OpenAICompatLLM` | `/v1/chat/completions` со стримом SSE; `async with` владеет httpx-клиентом |
 | `LlamaCppLLM` | Наследник: слот, `cache_prompt`, `chat_template_kwargs`, настоящий `prefill` |
@@ -52,7 +53,7 @@
 
 ## Как расширять
 - Новый сервер: модуль рядом, вход в `http_adapters` в `tests/contract/factories.py`.
-- Выбор адаптера по конфигу (`Registry`, поле `backend`) — при сборке в bootstrap (S-3.5).
+- Выбор адаптера по `[llm].backend` — реестр `bootstrap.llm_backends()`; новый адаптер — строка там.
 
 ## Связанные документы
 ADR-0002, ADR-0007, `docs/architecture.md`, T-01, T-03, T-05, T-06, T-08, T-14, R-36, R-43

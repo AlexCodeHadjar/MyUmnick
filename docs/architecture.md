@@ -153,7 +153,7 @@ vtuber/
 │   ├── codec.py         кодирование JSON/бинарных кадров
 │   ├── sink.py          WsReplySink: ReplySink → WebSocket
 │   ├── server.py        WebSocket-сервер, маршрутизация входящих
-│   └── cli.py           терминальный клиент для вехи M1
+│   └── terminal.py      терминальный чат для вехи M1 (`python -m vtuber`)
 ├── kernel/
 │   ├── bus.py           EventBus
 │   ├── registry.py      Registry[A, T] — реестр адаптеров/плагинов
@@ -417,9 +417,10 @@ LLM вставляет теги эмоций прямо в текст: `<happy>�
 Реализация — `kernel/registry.py` (`Registry[A, T]`: имя → фабрика `A → T`, где `A` — то, что
 передаёт bootstrap, обычно секция конфига).
 
-- Адаптер регистрирует себя одной строкой в своём модуле: `TTS.add("silero", SileroTTS)`.
-  Декоратор не используется: mypy не умеет типизировать его без `Any` (R-18).
-- bootstrap создаёт выбранный по конфигу: `TTS.create(cfg.tts.backend, cfg.tts)`.
+- Реестр собирает bootstrap — строка на адаптер: `backends.add("llamacpp", LlamaCppLLM)`
+  (`bootstrap.llm_backends`). Модульный изменяемый реестр нарушал бы R-04; декоратор mypy не
+  типизирует без `Any` (R-18).
+- Выбор по конфигу: `llm_backends().create(cfg.llm.backend, cfg.llm)`.
 - Занятое имя → `ValueError`; неизвестное имя из конфига → `ConfigError` со списком доступных.
 
 Сторонние плагины — через entry points (`[project.entry-points."vtuber.plugins"]`), их загружает

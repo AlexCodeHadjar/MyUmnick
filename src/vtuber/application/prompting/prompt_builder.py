@@ -29,6 +29,11 @@ class PromptBuilder:
     def __init__(self, persona: Persona) -> None:
         self._prefix = (Message(Role.SYSTEM, render_system_prompt(persona)), *persona.examples)
 
+    @property
+    def prefix(self) -> tuple[Message, ...]:
+        """Неизменная часть промпта — её прогревают в KV-кэше при старте (T-06)."""
+        return self._prefix
+
     def build(
         self, history: Sequence[Message], user_text: str, context: Sequence[str] = ()
     ) -> Prompt:

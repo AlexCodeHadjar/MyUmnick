@@ -42,6 +42,7 @@
 - Тесты: `uv run pytest` (с покрытием: `--cov`; GPU-тесты: `-m gpu`)
 - Все проверки: `uv run pre-commit run --all-files`
 - Карта проекта: `uv run python tools/gen_map.py`
+- Терминальный чат (веха M1, нужен llama-server): `uv run python -m vtuber`
 - Бенчмарк (с Этапа 2): `uv run python tools/bench_latency.py`
 - LLM-сервер (с Этапа 2): `scripts/start_llm.ps1`
 - UI (с Этапа 5): `cd ui && pnpm tauri dev`

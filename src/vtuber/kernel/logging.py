@@ -1,5 +1,6 @@
 """Структурные JSON-логи на structlog; turn_id добавляет `kernel.context.turn_context`."""
 
+from pathlib import Path
 from typing import Literal, TextIO, cast
 
 import structlog
@@ -11,9 +12,10 @@ type LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR"]
 
 
 class LoggingConfig(ConfigSection):
-    """Секция `[logging]`."""
+    """Секция `[logging]`; `file` открывает bootstrap (относительно корня проекта)."""
 
     level: LogLevel
+    file: Path
 
 
 def configure_logging(cfg: LoggingConfig, stream: TextIO) -> None:
@@ -37,5 +39,10 @@ def configure_logging(cfg: LoggingConfig, stream: TextIO) -> None:
 
 
 def get_logger(name: str) -> FilteringBoundLogger:
-    """Логгер модуля; имя попадает в поле `logger` каждого события."""
-    return cast("FilteringBoundLogger", structlog.get_logger().bind(logger=name))
+    """Логгер модуля; имя попадает в поле `module` каждого события.
+
+    Можно брать на уровне модуля, до `configure_logging`: имя — начальное значение ленивого
+    прокси, настройка подхватывается при первом событии. (`.bind()` у прокси, наоборот,
+    зафиксировал бы настройку по умолчанию в момент импорта.)
+    """
+    return cast("FilteringBoundLogger", structlog.get_logger(module=name))

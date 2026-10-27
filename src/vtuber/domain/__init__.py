@@ -9,6 +9,7 @@ from vtuber.domain.errors import (
     LLMUnavailable,
     ProtocolError,
     TTSUnavailable,
+    TurnStateError,
     VtuberError,
 )
 from vtuber.domain.events import (
@@ -23,6 +24,7 @@ from vtuber.domain.events import (
     TurnStarted,
 )
 from vtuber.domain.speech import SAMPLE_WIDTH_BYTES, AudioChunk, AudioFormat
+from vtuber.domain.turn_state import TurnState, next_state
 
 __all__ = [
     "MAX_TAG_LENGTH",
@@ -52,6 +54,9 @@ __all__ = [
     "TurnFinished",
     "TurnId",
     "TurnStarted",
+    "TurnState",
+    "TurnStateError",
     "VtuberError",
+    "next_state",
     "parse_tag",
 ]

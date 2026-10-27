@@ -18,8 +18,9 @@ websockets, torch и о kernel (контракт `domain-pure`). Ошибка �
 | `AudioFormat`, `AudioChunk`, `SAMPLE_WIDTH_BYTES` | PCM s16le моно; `duration_s` для RTF и пауз |
 | `TurnStarted`, `TurnFinished`, `TurnCancelled`, `EmotionChanged`, `BackendStatusChanged` | События шины |
 | `MetricRecorded` | Замер стадии: `name`, `duration_ns`, `turn_id` (None вне хода) |
+| `TurnState`, `next_state` | Состояния хода и разрешённые переходы; иначе `TurnStateError` |
 | `CancelReason`, `Component`, `BackendState` | Значения событий |
-| `VtuberError` → `BackendUnavailable` (`LLMUnavailable`, `TTSUnavailable`), `GenerationFailed`, `ProtocolError`, `ConfigError` | Доменные ошибки |
+| `VtuberError` → `BackendUnavailable` (`LLMUnavailable`, `TTSUnavailable`), `GenerationFailed`, `ProtocolError`, `ConfigError`, `TurnStateError` | Доменные ошибки |
 
 ## Зависимости
 - Только stdlib.
@@ -43,7 +44,6 @@ websockets, torch и о kernel (контракт `domain-pure`). Ошибка �
 - Новый бэкенд в статус-баре — значение в `Component` (STT — Этап 11, память — Этап 10).
 - Причина отмены barge-in — `CancelReason` (Этап 11).
 - Новая ошибка — подкласс `VtuberError`; адаптер переводит в неё чужие исключения.
-- Состояние хода (Enum + таблица переходов) появится в S-3.5.
 
 ## Кто использует
 - Все слои, включая kernel (ADR-0005): `ConfigError` бросает `kernel.load_config`, `TurnId`

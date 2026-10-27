@@ -10,12 +10,13 @@ ports/application/adapters/gateway/bootstrap.
 | Символ | Назначение |
 |---|---|
 | `ConfigSection`, `ConfigFiles`, `load_config` | default < user < `VTUBER_<СЕКЦИЯ>__<ПОЛЕ>`; бросает `ConfigError` |
-| `LoggingConfig`, `configure_logging`, `get_logger` | JSON-строка на событие; настройка один раз в bootstrap |
+| `LoggingConfig`, `configure_logging`, `get_logger` | `[logging]` (`level`, `file`); JSON-строка на событие; логгер можно брать при импорте |
 | `turn_context`, `current_turn` | Текущий ход для логов (`turn_id`) и метрик; наследуется задачами |
 | `EventBus`, `Handler` | Шина управляющих событий: точный тип, параллельно, ошибки изолированы |
 | `Registry[A, T]` | Имя → фабрика `A → T`; `add`, `create`; неизвестное имя → `ConfigError` |
 | `Telemetry`, `Span`, `MAX_PENDING_METRICS` | `span(name)` / `record(name, ns)` → очередь → `run()` → шина |
 | `TraceWriter` | Подписчик `MetricRecorded`: JSON-строка `{name, ns, turn_id}` в поток |
+| `TelemetryConfig` | `[telemetry]`: `traces_file` |
 
 ## Зависимости
 - domain: `ConfigError`, `TurnId`, `MetricRecorded` (ADR-0005)
@@ -41,8 +42,8 @@ ports/application/adapters/gateway/bootstrap.
 ## Как расширять
 - Новая секция конфига: наследник `ConfigSection` в модуле-владельце + поле в `AppConfig` +
   значения в `config/default.toml`.
-- Новый реестр бэкендов: `Registry[ConfigСекции, Порт]("kind")` рядом с портом/адаптерами;
-  адаптер вызывает `add` в своём модуле.
+- Новый реестр бэкендов: `Registry[ConfigСекции, Порт]("kind")` собирается в bootstrap,
+  строка `add` на адаптер (пример — `bootstrap.llm_backends`).
 - Тесты: `tests/unit/kernel/`; фейковые часы — `tests/fakes.FakeClock`.
 
 ## Связанные документы

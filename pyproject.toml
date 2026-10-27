@@ -75,6 +75,7 @@ addopts = "-m 'not gpu and not slow' --strict-markers --strict-config"
 [tool.coverage.run]
 source = ["vtuber"]
 branch = true
+omit = ["*/vtuber/__main__.py"]  # двухстрочный запуск процесса; логика — в bootstrap.main
 
 [tool.coverage.report]
 fail_under = 85                # NFR-08

@@ -1,0 +1,47 @@
+# application/conversation — сценарий «ход диалога»: реплика → ответ → история и события
+
+## Ответственность
+Ведёт жизненный цикл хода: строит промпт из персоны и истории, запускает конвейер, следит за
+состоянием, отменяет предыдущий ход при новой реплике, кладёт показанную часть ответа в историю,
+публикует события хода. НЕ знает, куда идёт ответ (получатель — `ReplySink`), не создаёт
+адаптеры (bootstrap), не хранит факты между запусками (Этап 10).
+
+## Публичный API (`__init__.py`)
+| Символ | Назначение |
+|---|---|
+| `ConversationService(pipeline, prompts, memory, bus)` | `handle(text, sink) → TurnId` — запуск хода, не ждёт ответа |
+| | `cancel(reason) → bool` — прервать текущий ход и дождаться; `wait_idle()`; `state` |
+| `INTERNAL_ERROR_MESSAGE` | Что видит пользователь при неожиданной ошибке хода |
+
+## Зависимости
+- application: `ReplyPipeline`, `StreamParser`, `PromptBuilder`, `ShortTermMemory`
+- domain: `Turn`, `TurnState`, `next_state`, события, ошибки; kernel: `EventBus`,
+  `turn_context`, `get_logger`; порты: `ReplySink`
+
+## События
+- Публикует: `TurnStarted` (до запроса к LLM — аватар реагирует сразу, T-17), `TurnFinished`,
+  `TurnCancelled(reason, message)` — `USER_STOP`, `NEW_MESSAGE`, `ERROR`.
+- Слушает: —
+
+## Инварианты (тесты `tests/unit/application/conversation/test_service.py`)
+- Сервис владеет задачей хода (R-35); `handle` сначала прерывает и дожидается предыдущий ход.
+- Состояния: IDLE → THINKING → SPEAKING (первый вывод) → IDLE; прерывание → CANCELLED → IDLE;
+  переходы проверяет `domain.next_state`.
+- История: завершённый ход — `full_text` с тегами; прерванный — показанная часть с «…»;
+  ход с ошибкой сохраняется, только если что-то успело показаться.
+- В историю идёт реплика пользователя без справки (`context`) — цена: при справке сервер
+  пересчитает только последний ход.
+- Ошибка не роняет приложение: `VtuberError` → `TurnCancelled(ERROR, текст ошибки)`;
+  неожиданное исключение — лог `turn.crashed` и `INTERNAL_ERROR_MESSAGE` (R-42).
+- `CancelledError` не подавляется (R-38); `cancel` ждёт через `asyncio.wait`. Прерывание ≤ 100 мс
+  (тест с фейком).
+
+## Производительность
+- Горячий путь: да, но тонкий — публикация `TurnStarted`, сборка промпта, запуск конвейера.
+
+## Как расширять
+- Долговременная память и справка (Этап 10): факты → `context` в `PromptBuilder.build`.
+- Barge-in (Этап 11): `cancel(CancelReason.BARGE_IN)`.
+
+## Связанные документы
+`docs/architecture.md` (Жизненный цикл хода и отмена), T-14, T-17, R-35, R-38, R-42

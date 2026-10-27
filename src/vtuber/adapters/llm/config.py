@@ -1,4 +1,6 @@
-"""Секция `[llm]`: подключение к LLM-серверу, общая для адаптеров llm."""
+"""Секция `[llm]`: выбор и подключение LLM-сервера, параметры генерации."""
+
+from pydantic import Field
 
 from vtuber.kernel import ConfigSection
 
@@ -14,14 +16,24 @@ class LlamaCppOptions(ConfigSection):
     enable_thinking: bool
 
 
-class LLMConfig(ConfigSection):
-    """Адрес и тайм-ауты LLM-сервера (R-36).
+class GenerationConfig(ConfigSection):
+    """Подсекция `[llm.generation]`: длина и температура ответа диалога (T-07)."""
 
+    max_tokens: int = Field(gt=0)
+    temperature: float = Field(ge=0)
+
+
+class LLMConfig(ConfigSection):
+    """Какой бэкенд, где он, тайм-ауты (R-36) и параметры генерации.
+
+    `backend` — имя адаптера в реестре bootstrap (`llamacpp`, `openai_compat`).
     `read_timeout_s` — максимум ожидания следующей порции, включая prefill длинного промпта.
     """
 
+    backend: str
     base_url: str
     model: str
     connect_timeout_s: float
     read_timeout_s: float
     llamacpp: LlamaCppOptions
+    generation: GenerationConfig

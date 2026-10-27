@@ -19,7 +19,7 @@ from typing import Final, Literal, TextIO
 from pydantic import BaseModel, ConfigDict
 
 from tools.jsonl import read_jsonl
-from tools.llm_client import BACKENDS, DEFAULT_BACKEND, ROOT, SYSTEM_PROMPT, open_llm
+from tools.llm_client import ROOT, SYSTEM_PROMPT, open_llm
 from vtuber.domain import LLMUnavailable, Message, Role, VtuberError
 from vtuber.ports import GenerationParams, LLMPort
 
@@ -159,7 +159,7 @@ def main(argv: Sequence[str], env: Mapping[str, str], out: TextIO) -> int:
 
 
 async def _bench(
-    backend: str,
+    backend: str | None,
     env: Mapping[str, str],
     prompts: Sequence[BenchPrompt],
     params: GenerationParams,
@@ -173,7 +173,7 @@ def _parse(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--prompts", type=Path, default=DEFAULT_PROMPTS)
     parser.add_argument("--runs", type=int, default=3, help="кругов по всем репликам")
-    parser.add_argument("--backend", choices=sorted(BACKENDS), default=DEFAULT_BACKEND)
+    parser.add_argument("--backend", help="адаптер из реестра; по умолчанию [llm].backend")
     parser.add_argument("--max-tokens", type=int, default=128)
     parser.add_argument("--temperature", type=float, default=0.7)
     parser.add_argument("--out", type=Path, help="сохранить замеры в JSON")

@@ -5,6 +5,10 @@
 
 [logging]
 level = "INFO"                 # DEBUG | INFO | WARNING | ERROR; DEBUG — потоковые детали (T-15)
+file = "logs/app.jsonl"        # относительно корня проекта
+
+[telemetry]
+traces_file = "logs/traces.jsonl"  # замеры стадий хода (MetricRecorded), строка JSON на замер
 
 [persona]
 file = "personas/default.toml" # характер, манера речи, правила; меняется без правки кода (FR-11)
@@ -16,6 +20,7 @@ chars_per_token = 3.0          # оценка для русского; кали�
 message_overhead_tokens = 4    # служебные токены шаблона чата на сообщение
 
 [llm]
+backend = "llamacpp"           # llamacpp | openai_compat (LM Studio, Ollama и т.п.)
 base_url = "http://127.0.0.1:8080"   # llama-server (scripts/start_llm.ps1)
 model = "local"                # имя модели в запросе; llama-server принимает любое
 connect_timeout_s = 1.0        # localhost: соединение — доли миллисекунды; больше — сервер не запущен
@@ -24,3 +29,7 @@ read_timeout_s = 30.0          # максимум ожидания следую�
 [llm.llamacpp]
 slot_id = 0                    # слот диалога: его KV-кэш живёт между ходами (T-03); 1 — фон (Этап 10)
 enable_thinking = false        # reasoning-режим шаблона чата — выключен в горячем пути (T-08)
+
+[llm.generation]
+max_tokens = 256               # короткие ответы по умолчанию (T-07); персона просит 1–3 предложения
+temperature = 0.7

@@ -27,3 +27,7 @@ class ProtocolError(VtuberError):
 
 class ConfigError(VtuberError):
     """Конфигурация не читается или не проходит проверку; приложение не стартует."""
+
+
+class TurnStateError(VtuberError):
+    """Недопустимый переход состояния хода — ошибка в логике сервиса, а не во внешнем мире."""

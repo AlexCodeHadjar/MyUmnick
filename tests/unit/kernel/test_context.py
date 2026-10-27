@@ -2,6 +2,7 @@ import asyncio
 import io
 import json
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 import structlog
@@ -13,7 +14,7 @@ from vtuber.kernel import LoggingConfig, configure_logging, current_turn, get_lo
 @pytest.fixture
 def stream() -> Iterator[io.StringIO]:
     output = io.StringIO()
-    configure_logging(LoggingConfig(level="INFO"), output)
+    configure_logging(LoggingConfig(level="INFO", file=Path("logs/app.jsonl")), output)
     yield output
     structlog.reset_defaults()
     structlog.contextvars.clear_contextvars()

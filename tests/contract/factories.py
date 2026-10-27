@@ -7,7 +7,13 @@ from dataclasses import dataclass
 
 from tests.fakes import FakeLLM
 from tests.llm_stub import LLMStub
-from vtuber.adapters.llm import LlamaCppLLM, LlamaCppOptions, LLMConfig, OpenAICompatLLM
+from vtuber.adapters.llm import (
+    GenerationConfig,
+    LlamaCppLLM,
+    LlamaCppOptions,
+    LLMConfig,
+    OpenAICompatLLM,
+)
 from vtuber.ports import LLMPort
 
 LONG_REPLY = (
@@ -35,6 +41,8 @@ def llm_config(base_url: str) -> LLMConfig:
         connect_timeout_s=0.2,
         read_timeout_s=5,
         llamacpp=LlamaCppOptions(slot_id=0, enable_thinking=False),
+        backend="llamacpp",
+        generation=GenerationConfig(max_tokens=64, temperature=0.5),
     )
 
 

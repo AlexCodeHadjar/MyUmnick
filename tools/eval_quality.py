@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from tools.eval_checks import Expect, evaluate
 from tools.jsonl import read_jsonl
-from tools.llm_client import BACKENDS, DEFAULT_BACKEND, ROOT, SYSTEM_PROMPT, collect, open_llm
+from tools.llm_client import ROOT, SYSTEM_PROMPT, collect, open_llm
 from vtuber.domain import LLMUnavailable, Message, Role, VtuberError
 from vtuber.ports import GenerationParams, LLMPort
 
@@ -120,7 +120,7 @@ def main(argv: Sequence[str], env: Mapping[str, str], out: TextIO) -> int:
 
 
 async def _run_all(
-    backend: str, env: Mapping[str, str], cases: Sequence[EvalCase], params: GenerationParams
+    backend: str | None, env: Mapping[str, str], cases: Sequence[EvalCase], params: GenerationParams
 ) -> list[CaseResult]:
     async with open_llm(backend, env) as llm:
         return [await run_case(llm, case, params) for case in cases]
@@ -129,7 +129,7 @@ async def _run_all(
 def _parse(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES)
-    parser.add_argument("--backend", choices=sorted(BACKENDS), default=DEFAULT_BACKEND)
+    parser.add_argument("--backend", help="адаптер из реестра; по умолчанию [llm].backend")
     parser.add_argument("--max-tokens", type=int, default=192)
     parser.add_argument("--temperature", type=float, default=0.3)
     parser.add_argument("--out", type=Path, help="сохранить результаты в JSON")

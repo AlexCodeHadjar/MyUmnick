@@ -46,10 +46,11 @@ class TurnFinished:
 
 @dataclass(frozen=True, slots=True)
 class TurnCancelled:
-    """Ход прерван; UI сбрасывает аудиобуфер."""
+    """Ход прерван; UI сбрасывает аудиобуфер. `message` — что сказать пользователю при ошибке."""
 
     turn_id: TurnId
     reason: CancelReason
+    message: str = ""
 
 
 @dataclass(frozen=True, slots=True)

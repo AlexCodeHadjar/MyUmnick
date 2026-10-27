@@ -5,17 +5,25 @@ import contextlib
 import json
 import time
 from collections.abc import Callable
+from pathlib import Path
 from types import TracebackType
 from typing import Final, NoReturn, Self, TextIO
 
 from vtuber.domain import MetricRecorded
 from vtuber.kernel.bus import EventBus
+from vtuber.kernel.config import ConfigSection
 from vtuber.kernel.context import current_turn
 
 MAX_PENDING_METRICS: Final = 4096
 """Предел очереди метрик: если `run` не успевает, лишние метрики отбрасываются, а не копятся."""
 
 type Clock = Callable[[], int]
+
+
+class TelemetryConfig(ConfigSection):
+    """Секция `[telemetry]`; `traces_file` открывает bootstrap (относительно корня проекта)."""
+
+    traces_file: Path
 
 
 class Telemetry:
