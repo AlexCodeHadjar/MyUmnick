@@ -1,57 +1,30 @@
 /**
  * Live2D-реализация `AvatarRenderer` на PixiJS 8 + untitled-pixi-live2d-engine (ADR-0011).
- * Движок и Pixi грузятся динамически после Cubism Core: основной бандл (чат) их не ждёт.
  * Автообновление движка и его слежение за курсором выключены — кадрами управляет `AvatarLoop`
- * (R-66), взглядом — `lookAt()`. Покой, моргание, дыхание и физику движок делает сам.
+ * (R-66), взглядом — `lookAt()`. Покой, моргание, дыхание и физику движок делает сам; эмоции,
+ * реакции и кадр — по `mapping.json` модели.
  */
-import type { AvatarRenderer, AvatarSource, StageSize } from "../AvatarRenderer";
-import { loadCubismCore } from "./core-loader";
-import { fitModel } from "./fit";
-
-type Engine = typeof import("untitled-pixi-live2d-engine/cubism");
-type Pixi = typeof import("pixi.js");
-type Model = Awaited<ReturnType<Engine["Live2DModel"]["from"]>>;
+import type { Emotion } from "../../../core";
+import type { AvatarReaction, AvatarRenderer, AvatarSource, StageSize } from "../AvatarRenderer";
+import { DEFAULT_MAPPING, expressionFor, type AvatarMapping } from "../mapping";
+import { loadEngine, mouthIndices, type Engine, type Model, type Pixi } from "./engine";
+import { applyFrame, fitModel } from "./fit";
+import { loadMapping, loadSettings } from "./settings";
 
 /** Группа моушенов покоя по соглашению Cubism (`Idle` в model3.json). */
 const IDLE_GROUP = "Idle";
-/** Рот, если в model3.json нет группы `LipSync`: стандартные id Cubism 3+ и 2.1. */
-const DEFAULT_MOUTH_IDS = ["ParamMouthOpenY", "PARAM_MOUTH_OPEN_Y"];
-
-type CubismInternal = InstanceType<Engine["CubismInternalModel"]>;
-
-/** Индексы параметров рта: ищутся один раз при загрузке, в кадре — запись по индексу. */
-function mouthIndices(internal: CubismInternal): number[] {
-  const declared = internal.motionManager.lipSyncIds;
-  const wanted = new Set(declared.length > 0 ? declared : DEFAULT_MOUTH_IDS);
-  const core = internal.coreModel;
-  const indices: number[] = [];
-  for (let i = 0; i < core.getParameterCount(); i++) {
-    if (wanted.has(core.getParameterId(i).getString().s)) {
-      indices.push(i);
-    }
-  }
-  return indices;
-}
-
-async function loadEngine(): Promise<{ pixi: Pixi; engine: Engine }> {
-  await loadCubismCore();
-  // Pixi 8 без `unsafe-eval` не работает под CSP окна (нет 'unsafe-eval') — полифилл до рендера.
-  const [pixi, engine] = await Promise.all([
-    import("pixi.js"),
-    import("untitled-pixi-live2d-engine/cubism"),
-    import("pixi.js/unsafe-eval"),
-  ]);
-  // Плагин регистрируется до создания рендера — требование движка.
-  pixi.extensions.add(engine.Live2DPlugin);
-  return { pixi, engine };
-}
 
 export class Live2DRenderer implements AvatarRenderer {
   readonly #app: InstanceType<Pixi["Application"]>;
   readonly #engine: Engine;
   #model: Model | null = null;
+  #mapping: AvatarMapping = DEFAULT_MAPPING;
   #size: StageSize;
   #mouth = 0;
+  #emotion: Emotion = "neutral";
+  #reaction: AvatarReaction = "idle";
+  /** Выражение на лице сейчас: движок не дёргается, пока нужное выражение не изменилось. */
+  #expression: string | null = null;
 
   private constructor(app: InstanceType<Pixi["Application"]>, engine: Engine, size: StageSize) {
     this.#app = app;
@@ -78,22 +51,28 @@ export class Live2DRenderer implements AvatarRenderer {
   }
 
   async load(source: AvatarSource): Promise<void> {
-    const model = await this.#engine.Live2DModel.from(source.modelUrl, {
+    const mapping = await loadMapping(source.mappingUrl);
+    const settings = await loadSettings(source.modelUrl, mapping);
+    const model = await this.#engine.Live2DModel.from(settings, {
       autoUpdate: false,
       autoFocus: false,
       autoHitTest: false,
     });
     this.#unload();
+    this.#mapping = mapping;
     model.anchor.set(0.5, 0.5);
     this.#hookMouth(model);
     this.#app.stage.addChild(model);
     this.#model = model;
     this.#place();
     void model.motion(IDLE_GROUP);
+    this.#applyExpression();
   }
 
-  setEmotion(): void {
-    // Маппинг эмоция → выражение — S-6.3 (mapping.json); до него эмоции не показываются.
+  setEmotion(emotion: Emotion): void {
+    // Сила эмоции (`intensity`) — с затуханием на Этапе 8; пока выражение включается целиком.
+    this.#emotion = emotion;
+    this.#applyExpression();
   }
 
   setMouth(openness: number): void {
@@ -104,8 +83,20 @@ export class Live2DRenderer implements AvatarRenderer {
     this.#model?.internalModel.focusController.focus(x, y);
   }
 
-  react(): void {
-    // Реакции на ход — S-6.3 (mapping.json).
+  react(reaction: AvatarReaction): void {
+    if (reaction === this.#reaction) {
+      return;
+    }
+    this.#reaction = reaction;
+    const motion = this.#mapping.reactions[reaction]?.motion;
+    if (motion !== undefined && this.#model !== null) {
+      // Моушен не сбрасывает выражение: «думаю» на лице держится, пока идёт жест.
+      // NORMAL — выше покоя, но не перебивает принудительные моушены.
+      void this.#model.motion(motion.group, motion.index, this.#engine.MotionPriority.NORMAL, {
+        resetExpression: false,
+      });
+    }
+    this.#applyExpression();
   }
 
   update(deltaMs: number): void {
@@ -124,6 +115,20 @@ export class Live2DRenderer implements AvatarRenderer {
     this.#app.destroy({ removeView: true }, { children: true, texture: true, textureSource: true });
   }
 
+  #applyExpression(): void {
+    const model = this.#model;
+    const wanted = expressionFor(this.#mapping, this.#emotion, this.#reaction);
+    if (model === null || wanted === this.#expression) {
+      return;
+    }
+    this.#expression = wanted;
+    if (wanted === null) {
+      model.internalModel.motionManager.expressionManager?.resetExpression();
+    } else {
+      void model.expression(wanted);
+    }
+  }
+
   #place(): void {
     const model = this.#model;
     if (model === null) {
@@ -131,7 +136,7 @@ export class Live2DRenderer implements AvatarRenderer {
     }
     // Размер модели — в её собственных единицах, без текущего масштаба.
     const natural = { width: model.width / model.scale.x, height: model.height / model.scale.y };
-    const placement = fitModel(natural, this.#size);
+    const placement = applyFrame(fitModel(natural, this.#size), this.#size, this.#mapping.frame);
     model.scale.set(placement.scale);
     model.position.set(placement.x, placement.y);
   }
@@ -156,6 +161,7 @@ export class Live2DRenderer implements AvatarRenderer {
       this.#app.stage.removeChild(this.#model);
       this.#model.destroy({ children: true });
       this.#model = null;
+      this.#expression = null;
     }
   }
 }

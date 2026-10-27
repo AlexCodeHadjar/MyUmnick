@@ -233,6 +233,17 @@
 - `browserFrames` — `ui/src/features/avatar/loop.ts:21` — —
 - `browserVisibility` — `ui/src/features/avatar/loop.ts:28` — —
 - `AvatarLoop` — `ui/src/features/avatar/loop.ts:38` — —
+- `MAPPING_VERSION` — `ui/src/features/avatar/mapping.ts:9` — —
+- `MotionRef` — `ui/src/features/avatar/mapping.ts:11` — —
+- `ReactionSpec` — `ui/src/features/avatar/mapping.ts:16` — —
+- `FrameSpec` — `ui/src/features/avatar/mapping.ts:24` — Кадр поверх «вписать целиком»: масштаб и сдвиг центра в долях сцены (y — вниз).
+- `AvatarMapping` — `ui/src/features/avatar/mapping.ts:30` — —
+- `DEFAULT_MAPPING` — `ui/src/features/avatar/mapping.ts:39` — Маппинга нет — модель как есть: без выражений и реакций, кадр «вписать целиком».
+- `MappingError` — `ui/src/features/avatar/mapping.ts:61` — —
+- `parseMapping` — `ui/src/features/avatar/mapping.ts:160` — JSON маппинга → проверенный маппинг; ошибка называет поле и что с ним не так.
+- `expressionFor` — `ui/src/features/avatar/mapping.ts:178` — Какое выражение должно быть на лице: реакция (например, «думаю» до первого токена) важнее
+- `ConversationView` — `ui/src/features/avatar/reactions.ts:8` — —
+- `reactionOf` — `ui/src/features/avatar/reactions.ts:15` — —
 - `avatarSource` — `ui/src/features/avatar/session.ts:10` — Файлы модели `<имя>` в `ui/public/avatars/<имя>/` (ADR-0011).
 - `AvatarStatus` — `ui/src/features/avatar/session.ts:18` — —
 - `RendererFactory` — `ui/src/features/avatar/session.ts:22` — Создатель рендера: Live2D в окне, фейк в тестах.
@@ -249,12 +260,23 @@
 - `ScriptHost` — `ui/src/features/avatar/live2d/core-loader.ts:33` — Части `window`/`document`, нужные загрузчику: в тестах — подмена.
 - `browserHost` — `ui/src/features/avatar/live2d/core-loader.ts:55` — —
 - `loadCubismCore` — `ui/src/features/avatar/live2d/core-loader.ts:82` — Подключить Core один раз на окно; повторные вызовы ждут ту же загрузку.
+- `Engine` — `ui/src/features/avatar/live2d/engine.ts:7` — —
+- `Pixi` — `ui/src/features/avatar/live2d/engine.ts:8` — —
+- `Model` — `ui/src/features/avatar/live2d/engine.ts:9` — —
+- `CubismInternal` — `ui/src/features/avatar/live2d/engine.ts:10` — —
+- `loadEngine` — `ui/src/features/avatar/live2d/engine.ts:15` — —
+- `mouthIndices` — `ui/src/features/avatar/live2d/engine.ts:29` — Индексы параметров рта: ищутся один раз при загрузке, в кадре — запись по индексу.
 - `Size` — `ui/src/features/avatar/live2d/fit.ts:3` — —
 - `Placement` — `ui/src/features/avatar/live2d/fit.ts:8` — —
 - `FIT_MARGIN` — `ui/src/features/avatar/live2d/fit.ts:16` — Поля вокруг модели, доля сцены: не упираться в края при наклонах головы и физике волос.
 - `fitModel` — `ui/src/features/avatar/live2d/fit.ts:19` — Масштаб «вписать целиком» с полями; модель по центру. Пустая сцена или модель — масштаб 0.
-- `gazeAt` — `ui/src/features/avatar/live2d/fit.ts:35` — Курсор → взгляд: -1…1 по осям, y вверх (как `AvatarRenderer.lookAt`). За пределами сцены
-- `Live2DRenderer` — `ui/src/features/avatar/live2d/Live2DRenderer.ts:49` — —
+- `applyFrame` — `ui/src/features/avatar/live2d/fit.ts:32` — Кадр маппинга (масштаб и сдвиг центра в долях сцены) поверх «вписать целиком».
+- `gazeAt` — `ui/src/features/avatar/live2d/fit.ts:48` — Курсор → взгляд: -1…1 по осям, y вверх (как `AvatarRenderer.lookAt`). За пределами сцены
+- `Live2DRenderer` — `ui/src/features/avatar/live2d/Live2DRenderer.ts:17` — —
+- `Fetcher` — `ui/src/features/avatar/live2d/settings.ts:8` — —
+- `loadMapping` — `ui/src/features/avatar/live2d/settings.ts:23` — `mapping.json` модели; нет файла — модель как есть, битый файл — ошибка с полем.
+- `withExpressions` — `ui/src/features/avatar/live2d/settings.ts:46` — Копия model3.json с выражениями маппинга (поверх одноимённых из манифеста) и `url` — по нему
+- `loadSettings` — `ui/src/features/avatar/live2d/settings.ts:67` — Манифест модели с выражениями из маппинга — готов для `Live2DModel.from`.
 
 ## ui/src/features/chat
 Публичный API фичи чата: приложение монтирует только панель (R-63).

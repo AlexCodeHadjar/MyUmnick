@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "expressions": {
+    "Normal": "expressions/Normal.exp3.json",
+    "Smile": "expressions/Smile.exp3.json",
+    "Sad": "expressions/Sad.exp3.json",
+    "Angry": "expressions/Angry.exp3.json",
+    "Surprised": "expressions/Surprised.exp3.json",
+    "Blushing": "expressions/Blushing.exp3.json",
+    "Pensive": "expressions/f02.exp3.json",
+    "Pout": "expressions/f01.exp3.json"
+  },
+  "emotions": {
+    "neutral": "Normal",
+    "happy": "Smile",
+    "sad": "Sad",
+    "angry": "Angry",
+    "surprised": "Surprised",
+    "embarrassed": "Blushing",
+    "thinking": "Pensive"
+  },
+  "reactions": {
+    "thinking": { "expression": "Pensive" }
+  },
+  "frame": { "zoom": 1.55, "offsetY": 0.3 }
+}

@@ -23,6 +23,7 @@
 | `src/features/metrics/` | `MetricsPanel` по Ctrl+Shift+M: последний, p50, p95, норма (FR-15) |
 | `src/features/avatar/` | `AvatarStage` (сцена), `session.ts` (жизнь модели), `loop.ts` (кадры вне Svelte, R-66), контракт `AvatarRenderer` |
 | `src/features/avatar/live2d/` | `Live2DRenderer` (PixiJS 8 + движок, ADR-0011), загрузчик Cubism Core, геометрия сцены |
+| `src/features/avatar/mapping.ts`, `reactions.ts` | `mapping.json` модели (проверка, выбор выражения); реакция из состояния разговора |
 | `public/live2d/`, `public/avatars/<имя>/` | Cubism Core и файлы модели — кладёт пользователь, не в git |
 | `src/features/` | audio (Этап 8) |
 | `src-tauri/` | оболочка Tauri: `tauri.conf.json`, права окна в `capabilities/` |
@@ -54,6 +55,8 @@
 - Аватар: Pixi, движок и Core грузятся динамически — основной бандл (63 КБ) их не ждёт, чат
   работает и без модели. Нет Core или файлов модели — сцена пишет, что и куда положить.
 - Модель — `VITE_AVATAR` в `ui/.env` (каталог `public/avatars/<имя>/`); смена модели — без кода.
+- Выражение: реакция (например, «думаю» до первого токена) важнее эмоции ответа. «Думаю»
+  включается в кадре отправки — реплика в store попадает сразу (T-17).
 - Рот (липсинк) — параметры группы `LipSync` из model3.json (иначе `ParamMouthOpenY`), индексы
   ищутся один раз при загрузке. Взгляд — `lookAt`, слежение движка за курсором выключено.
 - Ширина чата — доля окна, не уже 320 px у каждой панели; хранится в localStorage
@@ -78,6 +81,22 @@
 - Новый тип сообщения ядра: перегенерировать `protocol.gen.ts` → компилятор потребует строку
   в `OUTBOUND_TYPES` (`frames.ts`) и ветку в `AppStore.apply`.
 - Тесты — рядом с кодом (`*.test.ts`), сокет — через `socketFactory` (ADR-0010).
+- **Новая модель Live2D** (без кода): каталог `public/avatars/<имя>/` с `<имя>.model3.json` и его
+  файлами, `VITE_AVATAR=<имя>` в `.env.local`, рядом — `mapping.json` (необязателен):
+  ```json
+  {
+    "version": 1,
+    "expressions": { "Smile": "expressions/Smile.exp3.json" },
+    "emotions": { "happy": "Smile" },
+    "reactions": { "thinking": { "expression": "Smile", "motion": { "group": "Tap", "index": 0 } } },
+    "frame": { "zoom": 1.5, "offsetX": 0, "offsetY": 0.3 }
+  }
+  ```
+  `expressions` — имя → файл (дописываются в model3.json: у многих моделей файлы выражений
+  есть, а в манифесте нет); `emotions` — эмоция протокола → выражение; `reactions` — `idle`,
+  `listening`, `thinking` (выражение на время реакции, моушен — один раз); `frame` — масштаб и
+  сдвиг центра в долях сцены поверх «вписать целиком». Ошибка в маппинге — текст с полем на
+  сцене. Нет маппинга — модель как есть.
 - Новая стадия в панели метрик появляется сама, как только ядро шлёт её `metrics.span`; норму
   добавить в `BUDGETS` (`features/metrics/stats.ts`).
 - Карта модулей — раздел `ui/src` в `docs/ai/PROJECT_MAP.md` (`tools/ui_map.py`): описание

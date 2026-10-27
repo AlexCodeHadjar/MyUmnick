@@ -28,6 +28,19 @@ export function fitModel(model: Size, stage: Size, margin = FIT_MARGIN): Placeme
   return { scale, x: stage.width / 2, y: stage.height / 2 };
 }
 
+/** Кадр маппинга (масштаб и сдвиг центра в долях сцены) поверх «вписать целиком». */
+export function applyFrame(
+  placement: Placement,
+  stage: Size,
+  frame: { zoom: number; offsetX: number; offsetY: number },
+): Placement {
+  return {
+    scale: placement.scale * frame.zoom,
+    x: placement.x + frame.offsetX * stage.width,
+    y: placement.y + frame.offsetY * stage.height,
+  };
+}
+
 /**
  * Курсор → взгляд: -1…1 по осям, y вверх (как `AvatarRenderer.lookAt`). За пределами сцены
  * значение обрезается — модель смотрит «в край», а не выворачивает шею.

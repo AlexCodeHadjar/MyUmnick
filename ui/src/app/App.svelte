@@ -38,7 +38,7 @@
     {/snippet}
     {#snippet right()}
       <section class="stage" aria-label="Сцена">
-        <AvatarStage name={import.meta.env.VITE_AVATAR} />
+        <AvatarStage name={import.meta.env.VITE_AVATAR} store={client.store} />
         {#if showMetrics}
           <MetricsPanel
             store={client.store}
