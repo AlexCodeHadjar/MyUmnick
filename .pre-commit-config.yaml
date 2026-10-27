@@ -1,5 +1,4 @@
 # Инструменты берутся из uv.lock через `uv run` — одна версия для хуков, CI и редактора.
-# Хуки lint-imports, длины файлов (R-10) и gen_map --check добавляются в S-0.2.
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -37,4 +36,21 @@ repos:
         entry: uv run --frozen mypy
         language: system
         types_or: [python, pyi]
+        pass_filenames: false
+      - id: lint-imports
+        name: import-linter (R-01, R-02)
+        entry: uv run --frozen lint-imports
+        language: system
+        files: ^(src/|\.importlinter$)
+        pass_filenames: false
+      - id: file-length
+        name: длина файлов (R-10)
+        entry: uv run --frozen python tools/check_file_length.py
+        language: system
+        types: [python]
+      - id: gen-map
+        name: PROJECT_MAP.md актуален
+        entry: uv run --frozen python tools/gen_map.py --check
+        language: system
+        files: ^(src/|tools/gen_map\.py$|docs/ai/PROJECT_MAP\.md$)
         pass_filenames: false

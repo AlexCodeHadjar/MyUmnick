@@ -32,5 +32,14 @@ jobs:
       - name: mypy --strict
         run: uv run --frozen mypy
 
+      - name: Архитектурные контракты (import-linter)
+        run: uv run --frozen lint-imports
+
+      - name: Длина файлов (R-10)
+        run: uv run --frozen python tools/check_file_length.py
+
+      - name: PROJECT_MAP.md актуален
+        run: uv run --frozen python tools/gen_map.py --check
+
       - name: pytest + покрытие
         run: uv run --frozen pytest --cov --cov-report=term

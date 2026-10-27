@@ -1,0 +1,67 @@
+; Архитектурные контракты (R-01, R-02; таблица слоёв — docs/archive/MASTER_PLAN_v1.md, 5.2).
+; Проверка: uv run lint-imports
+
+[importlinter]
+root_package = vtuber
+include_external_packages = True
+
+[importlinter:contract:layers]
+name = Слои гексагональной архитектуры
+type = layers
+layers =
+    vtuber.bootstrap
+    vtuber.gateway | vtuber.adapters
+    vtuber.application
+    vtuber.ports
+    vtuber.domain
+
+; layers разрешает верхним слоям импортировать любые нижние, а адаптерам application запрещён (R-02).
+[importlinter:contract:adapters-no-application]
+name = Адаптеры не зависят от прикладного слоя
+type = forbidden
+source_modules =
+    vtuber.adapters
+forbidden_modules =
+    vtuber.application
+
+[importlinter:contract:adapters-independent]
+name = Адаптеры не зависят друг от друга
+type = independence
+modules =
+    vtuber.adapters.llm
+    vtuber.adapters.tts
+    vtuber.adapters.stt
+    vtuber.adapters.memory
+
+[importlinter:contract:domain-pure]
+name = Домен без внешних зависимостей и kernel
+type = forbidden
+source_modules =
+    vtuber.domain
+forbidden_modules =
+    vtuber.kernel
+    httpx
+    pydantic
+    websockets
+    torch
+
+[importlinter:contract:ports-no-kernel]
+name = Порты зависят только от домена
+type = forbidden
+source_modules =
+    vtuber.ports
+forbidden_modules =
+    vtuber.kernel
+
+[importlinter:contract:kernel-independent]
+name = Kernel не зависит от слоёв проекта
+type = forbidden
+source_modules =
+    vtuber.kernel
+forbidden_modules =
+    vtuber.domain
+    vtuber.ports
+    vtuber.application
+    vtuber.adapters
+    vtuber.gateway
+    vtuber.bootstrap
