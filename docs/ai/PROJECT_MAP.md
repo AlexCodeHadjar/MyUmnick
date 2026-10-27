@@ -79,3 +79,6 @@
 
 ## src/vtuber/ports
 Порты: Protocol-интерфейсы, через которые ядро обращается к внешнему миру.
+
+- `GenerationParams` — `src/vtuber/ports/llm.py:11` — Параметры генерации; значения приходят из конфига (`[llm.generation]`, ADR-0006).
+- `LLMPort` — `src/vtuber/ports/llm.py:19` — Локальная LLM; адаптеры бросают только доменные ошибки (R-43).
