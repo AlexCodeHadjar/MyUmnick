@@ -10,6 +10,7 @@ from vtuber.application.memory import ShortTermMemory
 from vtuber.application.pipeline import ReplyPipeline, StreamParser
 from vtuber.application.prompting import PromptBuilder
 from vtuber.domain import (
+    AudioChunk,
     CancelReason,
     Emotion,
     Turn,
@@ -147,6 +148,10 @@ class _FirstOutputSink:
     async def emotion(self, emotion: Emotion) -> None:
         self._mark()
         await self.inner.emotion(emotion)
+
+    async def audio(self, chunk: AudioChunk) -> None:
+        self._mark()
+        await self.inner.audio(chunk)
 
     async def done(self) -> None:
         await self.inner.done()

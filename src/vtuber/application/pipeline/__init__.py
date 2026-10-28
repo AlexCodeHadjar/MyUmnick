@@ -1,7 +1,8 @@
 """Конвейер ответа: LLM → разбор тегов → нарезка фраз → TTS."""
 
-from vtuber.application.pipeline.chunker import ChunkerConfig, SentenceChunker
-from vtuber.application.pipeline.reply_pipeline import ReplyPipeline
+from vtuber.application.pipeline.chunker import ChunkerConfig, PipelineConfig, SentenceChunker
+from vtuber.application.pipeline.reply_pipeline import ReplyPipeline, Voice
+from vtuber.application.pipeline.speaker import Speaker
 from vtuber.application.pipeline.stream_parser import (
     HOLD_LIMIT,
     EmotionCue,
@@ -15,8 +16,11 @@ __all__ = [
     "ChunkerConfig",
     "EmotionCue",
     "ParseEvent",
+    "PipelineConfig",
     "ReplyPipeline",
     "SentenceChunker",
+    "Speaker",
     "StreamParser",
     "TextDelta",
+    "Voice",
 ]

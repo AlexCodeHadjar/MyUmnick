@@ -54,6 +54,12 @@ def _is_abbreviation(text: str, dot: int) -> bool:
     return token in ABBREVIATIONS or initial
 
 
+class PipelineConfig(ConfigSection):
+    """Секция `[pipeline]`: настройки конвейера ответа."""
+
+    chunker: ChunkerConfig
+
+
 class SentenceChunker:
     """Один экземпляр на ход: `feed(дельта)` отдаёт готовые фразы, `flush()` — хвост."""
 

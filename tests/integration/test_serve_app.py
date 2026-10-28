@@ -7,11 +7,13 @@ import socket
 import threading
 from pathlib import Path
 
+import pytest
 import structlog
 from websockets.asyncio.client import ClientConnection, connect
 
 from tests.llm_stub import LLMStub
 from vtuber.bootstrap import Console, main
+from vtuber.gateway import decode_audio_frame
 
 ROOT = Path(__file__).resolve().parents[2]
 SEND = json.dumps({"v": 1, "type": "chat.send", "data": {"text": "Привет"}})
@@ -63,6 +65,7 @@ async def test_serve_mode_runs_gateway_until_stdin_closes(tmp_path: Path) -> Non
             "VTUBER_GATEWAY__PORT": str(port),
             "VTUBER_LOGGING__FILE": str(tmp_path / "app.jsonl"),
             "VTUBER_TELEMETRY__TRACES_FILE": str(tmp_path / "traces.jsonl"),
+            "VTUBER_TTS__BACKEND": "none",
         }
         app = asyncio.create_task(
             asyncio.to_thread(main, ["serve", "--root", str(ROOT)], env, Console(stdin, out))
@@ -89,6 +92,7 @@ async def test_serve_mode_keeps_running_when_llm_is_down(tmp_path: Path) -> None
         "VTUBER_GATEWAY__PORT": str(port),
         "VTUBER_LOGGING__FILE": str(tmp_path / "app.jsonl"),
         "VTUBER_TELEMETRY__TRACES_FILE": str(tmp_path / "traces.jsonl"),
+        "VTUBER_TTS__BACKEND": "none",
     }
     app = asyncio.create_task(
         asyncio.to_thread(main, ["serve", "--root", str(ROOT)], env, Console(stdin, out))
@@ -100,3 +104,57 @@ async def test_serve_mode_keeps_running_when_llm_is_down(tmp_path: Path) -> None
 
     assert await asyncio.wait_for(app, timeout=5) == 0
     assert "llm.unavailable_at_start" in (tmp_path / "app.jsonl").read_text(encoding="utf-8")
+
+
+SILERO_MODEL = ROOT / "models" / "tts" / "silero" / "v5_6_ru.pt"
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not SILERO_MODEL.is_file(), reason=f"нет модели Silero {SILERO_MODEL}")
+async def test_serve_mode_speaks_reply_as_binary_audio_frames(tmp_path: Path) -> None:
+    port, stdin, out = _free_port(), _HeldStdin(), io.StringIO()
+
+    async with LLMStub("<happy>Привет! Рада тебя видеть.", chunk_size=4, delay_s=0) as stub:
+        env = {
+            "VTUBER_LLM__BASE_URL": stub.url,
+            "VTUBER_GATEWAY__PORT": str(port),
+            "VTUBER_LOGGING__FILE": str(tmp_path / "app.jsonl"),
+            "VTUBER_TELEMETRY__TRACES_FILE": str(tmp_path / "traces.jsonl"),
+        }
+        app = asyncio.create_task(
+            asyncio.to_thread(main, ["serve", "--root", str(ROOT)], env, Console(stdin, out))
+        )
+        ws = await _connect(port)
+        frames, statuses = await _speak_once(ws)
+        await ws.close()
+        stdin.closed_by_parent.set()
+        code = await asyncio.wait_for(app, timeout=10)
+    structlog.reset_defaults()
+
+    assert ("tts", "ready") in statuses
+    assert frames
+    decoded = [decode_audio_frame(frame) for frame in frames]
+    assert [frame.seq for frame in decoded] == list(range(len(decoded)))
+    assert {frame.chunk.format.sample_rate for frame in decoded} == {48000}
+    assert sum(frame.chunk.duration_s for frame in decoded) > 1.0
+    assert code == 0
+
+
+async def _speak_once(ws: ClientConnection) -> tuple[list[bytes], list[tuple[str, str]]]:
+    """Ждёт готовности LLM и TTS, шлёт реплику, собирает звук до `turn.finished`."""
+    frames: list[bytes] = []
+    statuses: list[tuple[str, str]] = []
+    sent = False
+    while True:
+        raw = await asyncio.wait_for(ws.recv(), timeout=30)
+        if isinstance(raw, bytes):
+            frames.append(raw)
+            continue
+        message = json.loads(raw)
+        if message["type"] == "status":
+            statuses.append((message["data"]["component"], message["data"]["state"]))
+        if not sent and {("llm", "ready"), ("tts", "ready")} <= set(statuses):
+            await ws.send(SEND)
+            sent = True
+        if message["type"] == "turn.finished":
+            return frames, statuses

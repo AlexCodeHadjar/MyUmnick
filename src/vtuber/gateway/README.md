@@ -18,7 +18,7 @@
 | `decode_inbound`, `encode_outbound` | JSON ↔ модели; битое сообщение → `ProtocolError` |
 | `encode_audio_frame`, `decode_audio_frame`, `AudioFrame` | Бинарный аудиокадр: 16 байт заголовка + PCM |
 | `GatewayServer(service, bus, cfg)`, `GatewayConfig` | WebSocket-сервер: `async with`, `serve_forever()`, `send()`, `port`; `[gateway]` host/port |
-| `WsReplySink(send)` | Ответ хода → `chat.delta` / `avatar.emotion`; ход — из `kernel.current_turn()` |
+| `WsReplySink(send, send_bytes)` | Ответ хода → `chat.delta` / `avatar.emotion` / бинарный аудиокадр (`seq` с нуля в каждом ходе); ход — из `kernel.current_turn()` |
 | `REPLACED_CODE` | 4000 — код закрытия вытесненного клиента |
 
 ## Зависимости

@@ -5,9 +5,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Literal
 
-from vtuber.domain import Emotion
+from vtuber.domain import AudioChunk, Emotion
 
-type Kind = Literal["text", "emotion", "done"]
+type Kind = Literal["text", "emotion", "audio", "done"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -16,7 +16,7 @@ class Entry:
 
     at_ns: int
     kind: Kind
-    value: str | Emotion | None
+    value: str | Emotion | AudioChunk | None
 
 
 @dataclass(slots=True)
@@ -32,6 +32,9 @@ class RecordingSink:
     async def emotion(self, emotion: Emotion) -> None:
         self.entries.append(Entry(self.clock(), "emotion", emotion))
 
+    async def audio(self, chunk: AudioChunk) -> None:
+        self.entries.append(Entry(self.clock(), "audio", chunk))
+
     async def done(self) -> None:
         self.entries.append(Entry(self.clock(), "done", None))
 
@@ -40,6 +43,9 @@ class RecordingSink:
 
     def shown_text(self) -> str:
         return "".join(str(entry.value) for entry in self.entries if entry.kind == "text")
+
+    def audio_chunks(self) -> list[AudioChunk]:
+        return [entry.value for entry in self.entries if isinstance(entry.value, AudioChunk)]
 
     def emotions(self) -> list[Emotion]:
         return [entry.value for entry in self.entries if isinstance(entry.value, Emotion)]

@@ -30,16 +30,17 @@
 ## src/vtuber/adapters/tts
 Адаптеры синтеза речи (TTSPort).
 
+- `TTSConfig` — `src/vtuber/adapters/tts/config.py:12` — Секция `[tts]`.
 - `PiperConfig` — `src/vtuber/adapters/tts/piper.py:28` — Подсекция `[tts.piper]`.
 - `PiperChunk` — `src/vtuber/adapters/tts/piper.py:42` — Фрагмент `piper.AudioChunk`: PCM s16le моно.
 - `PiperVoiceLike` — `src/vtuber/adapters/tts/piper.py:51` — То, что нужно от `piper.PiperVoice`: частота голоса и синтез по предложениям.
 - `load_voice` — `src/vtuber/adapters/tts/piper.py:85` — Голос Piper: `.onnx` и рядом `.onnx.json`.
 - `PiperTTS` — `src/vtuber/adapters/tts/piper.py:92` — Реализует TTSPort; голос грузится и прогревается один раз в `async with` (R-40).
-- `SileroConfig` — `src/vtuber/adapters/tts/silero.py:30` — Подсекция `[tts.silero]`.
-- `SileroModel` — `src/vtuber/adapters/tts/silero.py:44` — То, что нужно от модели Silero (`TTSModelMultiAcc`): синтез фразы в тензор float.
-- `load_package` — `src/vtuber/adapters/tts/silero.py:55` — Модель из `.pt`-пакета Silero (официальный способ загрузки без torch.hub).
-- `to_pcm` — `src/vtuber/adapters/tts/silero.py:61` — Тензор float [-1, 1] → PCM s16le; выход за шкалу обрезается, а не переворачивается.
-- `SileroTTS` — `src/vtuber/adapters/tts/silero.py:67` — Реализует TTSPort; модель грузится один раз в `async with` (R-40).
+- `SileroConfig` — `src/vtuber/adapters/tts/silero.py:38` — Подсекция `[tts.silero]`.
+- `SileroModel` — `src/vtuber/adapters/tts/silero.py:52` — То, что нужно от модели Silero (`TTSModelMultiAcc`): синтез фразы в тензор float.
+- `load_package` — `src/vtuber/adapters/tts/silero.py:63` — Модель из `.pt`-пакета Silero (официальный способ загрузки без torch.hub).
+- `to_pcm` — `src/vtuber/adapters/tts/silero.py:71` — Тензор float [-1, 1] → PCM s16le; выход за шкалу обрезается, а не переворачивается.
+- `SileroTTS` — `src/vtuber/adapters/tts/silero.py:79` — Реализует TTSPort; модель грузится один раз в `async with` (R-40).
 
 ## src/vtuber/application
 Прикладной слой: сценарии диалога и конвейер ответа поверх портов.
@@ -47,7 +48,7 @@
 ## src/vtuber/application/conversation
 Сценарий «ход диалога»: реплика → промпт → конвейер → история и события.
 
-- `ConversationService` — `src/vtuber/application/conversation/service.py:42` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
+- `ConversationService` — `src/vtuber/application/conversation/service.py:43` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
 
 ## src/vtuber/application/memory
 Память витюбера: история текущего разговора (далее — долговременная память, Этап 10).
@@ -58,8 +59,11 @@
 Конвейер ответа: LLM → разбор тегов → нарезка фраз → TTS.
 
 - `ChunkerConfig` — `src/vtuber/application/pipeline/chunker.py:29` — Секция `[pipeline.chunker]`.
-- `SentenceChunker` — `src/vtuber/application/pipeline/chunker.py:57` — Один экземпляр на ход: `feed(дельта)` отдаёт готовые фразы, `flush()` — хвост.
-- `ReplyPipeline` — `src/vtuber/application/pipeline/reply_pipeline.py:12` — Стримит ответ LLM получателю по мере генерации (T-01): ни одна стадия не ждёт конца.
+- `PipelineConfig` — `src/vtuber/application/pipeline/chunker.py:57` — Секция `[pipeline]`: настройки конвейера ответа.
+- `SentenceChunker` — `src/vtuber/application/pipeline/chunker.py:63` — Один экземпляр на ход: `feed(дельта)` отдаёт готовые фразы, `flush()` — хвост.
+- `Voice` — `src/vtuber/application/pipeline/reply_pipeline.py:19` — Голос хода: движок TTS и правила нарезки на фразы. Нет голоса — только текст.
+- `ReplyPipeline` — `src/vtuber/application/pipeline/reply_pipeline.py:51` — Стримит ответ LLM получателю по мере генерации (T-01): ни одна стадия не ждёт конца.
+- `Speaker` — `src/vtuber/application/pipeline/speaker.py:22` — Озвучивает фразы одного хода.
 - `TextDelta` — `src/vtuber/application/pipeline/stream_parser.py:20` — Порция текста: `text` — для чата, `spoken_text` — для TTS (без эмодзи и разметки).
 - `EmotionCue` — `src/vtuber/application/pipeline/stream_parser.py:32` — В ответе встретился тег эмоции; озвучивать нечего.
 - `StreamParser` — `src/vtuber/application/pipeline/stream_parser.py:46` — Разбирает дельты одного ответа по мере поступления (один экземпляр на ход).
@@ -88,15 +92,17 @@
 ## src/vtuber/bootstrap
 Корень композиции: конфиг, персона, сборка графа объектов и точка входа.
 
-- `AppConfig` — `src/vtuber/bootstrap/config.py:13` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:24` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
-- `Core` — `src/vtuber/bootstrap/container.py:17` — Общие механизмы, которые получают все: шина событий и телеметрия.
-- `llm_backends` — `src/vtuber/bootstrap/container.py:24` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
-- `build_conversation` — `src/vtuber/bootstrap/container.py:35` — Собирает сервис хода; `PromptBuilder` отдаётся и наружу — для прогрева кэша (T-06).
-- `LineSource` — `src/vtuber/bootstrap/main.py:38` — Откуда читать строки: `sys.stdin` или его тестовая замена.
-- `Console` — `src/vtuber/bootstrap/main.py:45` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
-- `main` — `src/vtuber/bootstrap/main.py:58` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
-- `run` — `src/vtuber/bootstrap/main.py:153` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
+- `AppConfig` — `src/vtuber/bootstrap/config.py:15` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:28` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `Core` — `src/vtuber/bootstrap/container.py:21` — Общие механизмы, которые получают все: шина событий и телеметрия.
+- `Backends` — `src/vtuber/bootstrap/container.py:29` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
+- `llm_backends` — `src/vtuber/bootstrap/container.py:36` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
+- `tts_backends` — `src/vtuber/bootstrap/container.py:47` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
+- `build_conversation` — `src/vtuber/bootstrap/container.py:56` — Собирает сервис хода; `PromptBuilder` отдаётся и наружу — для прогрева кэша (T-06).
+- `LineSource` — `src/vtuber/bootstrap/main.py:49` — Откуда читать строки: `sys.stdin` или его тестовая замена.
+- `Console` — `src/vtuber/bootstrap/main.py:56` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
+- `main` — `src/vtuber/bootstrap/main.py:69` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
+- `run` — `src/vtuber/bootstrap/main.py:198` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
 
@@ -161,9 +167,9 @@
 - `ErrorMessage` — `src/vtuber/gateway/protocol.py:200` — Ядро → UI: ошибка; `turn` — None, если не относится к ходу (битое сообщение).
 - `GatewayConfig` — `src/vtuber/gateway/server.py:44` — Секция `[gateway]`: где слушать UI (только localhost, ADR-0002).
 - `GatewayServer` — `src/vtuber/gateway/server.py:51` — Шлюз для UI: `async with GatewayServer(...) as server: await server.serve_forever()`.
-- `WsReplySink` — `src/vtuber/gateway/sink.py:12` — ReplySink для WebSocket: текст → `chat.delta`, эмоция → `avatar.emotion`.
+- `WsReplySink` — `src/vtuber/gateway/sink.py:14` — ReplySink для WebSocket: текст → `chat.delta`, эмоция → `avatar.emotion`, звук → кадр.
 - `TerminalSink` — `src/vtuber/gateway/terminal.py:21` — ReplySink для консоли: печатает ответ по мере генерации и помнит время первой порции.
-- `TerminalChat` — `src/vtuber/gateway/terminal.py:55` — Цикл чата: строка → ход; новая строка во время ответа прерывает его (T-14).
+- `TerminalChat` — `src/vtuber/gateway/terminal.py:58` — Цикл чата: строка → ход; новая строка во время ответа прерывает его (T-14).
 
 ## src/vtuber/kernel
 Общие механизмы ядра: шина событий, реестр, телеметрия, конфиг, логи.

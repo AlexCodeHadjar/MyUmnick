@@ -1,5 +1,6 @@
 """Адаптеры синтеза речи (TTSPort)."""
 
+from vtuber.adapters.tts.config import TTSConfig
 from vtuber.adapters.tts.piper import (
     PiperConfig,
     PiperTTS,
@@ -15,6 +16,7 @@ __all__ = [
     "SileroConfig",
     "SileroModel",
     "SileroTTS",
+    "TTSConfig",
     "load_package",
     "load_voice",
     "to_pcm",

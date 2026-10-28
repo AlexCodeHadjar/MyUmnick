@@ -11,7 +11,7 @@
 | `LLMPort` | `stream(messages, params)` → `AsyncGenerator[str]` (закрывать через `aclosing`); `prefill(messages)` |
 | `GenerationParams` | `max_tokens`, `temperature`, `stop`; значения — из конфига |
 | `TTSPort` | `audio_format` (частота PCM движка); `synthesize(phrase)` → `AsyncGenerator[AudioChunk]` (закрывать через `aclosing`) |
-| `ReplySink` | Получатель хода: `text(delta)`, `emotion(e)`, `done()` (`done` — только при полном ответе); `audio` — S-7.5 |
+| `ReplySink` | Получатель хода: `text(delta)`, `emotion(e)`, `audio(chunk)`, `done()` (`done` — только при полном ответе, после последнего звука) |
 
 ## Зависимости
 - Только domain (`Message`, доменные ошибки).

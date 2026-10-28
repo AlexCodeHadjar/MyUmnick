@@ -1,12 +1,11 @@
 # STATE — снимок проекта
-_Обновлено: 2026-10-28, сессия S-7.4_
+_Обновлено: 2026-10-28, сессия S-7.5_
 
 ## Сейчас
 - Этап: 7 — Голос (docs/stages/STAGE_07.md). Этап 6 закрыт (веха M2: чат слева, живая модель
   справа).
-- Следующая сессия: **S-7.5 — TTS-ветка конвейера, бинарные кадры** (docs/stages/STAGE_07.md);
-  там же — секция `[tts]` (`backend`, `silero`, `piper`) и `[pipeline.chunker]` в `default.toml`
-  и `AppConfig`, реестр TTS в bootstrap. Аватар: Haru в
+- Следующая сессия: **S-7.6 — аудиоплеер и липсинк в UI** (docs/stages/STAGE_07.md): ядро уже
+  шлёт звук бинарными кадрами (`serve`, движок `[tts].backend`, по умолчанию Silero). Аватар: Haru в
   `ui/public/avatars/haru/` (+ наш `mapping.json` в git), Core 5.1 (SDK 5-r.4) в
   `ui/public/live2d/` — вне git.
 - **Отложено до целевой машины (RTX 5070 Ti):** S-2.5 (выбор модели, ADR-0004), прогоны `-m gpu`,
@@ -46,8 +45,13 @@ _Обновлено: 2026-10-28, сессия S-7.4_
   (`-m slow`); модель — `models/tts/silero/v5_6_ru.pt`, вне git
 - [x] S-7.4 `PiperTTS` (piper-tts 1.8, голос denis CC0 — группа `piper`, ADR-0013); прогрев при
   загрузке у обоих движков (T-06); контракт для Piper (`-m slow`)
+- [x] S-7.5 TTS-ветка конвейера (`Speaker`, `Voice`), `ReplySink.audio`, бинарные кадры в
+  `WsReplySink`, секции `[tts]` и `[pipeline.chunker]`, реестр `tts_backends()`, загрузка голоса
+  со статусом TTS в UI
 
 ## Последние метрики
+- TTFA ядра (`tts.first_audio`, FakeLLM ~50 ток/с, машина разработки): Silero p50 231 мс (max
+  347), Piper p50 237 мс. Плюс сеть и плеер UI — S-7.6; плюс настоящий TTFT — целевая машина.
 - TTS на `bench/prompts_ru.jsonl` (целые промпты): Silero 48 кГц — RTF p50 0.041 / p95 0.151, первый
   фрагмент p50 145 мс; Piper denis — RTF p50 0.184 / p95 0.322, первый фрагмент p50 594 мс.
 - Silero v5_6_ru (машина разработки, 4 потока): 48 кГц — RTF p50 0.035 / p95 0.048, первый
@@ -98,6 +102,8 @@ _Обновлено: 2026-10-28, сессия S-7.4_
   `ui-vite` (`.claude/launch.json`, порт 1420).
 
 ## Важно помнить
+- Голос только в `serve`; в тестах шлюза — `VTUBER_TTS__BACKEND=none`, иначе грузится Silero.
+  Сквозной тест звука — `uv run pytest -m slow tests/integration/test_serve_app.py`.
 - Окружение — `uv sync --all-extras`: без группы `silero` нет torch, и mypy/тесты Silero упадут.
   Контракт Silero — `uv run pytest -m slow tests/contract/test_tts_contract.py`.
 - Скрипты `tools/` запускаются модулем: `uv run python -m tools.<имя>` (`python tools/x.py` не
@@ -128,4 +134,4 @@ _Обновлено: 2026-10-28, сессия S-7.4_
 - Новая зависимость — ADR. ADR-0004 — выбор LLM (S-2.5); следующий свободный — ADR-0014.
 
 ## Последний журнал
-docs/ai/sessions/2026-10-28_S-7.4.md
+docs/ai/sessions/2026-10-28_S-7.5.md

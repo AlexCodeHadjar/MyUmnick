@@ -97,11 +97,18 @@ class GatewayServer:
 
     async def send(self, message: OutboundMessage) -> None:
         """Шлёт сообщение текущему клиенту; нет клиента или он отключился — сообщение теряется."""
+        await self._deliver(encode_outbound(message))
+
+    async def send_bytes(self, frame: bytes) -> None:
+        """Бинарный кадр (звук) текущему клиенту; без клиента — теряется, как и сообщения."""
+        await self._deliver(frame)
+
+    async def _deliver(self, payload: str | bytes) -> None:
         client = self._client
         if client is None:
             return
         try:
-            await client.send(encode_outbound(message))
+            await client.send(payload)
         except ConnectionClosed:
             _log.info("gateway.client_gone")
 
@@ -129,7 +136,7 @@ class GatewayServer:
             await self.send(ErrorMessage.of(None, ErrorCode.BAD_MESSAGE, str(exc)))
             return
         if isinstance(message, ChatSend):
-            await self._service.handle(message.data.text, WsReplySink(self.send))
+            await self._service.handle(message.data.text, WsReplySink(self.send, self.send_bytes))
         else:
             await self._service.cancel(CancelReason.USER_STOP)
 

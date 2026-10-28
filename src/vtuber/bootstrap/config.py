@@ -4,6 +4,8 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from vtuber.adapters.llm import LLMConfig
+from vtuber.adapters.tts import TTSConfig
+from vtuber.application.pipeline import PipelineConfig
 from vtuber.application.prompting import ContextConfig
 from vtuber.bootstrap.persona import PersonaConfig
 from vtuber.gateway import GatewayConfig
@@ -19,6 +21,8 @@ class AppConfig(ConfigSection):
     persona: PersonaConfig
     context: ContextConfig
     gateway: GatewayConfig
+    pipeline: PipelineConfig
+    tts: TTSConfig
 
 
 def load_app_config(root: Path, env: Mapping[str, str]) -> AppConfig:
