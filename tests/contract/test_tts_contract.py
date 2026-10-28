@@ -6,7 +6,7 @@ from contextlib import aclosing
 
 import pytest
 
-from tests.contract.factories import TTSCase, tts_cases
+from tests.contract.factories import TTSCase, tts_params
 from vtuber.domain import SAMPLE_WIDTH_BYTES, TTSUnavailable
 
 # «Отмена → тишина ≤ 100 мс» (критерий Этапа 7): на синтез из этого бюджета — не больше половины.
@@ -15,7 +15,7 @@ PHRASE = "Привет! Как дела?"
 LONG_PHRASE = "Длинная фраза, чтобы синтез шёл заметное время и его можно было прервать. " * 3
 
 
-@pytest.fixture(params=tts_cases(), ids=lambda case: case.name)
+@pytest.fixture(params=tts_params())
 def case(request: pytest.FixtureRequest) -> TTSCase:
     return request.param  # type: ignore[no-any-return]  # pytest не типизирует param
 

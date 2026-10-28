@@ -1,10 +1,10 @@
 # STATE — снимок проекта
-_Обновлено: 2026-10-27, сессия S-7.2_
+_Обновлено: 2026-10-28, сессия S-7.3_
 
 ## Сейчас
 - Этап: 7 — Голос (docs/stages/STAGE_07.md). Этап 6 закрыт (веха M2: чат слева, живая модель
   справа).
-- Следующая сессия: **S-7.3 — адаптер Silero** (docs/stages/STAGE_07.md). Аватар: Haru в
+- Следующая сессия: **S-7.4 — адаптер Piper** (docs/stages/STAGE_07.md). Аватар: Haru в
   `ui/public/avatars/haru/` (+ наш `mapping.json` в git), Core 5.1 (SDK 5-r.4) в
   `ui/public/live2d/` — вне git.
 - **Отложено до целевой машины (RTX 5070 Ti):** S-2.5 (выбор модели, ADR-0004), прогоны `-m gpu`,
@@ -40,8 +40,12 @@ _Обновлено: 2026-10-27, сессия S-7.2_
   контракт `tests/contract/test_tts_contract.py` (`TTSCase`)
 - [x] S-7.2 `SentenceChunker` (+ `ChunkerConfig`, секция `[pipeline.chunker]` — в default.toml с
   S-7.5), `application/speech`: `normalize_for_speech`, числа, латиница
+- [x] S-7.3 `SileroTTS` (v5_6_ru, torch CPU — группа `silero`, ADR-0012); контракт TTSPort для Silero
+  (`-m slow`); модель — `models/tts/silero/v5_6_ru.pt`, вне git
 
 ## Последние метрики
+- Silero v5_6_ru (машина разработки, 4 потока): 48 кГц — RTF p50 0.035 / p95 0.048, первый
+  фрагмент p50 86 мс; 24 кГц — RTF p50 0.052, 137 мс. Загрузка модели 2.5 с.
 - `span()`: ≈ 1.2–1.5 мкс на замер (машина разработки).
 - TTFT/TPS настоящей модели — ещё нет (S-2.5).
 - Аватар Haru (окно Tauri, 146 Гц): стриминг — 140 к/с, медиана кадра 6.9 мс, p99 7.2 мс.
@@ -85,6 +89,8 @@ _Обновлено: 2026-10-27, сессия S-7.2_
   `ui-vite` (`.claude/launch.json`, порт 1420).
 
 ## Важно помнить
+- Окружение — `uv sync --all-extras`: без группы `silero` нет torch, и mypy/тесты Silero упадут.
+  Контракт Silero — `uv run pytest -m slow tests/contract/test_tts_contract.py`.
 - Скрипты `tools/` запускаются модулем: `uv run python -m tools.<имя>` (`python tools/x.py` не
   видит пакет `tools` и падает на импорте).
 - Аватар: модель — `VITE_AVATAR`, всё модель-зависимое — `ui/public/avatars/<имя>/mapping.json`
@@ -110,7 +116,7 @@ _Обновлено: 2026-10-27, сессия S-7.2_
 - Файлы — всегда `encoding="utf-8"`; `.ps1` — UTF-8 **с BOM**.
 - Протокол меняется только в `gateway/protocol.py`; сообщение добавляется вместе с кодом,
   который его использует. JSON — pydantic-core, orjson не нужен.
-- Новая зависимость — ADR. ADR-0004 — выбор LLM (S-2.5); следующий свободный — ADR-0012.
+- Новая зависимость — ADR. ADR-0004 — выбор LLM (S-2.5); следующий свободный — ADR-0013.
 
 ## Последний журнал
-docs/ai/sessions/2026-10-27_S-7.2.md
+docs/ai/sessions/2026-10-28_S-7.3.md

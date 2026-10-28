@@ -30,6 +30,12 @@
 ## src/vtuber/adapters/tts
 Адаптеры синтеза речи (TTSPort).
 
+- `SileroConfig` — `src/vtuber/adapters/tts/silero.py:28` — Подсекция `[tts.silero]`.
+- `SileroModel` — `src/vtuber/adapters/tts/silero.py:42` — То, что нужно от модели Silero (`TTSModelMultiAcc`): синтез фразы в тензор float.
+- `load_package` — `src/vtuber/adapters/tts/silero.py:53` — Модель из `.pt`-пакета Silero (официальный способ загрузки без torch.hub).
+- `to_pcm` — `src/vtuber/adapters/tts/silero.py:59` — Тензор float [-1, 1] → PCM s16le; выход за шкалу обрезается, а не переворачивается.
+- `SileroTTS` — `src/vtuber/adapters/tts/silero.py:65` — Реализует TTSPort; модель грузится один раз в `async with` (R-40).
+
 ## src/vtuber/application
 Прикладной слой: сценарии диалога и конвейер ответа поверх портов.
 

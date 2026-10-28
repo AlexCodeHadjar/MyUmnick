@@ -4,6 +4,9 @@ import socket
 from collections.abc import AsyncIterator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager, nullcontext
 from dataclasses import dataclass
+from pathlib import Path
+
+import pytest
 
 from tests.fakes import FakeLLM, FakeTTS
 from tests.llm_stub import LLMStub
@@ -111,12 +114,47 @@ class TTSCase:
     unavailable: TTSFactory
 
 
+ROOT = Path(__file__).resolve().parents[2]
+SILERO_MODEL = ROOT / "models" / "tts" / "silero" / "v5_6_ru.pt"
+
+
+def _silero(model_path: Path) -> TTSFactory:
+    @asynccontextmanager
+    async def factory() -> AsyncIterator[TTSPort]:
+        # torch грузится только при запуске случая: быстрый прогон тестов его не ждёт.
+        from vtuber.adapters.tts import SileroConfig, SileroTTS  # noqa: PLC0415
+
+        cfg = SileroConfig(
+            model_path=model_path, speaker="xenia", sample_rate=24000, threads=4, chunk_ms=200
+        )
+        async with SileroTTS(cfg) as tts:
+            yield tts
+
+    return factory
+
+
 def tts_cases() -> list[TTSCase]:
-    """Фейк в темпе целевого движка (RTF 0.3); реальные адаптеры — с S-7.3."""
+    """Фейк в темпе целевого движка (RTF 0.3) и Silero (ADR-0012)."""
     return [
         TTSCase(
             name="fake",
             available=lambda: nullcontext(FakeTTS(rtf=0.3, chunk_ms=200)),
             unavailable=lambda: nullcontext(FakeTTS(fail_after=0)),
         ),
+        TTSCase(
+            name="silero",
+            available=_silero(SILERO_MODEL),
+            unavailable=_silero(SILERO_MODEL.with_name("нет-такой-модели.pt")),
+        ),
+    ]
+
+
+def tts_params() -> list[object]:
+    """Случаи для `pytest` с метками: Silero — медленный (грузит модель) и требует её файл."""
+    no_model = pytest.mark.skipif(
+        not SILERO_MODEL.is_file(), reason=f"нет модели Silero {SILERO_MODEL} (ADR-0012)"
+    )
+    marks = {"silero": [pytest.mark.slow, no_model]}
+    return [
+        pytest.param(case, id=case.name, marks=marks.get(case.name, ())) for case in tts_cases()
     ]

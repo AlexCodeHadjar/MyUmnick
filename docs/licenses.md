@@ -43,7 +43,8 @@
 | PixiJS 8 | рендер | MIT | — | проверено (npm) |
 | @pixi/sound | звук моушенов (транзитивно, не используется) | MIT | — | по памяти |
 | three.js, @pixiv/three-vrm | VRM (альтернатива) | MIT | — | по памяти |
-| Silero TTS (ru v3/v4/v5) | TTS | CC BY-NC 4.0 | некоммерческая | проверено |
+| Silero TTS (ru v3/v4/v5, выбрана v5_6_ru — ADR-0012) | TTS | CC BY-NC 4.0 | некоммерческая; модель не в git | проверено |
+| PyTorch (CPU), NumPy | движок Silero | BSD-3-Clause | — | по памяти |
 | Silero TTS `cis-tts` base | TTS | MIT | — | проверено |
 | Silero VAD | VAD | MIT | — | по памяти |
 | Piper `ru_RU-denis`, `ru_RU-dmitri` | TTS | CC0 | — | проверено |

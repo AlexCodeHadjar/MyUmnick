@@ -38,7 +38,8 @@
 - Решения — `docs/adr/`; шаблоны — `docs/templates/`; обзор документации — `docs/README.md`
 
 ## Команды
-- Установка: `uv sync`, затем `uv run pre-commit install`
+- Установка: `uv sync --all-extras` (группа `silero` — torch CPU, ADR-0012), затем
+  `uv run pre-commit install`; модели — в `models/` (README, ADR-0012)
 - Тесты: `uv run pytest` (с покрытием: `--cov`; GPU-тесты: `-m gpu`)
 - Все проверки: `uv run pre-commit run --all-files`
 - Карта проекта: `uv run python -m tools.gen_map`

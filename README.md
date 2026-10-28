@@ -14,7 +14,13 @@
 ## Разработка
 
 ```bash
-uv sync
+uv sync --all-extras
+```
+
+Голос Silero (ADR-0012): модель `v5_6_ru.pt` (148 МБ) — в `models/tts/silero/`:
+
+```bash
+curl -L -o models/tts/silero/v5_6_ru.pt --create-dirs https://models.silero.ai/models/tts/ru/v5_6_ru.pt
 ```
 
 ```bash
