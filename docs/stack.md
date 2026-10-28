@@ -16,7 +16,7 @@
 | LLM-рантайм | llama.cpp (llama-server) | Ollama, LM Studio, vLLM, TabbyAPI | Контроль KV-кэша, speculative decoding, flash attention, слоты |
 | Формат модели | GGUF Q4_K_M / Q5_K_M | EXL2 (TabbyAPI) | Баланс скорость/качество; выбор — бенчмарком |
 | Размер модели | 7–14B instruct с сильным русским | 3–4B для слабого железа | Отбор на Этапе 2 по «скорость × качество» |
-| TTS (быстрый) | Silero TTS v5.6 (ru, torch CPU — ADR-0012); Piper (ru, ONNX) — S-7.4 | — | CPU, реальное время, русские голоса ⏱ — **см. лицензии** |
+| TTS (быстрый) | Silero TTS v5.6 (ru, torch CPU — ADR-0012); Piper 1.8 (ru, ONNX, голос denis CC0 — ADR-0013) | — | CPU, реальное время, русские голоса ⏱ — **см. лицензии** |
 | TTS (качественный) | XTTS-v2 / F5-TTS (опция) | CosyVoice и др. | Клонирование голоса, выше качество; GPU, медленнее |
 | STT | faster-whisper + Silero VAD | Vosk, GigaAM | Качество + скорость на GPU/CPU |
 | Эмбеддинги | multilingual-e5-small | bge-m3 | Быстро на CPU, русский |

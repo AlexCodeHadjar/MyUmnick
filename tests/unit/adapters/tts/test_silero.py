@@ -45,14 +45,15 @@ async def test_phrase_is_split_into_chunks_of_configured_length() -> None:
     assert tts.audio_format.sample_rate == 8000
     # 0.25 с при 8 кГц = 2000 сэмплов → 800 + 800 + 400, по 2 байта.
     assert [len(chunk) for chunk in chunks] == [1600, 1600, 800]
-    assert model.calls == [("Привет!", "xenia", 8000)]
+    # Первый вызов — прогрев при загрузке (T-06).
+    assert model.calls == [("Привет.", "xenia", 8000), ("Привет!", "xenia", 8000)]
 
 
 async def test_phrase_without_letters_gives_no_audio() -> None:
     model = FakeModel()
     async with SileroTTS(CFG, loader=lambda _: model) as tts:
         assert await _synthesize(tts, " … — ") == []
-    assert model.calls == []
+    assert [text for text, _, _ in model.calls] == ["Привет."]
 
 
 async def test_missing_model_file_means_unavailable_with_download_hint() -> None:
@@ -79,8 +80,9 @@ async def test_outside_context_manager_is_unavailable() -> None:
 
 
 async def test_synthesis_error_becomes_generation_failed() -> None:
-    model = FakeModel(error=ValueError("bad symbol"))
+    model = FakeModel()
     async with SileroTTS(CFG, loader=lambda _: model) as tts:
+        model.error = ValueError("bad symbol")
         with pytest.raises(GenerationFailed, match="bad symbol"):
             await _synthesize(tts, "Привет")
 

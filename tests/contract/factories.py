@@ -133,8 +133,23 @@ def _silero(model_path: Path) -> TTSFactory:
     return factory
 
 
+PIPER_VOICE = ROOT / "models" / "tts" / "piper" / "ru_RU-denis-medium.onnx"
+
+
+def _piper(model_path: Path) -> TTSFactory:
+    @asynccontextmanager
+    async def factory() -> AsyncIterator[TTSPort]:
+        from vtuber.adapters.tts import PiperConfig, PiperTTS  # noqa: PLC0415
+
+        cfg = PiperConfig(model_path=model_path, sample_rate=22050, length_scale=1.0, chunk_ms=200)
+        async with PiperTTS(cfg) as tts:
+            yield tts
+
+    return factory
+
+
 def tts_cases() -> list[TTSCase]:
-    """Фейк в темпе целевого движка (RTF 0.3) и Silero (ADR-0012)."""
+    """Фейк в темпе целевого движка (RTF 0.3), Silero (ADR-0012) и Piper (ADR-0013)."""
     return [
         TTSCase(
             name="fake",
@@ -146,15 +161,23 @@ def tts_cases() -> list[TTSCase]:
             available=_silero(SILERO_MODEL),
             unavailable=_silero(SILERO_MODEL.with_name("нет-такой-модели.pt")),
         ),
+        TTSCase(
+            name="piper",
+            available=_piper(PIPER_VOICE),
+            unavailable=_piper(PIPER_VOICE.with_name("нет-такого-голоса.onnx")),
+        ),
     ]
 
 
 def tts_params() -> list[object]:
     """Случаи для `pytest` с метками: Silero — медленный (грузит модель) и требует её файл."""
-    no_model = pytest.mark.skipif(
+    no_silero = pytest.mark.skipif(
         not SILERO_MODEL.is_file(), reason=f"нет модели Silero {SILERO_MODEL} (ADR-0012)"
     )
-    marks = {"silero": [pytest.mark.slow, no_model]}
+    no_piper = pytest.mark.skipif(
+        not PIPER_VOICE.is_file(), reason=f"нет голоса Piper {PIPER_VOICE} (ADR-0013)"
+    )
+    marks = {"silero": [pytest.mark.slow, no_silero], "piper": [pytest.mark.slow, no_piper]}
     return [
         pytest.param(case, id=case.name, marks=marks.get(case.name, ())) for case in tts_cases()
     ]

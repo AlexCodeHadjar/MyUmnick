@@ -30,11 +30,16 @@
 ## src/vtuber/adapters/tts
 Адаптеры синтеза речи (TTSPort).
 
-- `SileroConfig` — `src/vtuber/adapters/tts/silero.py:28` — Подсекция `[tts.silero]`.
-- `SileroModel` — `src/vtuber/adapters/tts/silero.py:42` — То, что нужно от модели Silero (`TTSModelMultiAcc`): синтез фразы в тензор float.
-- `load_package` — `src/vtuber/adapters/tts/silero.py:53` — Модель из `.pt`-пакета Silero (официальный способ загрузки без torch.hub).
-- `to_pcm` — `src/vtuber/adapters/tts/silero.py:59` — Тензор float [-1, 1] → PCM s16le; выход за шкалу обрезается, а не переворачивается.
-- `SileroTTS` — `src/vtuber/adapters/tts/silero.py:65` — Реализует TTSPort; модель грузится один раз в `async with` (R-40).
+- `PiperConfig` — `src/vtuber/adapters/tts/piper.py:28` — Подсекция `[tts.piper]`.
+- `PiperChunk` — `src/vtuber/adapters/tts/piper.py:42` — Фрагмент `piper.AudioChunk`: PCM s16le моно.
+- `PiperVoiceLike` — `src/vtuber/adapters/tts/piper.py:51` — То, что нужно от `piper.PiperVoice`: частота голоса и синтез по предложениям.
+- `load_voice` — `src/vtuber/adapters/tts/piper.py:85` — Голос Piper: `.onnx` и рядом `.onnx.json`.
+- `PiperTTS` — `src/vtuber/adapters/tts/piper.py:92` — Реализует TTSPort; голос грузится и прогревается один раз в `async with` (R-40).
+- `SileroConfig` — `src/vtuber/adapters/tts/silero.py:30` — Подсекция `[tts.silero]`.
+- `SileroModel` — `src/vtuber/adapters/tts/silero.py:44` — То, что нужно от модели Silero (`TTSModelMultiAcc`): синтез фразы в тензор float.
+- `load_package` — `src/vtuber/adapters/tts/silero.py:55` — Модель из `.pt`-пакета Silero (официальный способ загрузки без torch.hub).
+- `to_pcm` — `src/vtuber/adapters/tts/silero.py:61` — Тензор float [-1, 1] → PCM s16le; выход за шкалу обрезается, а не переворачивается.
+- `SileroTTS` — `src/vtuber/adapters/tts/silero.py:67` — Реализует TTSPort; модель грузится один раз в `async with` (R-40).
 
 ## src/vtuber/application
 Прикладной слой: сценарии диалога и конвейер ответа поверх портов.

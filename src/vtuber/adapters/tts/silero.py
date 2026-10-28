@@ -23,6 +23,8 @@ from vtuber.kernel import ConfigSection
 MS_PER_S = 1000
 # Полная шкала int16: float [-1, 1] → s16le.
 PCM_SCALE = 32767
+# Первый синтез заметно медленнее — платим при загрузке, а не на первой реплике (T-06).
+WARMUP_PHRASE = "Привет."
 
 
 class SileroConfig(ConfigSection):
@@ -121,7 +123,9 @@ class SileroTTS:
 
     def _load(self) -> SileroModel:
         torch.set_num_threads(self._cfg.threads)
-        return self._loader(self._cfg.model_path)
+        model = self._loader(self._cfg.model_path)
+        self._synthesize_pcm(model, WARMUP_PHRASE)
+        return model
 
     def _synthesize_pcm(self, model: SileroModel, text: str) -> bytes:
         cfg = self._cfg

@@ -23,6 +23,16 @@ uv sync --all-extras
 curl -L -o models/tts/silero/v5_6_ru.pt --create-dirs https://models.silero.ai/models/tts/ru/v5_6_ru.pt
 ```
 
+Голос Piper (ADR-0013, CC0) — `.onnx` и `.onnx.json` в `models/tts/piper/`:
+
+```bash
+curl -L -o models/tts/piper/ru_RU-denis-medium.onnx --create-dirs https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/denis/medium/ru_RU-denis-medium.onnx
+```
+
+```bash
+curl -L -o models/tts/piper/ru_RU-denis-medium.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/denis/medium/ru_RU-denis-medium.onnx.json
+```
+
 ```bash
 uv run pre-commit install
 ```

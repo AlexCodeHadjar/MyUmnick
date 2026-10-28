@@ -47,10 +47,11 @@
 | PyTorch (CPU), NumPy | движок Silero | BSD-3-Clause | — | по памяти |
 | Silero TTS `cis-tts` base | TTS | MIT | — | проверено |
 | Silero VAD | VAD | MIT | — | по памяти |
-| Piper `ru_RU-denis`, `ru_RU-dmitri` | TTS | CC0 | — | проверено |
+| Piper `ru_RU-denis`, `ru_RU-dmitri` (выбран denis-medium — ADR-0013) | TTS | CC0 | голос не в git | проверено |
 | Piper `ru_RU-ruslan` | TTS | CC BY-NC-SA 4.0 | некоммерческая, share-alike | проверено |
 | Piper `ru_RU-irina` | TTS | неизвестна (датасет RHVoice) | не использовать при публикации | проверено |
-| Piper (движок) `piper1-gpl` | TTS | GPL (уточнить версию) | копилефт при поставке в составе приложения | частично |
+| Piper (движок) `piper-tts` 1.8 (`piper1-gpl`, ADR-0013) | TTS | GPL-3.0-or-later | копилефт при распространении; приложение не распространяется | проверено (PyPI) |
+| onnxruntime | движок Piper | MIT | — | по памяти |
 | XTTS-v2 | TTS (опция) | Coqui Public Model License | некоммерческая | по памяти |
 | F5-TTS | TTS (опция) | код MIT, веса CC BY-NC | некоммерческие веса | по памяти |
 | faster-whisper, веса Whisper | STT | MIT | — | по памяти |
