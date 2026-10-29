@@ -59,11 +59,14 @@
 Конвейер ответа: LLM → разбор тегов → нарезка фраз → TTS.
 
 - `ChunkerConfig` — `src/vtuber/application/pipeline/chunker.py:29` — Секция `[pipeline.chunker]`.
-- `PipelineConfig` — `src/vtuber/application/pipeline/chunker.py:57` — Секция `[pipeline]`: настройки конвейера ответа.
-- `SentenceChunker` — `src/vtuber/application/pipeline/chunker.py:63` — Один экземпляр на ход: `feed(дельта)` отдаёт готовые фразы, `flush()` — хвост.
-- `Voice` — `src/vtuber/application/pipeline/reply_pipeline.py:19` — Голос хода: движок TTS и правила нарезки на фразы. Нет голоса — только текст.
-- `ReplyPipeline` — `src/vtuber/application/pipeline/reply_pipeline.py:51` — Стримит ответ LLM получателю по мере генерации (T-01): ни одна стадия не ждёт конца.
-- `Speaker` — `src/vtuber/application/pipeline/speaker.py:22` — Озвучивает фразы одного хода.
+- `SentenceChunker` — `src/vtuber/application/pipeline/chunker.py:57` — Один экземпляр на ход: `feed(дельта)` отдаёт готовые фразы, `flush()` — хвост.
+- `PipelineConfig` — `src/vtuber/application/pipeline/config.py:8` — Секция `[pipeline]`: нарезка фраз и междометия-заглушки.
+- `FillerConfig` — `src/vtuber/application/pipeline/filler.py:26` — Секция `[pipeline.filler]`.
+- `FillerBank` — `src/vtuber/application/pipeline/filler.py:38` — Готовые к отдаче междометия; пустой банк (голос не загружен, выключено) — молчит.
+- `AudioOut` — `src/vtuber/application/pipeline/filler.py:76` — Единственный писатель звука хода: ответ и междометие не перемешиваются.
+- `Voice` — `src/vtuber/application/pipeline/reply_pipeline.py:20` — Голос хода: движок TTS, нарезка на фразы, междометия (T-17); без голоса — только текст.
+- `ReplyPipeline` — `src/vtuber/application/pipeline/reply_pipeline.py:53` — Стримит ответ LLM получателю по мере генерации (T-01): ни одна стадия не ждёт конца.
+- `Speaker` — `src/vtuber/application/pipeline/speaker.py:23` — Озвучивает фразы одного хода.
 - `TextDelta` — `src/vtuber/application/pipeline/stream_parser.py:20` — Порция текста: `text` — для чата, `spoken_text` — для TTS (без эмодзи и разметки).
 - `EmotionCue` — `src/vtuber/application/pipeline/stream_parser.py:32` — В ответе встретился тег эмоции; озвучивать нечего.
 - `StreamParser` — `src/vtuber/application/pipeline/stream_parser.py:46` — Разбирает дельты одного ответа по мере поступления (один экземпляр на ход).
@@ -96,13 +99,13 @@
 - `load_app_config` — `src/vtuber/bootstrap/config.py:28` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
 - `Core` — `src/vtuber/bootstrap/container.py:21` — Общие механизмы, которые получают все: шина событий и телеметрия.
 - `Backends` — `src/vtuber/bootstrap/container.py:29` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
-- `llm_backends` — `src/vtuber/bootstrap/container.py:36` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
-- `tts_backends` — `src/vtuber/bootstrap/container.py:47` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
-- `build_conversation` — `src/vtuber/bootstrap/container.py:56` — Собирает сервис хода; `PromptBuilder` отдаётся и наружу — для прогрева кэша (T-06).
-- `LineSource` — `src/vtuber/bootstrap/main.py:49` — Откуда читать строки: `sys.stdin` или его тестовая замена.
-- `Console` — `src/vtuber/bootstrap/main.py:56` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
-- `main` — `src/vtuber/bootstrap/main.py:69` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
-- `run` — `src/vtuber/bootstrap/main.py:198` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
+- `llm_backends` — `src/vtuber/bootstrap/container.py:40` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
+- `tts_backends` — `src/vtuber/bootstrap/container.py:51` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
+- `build_conversation` — `src/vtuber/bootstrap/container.py:60` — Собирает сервис хода; `PromptBuilder` отдаётся и наружу — для прогрева кэша (T-06).
+- `LineSource` — `src/vtuber/bootstrap/main.py:51` — Откуда читать строки: `sys.stdin` или его тестовая замена.
+- `Console` — `src/vtuber/bootstrap/main.py:58` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
+- `main` — `src/vtuber/bootstrap/main.py:71` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
+- `run` — `src/vtuber/bootstrap/main.py:212` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
 

@@ -5,7 +5,8 @@
 события эмоций, текст для истории — и стримит это получателю (`ReplySink`) по мере генерации.
 Две ветки: текстовая (`StreamParser` → `sink.text/emotion`) и, с голосом, TTS-ветка
 (`SentenceChunker` → очередь фраз → `Speaker`: нормализация → `TTSPort` → `sink.audio`), которая
-работает параллельно с генерацией (T-02). НЕ строит промпт, не хранит историю, не решает судьбу прерванного хода
+работает параллельно с генерацией (T-02); звук ответа опаздывает — междометие из `FillerBank`
+(T-17). НЕ строит промпт, не хранит историю, не решает судьбу прерванного хода
 (ConversationService, S-3.5), не нормализует числа для TTS (`application/speech`), не знает о
 WebSocket.
 
@@ -13,9 +14,12 @@ WebSocket.
 | Символ | Назначение |
 |---|---|
 | `ReplyPipeline(llm, params, telemetry, voice=None)` | `run(messages, sink, parser)` — стрим ответа в `sink`; с `Voice` — и звук |
-| `Voice(tts, chunker)` | Голос хода: движок и правила нарезки; нет — только текст |
-| `Speaker(tts, telemetry)` | TTS-ветка: `run(phrases, sink)` до маркера `None` |
-| `PipelineConfig` | Секция `[pipeline]`: `chunker` |
+| `Voice(tts, chunker, fillers=None)` | Голос хода: движок, правила нарезки, междометия; нет — только текст |
+| `Speaker(tts, telemetry, fillers=None)` | TTS-ветка: `run(phrases, sink)` до маркера `None` |
+| `FillerBank(cfg)` | Междометия: `prepare(tts)` — синтез один раз, `ready`, `after_s`, `next_clip()` по кругу |
+| `FillerConfig` | `[pipeline.filler]`: `enabled`, `after_ms`, `phrases` |
+| `AudioOut(sink)` | Единственный писатель звука хода: `answer(chunk)`, `filler(clip) → bool` |
+| `PipelineConfig` | Секция `[pipeline]`: `chunker`, `filler` |
 | `StreamParser` | `feed(delta) → [ParseEvent]`, `flush() → [ParseEvent]`, `full_text` |
 | `TextDelta` | `text` (чат) и `spoken_text` (TTS: без эмодзи и разметки); `deliver(sink)` |
 | `EmotionCue` | Известный тег эмоции; `spoken_text == ""`; `deliver(sink)` |
@@ -45,6 +49,10 @@ WebSocket.
   в TTS — нормализованный текст без тегов; `done` — после последнего звука; недоступный TTS
   молчит до конца хода, сбой фразы пропускает только её — текст доходит; отмена хода отменяет и
   синтез, `done` нет; `tts.first_audio` — один раз и только если звук был.
+- Междометия (`test_filler.py`): звучат, только если к `after_ms` звука ответа нет; ответ,
+  пришедший во время междометия, ждёт его конца — фрагменты не перемешиваются; начавшийся
+  ответ отменяет междометие; ход, кончившийся до срока, междометия не получает. В
+  `tts.first_audio` междометие не в счёт (в `ui.first_audio` UI — в счёт: это слышимый звук).
 - Нарезка (`test_chunker.py`): результат не зависит от разбиения потока на дельты, склейка
   фраз == вход с точностью до пробелов (property); первая фраза — по запятой после
   `first_min_words`, дальше — после `next_min_words`; `.!?…` и перенос строки режут всегда;
@@ -60,6 +68,7 @@ WebSocket.
 
 ## Как расширять
 - Новая эмоция — только в `domain.Emotion`.
+- Другие междометия или срок — `[pipeline.filler]` в конфиге, без кода.
 
 ## Связанные документы
 `docs/architecture.md` (Конвейер ответа, Разбор эмоций), T-01, T-14, T-15; карточка `ports`

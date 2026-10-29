@@ -6,7 +6,7 @@ from vtuber.adapters.llm import LlamaCppLLM, LLMConfig, OpenAICompatLLM
 from vtuber.adapters.tts import PiperTTS, SileroTTS, TTSConfig
 from vtuber.application.conversation import ConversationService
 from vtuber.application.memory import ShortTermMemory
-from vtuber.application.pipeline import ReplyPipeline, Voice
+from vtuber.application.pipeline import FillerBank, ReplyPipeline, Voice
 from vtuber.application.prompting import ContextBudget, PromptBuilder
 from vtuber.bootstrap.config import AppConfig
 from vtuber.domain import Persona
@@ -27,10 +27,14 @@ class Core:
 
 @dataclass(frozen=True, slots=True)
 class Backends:
-    """Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука)."""
+    """Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
+
+    `fillers` — междометия голоса; наполняются при загрузке модели голоса (T-17).
+    """
 
     llm: LLMPort
     tts: TTSPort | None
+    fillers: FillerBank | None = None
 
 
 def llm_backends() -> Registry[LLMConfig, OpenAICompatLLM]:
@@ -59,7 +63,11 @@ def build_conversation(
     """Собирает сервис хода; `PromptBuilder` отдаётся и наружу — для прогрева кэша (T-06)."""
     generation = cfg.llm.generation
     params = GenerationParams(max_tokens=generation.max_tokens, temperature=generation.temperature)
-    voice = None if backends.tts is None else Voice(backends.tts, cfg.pipeline.chunker)
+    voice = (
+        None
+        if backends.tts is None
+        else Voice(backends.tts, cfg.pipeline.chunker, backends.fillers)
+    )
     prompts = PromptBuilder(persona)
     service = ConversationService(
         ReplyPipeline(backends.llm, params, core.telemetry, voice),

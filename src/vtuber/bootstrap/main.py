@@ -6,10 +6,12 @@ import os
 import sys
 from collections.abc import AsyncIterator, Mapping, Sequence
 from contextlib import ExitStack, aclosing, asynccontextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, Protocol, TextIO
 
 from vtuber.application.conversation import ConversationService
+from vtuber.application.pipeline import FillerBank
 from vtuber.bootstrap.config import AppConfig, load_app_config
 from vtuber.bootstrap.container import (
     Backends,
@@ -94,10 +96,12 @@ async def _run(
     bus.subscribe(MetricRecorded, TraceWriter(traces))
     # Голос — только у шлюза: терминальный чат звук не воспроизводит (S-7.5).
     tts = tts_backends().create(cfg.tts.backend, cfg.tts) if mode == SERVE_MODE else None
+    voice = None if tts is None else _Voice(tts, FillerBank(cfg.pipeline.filler))
+    fillers = None if voice is None else voice.fillers
     async with llm_backends().create(cfg.llm.backend, cfg.llm) as llm, asyncio.TaskGroup() as tg:
         metrics = tg.create_task(core.telemetry.run())
-        service, prompts = build_conversation(cfg, persona, Backends(llm, tts), core)
-        warmup = _Warmup(llm, prompts.prefix, bus, tts)
+        service, prompts = build_conversation(cfg, persona, Backends(llm, tts, fillers), core)
+        warmup = _Warmup(llm, prompts.prefix, bus, voice)
         if mode == SERVE_MODE:
             code = await _serve(cfg, service, warmup, console)
         else:
@@ -133,19 +137,28 @@ async def _serve(
     return 0
 
 
+@dataclass(frozen=True, slots=True)
+class _Voice:
+    """Голос шлюза: движок (грузится при старте) и его междометия (синтез после загрузки)."""
+
+    tts: TTSAdapter
+    fillers: FillerBank
+
+
 class _Warmup:
     """Прогрев бэкендов (T-06) со статусами для UI: загружается → готов / сбой.
 
-    LLM — прогрев префикса промпта; голос — загрузка модели на время работы шлюза.
+    LLM — прогрев префикса промпта; голос — загрузка модели на время работы шлюза и синтез
+    междометий (T-17).
     """
 
     def __init__(
-        self, llm: LLMPort, prefix: Sequence[Message], bus: EventBus, tts: TTSAdapter | None
+        self, llm: LLMPort, prefix: Sequence[Message], bus: EventBus, voice: _Voice | None
     ) -> None:
         self._llm = llm
         self._prefix = prefix
         self.bus = bus
-        self._tts = tts
+        self._voice = voice
 
     async def run(self) -> str | None:
         """None — LLM готова; иначе — текст проблемы."""
@@ -162,15 +175,16 @@ class _Warmup:
     @asynccontextmanager
     async def voice(self) -> AsyncIterator[None]:
         """Модель голоса загружена, пока открыт контекст; без голоса — пустой контекст."""
-        if self._tts is None:
+        if self._voice is None:
             yield
             return
         await self._tts_status(BackendState.LOADING)
-        async with self._tts as tts:
+        async with self._voice.tts as tts:
             try:
                 async with aclosing(tts.synthesize(TTS_PROBE)) as audio:
                     async for _ in audio:
                         pass
+                await self._voice.fillers.prepare(tts)
             except (TTSUnavailable, GenerationFailed) as exc:
                 _log.warning("tts.unavailable_at_start", problem=str(exc))
                 await self._tts_status(BackendState.FAILED)

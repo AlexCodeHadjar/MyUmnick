@@ -6,6 +6,7 @@ from contextlib import aclosing
 from dataclasses import dataclass
 
 from vtuber.application.pipeline.chunker import ChunkerConfig, SentenceChunker
+from vtuber.application.pipeline.filler import FillerBank
 from vtuber.application.pipeline.speaker import PhraseQueue, Speaker
 from vtuber.application.pipeline.stream_parser import ParseEvent, StreamParser
 from vtuber.domain import Message
@@ -17,10 +18,11 @@ _log = get_logger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class Voice:
-    """Голос хода: движок TTS и правила нарезки на фразы. Нет голоса — только текст."""
+    """Голос хода: движок TTS, нарезка на фразы, междометия (T-17); без голоса — только текст."""
 
     tts: TTSPort
     chunker: ChunkerConfig
+    fillers: FillerBank | None = None
 
 
 class _PhraseFeed:
@@ -86,7 +88,8 @@ class ReplyPipeline:
             await sink.done()
             return
         phrases: PhraseQueue = asyncio.Queue()
-        speaking = asyncio.create_task(Speaker(voice.tts, self._telemetry).run(phrases, sink))
+        speaker = Speaker(voice.tts, self._telemetry, voice.fillers)
+        speaking = asyncio.create_task(speaker.run(phrases, sink))
         try:
             feed = _PhraseFeed(SentenceChunker(voice.chunker), phrases)
             await self._write(messages, sink, parser, feed)
