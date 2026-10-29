@@ -23,7 +23,9 @@
 2. **Silero TTS — некоммерческая лицензия** (CC BY-NC 4.0) для всех моделей, включая русские
    голоса (`xenia`, `baya`, `kseniya`, `aidar`, `eugene`). Исключение — базовые `cis-tts` модели
    под MIT. Коммерческое использование (монетизированные стримы) — только по договорённости
-   с Silero.
+   с Silero. → **Решено (ADR-0014): голос по умолчанию — Silero `xenia`** (личное
+   использование, как Live2D); публикация — пересмотр: CC0-голоса Piper русские только мужские
+   (`denis`, `dmitri`), а персона — женская.
 3. **Piper — лицензия зависит от голоса.** Русские: `denis`, `dmitri` — **CC0**; `ruslan` —
    CC BY-NC-SA 4.0; `irina` — лицензия датасета неизвестна. Сам движок: старый `rhasspy/piper`
    (MIT) архивирован 2025-10-06; разработка перенесена в `OHF-Voice/piper1-gpl` (судя по
@@ -43,11 +45,11 @@
 | PixiJS 8 | рендер | MIT | — | проверено (npm) |
 | @pixi/sound | звук моушенов (транзитивно, не используется) | MIT | — | по памяти |
 | three.js, @pixiv/three-vrm | VRM (альтернатива) | MIT | — | по памяти |
-| Silero TTS (ru v3/v4/v5, выбрана v5_6_ru — ADR-0012) | TTS | CC BY-NC 4.0 | некоммерческая; модель не в git | проверено |
+| Silero TTS (ru v3/v4/v5, выбрана v5_6_ru — ADR-0012; голос по умолчанию `xenia` — ADR-0014) | TTS | CC BY-NC 4.0 | некоммерческая; модель не в git | проверено |
 | PyTorch (CPU), NumPy | движок Silero | BSD-3-Clause | — | по памяти |
 | Silero TTS `cis-tts` base | TTS | MIT | — | проверено |
 | Silero VAD | VAD | MIT | — | по памяти |
-| Piper `ru_RU-denis`, `ru_RU-dmitri` (выбран denis-medium — ADR-0013) | TTS | CC0 | голос не в git | проверено |
+| Piper `ru_RU-denis`, `ru_RU-dmitri` (выбран denis-medium — ADR-0013; запасной — ADR-0014) | TTS | CC0 | голос не в git; мужские голоса | проверено |
 | Piper `ru_RU-ruslan` | TTS | CC BY-NC-SA 4.0 | некоммерческая, share-alike | проверено |
 | Piper `ru_RU-irina` | TTS | неизвестна (датасет RHVoice) | не использовать при публикации | проверено |
 | Piper (движок) `piper-tts` 1.8 (`piper1-gpl`, ADR-0013) | TTS | GPL-3.0-or-later | копилефт при распространении; приложение не распространяется | проверено (PyPI) |

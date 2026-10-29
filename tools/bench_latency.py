@@ -125,10 +125,15 @@ def render(summary: Mapping[str, Stats], count: int) -> str:
     """Таблица для консоли."""
     header = f"{'Метрика':<20}" + "".join(f"{name:>10}" for name, _ in QUANTILES)
     rows = [
-        f"{name:<20}{stats.p50:>10.1f}{stats.p95:>10.1f}{stats.max:>10.1f}"
+        f"{name:<20}" + "".join(_cell(value) for value in (stats.p50, stats.p95, stats.max))
         for name, stats in summary.items()
     ]
     return "\n".join([header, *rows, f"Замеров: {count}"])
+
+
+def _cell(value: float) -> str:
+    # Дробные метрики (RTF ~0.05) с одним знаком после запятой превратились бы в 0.0.
+    return f"{value:>10.3f}" if abs(value) < 1 else f"{value:>10.1f}"
 
 
 def load_prompts(path: Path) -> list[BenchPrompt]:
