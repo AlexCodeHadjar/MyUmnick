@@ -40,6 +40,12 @@ class SendData(_Model):
     text: str = Field(min_length=1)
 
 
+class TypingData(_Model):
+    """Черновик реплики, пока пользователь печатает; пустой — поле очищено."""
+
+    text: str
+
+
 class DeltaData(_Model):
     """Порция текста ответа."""
 
@@ -97,7 +103,15 @@ class ChatCancel(_Model):
     data: EmptyData
 
 
-type InboundMessage = Annotated[ChatSend | ChatCancel, Field(discriminator="type")]
+class InputTyping(_Model):
+    """UI → Ядро: черновик реплики (с дебаунсом ~300 мс) — прогрев кэша LLM, T-05."""
+
+    v: Version
+    type: Literal["input.typing"]
+    data: TypingData
+
+
+type InboundMessage = Annotated[ChatSend | ChatCancel | InputTyping, Field(discriminator="type")]
 
 
 class TurnStartedMessage(_Model):

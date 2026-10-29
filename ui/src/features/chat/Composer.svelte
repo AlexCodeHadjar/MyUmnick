@@ -7,7 +7,14 @@
     busy,
     onsend,
     onstop,
-  }: { busy: boolean; onsend: (text: string) => void; onstop: () => void } = $props();
+    ontyping = () => undefined,
+  }: {
+    busy: boolean;
+    onsend: (text: string) => void;
+    onstop: () => void;
+    /** Текст поля после каждого изменения (черновик для прогрева LLM, T-05). */
+    ontyping?: (text: string) => void;
+  } = $props();
 
   let text = $state("");
   const empty = $derived(text.trim() === "");
@@ -41,6 +48,9 @@
   <textarea
     bind:value={text}
     {onkeydown}
+    oninput={() => {
+      ontyping(text);
+    }}
     rows="2"
     placeholder="Сообщение… (Enter — отправить, Shift+Enter — новая строка)"
     aria-label="Сообщение"></textarea>

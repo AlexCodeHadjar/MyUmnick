@@ -72,6 +72,35 @@ async def test_chat_send_streams_turn_over_websocket() -> None:
     assert {m.get("turn") for m in messages} == {"t-000001"}
 
 
+@dataclass(slots=True)
+class _PrefillLLM:
+    """Запоминает прогревы; ответ — как у FakeLLM."""
+
+    prefills: list[Sequence[Message]] = field(default_factory=list)
+    warmed: asyncio.Event = field(default_factory=asyncio.Event)
+
+    async def stream(
+        self, messages: Sequence[Message], params: GenerationParams
+    ) -> AsyncGenerator[str]:
+        yield "Ок."
+
+    async def prefill(self, messages: Sequence[Message]) -> None:
+        self.prefills.append(messages)
+        self.warmed.set()
+
+
+async def test_input_typing_prefills_llm_without_reply() -> None:
+    llm = _PrefillLLM()
+    typing = json.dumps({"v": 1, "type": "input.typing", "data": {"text": "Расскажи про"}})
+    async with _gateway(llm) as gw, connect(gw.url()) as ws:
+        await ws.send(typing)
+        await asyncio.wait_for(llm.warmed.wait(), timeout=2)
+        with pytest.raises(TimeoutError):
+            await asyncio.wait_for(ws.recv(), timeout=0.1)
+
+    assert llm.prefills[0][-1].text == "Расскажи про"
+
+
 async def test_bad_message_gets_error_and_connection_survives() -> None:
     async with _gateway(FakeLLM("Ок")) as gw, connect(gw.url()) as ws:
         await ws.send("не json")

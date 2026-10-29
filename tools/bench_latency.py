@@ -1,7 +1,9 @@
 """Бенчмарк задержки LLM: TTFT, ответ целиком и TPS по эталонным репликам (p50/p95/max).
 
-Запуск: `uv run python -m tools.bench_latency [--runs 3] [--backend llamacpp] [--out файл.json]`.
-Сервер и адрес — из `[llm]` конфига (`scripts/start_llm.ps1`). Методика — docs/performance.md.
+Запуск: `uv run python -m tools.bench_latency [--runs 3] [--backend llamacpp] [--speculative]
+[--out файл.json]`. Сервер и адрес — из `[llm]` конфига (`scripts/start_llm.ps1`). `--speculative` —
+перед каждым замером прогрев черновиком реплики (T-05), как при наборе. Методика —
+docs/performance.md.
 """
 
 import argparse
@@ -11,7 +13,7 @@ import math
 import os
 import sys
 import time
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Final, Literal, TextIO
@@ -108,6 +110,24 @@ async def run_bench(
     return [await measure(llm, prompt, params) for _ in range(runs) for prompt in prompts]
 
 
+async def run_speculative_bench(
+    llm: LLMPort, prompts: Sequence[BenchPrompt], params: GenerationParams, runs: int
+) -> list[Sample]:
+    """Как `run_bench`, но перед замером — прогрев черновиком реплики (T-05, вне замера).
+
+    Черновик — реплика без последнего слова: так её видит ядро после паузы в наборе, до Enter.
+    """
+    await llm.prefill((Message(Role.SYSTEM, SYSTEM_PROMPT),))
+    await measure(llm, BenchPrompt(id="warmup", kind="short", text=WARMUP_TEXT), params)
+    samples = []
+    for _ in range(runs):
+        for prompt in prompts:
+            draft = prompt.text.rsplit(maxsplit=1)[0]
+            await llm.prefill((Message(Role.SYSTEM, SYSTEM_PROMPT), Message(Role.USER, draft)))
+            samples.append(await measure(llm, prompt, params))
+    return samples
+
+
 def summarize(samples: Sequence[Sample]) -> dict[str, Stats]:
     """p50/p95/max по TTFT, полному ответу и TPS."""
     metrics = {
@@ -147,7 +167,8 @@ def main(argv: Sequence[str], env: Mapping[str, str], out: TextIO) -> int:
     prompts = load_prompts(args.prompts)
     params = GenerationParams(max_tokens=args.max_tokens, temperature=args.temperature)
     try:
-        samples = asyncio.run(_bench(args.backend, env, prompts, params, args.runs))
+        bench = run_speculative_bench if args.speculative else run_bench
+        samples = asyncio.run(_bench(args.backend, env, prompts, params, (bench, args.runs)))
     except LLMUnavailable as exc:
         print(f"LLM недоступна: {exc}", file=out)
         return EXIT_UNAVAILABLE
@@ -163,15 +184,21 @@ def main(argv: Sequence[str], env: Mapping[str, str], out: TextIO) -> int:
     return 0
 
 
+type BenchRunner = Callable[
+    [LLMPort, Sequence[BenchPrompt], GenerationParams, int], Awaitable[list[Sample]]
+]
+
+
 async def _bench(
     backend: str | None,
     env: Mapping[str, str],
     prompts: Sequence[BenchPrompt],
     params: GenerationParams,
-    runs: int,
+    plan: tuple[BenchRunner, int],
 ) -> list[Sample]:
+    runner, runs = plan
     async with open_llm(backend, env) as llm:
-        return await run_bench(llm, prompts, params, runs)
+        return await runner(llm, prompts, params, runs)
 
 
 def _parse(argv: Sequence[str]) -> argparse.Namespace:
@@ -181,6 +208,9 @@ def _parse(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument("--backend", help="адаптер из реестра; по умолчанию [llm].backend")
     parser.add_argument("--max-tokens", type=int, default=128)
     parser.add_argument("--temperature", type=float, default=0.7)
+    parser.add_argument(
+        "--speculative", action="store_true", help="прогрев черновиком перед замером (T-05)"
+    )
     parser.add_argument("--out", type=Path, help="сохранить замеры в JSON")
     return parser.parse_args(argv)
 

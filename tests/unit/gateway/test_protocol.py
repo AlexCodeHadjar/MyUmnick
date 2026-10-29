@@ -23,6 +23,7 @@ from vtuber.gateway import (
     ChatSend,
     ErrorCode,
     ErrorMessage,
+    InputTyping,
     MetricsSpan,
     OutboundMessage,
     Status,
@@ -73,9 +74,13 @@ def test_inbound_messages_are_parsed_by_type() -> None:
     send = decode_inbound('{"v": 1, "type": "chat.send", "data": {"text": "Привет"}}')
     cancel = decode_inbound('{"v": 1, "type": "chat.cancel", "data": {}}')
 
+    typing = decode_inbound('{"v": 1, "type": "input.typing", "data": {"text": ""}}')
+
     assert isinstance(send, ChatSend)
     assert send.data.text == "Привет"
     assert isinstance(cancel, ChatCancel)
+    assert isinstance(typing, InputTyping)
+    assert typing.data.text == ""
 
 
 @pytest.mark.parametrize(

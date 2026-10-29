@@ -105,13 +105,14 @@ export class Transport {
   /**
    * Отправить сообщение; при разрыве — в очередь до переподключения. `chat.cancel` в очередь
    * не встаёт: разрыв сам отменяет ход на ядре (T-14), а поздний «стоп» оборвал бы следующий.
+   * `input.typing` — тоже: устаревший черновик после переподключения только занял бы LLM.
    */
   send(message: InboundMessage): void {
     if (this.#socket !== null && this.#open) {
       this.#socket.send(JSON.stringify(message));
       return;
     }
-    if (message.type === "chat.cancel") {
+    if (message.type === "chat.cancel" || message.type === "input.typing") {
       return;
     }
     if (this.#queue.length >= this.#options.queueLimit) {

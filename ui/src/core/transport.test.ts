@@ -231,10 +231,11 @@ describe("исходящие", () => {
     expect(last().sent.map((raw): unknown => JSON.parse(raw))).toEqual([SEND]);
   });
 
-  it("при разрыве копятся и уходят после подключения; стоп не копится", () => {
+  it("при разрыве копятся и уходят после подключения; стоп и черновик не копятся", () => {
     const transport = makeTransport();
     transport.send(SEND);
     transport.send(CANCEL);
+    transport.send({ v: 1, type: "input.typing", data: { text: "черновик" } });
     transport.start();
     transport.send(SEND);
     expect(last().sent).toEqual([]);

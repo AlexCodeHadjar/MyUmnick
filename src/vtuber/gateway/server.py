@@ -20,6 +20,7 @@ from vtuber.domain import (
 )
 from vtuber.gateway.codec import decode_inbound, encode_outbound
 from vtuber.gateway.protocol import (
+    ChatCancel,
     ChatSend,
     ErrorCode,
     ErrorMessage,
@@ -137,8 +138,11 @@ class GatewayServer:
             return
         if isinstance(message, ChatSend):
             await self._service.handle(message.data.text, WsReplySink(self.send, self.send_bytes))
-        else:
+        elif isinstance(message, ChatCancel):
             await self._service.cancel(CancelReason.USER_STOP)
+        else:
+            # Черновик — только прогрев кэша (T-05): ответа UI не ждёт, шлюз не блокируется.
+            self._service.typing(message.data.text)
 
     async def _on_started(self, event: TurnStarted) -> None:
         await self.send(TurnStartedMessage.of(turn_ref(event.turn_id)))

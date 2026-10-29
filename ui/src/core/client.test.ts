@@ -66,6 +66,12 @@ describe("CoreClient", () => {
     expect(socket.sent).toEqual([{ v: 1, type: "chat.send", data: { text: "привет" } }]);
   });
 
+  it("typing() шлёт черновик ядру", () => {
+    const { client, socket } = connected();
+    client.typing("Расскажи");
+    expect(socket.sent).toEqual([{ v: 1, type: "input.typing", data: { text: "Расскажи" } }]);
+  });
+
   it("stop() шлёт chat.cancel", () => {
     const { client, socket } = connected();
     client.stop();

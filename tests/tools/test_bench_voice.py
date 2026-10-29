@@ -67,11 +67,12 @@ async def test_voice_bench_measures_ttfa_rtf_and_skips_warmup() -> None:
     assert [sample.prompt_id for sample in samples] == ["a", "b"]
     for sample in samples:
         assert sample.ttfa_ms is not None
-        assert 20 <= sample.ttft_ms <= sample.ttfa_ms
+        # Таймер Windows (~15.6 мс) может разбудить sleep(0.02) раньше — нижней границы нет.
+        assert 0 < sample.ttft_ms <= sample.ttfa_ms
         assert sample.audio_s > 0
     assert len(tts.phrases) >= 2
-    # Только снизу: таймер Windows (~15.6 мс) растягивает паузы FakeTTS в разы.
-    assert all(phrase.rtf > 0.05 for phrase in tts.phrases)
+    # Таймер Windows (~15.6 мс) растягивает и сжимает паузы FakeTTS: важно, что синтез замерен.
+    assert all(phrase.rtf > 0 for phrase in tts.phrases)
 
 
 def test_summary_skips_silent_replies_and_reports_voice_share() -> None:

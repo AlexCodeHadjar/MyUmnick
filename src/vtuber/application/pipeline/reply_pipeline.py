@@ -98,6 +98,17 @@ class ReplyPipeline:
             await _stop(speaking)
         await sink.done()
 
+    async def prefill(self, messages: Sequence[Message]) -> None:
+        """Прогрев кэша LLM промптом без генерации (T-05): ход по такому промпту начнётся быстрее.
+
+        Raises:
+            LLMUnavailable: LLM-сервер недоступен.
+            GenerationFailed: сервер ответил ошибкой.
+
+        """
+        with self._telemetry.span("llm.prefill"):
+            await self._llm.prefill(messages)
+
     async def _write(
         self, messages: Sequence[Message], sink: ReplySink, parser: StreamParser, feed: _PhraseFeed
     ) -> None:

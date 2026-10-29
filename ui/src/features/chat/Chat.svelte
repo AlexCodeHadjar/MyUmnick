@@ -5,11 +5,17 @@
   import Composer from "./Composer.svelte";
   import MessageList from "./MessageList.svelte";
   import { readSubtitles, Subtitles, writeSubtitles, type SettingStorage } from "./subtitles";
+  import { TypingDebouncer } from "./typing";
 
   const { client, storage }: { client: CoreClient; storage?: SettingStorage | undefined } =
     $props();
   const store = $derived(client.store);
   const speaking = $derived(store.voice.speech?.speaking ?? false);
+
+  // Черновик — ядру после паузы в наборе (T-05); отправка реплики снимает ожидающий.
+  const typing = new TypingDebouncer((text) => {
+    client.typing(text);
+  });
 
   // Не реактивен: держит показанную длину субтитров между кадрами.
   const subtitler = new Subtitles();
@@ -52,7 +58,11 @@
   <Composer
     busy={store.phase !== "idle" || speaking}
     onsend={(text: string) => {
+      typing.cancel();
       client.say(text);
+    }}
+    ontyping={(text: string) => {
+      typing.input(text);
     }}
     onstop={() => {
       client.stop();

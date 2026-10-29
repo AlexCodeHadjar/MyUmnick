@@ -16,6 +16,7 @@ from tools.bench_latency import (
     percentile,
     render,
     run_bench,
+    run_speculative_bench,
     summarize,
 )
 from tools.llm_client import SYSTEM_PROMPT
@@ -56,6 +57,17 @@ async def test_bench_warms_up_then_goes_round_robin() -> None:
     assert user_texts == ["Привет!", "a", "b", "a", "b"]
 
 
+async def test_speculative_bench_prefills_draft_before_each_measure() -> None:
+    llm = FakeLLM("ок")
+    prompts = [BenchPrompt(id="a", kind="long", text="Расскажи мне про котов")]
+
+    samples = await run_speculative_bench(llm, prompts, PARAMS, runs=1)
+
+    assert [sample.prompt_id for sample in samples] == ["a"]
+    system = Message(Role.SYSTEM, SYSTEM_PROMPT)
+    assert llm.prefills == [(system,), (system, Message(Role.USER, "Расскажи мне про"))]
+
+
 def test_summary_and_table_cover_ttft_total_and_tps() -> None:
     samples = [Sample("p", ttft_ms=100.0 + i, total_ms=500.0, deltas=41) for i in range(10)]
 
@@ -86,13 +98,15 @@ async def test_cli_measures_real_http_adapter_against_stub(tmp_path: Path) -> No
 
     async with LLMStub("Привет-привет!", chunk_size=4, delay_s=0) as stub:
         env = {"VTUBER_LLM__BASE_URL": stub.url}
-        argv = ["--prompts", str(prompts), "--runs", "2", "--out", str(report)]
+        argv = ["--prompts", str(prompts), "--runs", "2", "--speculative", "--out", str(report)]
         # main сама запускает asyncio.run — в отдельном потоке, заглушка живёт в цикле теста.
         code = await asyncio.to_thread(main, argv, env, output)
 
     assert code == 0
     assert "TTFT" in output.getvalue()
     assert len(json.loads(report.read_text(encoding="utf-8"))["samples"]) == 2
+    # Прогрев черновиком дошёл до сервера: шаблон и /completion без генерации на каждый замер.
+    assert len(stub.bodies("/completion")) >= 2
 
 
 def test_cli_reports_unavailable_server_with_exit_code_2() -> None:

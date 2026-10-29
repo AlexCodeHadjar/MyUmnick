@@ -126,6 +126,11 @@ export class CoreClient {
     this.#transport.send({ v: PROTOCOL_VERSION, type: "chat.send", data: { text: trimmed } });
   }
 
+  /** Черновик реплики (с дебаунсом — у вызывающего): ядро греет кэш LLM, T-05. */
+  typing(text: string): void {
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "input.typing", data: { text } });
+  }
+
   stop(): void {
     // Звук глушится сразу, не дожидаясь `turn.cancelled`: ход мог уже закончиться в ядре, а
     // голос ещё звучит (синтез быстрее реального времени).

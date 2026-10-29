@@ -81,6 +81,13 @@ export interface ErrorMessage {
   data: ErrorData;
 }
 
+/** UI → Ядро: черновик реплики (с дебаунсом ~300 мс) — прогрев кэша LLM, T-05. */
+export interface InputTyping {
+  v: Version;
+  type: "input.typing";
+  data: TypingData;
+}
+
 /** Ядро → UI: замер стадии; `turn` — None вне хода (прогрев). */
 export interface MetricsSpan {
   v: Version;
@@ -137,8 +144,13 @@ export interface TurnStartedMessage {
   data: EmptyData;
 }
 
+/** Черновик реплики, пока пользователь печатает; пустой — поле очищено. */
+export interface TypingData {
+  text: string;
+}
+
 export type Version = 1;
 
-export type InboundMessage = ChatSend | ChatCancel;
+export type InboundMessage = ChatSend | ChatCancel | InputTyping;
 
 export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | ErrorMessage;

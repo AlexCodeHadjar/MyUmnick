@@ -23,6 +23,14 @@ UI → Ядро: остановить ответ.
 
 `data`: `{}`
 
+### `input.typing` — `InputTyping`
+
+UI → Ядро: черновик реплики (с дебаунсом ~300 мс) — прогрев кэша LLM, T-05.
+
+| Поле `data` | Тип |
+|---|---|
+| `text` | `string` |
+
 ## Ядро → UI
 
 ### `turn.started` — `TurnStartedMessage`

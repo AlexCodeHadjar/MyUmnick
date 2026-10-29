@@ -23,6 +23,7 @@ from vtuber.gateway.protocol import (
     ErrorData,
     ErrorMessage,
     InboundMessage,
+    InputTyping,
     MetricsSpan,
     OutboundMessage,
     SendData,
@@ -32,6 +33,7 @@ from vtuber.gateway.protocol import (
     TurnCancelledMessage,
     TurnFinishedMessage,
     TurnStartedMessage,
+    TypingData,
     turn_ref,
 )
 from vtuber.gateway.server import REPLACED_CODE, GatewayConfig, GatewayServer
@@ -60,6 +62,7 @@ __all__ = [
     "GatewayConfig",
     "GatewayServer",
     "InboundMessage",
+    "InputTyping",
     "MetricsSpan",
     "OutboundMessage",
     "SendData",
@@ -71,6 +74,7 @@ __all__ = [
     "TurnCancelledMessage",
     "TurnFinishedMessage",
     "TurnStartedMessage",
+    "TypingData",
     "WsReplySink",
     "decode_audio_frame",
     "decode_inbound",
