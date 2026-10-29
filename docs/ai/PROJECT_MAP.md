@@ -85,6 +85,13 @@
 - `PromptBuilder` — `src/vtuber/application/prompting/prompt_builder.py:21` — Строит промпт: [персона + примеры] → [история] → [справка + реплика] (T-03).
 - `render_system_prompt` — `src/vtuber/application/prompting/prompt_builder.py:45` — Системный промпт персоны; `{emotions}` в правилах → теги всех эмоций из `Emotion`.
 
+## src/vtuber/application/scheduler
+Фоновые задачи в простое (T-13): суммаризация, факты, индексация — не во время хода.
+
+- `SchedulerConfig` — `src/vtuber/application/scheduler/idle.py:31` — `idle_after_ms` — сколько тишины после хода считать простоем.
+- `IdleJob` — `src/vtuber/application/scheduler/idle.py:38` — Фоновая задача: `run` можно звать повторно — отменённая задача перезапускается.
+- `IdleScheduler` — `src/vtuber/application/scheduler/idle.py:45` — Очередь фоновых задач, которые выполняются по одной и только в простое (T-13).
+
 ## src/vtuber/application/speech
 Подготовка текста к синтезу речи: числа, сокращения, латиница, разметка (S-7.2).
 
