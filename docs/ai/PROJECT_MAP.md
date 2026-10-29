@@ -122,10 +122,11 @@
 - `BackendUnavailable` — `src/vtuber/domain/errors.py:8` — Бэкенд не отвечает или не загружен.
 - `LLMUnavailable` — `src/vtuber/domain/errors.py:12` — LLM-сервер недоступен.
 - `TTSUnavailable` — `src/vtuber/domain/errors.py:16` — Движок синтеза речи недоступен.
-- `GenerationFailed` — `src/vtuber/domain/errors.py:20` — Бэкенд ответил, но генерация сорвалась посреди хода.
-- `ProtocolError` — `src/vtuber/domain/errors.py:24` — Сообщение от UI не соответствует протоколу.
-- `ConfigError` — `src/vtuber/domain/errors.py:28` — Конфигурация не читается или не проходит проверку; приложение не стартует.
-- `TurnStateError` — `src/vtuber/domain/errors.py:32` — Недопустимый переход состояния хода — ошибка в логике сервиса, а не во внешнем мире.
+- `MemoryUnavailable` — `src/vtuber/domain/errors.py:20` — Долговременная память недоступна (модель эмбеддингов или хранилище) — ход идёт без неё.
+- `GenerationFailed` — `src/vtuber/domain/errors.py:24` — Бэкенд ответил, но генерация сорвалась посреди хода.
+- `ProtocolError` — `src/vtuber/domain/errors.py:28` — Сообщение от UI не соответствует протоколу.
+- `ConfigError` — `src/vtuber/domain/errors.py:32` — Конфигурация не читается или не проходит проверку; приложение не стартует.
+- `TurnStateError` — `src/vtuber/domain/errors.py:36` — Недопустимый переход состояния хода — ошибка в логике сервиса, а не во внешнем мире.
 - `CancelReason` — `src/vtuber/domain/events.py:10` — Почему ход прерван.
 - `Component` — `src/vtuber/domain/events.py:18` — Бэкенд, о состоянии которого сообщается в UI.
 - `BackendState` — `src/vtuber/domain/events.py:25` — Состояние бэкенда для статус-бара UI.
@@ -135,6 +136,10 @@
 - `EmotionChanged` — `src/vtuber/domain/events.py:57` — В ответе встретился тег эмоции.
 - `MetricRecorded` — `src/vtuber/domain/events.py:65` — Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев).
 - `BackendStatusChanged` — `src/vtuber/domain/events.py:74` — Бэкенд загрузился, упал или восстановился.
+- `EmbedKind` — `src/vtuber/domain/memory.py:14` — Что кодируется: у e5 запрос и запоминаемый текст кодируются по-разному.
+- `FactSource` — `src/vtuber/domain/memory.py:21` — Откуда факт: от этого зависит доверие к нему при ответе.
+- `Fact` — `src/vtuber/domain/memory.py:33` — Одна запоминаемая мысль; `importance` 0…1 — что вспоминать в первую очередь.
+- `FactHit` — `src/vtuber/domain/memory.py:51` — Найденный факт; `score` — косинусная близость к запросу, −1…1, больше — ближе.
 - `AudioFormat` — `src/vtuber/domain/speech.py:11` — Формат звука: PCM s16le, моно — так звук передаётся в UI (ADR-0003).
 - `AudioChunk` — `src/vtuber/domain/speech.py:23` — Непрерывный фрагмент PCM в формате `format`.
 - `TurnState` — `src/vtuber/domain/turn_state.py:10` — Где сейчас ход: ждём реплику, думаем, говорим, прерваны.
@@ -200,6 +205,8 @@
 
 - `GenerationParams` — `src/vtuber/ports/llm.py:11` — Параметры генерации; значения приходят из конфига (`[llm.generation]`, ADR-0006).
 - `LLMPort` — `src/vtuber/ports/llm.py:19` — Локальная LLM; адаптеры бросают только доменные ошибки (R-43).
+- `EmbedderPort` — `src/vtuber/ports/memory.py:13` — Тексты → векторы единичной длины.
+- `MemoryStorePort` — `src/vtuber/ports/memory.py:35` — Факты с векторами: добавить и найти ближайшие.
 - `ReplySink` — `src/vtuber/ports/sink.py:8` — Получатель результатов одного хода; конвейер не знает, что за ним.
 - `TTSPort` — `src/vtuber/ports/tts.py:9` — Движок TTS; адаптеры бросают только доменные ошибки (R-43).
 

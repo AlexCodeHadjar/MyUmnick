@@ -16,11 +16,13 @@ websockets, torch и о kernel (контракт `domain-pure`). Ошибка �
 | `Emotion` | Единственный список эмоций; `.tag` → `<happy>` |
 | `parse_tag`, `TAG_OPEN`, `TAG_CLOSE`, `MAX_TAG_LENGTH` | Разбор тега эмоции; предел буфера для StreamParser |
 | `AudioFormat`, `AudioChunk`, `SAMPLE_WIDTH_BYTES` | PCM s16le моно; `duration_s` для RTF и пауз |
+| `Fact`, `FactSource`, `FactHit`, `FactId` | Долговременная память (FR-10): текст, источник (`user`/`extracted`/`summary`), важность 0…1, время с поясом; найденный факт с близостью |
+| `Vector`, `EmbedKind` | Эмбеддинг (`tuple[float, ...]`, единичной длины); запрос или запоминаемый текст (e5) |
 | `TurnStarted`, `TurnFinished`, `TurnCancelled`, `EmotionChanged`, `BackendStatusChanged` | События шины |
 | `MetricRecorded` | Замер стадии: `name`, `duration_ns`, `turn_id` (None вне хода) |
 | `TurnState`, `next_state` | Состояния хода и разрешённые переходы; иначе `TurnStateError` |
 | `CancelReason`, `Component`, `BackendState` | Значения событий |
-| `VtuberError` → `BackendUnavailable` (`LLMUnavailable`, `TTSUnavailable`), `GenerationFailed`, `ProtocolError`, `ConfigError`, `TurnStateError` | Доменные ошибки |
+| `VtuberError` → `BackendUnavailable` (`LLMUnavailable`, `TTSUnavailable`, `MemoryUnavailable`), `GenerationFailed`, `ProtocolError`, `ConfigError`, `TurnStateError` | Доменные ошибки |
 
 ## Зависимости
 - Только stdlib.

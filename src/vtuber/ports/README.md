@@ -11,6 +11,8 @@
 | `LLMPort` | `stream(messages, params)` → `AsyncGenerator[str]` (закрывать через `aclosing`); `prefill(messages)` |
 | `GenerationParams` | `max_tokens`, `temperature`, `stop`; значения — из конфига |
 | `TTSPort` | `audio_format` (частота PCM движка); `synthesize(phrase)` → `AsyncGenerator[AudioChunk]` (закрывать через `aclosing`) |
+| `EmbedderPort` | `dimensions`; `embed(texts, kind)` → `list[Vector]` по порядку (`EmbedKind.QUERY`/`PASSAGE`) |
+| `MemoryStorePort` | `add(fact, vector)` → `FactId`; `search(query, limit)` → `list[FactHit]` от самого близкого |
 | `ReplySink` | Получатель хода: `text(delta)`, `emotion(e)`, `audio(chunk)`, `done()` (`done` — только при полном ответе, после последнего звука) |
 
 ## Зависимости
@@ -35,13 +37,24 @@
 - Ранний выход через `aclosing` чист: следующий синтез работает.
 - Недоступный движок — `TTSUnavailable`; сбой посреди фразы — `GenerationFailed`.
 
+## Инварианты портов памяти (`test_embedder_contract.py`, `test_memory_store_contract.py`)
+- Эмбеддер: вектор на каждый текст по порядку, размерности `dimensions`, единичной длины;
+  пустой пакет — пустой ответ; тот же текст — тот же вектор в любом пакете; близкий по смыслу
+  запрос ближе далёкого текста; нет модели — `MemoryUnavailable`.
+- Хранилище: пустое — пустая выдача; факт находится своим вектором первым (близость ≈ 1) со
+  всеми полями; выдача по убыванию близости, не длиннее `limit`; вектор не той размерности и
+  `limit` < 1 — `ValueError`; не открыто — `MemoryUnavailable`.
+- Порты раздельны (ISP): эмбеддер меняется с моделью, хранилище — с базой; гейту поиска нужен
+  только эмбеддер.
+
 ## Как расширять
 - Новый адаптер LLM: класс в `adapters/llm/`, `LLMCase` в `tests/contract/factories.py`
   (рабочий и недоступный вариант) — контракт прогонится автоматически.
 - Новый адаптер TTS: класс в `adapters/tts/`, `TTSCase` в `tests/contract/factories.py`; нет
   модели на машине — случай пропускается с причиной, фейк проверяется всегда.
 - Новый порт: Protocol + фейк в `tests/fakes/` + контрактный тест (порядок из WORKFLOW).
-- Дальше появятся: `STTPort` (S-11.2), порты памяти (S-10.1).
+- Новый адаптер памяти: `EmbedderCase`/`StoreCase` в `tests/contract/memory_factories.py`.
+- Дальше появятся: `STTPort` (S-11.2).
 
 ## Связанные документы
 ADR-0001, `docs/architecture.md` (Порты), `docs/testing.md` (Контрактные тесты), T-01, T-05, T-14

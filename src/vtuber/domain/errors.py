@@ -17,6 +17,10 @@ class TTSUnavailable(BackendUnavailable):
     """Движок синтеза речи недоступен."""
 
 
+class MemoryUnavailable(BackendUnavailable):
+    """Долговременная память недоступна (модель эмбеддингов или хранилище) — ход идёт без неё."""
+
+
 class GenerationFailed(VtuberError):
     """Бэкенд ответил, но генерация сорвалась посреди хода."""
 

@@ -7,6 +7,7 @@ from vtuber.domain.errors import (
     ConfigError,
     GenerationFailed,
     LLMUnavailable,
+    MemoryUnavailable,
     ProtocolError,
     TTSUnavailable,
     TurnStateError,
@@ -23,6 +24,7 @@ from vtuber.domain.events import (
     TurnFinished,
     TurnStarted,
 )
+from vtuber.domain.memory import EmbedKind, Fact, FactHit, FactId, FactSource, Vector
 from vtuber.domain.speech import SAMPLE_WIDTH_BYTES, AudioChunk, AudioFormat
 from vtuber.domain.turn_state import TurnState, next_state
 
@@ -39,10 +41,16 @@ __all__ = [
     "CancelReason",
     "Component",
     "ConfigError",
+    "EmbedKind",
     "Emotion",
     "EmotionChanged",
+    "Fact",
+    "FactHit",
+    "FactId",
+    "FactSource",
     "GenerationFailed",
     "LLMUnavailable",
+    "MemoryUnavailable",
     "Message",
     "MetricRecorded",
     "Persona",
@@ -56,6 +64,7 @@ __all__ = [
     "TurnStarted",
     "TurnState",
     "TurnStateError",
+    "Vector",
     "VtuberError",
     "next_state",
     "parse_tag",

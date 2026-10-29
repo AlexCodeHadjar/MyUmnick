@@ -1,13 +1,14 @@
 # STATE — снимок проекта
-_Обновлено: 2026-10-29, сессия S-9.2_
+_Обновлено: 2026-10-29, сессия S-10.1_
 
 ## Сейчас
 - Этап: 8 — Эмоции, жесты, «живость» (docs/stages/STAGE_08.md). Этап 7 закрыт, кроме прогона
   TTFA с настоящей LLM на целевой машине (`uv run python -m tools.bench_voice`).
 - Этап 8: S-8.2, S-8.3 готовы; **S-8.1** ждёт целевую машину (веха M3). Этап 9: S-9.2
   реализован, замер −30 % TTFT — на целевой машине; S-9.1 (baseline, профилирование) и S-9.3
-  (speculative decoding) тоже требуют GPU. Без GPU дальше — **Этап 10** (docs/stages/STAGE_10.md):
-  сверить, какие сессии не требуют настоящей LLM. Аватар: Haru в `ui/public/avatars/haru/` (+ наш `mapping.json` в git),
+  (speculative decoding) тоже требуют GPU. Этап 10 (docs/stages/STAGE_10.md): S-10.1 готов;
+  следующая — **S-10.2 — эмбеддер e5 и хранилище sqlite-vec** (новые зависимости — ADR; модель
+  multilingual-e5-small скачать в `models/` с разрешения пользователя). Аватар: Haru в `ui/public/avatars/haru/` (+ наш `mapping.json` в git),
   Core 5.1 (SDK 5-r.4) в `ui/public/live2d/` — вне git.
 - **Отложено до целевой машины (RTX 5070 Ti):** S-2.5 (выбор модели, ADR-0004), прогоны `-m gpu`,
   ручная проверка M1 (`uv run python -m vtuber` с реальной моделью). Вместо своей машины —
@@ -65,6 +66,9 @@ _Обновлено: 2026-10-29, сессия S-9.2_
   историей + черновиком между ходами, отмена устаревшего), `ReplyPipeline.prefill` (замер
   `llm.prefill`), UI — черновик через 300 мс паузы (`chat/typing.ts`); `bench_latency
   --speculative` для замера T-05
+- [x] S-10.1 Порты памяти: `EmbedderPort`, `MemoryStorePort` (`ports/memory.py`), домен `Fact`,
+  `FactHit`, `FactSource`, `Vector`, `EmbedKind`, `MemoryUnavailable`; фейки `FakeEmbedder`
+  (хэш триграмм), `FakeMemoryStore`; контракты в `tests/contract/` (`memory_factories.py`)
 
 ## Последние метрики
 - TTFA бенчмарка (`tools.bench_voice --simulate-llm`, TTFT 250 мс, 40 ток/с, 40 реплик): Silero
@@ -187,4 +191,4 @@ _Обновлено: 2026-10-29, сессия S-9.2_
 - Новая зависимость — ADR. ADR-0004 — выбор LLM (S-2.5); следующий свободный — ADR-0015.
 
 ## Последний журнал
-docs/ai/sessions/2026-10-29_S-9.2.md
+docs/ai/sessions/2026-10-29_S-10.1.md

@@ -20,8 +20,9 @@
 ### S-10.1 — Порты памяти, фейки, контрактные тесты
 - **Цель:** `EmbedderPort` (embed), `MemoryStorePort` (add/search) — раздельно (ISP).
 - **Scope:** `src/vtuber/ports/memory.py`, `tests/fakes/`, `tests/contract/`
-- **Готово, когда:** [ ] контрактные тесты проходят для фейков.
-- **Статус:** не начата
+- **Готово, когда:** [x] контрактные тесты проходят для фейков (`test_embedder_contract.py`,
+  `test_memory_store_contract.py`; `FakeEmbedder`, `FakeMemoryStore`).
+- **Статус:** готово
 
 ### S-10.2 — Эмбеддер и хранилище
 - **Цель:** `adapters/memory/e5_embedder.py` (CPU, батчи), `adapters/memory/sqlite_vec.py`
