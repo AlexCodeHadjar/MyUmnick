@@ -57,6 +57,9 @@
 | XTTS-v2 | TTS (опция) | Coqui Public Model License | некоммерческая | по памяти |
 | F5-TTS | TTS (опция) | код MIT, веса CC BY-NC | некоммерческие веса | по памяти |
 | faster-whisper, веса Whisper | STT | MIT | — | по памяти |
+| multilingual-e5-small (ONNX, ADR-0015) | эмбеддинги памяти | MIT | модель не в git | проверено (карточка HF) |
+| sqlite-vec 0.1.9 (ADR-0015) | векторный поиск в SQLite | MIT / Apache-2.0 | — | по памяти |
+| tokenizers, huggingface-hub (ADR-0015) | токенизатор e5 | Apache-2.0 | сеть не используется | по памяти |
 | GigaAM | STT (альтернатива) | MIT | — | по памяти |
 | multilingual-e5-small, bge-m3 | эмбеддинги | MIT | — | по памяти |
 | sqlite-vec | векторное хранилище | MIT / Apache 2.0 | — | по памяти |

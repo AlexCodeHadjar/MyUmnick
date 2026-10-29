@@ -1,14 +1,13 @@
 # STATE — снимок проекта
-_Обновлено: 2026-10-29, сессия S-10.1_
+_Обновлено: 2026-10-29, сессия S-10.2_
 
 ## Сейчас
 - Этап: 8 — Эмоции, жесты, «живость» (docs/stages/STAGE_08.md). Этап 7 закрыт, кроме прогона
   TTFA с настоящей LLM на целевой машине (`uv run python -m tools.bench_voice`).
 - Этап 8: S-8.2, S-8.3 готовы; **S-8.1** ждёт целевую машину (веха M3). Этап 9: S-9.2
   реализован, замер −30 % TTFT — на целевой машине; S-9.1 (baseline, профилирование) и S-9.3
-  (speculative decoding) тоже требуют GPU. Этап 10 (docs/stages/STAGE_10.md): S-10.1 готов;
-  следующая — **S-10.2 — эмбеддер e5 и хранилище sqlite-vec** (новые зависимости — ADR; модель
-  multilingual-e5-small скачать в `models/` с разрешения пользователя). Аватар: Haru в `ui/public/avatars/haru/` (+ наш `mapping.json` в git),
+  (speculative decoding) тоже требуют GPU. Этап 10 (docs/stages/STAGE_10.md): S-10.1, S-10.2
+  готовы; следующая — **S-10.3 — планировщик простоя** (`IdleScheduler`, T-13). Аватар: Haru в `ui/public/avatars/haru/` (+ наш `mapping.json` в git),
   Core 5.1 (SDK 5-r.4) в `ui/public/live2d/` — вне git.
 - **Отложено до целевой машины (RTX 5070 Ti):** S-2.5 (выбор модели, ADR-0004), прогоны `-m gpu`,
   ручная проверка M1 (`uv run python -m vtuber` с реальной моделью). Вместо своей машины —
@@ -69,8 +68,12 @@ _Обновлено: 2026-10-29, сессия S-10.1_
 - [x] S-10.1 Порты памяти: `EmbedderPort`, `MemoryStorePort` (`ports/memory.py`), домен `Fact`,
   `FactHit`, `FactSource`, `Vector`, `EmbedKind`, `MemoryUnavailable`; фейки `FakeEmbedder`
   (хэш триграмм), `FakeMemoryStore`; контракты в `tests/contract/` (`memory_factories.py`)
+- [x] S-10.2 `adapters/memory`: `E5Embedder` (multilingual-e5-small ONNX на CPU), `SqliteVecStore`
+  (факты + vec0, косинус); группа `memory` (ADR-0015); модель — `models/memory/e5-small/`, вне git
 
 ## Последние метрики
+- Память (машина разработки): запрос e5 5.4 мс; поиск топ-5 p95 3.5 мс / 2000 фактов, 11.9 мс /
+  10 000; e5 + поиск p95 9.5 / 17.7 мс (бюджет 40 мс).
 - TTFA бенчмарка (`tools.bench_voice --simulate-llm`, TTFT 250 мс, 40 ток/с, 40 реплик): Silero
   p50 516–545 мс, p95 ≤ 615; Piper p50 550; при 80 ток/с — 430–440. «TTFA − TTFT» p50 ≈ 250 мс
   (40 ток/с) / 157 мс (80 ток/с): в основном ожидание первой фразы. RTF фраз p95 ≤ 0.08, пауз
@@ -152,7 +155,11 @@ _Обновлено: 2026-10-29, сессия S-10.1_
   Сквозной тест звука — `uv run pytest -m slow tests/integration/test_serve_app.py`.
 - Бенчмарк голоса: `uv run python -m tools.bench_voice --tts silero [--simulate-llm]`; в консоли
   Windows с cp1251 — только ASCII в выводе (знак «−» роняет print).
-- Окружение — `uv sync --all-extras`: без группы `silero` нет torch, и mypy/тесты Silero упадут.
+- Окружение — `uv sync --all-extras`: без группы `silero` нет torch, и mypy/тесты Silero упадут;
+  без группы `memory` — onnxruntime/tokenizers/sqlite-vec для памяти.
+- Модель памяти: `models/memory/e5-small/{model.onnx,tokenizer.json,config.json}` из
+  `huggingface.co/intfloat/multilingual-e5-small/tree/main/onnx` (ревизия `614241f`, ADR-0015);
+  контракт e5 — `uv run pytest -m slow tests/contract/test_embedder_contract.py`.
   Контракт Silero — `uv run pytest -m slow tests/contract/test_tts_contract.py`.
 - Скрипты `tools/` запускаются модулем: `uv run python -m tools.<имя>` (`python tools/x.py` не
   видит пакет `tools` и падает на импорте).
@@ -188,7 +195,7 @@ _Обновлено: 2026-10-29, сессия S-10.1_
 - Файлы — всегда `encoding="utf-8"`; `.ps1` — UTF-8 **с BOM**.
 - Протокол меняется только в `gateway/protocol.py`; сообщение добавляется вместе с кодом,
   который его использует. JSON — pydantic-core, orjson не нужен.
-- Новая зависимость — ADR. ADR-0004 — выбор LLM (S-2.5); следующий свободный — ADR-0015.
+- Новая зависимость — ADR. ADR-0004 — выбор LLM (S-2.5); следующий свободный — ADR-0016.
 
 ## Последний журнал
-docs/ai/sessions/2026-10-29_S-10.1.md
+docs/ai/sessions/2026-10-29_S-10.2.md

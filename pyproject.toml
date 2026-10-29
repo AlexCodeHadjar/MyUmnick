@@ -15,6 +15,8 @@ dependencies = [
 silero = ["numpy>=2.0", "torch>=2.6"]
 # Движок TTS Piper (ADR-0013): ONNX без torch; GPL-3.0 — приложение не распространяется.
 piper = ["piper-tts>=1.8,<2"]
+# Долговременная память (ADR-0015): e5 в ONNX на CPU, токенизатор HF, векторы в sqlite-vec.
+memory = ["numpy>=2.0", "onnxruntime>=1.20", "sqlite-vec>=0.1.6", "tokenizers>=0.20"]
 
 [dependency-groups]
 dev = [
@@ -50,8 +52,8 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# FBT001 — bool в parametrize; ARG — фейки повторяют сигнатуры портов.
-"tests/**" = ["S101", "D", "PLR2004", "ANN", "EM", "FBT001", "ARG"]
+# FBT001 — bool в parametrize; ARG — фейки повторяют сигнатуры портов; S311 — random для данных.
+"tests/**" = ["S101", "D", "PLR2004", "ANN", "EM", "FBT001", "ARG", "S311"]
 "tools/**" = ["T201"]          # CLI-скрипты пишут результат в консоль
 "src/vtuber/domain/errors.py" = ["N818"]  # имена ошибок закреплены в docs/architecture.md
 

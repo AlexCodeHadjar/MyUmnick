@@ -22,7 +22,12 @@
 - `delta_text` — `src/vtuber/adapters/llm/sse.py:19` — Текст дельты первого варианта ответа; пустая строка, если в порции текста нет.
 
 ## src/vtuber/adapters/memory
-Адаптеры долговременной памяти: эмбеддеры и хранилища.
+Адаптеры долговременной памяти: эмбеддеры и хранилища (ADR-0015).
+
+- `E5Config` — `src/vtuber/adapters/memory/e5_embedder.py:32` — Настройки эмбеддера: каталог модели, её размерность, потоки CPU, длина и пакет.
+- `OnnxSession` — `src/vtuber/adapters/memory/e5_embedder.py:42` — То, что нужно от `onnxruntime.InferenceSession`: прогон по именам входов.
+- `E5Embedder` — `src/vtuber/adapters/memory/e5_embedder.py:52` — Реализует EmbedderPort; модель грузится один раз в `async with` (R-40).
+- `SqliteVecStore` — `src/vtuber/adapters/memory/sqlite_vec.py:41` — Реализует MemoryStorePort для векторов размерности `dimensions`; файл — `path`.
 
 ## src/vtuber/adapters/stt
 Адаптеры распознавания речи (STTPort).
