@@ -3,13 +3,42 @@
 from collections.abc import Mapping
 from pathlib import Path
 
-from vtuber.adapters.llm import LLMConfig
+from pydantic import Field
+
+from vtuber.adapters.llm import GenerationConfig, LLMConfig
+from vtuber.adapters.memory import E5Config
 from vtuber.adapters.tts import TTSConfig
+from vtuber.application.memory import FactMemoryConfig
 from vtuber.application.pipeline import PipelineConfig
 from vtuber.application.prompting import ContextConfig
+from vtuber.application.scheduler import SchedulerConfig
 from vtuber.bootstrap.persona import PersonaConfig
 from vtuber.gateway import GatewayConfig
 from vtuber.kernel import ConfigFiles, ConfigSection, LoggingConfig, TelemetryConfig, load_config
+
+
+class MemoryConfig(ConfigSection):
+    """Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
+
+    `background_slot_id` — слот llama-server для фона: кэш диалога (слот 0) не трогается;
+    `generation` — длина и температура фоновых запросов (низкая: факты и пересказ, не творчество).
+    """
+
+    enabled: bool
+    store_path: Path
+    background_slot_id: int = Field(ge=0)
+    generation: GenerationConfig
+    facts: FactMemoryConfig
+    e5: E5Config
+
+    def resolved(self, root: Path) -> "MemoryConfig":
+        """Копия с путями базы и модели от корня проекта."""
+        return self.model_copy(
+            update={
+                "store_path": root / self.store_path,
+                "e5": self.e5.model_copy(update={"model_dir": root / self.e5.model_dir}),
+            }
+        )
 
 
 class AppConfig(ConfigSection):
@@ -23,6 +52,8 @@ class AppConfig(ConfigSection):
     gateway: GatewayConfig
     pipeline: PipelineConfig
     tts: TTSConfig
+    scheduler: SchedulerConfig
+    memory: MemoryConfig
 
 
 def load_app_config(root: Path, env: Mapping[str, str]) -> AppConfig:

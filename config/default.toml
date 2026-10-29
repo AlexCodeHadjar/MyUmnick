@@ -63,3 +63,25 @@ model_path = "models/tts/piper/ru_RU-denis-medium.onnx"   # рядом — .onnx
 sample_rate = 22050            # частота голоса из его .onnx.json (medium — 22050)
 length_scale = 1.0             # темп речи: больше — медленнее
 chunk_ms = 100
+
+[scheduler]
+idle_after_ms = 3000           # тишина после хода — простой: фон (факты, резюме) не мешает ответу (T-13)
+
+[memory]
+enabled = true                 # фоновая память: факты о пользователе и резюме истории (Этап 10)
+store_path = "data/memory.sqlite"   # относительно корня; каталог создаётся при старте
+background_slot_id = 1         # слот llama-server для фона; сервер — с --parallel 2 (start_llm.ps1)
+
+[memory.generation]
+max_tokens = 300               # факты в JSON и пересказ — коротко
+temperature = 0.2              # пересказ и факты, а не творчество
+
+[memory.facts]
+dedup_score = 0.93             # близость (косинус e5) — уже известный факт; e5 сжимает шкалу: несвязанное ≈ 0.75
+
+[memory.e5]
+model_dir = "models/memory/e5-small"   # model.onnx, tokenizer.json — ADR-0015
+dimensions = 384
+threads = 2                    # потоки CPU; GPU отдана LLM (T-11)
+max_tokens = 256               # длина входа: факты и запросы короткие
+batch_size = 8

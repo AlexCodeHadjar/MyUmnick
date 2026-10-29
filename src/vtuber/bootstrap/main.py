@@ -21,6 +21,7 @@ from vtuber.bootstrap.container import (
     llm_backends,
     tts_backends,
 )
+from vtuber.bootstrap.memory import background_memory
 from vtuber.bootstrap.persona import load_persona
 from vtuber.domain import (
     BackendState,
@@ -76,7 +77,8 @@ def main(argv: Sequence[str], env: Mapping[str, str], console: Console) -> int:
     args = _parse(argv)
     try:
         cfg = load_app_config(args.root, env)
-        cfg = cfg.model_copy(update={"tts": cfg.tts.resolved(args.root)})
+        resolved = {"tts": cfg.tts.resolved(args.root), "memory": cfg.memory.resolved(args.root)}
+        cfg = cfg.model_copy(update=resolved)
         persona = load_persona(args.root / cfg.persona.file)
         with ExitStack() as files:
             log_file = files.enter_context(_open(args.root / cfg.logging.file))
@@ -100,12 +102,14 @@ async def _run(
     fillers = None if voice is None else voice.fillers
     async with llm_backends().create(cfg.llm.backend, cfg.llm) as llm, asyncio.TaskGroup() as tg:
         metrics = tg.create_task(core.telemetry.run())
-        service, prompts = build_conversation(cfg, persona, Backends(llm, tts, fillers), core)
-        warmup = _Warmup(llm, prompts.prefix, bus, voice)
-        if mode == SERVE_MODE:
-            code = await _serve(cfg, service, warmup, console)
-        else:
-            code = await _chat(service, warmup, console, bus)
+        conversation = build_conversation(cfg, persona, Backends(llm, tts, fillers), core)
+        warmup = _Warmup(llm, conversation.prompts.prefix, bus, voice)
+        # Фоновая память (Этап 10): факты и резюме истории — в простое, LLM фонового слота.
+        async with background_memory(cfg, conversation.history, bus):
+            if mode == SERVE_MODE:
+                code = await _serve(cfg, conversation.service, warmup, console)
+            else:
+                code = await _chat(conversation.service, warmup, console, bus)
         metrics.cancel()
     return code
 

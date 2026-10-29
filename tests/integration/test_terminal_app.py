@@ -20,6 +20,7 @@ def _env(tmp_path: Path, base_url: str) -> dict[str, str]:
         "VTUBER_LLM__CONNECT_TIMEOUT_S": "0.2",
         "VTUBER_LOGGING__FILE": str(tmp_path / "app.jsonl"),
         "VTUBER_TELEMETRY__TRACES_FILE": str(tmp_path / "traces.jsonl"),
+        "VTUBER_MEMORY__ENABLED": "false",
     }
 
 

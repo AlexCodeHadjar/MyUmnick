@@ -14,7 +14,9 @@ LLM-адаптеров и движков TTS и сервис хода, прог�
 | `PersonaConfig`, `load_persona(path)` | `[persona].file` → доменная `Persona`; ошибки — `ConfigError` |
 | `llm_backends()` | Реестр LLM-адаптеров: `llamacpp`, `openai_compat` (одна строка на адаптер) |
 | `tts_backends()` | Реестр движков TTS: `silero`, `piper`, `none` (без голоса) |
-| `Core(bus, telemetry)`, `Backends(llm, tts, fillers=None)`, `build_conversation(cfg, persona, backends, core)` | Сборка сервиса хода (с голосом — `Voice` с междометиями) и `PromptBuilder`; междометия синтезируются после загрузки голоса в `serve` |
+| `Core(bus, telemetry)`, `Backends(llm, tts, fillers=None)`, `build_conversation(cfg, persona, backends, core) → Conversation` | Сборка сервиса хода (с голосом — `Voice` с междометиями); `Conversation` — `service`, `prompts` (прогрев), `history` (фоновая память) |
+| `MemoryConfig` | Секция `[memory]`: `enabled`, `store_path`, `background_slot_id`, `generation`, `facts`, `e5`; `resolved(root)` |
+| `background_memory(cfg, history, bus)` (`bootstrap/memory.py`) | Фоновая память на время работы: LLM слота `background_slot_id`, e5, sqlite-vec, `IdleScheduler`, `MemoryKeeper` |
 | `main(argv, env, console)`, `run()`, `Console`, `LineSource` | `python -m vtuber [chat или serve] [--root]`; коды 0 / 1 (конфиг) / 2 (LLM недоступна в чате) |
 
 ## Зависимости

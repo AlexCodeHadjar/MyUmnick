@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
-from vtuber.domain.dialogue import TurnId
+from vtuber.domain.dialogue import Message, Turn, TurnId
 from vtuber.domain.emotion import Emotion
 
 
@@ -35,6 +35,17 @@ class TurnStarted:
     """Ход начат: аватар сразу показывает «думаю» (T-17)."""
 
     turn_id: TurnId
+
+
+@dataclass(frozen=True, slots=True)
+class TurnRemembered:
+    """Ход записан в историю; `dropped` — сообщения, отрезанные из неё при этом (T-04).
+
+    Для фоновой памяти (Этап 10): факты из хода и резюме отрезанного — задачами в простое.
+    """
+
+    turn: Turn
+    dropped: tuple[Message, ...]
 
 
 @dataclass(frozen=True, slots=True)

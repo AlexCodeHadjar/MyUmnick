@@ -53,12 +53,21 @@
 ## src/vtuber/application/conversation
 Сценарий «ход диалога»: реплика → промпт → конвейер → история и события.
 
-- `ConversationService` — `src/vtuber/application/conversation/service.py:44` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
+- `ConversationService` — `src/vtuber/application/conversation/service.py:45` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
 
 ## src/vtuber/application/memory
-Память витюбера: история текущего разговора (далее — долговременная память, Этап 10).
+Память витюбера: история разговора, её резюме и долговременные факты (Этап 10).
 
-- `ShortTermMemory` — `src/vtuber/application/memory/short_term.py:21` — История ходов для промпта (T-04).
+- `ExtractedFact` — `src/vtuber/application/memory/fact_extractor.py:32` — Факт из ответа LLM; важность — как её оценила модель.
+- `parse_facts` — `src/vtuber/application/memory/fact_extractor.py:47` — Факты из ответа модели; пробелы по краям текста срезаются.
+- `FactExtractor` — `src/vtuber/application/memory/fact_extractor.py:66` — Ход → факты о пользователе одним запросом к LLM (низкая temperature — в `params`).
+- `FactMemoryConfig` — `src/vtuber/application/memory/facts.py:21` — `dedup_score` — близость (косинус), от которой новый факт считается уже известным.
+- `FactMemory` — `src/vtuber/application/memory/facts.py:27` — Факты о пользователе: извлечение (LLM), векторы (эмбеддер), хранилище.
+- `MemoryKeeper` — `src/vtuber/application/memory/keeper.py:22` — По каждому записанному ходу: факты — в долговременную память, отрезанное — в резюме.
+- `collect` — `src/vtuber/application/memory/llm_text.py:15` — Ответ LLM целиком (фоновым задачам стрим не нужен); поток закрывается при отмене.
+- `strip_tags` — `src/vtuber/application/memory/llm_text.py:21` — Текст ответа без тегов эмоций.
+- `ShortTermMemory` — `src/vtuber/application/memory/short_term.py:24` — История ходов для промпта (T-04).
+- `Summarizer` — `src/vtuber/application/memory/summarizer.py:23` — Прежнее резюме + отрезанные сообщения → новое резюме одним запросом к LLM.
 
 ## src/vtuber/application/pipeline
 Конвейер ответа: LLM → разбор тегов → нарезка фраз → TTS.
@@ -107,17 +116,20 @@
 ## src/vtuber/bootstrap
 Корень композиции: конфиг, персона, сборка графа объектов и точка входа.
 
-- `AppConfig` — `src/vtuber/bootstrap/config.py:15` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:28` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `MemoryConfig` — `src/vtuber/bootstrap/config.py:20` — Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
+- `AppConfig` — `src/vtuber/bootstrap/config.py:44` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:59` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
 - `Core` — `src/vtuber/bootstrap/container.py:21` — Общие механизмы, которые получают все: шина событий и телеметрия.
 - `Backends` — `src/vtuber/bootstrap/container.py:29` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
 - `llm_backends` — `src/vtuber/bootstrap/container.py:40` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
 - `tts_backends` — `src/vtuber/bootstrap/container.py:51` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
-- `build_conversation` — `src/vtuber/bootstrap/container.py:60` — Собирает сервис хода; `PromptBuilder` отдаётся и наружу — для прогрева кэша (T-06).
-- `LineSource` — `src/vtuber/bootstrap/main.py:51` — Откуда читать строки: `sys.stdin` или его тестовая замена.
-- `Console` — `src/vtuber/bootstrap/main.py:58` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
-- `main` — `src/vtuber/bootstrap/main.py:71` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
-- `run` — `src/vtuber/bootstrap/main.py:212` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
+- `Conversation` — `src/vtuber/bootstrap/container.py:61` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
+- `build_conversation` — `src/vtuber/bootstrap/container.py:69` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
+- `LineSource` — `src/vtuber/bootstrap/main.py:52` — Откуда читать строки: `sys.stdin` или его тестовая замена.
+- `Console` — `src/vtuber/bootstrap/main.py:59` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
+- `main` — `src/vtuber/bootstrap/main.py:72` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
+- `run` — `src/vtuber/bootstrap/main.py:216` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
+- `background_memory` — `src/vtuber/bootstrap/memory.py:30` — Фоновая память на время контекста; выключена в конфиге — пустой контекст.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
 
@@ -143,11 +155,12 @@
 - `Component` — `src/vtuber/domain/events.py:18` — Бэкенд, о состоянии которого сообщается в UI.
 - `BackendState` — `src/vtuber/domain/events.py:25` — Состояние бэкенда для статус-бара UI.
 - `TurnStarted` — `src/vtuber/domain/events.py:34` — Ход начат: аватар сразу показывает «думаю» (T-17).
-- `TurnFinished` — `src/vtuber/domain/events.py:41` — Ход завершён полностью.
-- `TurnCancelled` — `src/vtuber/domain/events.py:48` — Ход прерван; UI сбрасывает аудиобуфер. `message` — что сказать пользователю при ошибке.
-- `EmotionChanged` — `src/vtuber/domain/events.py:57` — В ответе встретился тег эмоции.
-- `MetricRecorded` — `src/vtuber/domain/events.py:65` — Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев).
-- `BackendStatusChanged` — `src/vtuber/domain/events.py:74` — Бэкенд загрузился, упал или восстановился.
+- `TurnRemembered` — `src/vtuber/domain/events.py:41` — Ход записан в историю; `dropped` — сообщения, отрезанные из неё при этом (T-04).
+- `TurnFinished` — `src/vtuber/domain/events.py:52` — Ход завершён полностью.
+- `TurnCancelled` — `src/vtuber/domain/events.py:59` — Ход прерван; UI сбрасывает аудиобуфер. `message` — что сказать пользователю при ошибке.
+- `EmotionChanged` — `src/vtuber/domain/events.py:68` — В ответе встретился тег эмоции.
+- `MetricRecorded` — `src/vtuber/domain/events.py:76` — Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев).
+- `BackendStatusChanged` — `src/vtuber/domain/events.py:85` — Бэкенд загрузился, упал или восстановился.
 - `EmbedKind` — `src/vtuber/domain/memory.py:14` — Что кодируется: у e5 запрос и запоминаемый текст кодируются по-разному.
 - `FactSource` — `src/vtuber/domain/memory.py:21` — Откуда факт: от этого зависит доверие к нему при ответе.
 - `Fact` — `src/vtuber/domain/memory.py:33` — Одна запоминаемая мысль; `importance` 0…1 — что вспоминать в первую очередь.

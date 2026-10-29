@@ -10,6 +10,9 @@ from vtuber.domain import Message, Role, Turn
 
 INTERRUPTED_MARK: Final = "…"
 """Конец прерванного ответа. Нейтральный знак, а не «[прервано]»: модель повторяет пометки."""
+SUMMARY_TEMPLATE: Final = "(Кратко о начале разговора: {summary})\n{text}"
+"""Резюме — в первой реплике истории, а не отдельным системным сообщением: не все шаблоны чата
+допускают system не в начале, а чередование user/assistant так не ломается."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,18 +27,33 @@ class ShortTermMemory:
     Пока история в бюджете, она только дописывается — префикс промпта не меняется, KV-кэш
     живёт. Превысила — старшие ходы отрезаются сразу до `trim_target`, поэтому кэш сбрасывается
     раз в много ходов, а не каждый ход. Режутся целые ходы: чередование user/assistant не
-    ломается. Самый новый ход не отрезается никогда.
+    ломается. Самый новый ход не отрезается никогда. Отрезанное сжимает в резюме фоновая
+    память (`Summarizer`); резюме идёт в начало истории и меняется так же редко.
     """
 
     def __init__(self, budget: ContextBudget) -> None:
         self._budget = budget
         self._turns: deque[_StoredTurn] = deque()
         self._tokens = 0
+        self._summary: str | None = None
 
     @property
     def messages(self) -> tuple[Message, ...]:
-        """История в порядке ходов: user, assistant, user, assistant и так далее."""
-        return tuple(chain.from_iterable(turn.messages for turn in self._turns))
+        """История в порядке ходов: user, assistant, …; резюме — в первой реплике (T-04)."""
+        messages = tuple(chain.from_iterable(turn.messages for turn in self._turns))
+        if self._summary is None or not messages:
+            return messages
+        first = SUMMARY_TEMPLATE.format(summary=self._summary, text=messages[0].text)
+        return (Message(Role.USER, first), *messages[1:])
+
+    @property
+    def summary(self) -> str | None:
+        """Резюме отрезанной части разговора; None — ничего не отрезано или ещё не сжато."""
+        return self._summary
+
+    def set_summary(self, summary: str) -> None:
+        """Новое резюме (вбирает прежнее) — от фоновой памяти в простое."""
+        self._summary = summary
 
     @property
     def tokens(self) -> int:

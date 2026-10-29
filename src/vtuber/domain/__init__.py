@@ -22,6 +22,7 @@ from vtuber.domain.events import (
     MetricRecorded,
     TurnCancelled,
     TurnFinished,
+    TurnRemembered,
     TurnStarted,
 )
 from vtuber.domain.memory import EmbedKind, Fact, FactHit, FactId, FactSource, Vector
@@ -61,6 +62,7 @@ __all__ = [
     "TurnCancelled",
     "TurnFinished",
     "TurnId",
+    "TurnRemembered",
     "TurnStarted",
     "TurnState",
     "TurnStateError",

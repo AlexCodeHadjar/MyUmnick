@@ -66,6 +66,7 @@ async def test_serve_mode_runs_gateway_until_stdin_closes(tmp_path: Path) -> Non
             "VTUBER_LOGGING__FILE": str(tmp_path / "app.jsonl"),
             "VTUBER_TELEMETRY__TRACES_FILE": str(tmp_path / "traces.jsonl"),
             "VTUBER_TTS__BACKEND": "none",
+            "VTUBER_MEMORY__ENABLED": "false",
         }
         app = asyncio.create_task(
             asyncio.to_thread(main, ["serve", "--root", str(ROOT)], env, Console(stdin, out))
@@ -93,6 +94,7 @@ async def test_serve_mode_keeps_running_when_llm_is_down(tmp_path: Path) -> None
         "VTUBER_LOGGING__FILE": str(tmp_path / "app.jsonl"),
         "VTUBER_TELEMETRY__TRACES_FILE": str(tmp_path / "traces.jsonl"),
         "VTUBER_TTS__BACKEND": "none",
+        "VTUBER_MEMORY__ENABLED": "false",
     }
     app = asyncio.create_task(
         asyncio.to_thread(main, ["serve", "--root", str(ROOT)], env, Console(stdin, out))
@@ -120,6 +122,7 @@ async def test_serve_mode_speaks_reply_as_binary_audio_frames(tmp_path: Path) ->
             "VTUBER_GATEWAY__PORT": str(port),
             "VTUBER_LOGGING__FILE": str(tmp_path / "app.jsonl"),
             "VTUBER_TELEMETRY__TRACES_FILE": str(tmp_path / "traces.jsonl"),
+            "VTUBER_MEMORY__ENABLED": "false",
         }
         app = asyncio.create_task(
             asyncio.to_thread(main, ["serve", "--root", str(ROOT)], env, Console(stdin, out))

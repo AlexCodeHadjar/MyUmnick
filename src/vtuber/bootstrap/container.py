@@ -57,10 +57,19 @@ def tts_backends() -> Registry[TTSConfig, TTSAdapter | None]:
     return backends
 
 
+@dataclass(frozen=True, slots=True)
+class Conversation:
+    """Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память)."""
+
+    service: ConversationService
+    prompts: PromptBuilder
+    history: ShortTermMemory
+
+
 def build_conversation(
     cfg: AppConfig, persona: Persona, backends: Backends, core: Core
-) -> tuple[ConversationService, PromptBuilder]:
-    """Собирает сервис хода; `PromptBuilder` отдаётся и наружу — для прогрева кэша (T-06)."""
+) -> Conversation:
+    """Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти."""
     generation = cfg.llm.generation
     params = GenerationParams(max_tokens=generation.max_tokens, temperature=generation.temperature)
     voice = (
@@ -69,10 +78,8 @@ def build_conversation(
         else Voice(backends.tts, cfg.pipeline.chunker, backends.fillers)
     )
     prompts = PromptBuilder(persona)
+    history = ShortTermMemory(ContextBudget(cfg.context))
     service = ConversationService(
-        ReplyPipeline(backends.llm, params, core.telemetry, voice),
-        prompts,
-        ShortTermMemory(ContextBudget(cfg.context)),
-        core.bus,
+        ReplyPipeline(backends.llm, params, core.telemetry, voice), prompts, history, core.bus
     )
-    return service, prompts
+    return Conversation(service, prompts, history)

@@ -18,6 +18,7 @@ from vtuber.domain import (
     TurnCancelled,
     TurnFinished,
     TurnId,
+    TurnRemembered,
     TurnStarted,
     TurnState,
     VtuberError,
@@ -141,7 +142,7 @@ class ConversationService:
                 _log.exception("turn.crashed")
                 await self._fail(turn, INTERNAL_ERROR_MESSAGE)
             else:
-                self._memory.append(Turn(turn.id, turn.user_text, turn.parser.full_text))
+                await self._remember(Turn(turn.id, turn.user_text, turn.parser.full_text))
                 self._move(TurnState.IDLE)
                 await self._bus.publish(TurnFinished(turn.id))
 
@@ -153,10 +154,15 @@ class ConversationService:
     async def _stop(self, turn: _ActiveTurn, event: TurnCancelled, *, remember: bool) -> None:
         if remember:
             reply = turn.parser.full_text
-            self._memory.append(Turn(turn.id, turn.user_text, reply, is_interrupted=True))
+            await self._remember(Turn(turn.id, turn.user_text, reply, is_interrupted=True))
         self._move(TurnState.CANCELLED)
         self._move(TurnState.IDLE)
         await self._bus.publish(event)
+
+    async def _remember(self, turn: Turn) -> None:
+        """В историю — и на шину: фоновая память извлечёт факты и сожмёт отрезанное (T-13)."""
+        dropped = self._memory.append(turn)
+        await self._bus.publish(TurnRemembered(turn, dropped))
 
     def _start_speaking(self) -> None:
         self._move(TurnState.SPEAKING)

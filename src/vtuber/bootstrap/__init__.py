@@ -1,8 +1,9 @@
 """Корень композиции: конфиг, персона, сборка графа объектов и точка входа."""
 
-from vtuber.bootstrap.config import AppConfig, load_app_config
+from vtuber.bootstrap.config import AppConfig, MemoryConfig, load_app_config
 from vtuber.bootstrap.container import (
     Backends,
+    Conversation,
     Core,
     build_conversation,
     llm_backends,
@@ -15,7 +16,9 @@ __all__ = [
     "AppConfig",
     "Backends",
     "Console",
+    "Conversation",
     "Core",
+    "MemoryConfig",
     "PersonaConfig",
     "build_conversation",
     "llm_backends",
