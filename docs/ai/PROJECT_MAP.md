@@ -225,8 +225,9 @@
 - `animationFrame` — `ui/src/core/batch.ts:10` — —
 - `FrameBatch` — `ui/src/core/batch.ts:20` — Очередь изменений до следующего кадра. Порядок сохраняется: смена связи и сообщения ядра идут
 - `AudioSink` — `ui/src/core/client.ts:17` — —
-- `CoreClientOptions` — `ui/src/core/client.ts:19` — —
-- `CoreClient` — `ui/src/core/client.ts:28` — —
+- `CancelSink` — `ui/src/core/client.ts:19` — Звук хода надо оборвать: `turn` — отменённый ход, null — связь потеряна (сбросить всё).
+- `CoreClientOptions` — `ui/src/core/client.ts:21` — —
+- `CoreClient` — `ui/src/core/client.ts:30` — —
 - `AUDIO_HEADER_SIZE` — `ui/src/core/frames.ts:11` — Заголовок аудиокадра `<BBHIQ`: тип, версия, seq, sample_rate, turn_id — docs/protocol.md.
 - `AudioFrame` — `ui/src/core/frames.ts:17` — Аудиокадр ядра. `turn` — в том же виде, что в JSON-сообщениях, чтобы их сопоставлять.
 - `FrameError` — `ui/src/core/frames.ts:25` — Кадр не соответствует протоколу: ядро другой версии или повреждённые данные.
@@ -235,6 +236,8 @@
 - `decodeAudioFrame` — `ui/src/core/frames.ts:86` — Бинарный кадр → аудиокадр. PCM не копируется: `Int16Array` смотрит в тот же буфер
 - `FIRST_CHAR_SPAN` — `ui/src/core/probe.ts:8` — —
 - `FirstCharProbe` — `ui/src/core/probe.ts:10` — —
+- `FIRST_AUDIO_SPAN` — `ui/src/core/probe.ts:57` — —
+- `FirstAudioProbe` — `ui/src/core/probe.ts:64` — Замер UI «реплика отправлена → звук ответа зазвучал» — настоящий TTFA (NFR-02: p50 ≤ 800 мс):
 - `protocol.gen.ts` — `ui/src/core/protocol.gen.ts:1` — Автогенерация: `uv run python tools/gen_protocol.py`. Не редактировать.
 - `Role` — `ui/src/core/store.svelte.ts:16` — —
 - `MessageStatus` — `ui/src/core/store.svelte.ts:17` — —
@@ -250,6 +253,22 @@
 - `Backoff` — `ui/src/core/transport.ts:37` — Пауза перед попыткой n (с нуля): `min(maxMs, initialMs · factor^n)`.
 - `TransportOptions` — `ui/src/core/transport.ts:43` — —
 - `Transport` — `ui/src/core/transport.ts:66` — —
+
+## ui/src/features/audio
+Публичный API фичи звука: плеер голоса и его подключение к ядру (ADR-0003).
+
+- `connectVoice` — `ui/src/features/audio/index.ts:11` — Плеер, подключённый к клиенту ядра: кадры звука → плеер, отмена хода → сброс, начало звука →
+- `LipsyncConfig` — `ui/src/features/audio/lipsync.ts:7` — —
+- `DEFAULT_LIPSYNC` — `ui/src/features/audio/lipsync.ts:19` — Замер S-7.6 на Silero (48 кГц): пик RMS речи ~0.31, паузы между фразами ниже порога.
+- `rms` — `ui/src/features/audio/lipsync.ts:27` — Среднеквадратичная громкость блока сэмплов.
+- `MouthFollower` — `ui/src/features/audio/lipsync.ts:38` — —
+- `FADE_SAMPLES` — `ui/src/features/audio/pcm-queue.ts:12` — Длина нарастания и затухания, сэмплов: ~3 мс — неслышно как «ступенька», щелчка нет.
+- `PcmQueue` — `ui/src/features/audio/pcm-queue.ts:58` — —
+- `PROCESSOR_NAME` — `ui/src/features/audio/player.worklet.ts:8` — —
+- `PlayerCommand` — `ui/src/features/audio/player.worklet.ts:10` — —
+- `int16ToFloat` — `ui/src/features/audio/resample.ts:11` — Сэмплы s16 → float [-1, 1).
+- `StreamResampler` — `ui/src/features/audio/resample.ts:19` — —
+- `VoicePlayer` — `ui/src/features/audio/VoicePlayer.ts:21` — —
 
 ## ui/src/features/avatar
 Публичный API фичи аватара: сцена и контракт рендера (ADR-0011).
@@ -277,9 +296,10 @@
 - `ConversationView` — `ui/src/features/avatar/reactions.ts:8` — —
 - `reactionOf` — `ui/src/features/avatar/reactions.ts:15` — —
 - `avatarSource` — `ui/src/features/avatar/session.ts:10` — Файлы модели `<имя>` в `ui/public/avatars/<имя>/` (ADR-0011).
-- `AvatarStatus` — `ui/src/features/avatar/session.ts:18` — —
-- `RendererFactory` — `ui/src/features/avatar/session.ts:22` — Создатель рендера: Live2D в окне, фейк в тестах.
-- `AvatarSession` — `ui/src/features/avatar/session.ts:28` — —
+- `MouthSource` — `ui/src/features/avatar/session.ts:19` — Открытие рта 0…1 за прошедшие `deltaMs`; без звука — всегда 0.
+- `AvatarStatus` — `ui/src/features/avatar/session.ts:21` — —
+- `RendererFactory` — `ui/src/features/avatar/session.ts:25` — Создатель рендера: Live2D в окне, фейк в тестах.
+- `AvatarSession` — `ui/src/features/avatar/session.ts:31` — —
 
 ## ui/src/features/avatar/live2d
 —
@@ -336,7 +356,7 @@
 - `isMetricsHotkey` — `ui/src/features/metrics/hotkey.ts:10` — По `code`, а не `key`: в русской раскладке `key` для этой клавиши — «Ь».
 - `MetricsPanel.svelte` — `ui/src/features/metrics/MetricsPanel.svelte:1` — Панель метрик для разработчика (FR-15): задержки стадий хода — от ядра (`metrics.span`) и
 - `Summary` — `ui/src/features/metrics/stats.ts:7` — —
-- `percentile` — `ui/src/features/metrics/stats.ts:27` — Перцентиль по ближайшему рангу: значение из выборки, без интерполяции — честно для малых n.
-- `summarize` — `ui/src/features/metrics/stats.ts:35` — —
-- `summarizeAll` — `ui/src/features/metrics/stats.ts:48` — Строки панели: сначала стадии с бюджетом (главное), затем остальные по имени.
-- `overBudget` — `ui/src/features/metrics/stats.ts:57` — —
+- `percentile` — `ui/src/features/metrics/stats.ts:28` — Перцентиль по ближайшему рангу: значение из выборки, без интерполяции — честно для малых n.
+- `summarize` — `ui/src/features/metrics/stats.ts:36` — —
+- `summarizeAll` — `ui/src/features/metrics/stats.ts:49` — Строки панели: сначала стадии с бюджетом (главное), затем остальные по имени.
+- `overBudget` — `ui/src/features/metrics/stats.ts:58` — —

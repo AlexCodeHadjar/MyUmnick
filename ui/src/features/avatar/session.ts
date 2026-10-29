@@ -15,6 +15,9 @@ export function avatarSource(name: string): AvatarSource {
   };
 }
 
+/** Открытие рта 0…1 за прошедшие `deltaMs`; без звука — всегда 0. */
+export type MouthSource = (deltaMs: number) => number;
+
 export type AvatarStatus =
   { state: "loading" } | { state: "ready" } | { state: "error"; message: string };
 
@@ -32,6 +35,7 @@ export class AvatarSession {
   #loop: AvatarLoop | null = null;
   #observer: ResizeObserver | null = null;
   #disposed = false;
+  #mouthSource: MouthSource = () => 0;
 
   constructor(host: HTMLElement, onStatus: (status: AvatarStatus) => void) {
     this.#host = host;
@@ -72,6 +76,11 @@ export class AvatarSession {
     this.#renderer?.lookAt(0, 0);
   }
 
+  /** Источник открытия рта (липсинк, ADR-0003): опрашивается каждый кадр цикла аватара. */
+  set mouth(source: MouthSource) {
+    this.#mouthSource = source;
+  }
+
   dispose(): void {
     this.#disposed = true;
     this.#observer?.disconnect();
@@ -85,6 +94,7 @@ export class AvatarSession {
       return;
     }
     this.#loop = new AvatarLoop((deltaMs) => {
+      renderer.setMouth(this.#mouthSource(deltaMs));
       renderer.update(deltaMs);
     });
     this.#loop.start();

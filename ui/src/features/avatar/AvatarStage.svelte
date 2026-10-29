@@ -5,9 +5,13 @@
 
   import type { AppStore } from "../../core";
   import { reactionOf } from "./reactions";
-  import { AvatarSession, type AvatarStatus } from "./session";
+  import { AvatarSession, type AvatarStatus, type MouthSource } from "./session";
 
-  const { name, store }: { name: string; store: AppStore } = $props();
+  const {
+    name,
+    store,
+    mouth = () => 0,
+  }: { name: string; store: AppStore; mouth?: MouthSource } = $props();
 
   let host: HTMLDivElement | undefined = $state();
   let status = $state<AvatarStatus>({ state: "loading" });
@@ -45,6 +49,8 @@
       status = next;
     });
     session = current;
+    // Источник рта читается при каждом кадре через замыкание: смена пропса подхватывается.
+    current.mouth = (deltaMs) => mouth(deltaMs);
     void current.start(name, async (element, size) => {
       const { Live2DRenderer } = await import("./live2d/Live2DRenderer");
       return Live2DRenderer.create(element, size);

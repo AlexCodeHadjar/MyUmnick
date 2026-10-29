@@ -2,7 +2,7 @@
  * Сводка замеров стадии для панели метрик (FR-15): последний, p50, p95 и сверка с бюджетом
  * из `docs/requirements.md` / `docs/performance.md`.
  */
-import { FIRST_CHAR_SPAN } from "../../core";
+import { FIRST_AUDIO_SPAN, FIRST_CHAR_SPAN } from "../../core";
 
 export interface Summary {
   name: string;
@@ -15,12 +15,13 @@ export interface Summary {
 }
 
 /**
- * Бюджеты p50, мс. TTFT — NFR-01 (≤ 250); UI-замер — TTFT + 20 мс (критерий Этапа 5). Новые
- * стадии получают норму вместе со своим замером.
+ * Бюджеты p50, мс. TTFT — NFR-01 (≤ 250); UI-замер — TTFT + 20 мс (критерий Этапа 5); звук от
+ * Enter — NFR-02 (TTFA ≤ 800). Новые стадии получают норму вместе со своим замером.
  */
 const BUDGETS: Partial<Record<string, number>> = {
   "llm.first_token": 250,
   [FIRST_CHAR_SPAN]: 270,
+  [FIRST_AUDIO_SPAN]: 800,
 };
 
 /** Перцентиль по ближайшему рангу: значение из выборки, без интерполяции — честно для малых n. */

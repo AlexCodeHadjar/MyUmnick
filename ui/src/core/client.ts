@@ -4,7 +4,7 @@
  */
 import { animationFrame, FrameBatch, type FrameScheduler } from "./batch";
 import type { AudioFrame } from "./frames";
-import { FIRST_CHAR_SPAN, FirstCharProbe } from "./probe";
+import { FIRST_AUDIO_SPAN, FIRST_CHAR_SPAN, FirstAudioProbe, FirstCharProbe } from "./probe";
 import { PROTOCOL_VERSION } from "./protocol.gen";
 import { AppStore } from "./store.svelte";
 import { Transport, type Backoff, type SocketFactory } from "./transport";
@@ -15,6 +15,8 @@ const BACKOFF: Backoff = { initialMs: 250, maxMs: 5000, factor: 2 };
 const QUEUE_LIMIT = 16;
 
 export type AudioSink = (frame: AudioFrame) => void;
+/** Звук хода надо оборвать: `turn` — отменённый ход, null — связь потеряна (сбросить всё). */
+export type CancelSink = (turn: string | null) => void;
 
 export interface CoreClientOptions {
   url: string;
@@ -28,16 +30,21 @@ export interface CoreClientOptions {
 export class CoreClient {
   readonly store = new AppStore();
   readonly #transport: Transport;
-  /** Аудиоплеер подключается на Этапе 8; до него кадры отбрасываются. */
+  /** Плеер подключается из фичи audio; до него кадры отбрасываются. */
   #audio: AudioSink = () => undefined;
+  #cancel: CancelSink = () => undefined;
   readonly #probe: FirstCharProbe;
+  readonly #audioProbe: FirstAudioProbe;
 
   constructor(options: CoreClientOptions) {
     const { url, socketFactory, scheduleFrame = animationFrame } = options;
     const store = this.store;
     const batch = new FrameBatch(scheduleFrame);
-    const probe = new FirstCharProbe(options.now ?? (() => performance.now()));
+    const now = options.now ?? (() => performance.now());
+    const probe = new FirstCharProbe(now);
+    const audioProbe = new FirstAudioProbe(now);
     this.#probe = probe;
+    this.#audioProbe = audioProbe;
     this.#transport = new Transport(
       {
         url,
@@ -47,6 +54,9 @@ export class CoreClient {
       },
       {
         message: (message) => {
+          // Отмена — мимо пачки: тишина за ≤ 100 мс (NFR-04) не ждёт следующего кадра.
+          if (message.type === "turn.cancelled") this.#cancel(message.turn);
+          audioProbe.observe(message);
           batch.run(() => {
             store.apply(message);
             const ms = probe.observe(message);
@@ -58,6 +68,8 @@ export class CoreClient {
           this.#audio(frame);
         },
         connection: (state) => {
+          // Разрыв отменяет ход на ядре (T-14), а `turn.cancelled` уже не придёт.
+          if (state !== "open" && state !== "connecting") this.#cancel(null);
           batch.run(() => {
             store.setConnection(state);
           });
@@ -81,6 +93,16 @@ export class CoreClient {
     this.#audio = sink;
   }
 
+  onCancel(sink: CancelSink): void {
+    this.#cancel = sink;
+  }
+
+  /** Плеер: звук хода `turn` зазвучал — замер TTFA от отправки реплики (`ui.first_audio`). */
+  audioStarted(turn: string): void {
+    const ms = this.#audioProbe.started(turn);
+    if (ms !== null) this.store.recordSpan(FIRST_AUDIO_SPAN, ms);
+  }
+
   /** Реплика пользователя: в историю сразу (T-17), ядру — новым ходом. */
   say(text: string): void {
     const trimmed = text.trim();
@@ -88,11 +110,17 @@ export class CoreClient {
       return;
     }
     this.store.addUserMessage(trimmed);
+    // Новая реплика перебивает голос сразу — как ход в ядре (`new_message`), без ожидания сети.
+    this.#cancel(null);
     this.#probe.sent();
+    this.#audioProbe.sent();
     this.#transport.send({ v: PROTOCOL_VERSION, type: "chat.send", data: { text: trimmed } });
   }
 
   stop(): void {
+    // Звук глушится сразу, не дожидаясь `turn.cancelled`: ход мог уже закончиться в ядре, а
+    // голос ещё звучит (синтез быстрее реального времени).
+    this.#cancel(null);
     this.#transport.send({ v: PROTOCOL_VERSION, type: "chat.cancel", data: {} });
   }
 }

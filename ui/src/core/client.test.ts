@@ -111,7 +111,8 @@ describe("CoreClient", () => {
   it("замер UI: от say() до кадра с первым символом ответа", () => {
     const socket = new FakeSocket();
     const frames = new Frames();
-    const clock = [1000, 1042];
+    // say() засекает время для двух замеров (символ и звук), первый символ — третье чтение.
+    const clock = [1000, 1000, 1042];
     const client = new CoreClient({
       url: "ws://test",
       socketFactory: () => socket,
@@ -125,6 +126,50 @@ describe("CoreClient", () => {
     socket.receive(delta("П"));
     frames.next();
     expect(client.store.spans["ui.first_char"]).toEqual([42]);
+  });
+
+  it("отмена хода — плееру сразу, мимо пачки; разрыв — отмена всего звука", () => {
+    const { client, socket } = connected();
+    const cancelled: (string | null)[] = [];
+    client.onCancel((turn) => cancelled.push(turn));
+    socket.receive(
+      JSON.stringify({
+        v: 1,
+        type: "turn.cancelled",
+        turn: "t-000003",
+        data: { reason: "user_stop", message: "" },
+      }),
+    );
+    expect(cancelled).toEqual(["t-000003"]);
+    socket.close();
+    expect(cancelled).toEqual(["t-000003", null]);
+  });
+
+  it("стоп и новая реплика глушат голос сразу, не дожидаясь ядра", () => {
+    const { client } = connected();
+    const cancelled: (string | null)[] = [];
+    client.onCancel((turn) => cancelled.push(turn));
+    client.stop();
+    client.say("ещё");
+    expect(cancelled).toEqual([null, null]);
+  });
+
+  it("замер UI: от say() до звука ответа (ui.first_audio)", () => {
+    const socket = new FakeSocket();
+    const frames = new Frames();
+    const clock = [1000, 1000, 1300];
+    const client = new CoreClient({
+      url: "ws://test",
+      socketFactory: () => socket,
+      scheduleFrame: frames.schedule,
+      now: () => clock.shift() ?? Number.NaN,
+    });
+    client.start();
+    socket.onopen?.(new Event("open"));
+    client.say("привет");
+    socket.receive('{"v": 1, "type": "turn.started", "turn": "t-000003", "data": {}}');
+    client.audioStarted("t-000003");
+    expect(client.store.spans["ui.first_audio"]).toEqual([300]);
   });
 
   it("dispose() закрывает связь", () => {

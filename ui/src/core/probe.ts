@@ -53,3 +53,49 @@ export class FirstCharProbe {
     this.#turn = null;
   }
 }
+
+export const FIRST_AUDIO_SPAN = "ui.first_audio";
+
+/**
+ * Замер UI «реплика отправлена → звук ответа зазвучал» — настоящий TTFA (NFR-02: p50 ≤ 800 мс):
+ * TTFT, нарезка, синтез, сеть и буфер плеера вместе. Конец замера сообщает плеер, когда первый
+ * сэмпл хода ушёл в устройство.
+ */
+export class FirstAudioProbe {
+  readonly #now: () => number;
+  #sentAt: number | null = null;
+  #turn: string | null = null;
+
+  constructor(now: () => number) {
+    this.#now = now;
+  }
+
+  sent(): void {
+    this.#sentAt = this.#now();
+    this.#turn = null;
+  }
+
+  /** Ход, начатый после отправки: звук прежнего (отменённого) хода не в счёт. */
+  observe(message: OutboundMessage): void {
+    if (this.#sentAt === null) {
+      return;
+    }
+    if (message.type === "turn.started") {
+      this.#turn = message.turn;
+    } else if (message.type === "turn.cancelled" && message.turn === this.#turn) {
+      this.#sentAt = null;
+      this.#turn = null;
+    }
+  }
+
+  /** Звук хода `turn` зазвучал; замер, мс, — если это ответ на отправленную реплику. */
+  started(turn: string): number | null {
+    if (this.#sentAt === null || turn !== this.#turn) {
+      return null;
+    }
+    const ms = this.#now() - this.#sentAt;
+    this.#sentAt = null;
+    this.#turn = null;
+    return ms;
+  }
+}
