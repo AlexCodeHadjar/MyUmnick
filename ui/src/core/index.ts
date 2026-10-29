@@ -9,6 +9,8 @@ export {
   type ChatMessage,
   type MessageStatus,
   type Role,
+  type SpeechProgress,
   type TurnPhase,
+  type VoiceState,
 } from "./store.svelte";
 export { type ConnectionState } from "./transport";

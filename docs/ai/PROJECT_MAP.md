@@ -244,7 +244,9 @@
 - `TurnPhase` — `ui/src/core/store.svelte.ts:19` — Фаза хода для аватара и кнопки «Стоп»: ждём первый токен / идёт ответ / ничего.
 - `ChatMessage` — `ui/src/core/store.svelte.ts:21` — —
 - `SPAN_HISTORY` — `ui/src/core/store.svelte.ts:31` — Сколько последних замеров стадии хранить: хватает на p95, память — копейки.
-- `AppStore` — `ui/src/core/store.svelte.ts:33` — —
+- `SpeechProgress` — `ui/src/core/store.svelte.ts:34` — Что звучит в плеере (сообщает фича звука): ход, идёт ли звук, сыграно и получено, секунд.
+- `VoiceState` — `ui/src/core/store.svelte.ts:45` — Голос в UI. Ход ядра заканчивается, когда синтез готов, а звучит голос дольше (синтез
+- `AppStore` — `ui/src/core/store.svelte.ts:50` — —
 - `CLOSE_REPLACED` — `ui/src/core/transport.ts:10` — Код закрытия «вытеснен новым клиентом» — `gateway/server.py` (ADR-0008).
 - `SocketLike` — `ui/src/core/transport.ts:14` — Часть WebSocket, нужная транспорту: в тестах подменяется фейком.
 - `SocketFactory` — `ui/src/core/transport.ts:24` — —
@@ -257,18 +259,20 @@
 ## ui/src/features/audio
 Публичный API фичи звука: плеер голоса и его подключение к ядру (ADR-0003).
 
-- `connectVoice` — `ui/src/features/audio/index.ts:11` — Плеер, подключённый к клиенту ядра: кадры звука → плеер, отмена хода → сброс, начало звука →
+- `PlayerEvent` — `ui/src/features/audio/events.ts:3` — —
+- `isPlayerEvent` — `ui/src/features/audio/events.ts:8` — —
+- `connectVoice` — `ui/src/features/audio/index.ts:12` — Плеер, подключённый к клиенту ядра: кадры звука → плеер, отмена хода → сброс, начало звука →
 - `LipsyncConfig` — `ui/src/features/audio/lipsync.ts:7` — —
 - `DEFAULT_LIPSYNC` — `ui/src/features/audio/lipsync.ts:19` — Замер S-7.6 на Silero (48 кГц): пик RMS речи ~0.31, паузы между фразами ниже порога.
 - `rms` — `ui/src/features/audio/lipsync.ts:27` — Среднеквадратичная громкость блока сэмплов.
 - `MouthFollower` — `ui/src/features/audio/lipsync.ts:38` — —
 - `FADE_SAMPLES` — `ui/src/features/audio/pcm-queue.ts:12` — Длина нарастания и затухания, сэмплов: ~3 мс — неслышно как «ступенька», щелчка нет.
 - `PcmQueue` — `ui/src/features/audio/pcm-queue.ts:58` — —
-- `PROCESSOR_NAME` — `ui/src/features/audio/player.worklet.ts:8` — —
-- `PlayerCommand` — `ui/src/features/audio/player.worklet.ts:10` — —
+- `PROCESSOR_NAME` — `ui/src/features/audio/player.worklet.ts:10` — —
+- `PlayerCommand` — `ui/src/features/audio/player.worklet.ts:14` — —
 - `int16ToFloat` — `ui/src/features/audio/resample.ts:11` — Сэмплы s16 → float [-1, 1).
 - `StreamResampler` — `ui/src/features/audio/resample.ts:19` — —
-- `VoicePlayer` — `ui/src/features/audio/VoicePlayer.ts:21` — —
+- `VoicePlayer` — `ui/src/features/audio/VoicePlayer.ts:22` — —
 
 ## ui/src/features/avatar
 Публичный API фичи аватара: сцена и контракт рендера (ADR-0011).
@@ -293,13 +297,22 @@
 - `MappingError` — `ui/src/features/avatar/mapping.ts:61` — —
 - `parseMapping` — `ui/src/features/avatar/mapping.ts:160` — JSON маппинга → проверенный маппинг; ошибка называет поле и что с ним не так.
 - `expressionFor` — `ui/src/features/avatar/mapping.ts:178` — Какое выражение должно быть на лице: реакция (например, «думаю» до первого токена) важнее
-- `ConversationView` — `ui/src/features/avatar/reactions.ts:8` — —
-- `reactionOf` — `ui/src/features/avatar/reactions.ts:15` — —
-- `avatarSource` — `ui/src/features/avatar/session.ts:10` — Файлы модели `<имя>` в `ui/public/avatars/<имя>/` (ADR-0011).
-- `MouthSource` — `ui/src/features/avatar/session.ts:19` — Открытие рта 0…1 за прошедшие `deltaMs`; без звука — всегда 0.
-- `AvatarStatus` — `ui/src/features/avatar/session.ts:21` — —
-- `RendererFactory` — `ui/src/features/avatar/session.ts:25` — Создатель рендера: Live2D в окне, фейк в тестах.
-- `AvatarSession` — `ui/src/features/avatar/session.ts:31` — —
+- `MoodConfig` — `ui/src/features/avatar/mood.ts:8` — —
+- `DEFAULT_MOOD` — `ui/src/features/avatar/mood.ts:16` — Пара фраз тишины — эмоция ещё «про» ответ; дольше — лицо застывает маской.
+- `MoodFrame` — `ui/src/features/avatar/mood.ts:18` — —
+- `Mood` — `ui/src/features/avatar/mood.ts:24` — —
+- `NOD_MS` — `ui/src/features/avatar/nod.ts:8` — Длительность кивка, мс: короче — дёрганье, дольше — поклон.
+- `NOD_DEGREES` — `ui/src/features/avatar/nod.ts:10` — Глубина кивка, градусы параметра `ParamAngleY` (диапазон модели обычно ±30).
+- `nodAngle` — `ui/src/features/avatar/nod.ts:13` — Добавка к наклону головы через `elapsedMs` после начала кивка; вне кивка — 0.
+- `THINKING_AFTER_MS` — `ui/src/features/avatar/reactions.ts:9` — Порог «думаю», мс: бюджет TTFA (NFR-02) — ответ медленнее нормы виден по лицу.
+- `ConversationView` — `ui/src/features/avatar/reactions.ts:11` — —
+- `isWaiting` — `ui/src/features/avatar/reactions.ts:23` — Реплика ушла, а ответа ещё не слышно (без голоса — не видно).
+- `avatarSource` — `ui/src/features/avatar/session.ts:12` — Файлы модели `<имя>` в `ui/public/avatars/<имя>/` (ADR-0011).
+- `MouthSource` — `ui/src/features/avatar/session.ts:21` — Открытие рта 0…1 за прошедшие `deltaMs`; без звука — всегда 0.
+- `ActivitySource` — `ui/src/features/avatar/session.ts:23` — Идёт ли разговор (ход или голос): пока да — эмоция не угасает.
+- `AvatarStatus` — `ui/src/features/avatar/session.ts:25` — —
+- `RendererFactory` — `ui/src/features/avatar/session.ts:29` — Создатель рендера: Live2D в окне, фейк в тестах.
+- `AvatarSession` — `ui/src/features/avatar/session.ts:35` — —
 
 ## ui/src/features/avatar/live2d
 —
@@ -312,19 +325,20 @@
 - `ScriptHost` — `ui/src/features/avatar/live2d/core-loader.ts:33` — Части `window`/`document`, нужные загрузчику: в тестах — подмена.
 - `browserHost` — `ui/src/features/avatar/live2d/core-loader.ts:55` — —
 - `loadCubismCore` — `ui/src/features/avatar/live2d/core-loader.ts:82` — Подключить Core один раз на окно; повторные вызовы ждут ту же загрузку.
-- `Engine` — `ui/src/features/avatar/live2d/engine.ts:7` — —
-- `Pixi` — `ui/src/features/avatar/live2d/engine.ts:8` — —
-- `Model` — `ui/src/features/avatar/live2d/engine.ts:9` — —
-- `CubismInternal` — `ui/src/features/avatar/live2d/engine.ts:10` — —
-- `loadEngine` — `ui/src/features/avatar/live2d/engine.ts:15` — —
-- `mouthIndices` — `ui/src/features/avatar/live2d/engine.ts:29` — Индексы параметров рта: ищутся один раз при загрузке, в кадре — запись по индексу.
+- `Engine` — `ui/src/features/avatar/live2d/engine.ts:8` — —
+- `Pixi` — `ui/src/features/avatar/live2d/engine.ts:9` — —
+- `Model` — `ui/src/features/avatar/live2d/engine.ts:10` — —
+- `CubismInternal` — `ui/src/features/avatar/live2d/engine.ts:11` — —
+- `loadEngine` — `ui/src/features/avatar/live2d/engine.ts:18` — —
+- `mouthIndices` — `ui/src/features/avatar/live2d/engine.ts:32` — Индексы параметров рта: ищутся один раз при загрузке, в кадре — запись по индексу.
+- `headPitchIndices` — `ui/src/features/avatar/live2d/engine.ts:38` — Индексы наклона головы для кивка; у модели без параметра — пусто, кивка нет.
 - `Size` — `ui/src/features/avatar/live2d/fit.ts:3` — —
 - `Placement` — `ui/src/features/avatar/live2d/fit.ts:8` — —
 - `FIT_MARGIN` — `ui/src/features/avatar/live2d/fit.ts:16` — Поля вокруг модели, доля сцены: не упираться в края при наклонах головы и физике волос.
 - `fitModel` — `ui/src/features/avatar/live2d/fit.ts:19` — Масштаб «вписать целиком» с полями; модель по центру. Пустая сцена или модель — масштаб 0.
 - `applyFrame` — `ui/src/features/avatar/live2d/fit.ts:32` — Кадр маппинга (масштаб и сдвиг центра в долях сцены) поверх «вписать целиком».
 - `gazeAt` — `ui/src/features/avatar/live2d/fit.ts:48` — Курсор → взгляд: -1…1 по осям, y вверх (как `AvatarRenderer.lookAt`). За пределами сцены
-- `Live2DRenderer` — `ui/src/features/avatar/live2d/Live2DRenderer.ts:17` — —
+- `Live2DRenderer` — `ui/src/features/avatar/live2d/Live2DRenderer.ts:30` — —
 - `Fetcher` — `ui/src/features/avatar/live2d/settings.ts:8` — —
 - `loadMapping` — `ui/src/features/avatar/live2d/settings.ts:23` — `mapping.json` модели; нет файла — модель как есть, битый файл — ошибка с полем.
 - `withExpressions` — `ui/src/features/avatar/live2d/settings.ts:46` — Копия model3.json с выражениями маппинга (поверх одноимённых из манифеста) и `url` — по нему
@@ -333,7 +347,7 @@
 ## ui/src/features/chat
 Публичный API фичи чата: приложение монтирует только панель (R-63).
 
-- `Chat.svelte` — `ui/src/features/chat/Chat.svelte:1` — Панель чата: история, индикатор «печатает», ошибка ядра, поле ввода. Состояние — только из
+- `Chat.svelte` — `ui/src/features/chat/Chat.svelte:1` — Панель чата: история, индикатор «печатает», ошибка ядра, поле ввода, режим субтитров.
 - `Composer.svelte` — `ui/src/features/chat/Composer.svelte:1` — Поле ввода: Enter — отправить, Shift+Enter — перенос, Esc или «Стоп» — прервать ответ.
 - `isSendKey` — `ui/src/features/chat/keys.ts:6` — Enter во время набора через IME (выбор иероглифа и т. п.) подтверждает ввод, а не отправляет.
 - `isStopKey` — `ui/src/features/chat/keys.ts:10` — —
@@ -348,6 +362,14 @@
 - `MeasureTarget` — `ui/src/features/chat/measure.ts:7` — —
 - `measureHeight` — `ui/src/features/chat/measure.ts:27` — —
 - `MessageList.svelte` — `ui/src/features/chat/MessageList.svelte:1` — Виртуализированная история: в DOM только окно вокруг экрана (layout.ts), строки
+- `SPEECH_CHARS_PER_S` — `ui/src/features/chat/subtitles.ts:10` — Темп речи до конца хода, символов на секунду звука: Silero `xenia` — ≈ 18 (замер S-7.6).
+- `SUBTITLES_KEY` — `ui/src/features/chat/subtitles.ts:12` — Ключ настройки в localStorage.
+- `SettingStorage` — `ui/src/features/chat/subtitles.ts:15` — Нужное от localStorage: в тестах — словарь.
+- `SubtitleView` — `ui/src/features/chat/subtitles.ts:17` — —
+- `revealedLength` — `ui/src/features/chat/subtitles.ts:24` — Сколько символов сообщения показать; null — всё сообщение (не субтитр).
+- `Subtitles` — `ui/src/features/chat/subtitles.ts:46` — Текст сообщений в режиме субтитров; помнит показанное, чтобы оно не убывало.
+- `readSubtitles` — `ui/src/features/chat/subtitles.ts:63` — Настройка из хранилища; недоступное хранилище (политика WebView) — режим выключен.
+- `writeSubtitles` — `ui/src/features/chat/subtitles.ts:71` — —
 
 ## ui/src/features/metrics
 Публичный API фичи метрик: панель и её горячая клавиша (R-63).

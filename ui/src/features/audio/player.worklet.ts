@@ -1,11 +1,15 @@
 /**
  * Процессор плеера в потоке аудио: принимает фрагменты float (уже в частоте устройства), отдаёт
- * блоками по 128 сэмплов из `PcmQueue`, сообщает о начале звука хода (замер TTFA).
+ * блоками по 128 сэмплов из `PcmQueue`, сообщает о начале звука хода (замер TTFA), о том, сколько
+ * его сыграно (субтитры), и о тишине («говорит» кончилось).
  * Собирается отдельным модулем (`?worker&url`) и грузится через `audioWorklet.addModule`.
  */
+import type { PlayerEvent } from "./events";
 import { PcmQueue } from "./pcm-queue";
 
 export const PROCESSOR_NAME = "vtuber-player";
+/** Прогресс — раз в 8 блоков (≈ 21 мс при 48 кГц): чаще кадра экрана не нужно. */
+const PROGRESS_BLOCKS = 8;
 
 export type PlayerCommand =
   { type: "push"; samples: Float32Array; tag: string } | { type: "flush" };
@@ -28,6 +32,8 @@ function isCommand(data: unknown): data is PlayerCommand {
 
 class PlayerProcessor extends AudioWorkletProcessor {
   readonly #queue = new PcmQueue();
+  #blocks = 0;
+  #wasPlaying = false;
 
   constructor() {
     super();
@@ -55,10 +61,27 @@ class PlayerProcessor extends AudioWorkletProcessor {
       channel.set(first);
     }
     if (started !== null) {
-      this.port.postMessage({ type: "started", tag: started });
+      this.#post({ type: "started", tag: started });
     }
+    this.#report(started !== null);
     // true — процессор живёт всё время: тишина между репликами — тоже его работа.
     return true;
+  }
+
+  #report(started: boolean): void {
+    const playing = this.#queue.playing;
+    const progress = this.#queue.progress;
+    this.#blocks += 1;
+    if (playing && progress !== null && (started || this.#blocks % PROGRESS_BLOCKS === 0)) {
+      this.#post({ type: "progress", ...progress });
+    } else if (!playing && this.#wasPlaying) {
+      this.#post({ type: "idle" });
+    }
+    this.#wasPlaying = playing;
+  }
+
+  #post(event: PlayerEvent): void {
+    this.port.postMessage(event);
   }
 }
 

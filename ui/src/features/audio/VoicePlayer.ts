@@ -7,7 +7,8 @@
  * синтезирует быстрее реального времени и закрывает ход раньше, чем UI договорит, — отмены для
  * такого хода от ядра уже не будет.
  */
-import type { AudioFrame } from "../../core";
+import type { AudioFrame, SpeechProgress } from "../../core";
+import { isPlayerEvent, type PlayerEvent } from "./events";
 import { MouthFollower, rms } from "./lipsync";
 import workletUrl from "./player.worklet?worker&url";
 import { int16ToFloat, StreamResampler } from "./resample";
@@ -27,7 +28,11 @@ export class VoicePlayer {
   readonly #cancelled: string[] = [];
   #turn: string | null = null;
   #resampler: StreamResampler | null = null;
+  /** Сэмплов (в частоте устройства), отправленных в процессор для хода `#turn`. */
+  #received = 0;
+  #last: SpeechProgress | null = null;
   #onStarted: (turn: string) => void = () => undefined;
+  #onSpeech: (progress: SpeechProgress) => void = () => undefined;
 
   private constructor(context: AudioContext, node: AudioWorkletNode, analyser: AnalyserNode) {
     this.#context = context;
@@ -35,14 +40,8 @@ export class VoicePlayer {
     this.#analyser = analyser;
     this.#window = new Float32Array(analyser.fftSize);
     node.port.onmessage = (event: MessageEvent<unknown>) => {
-      const data = event.data;
-      if (
-        typeof data === "object" &&
-        data !== null &&
-        "tag" in data &&
-        typeof data.tag === "string"
-      ) {
-        this.#onStarted(data.tag);
+      if (isPlayerEvent(event.data)) {
+        this.#handle(event.data);
       }
     };
   }
@@ -61,6 +60,11 @@ export class VoicePlayer {
   /** Звук хода реально зазвучал (первый сэмпл ушёл в устройство). */
   onStarted(listener: (turn: string) => void): void {
     this.#onStarted = listener;
+  }
+
+  /** Что звучит: прогресс ~50 раз в секунду, пока звук идёт, и одно сообщение о тишине. */
+  onSpeech(listener: (progress: SpeechProgress) => void): void {
+    this.#onSpeech = listener;
   }
 
   /** Браузер не играет звук до жеста пользователя: вызвать на первом нажатии клавиши или мыши. */
@@ -82,6 +86,7 @@ export class VoicePlayer {
     if (samples.length === 0) {
       return;
     }
+    this.#received += samples.length;
     // Буфер передаётся в поток аудио без копирования.
     this.#node.port.postMessage({ type: "push", samples, tag: frame.turn }, [samples.buffer]);
   }
@@ -112,10 +117,36 @@ export class VoicePlayer {
     await this.#context.close();
   }
 
+  #handle(event: PlayerEvent): void {
+    if (event.type === "started") {
+      this.#onStarted(event.tag);
+    } else if (event.type === "progress") {
+      const rate = this.#context.sampleRate;
+      // Звучит не тот ход, что принимается (отменённый дозатухает) — получено = сыграно.
+      const received = event.tag === this.#turn ? this.#received : event.samples;
+      this.#emit({
+        turn: event.tag,
+        speaking: true,
+        playedS: event.samples / rate,
+        receivedS: received / rate,
+      });
+    } else if (this.#last !== null) {
+      this.#emit({ ...this.#last, speaking: false });
+    }
+  }
+
+  #emit(progress: SpeechProgress): void {
+    this.#last = progress;
+    this.#onSpeech(progress);
+  }
+
   #resamplerFor(frame: AudioFrame): StreamResampler {
     const current = this.#resampler;
     if (current !== null && this.#turn === frame.turn && current.fromRate === frame.sampleRate) {
       return current;
+    }
+    if (this.#turn !== frame.turn) {
+      this.#received = 0;
     }
     this.#turn = frame.turn;
     this.#resampler = new StreamResampler(frame.sampleRate, this.#context.sampleRate);

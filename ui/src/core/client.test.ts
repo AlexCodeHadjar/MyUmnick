@@ -172,6 +172,15 @@ describe("CoreClient", () => {
     expect(client.store.spans["ui.first_audio"]).toEqual([300]);
   });
 
+  it("что звучит — в store пачкой раз в кадр", () => {
+    const { client, frames } = connected();
+    const progress = { turn: "t-1", speaking: true, playedS: 0.5, receivedS: 2 };
+    client.speech(progress);
+    expect(client.store.voice.speech).toBeNull();
+    frames.next();
+    expect(client.store.voice.speech).toEqual(progress);
+  });
+
   it("dispose() закрывает связь", () => {
     const { client, frames } = connected();
     client.dispose();

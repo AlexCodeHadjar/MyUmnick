@@ -68,3 +68,32 @@ describe("PcmQueue", () => {
     expect(pull(queue, 1)).toEqual({ out: [0.25], started: "t-1" });
   });
 });
+
+describe("PcmQueue: что звучит (S-8.2)", () => {
+  it("playing — пока есть звук и пока идёт затухание; progress — сэмплы хода", () => {
+    const queue = new PcmQueue(FADE);
+    expect(queue.playing).toBe(false);
+    expect(queue.progress).toBeNull();
+    queue.push(ones(10), "t-1");
+    pull(queue, 6);
+    expect(queue.playing).toBe(true);
+    expect(queue.progress).toEqual({ tag: "t-1", samples: 6 });
+    queue.flush();
+    pull(queue, 2);
+    expect(queue.playing).toBe(true);
+    pull(queue, 4);
+    expect(queue.playing).toBe(false);
+  });
+
+  it("новый ход считается с нуля, пауза счёт хода не сбрасывает", () => {
+    const queue = new PcmQueue(FADE);
+    queue.push(ones(3), "t-1");
+    pull(queue, 5);
+    queue.push(ones(2), "t-1");
+    pull(queue, 2);
+    expect(queue.progress).toEqual({ tag: "t-1", samples: 5 });
+    queue.push(ones(4), "t-2");
+    pull(queue, 4);
+    expect(queue.progress).toEqual({ tag: "t-2", samples: 4 });
+  });
+});

@@ -1,6 +1,7 @@
 /**
  * Подключение движка Live2D: Cubism Core → Pixi и движок (динамически, отдельным чанком) →
- * регистрация плагина. И то, что нужно от внутренней модели Cubism: индексы параметров рта.
+ * регистрация плагина. И то, что нужно от внутренней модели Cubism: индексы параметров рта и
+ * наклона головы.
  */
 import { loadCubismCore } from "./core-loader";
 
@@ -11,6 +12,8 @@ export type CubismInternal = InstanceType<Engine["CubismInternalModel"]>;
 
 /** Рот, если в model3.json нет группы `LipSync`: стандартные id Cubism 3+ и 2.1. */
 const DEFAULT_MOUTH_IDS = ["ParamMouthOpenY", "PARAM_MOUTH_OPEN_Y"];
+/** Наклон головы вверх-вниз (кивок): стандартные id Cubism 3+ и 2.1. */
+const HEAD_PITCH_IDS = ["ParamAngleY", "PARAM_ANGLE_Y"];
 
 export async function loadEngine(): Promise<{ pixi: Pixi; engine: Engine }> {
   await loadCubismCore();
@@ -28,7 +31,16 @@ export async function loadEngine(): Promise<{ pixi: Pixi; engine: Engine }> {
 /** Индексы параметров рта: ищутся один раз при загрузке, в кадре — запись по индексу. */
 export function mouthIndices(internal: CubismInternal): number[] {
   const declared = internal.motionManager.lipSyncIds;
-  const wanted = new Set(declared.length > 0 ? declared : DEFAULT_MOUTH_IDS);
+  return parameterIndices(internal, declared.length > 0 ? declared : DEFAULT_MOUTH_IDS);
+}
+
+/** Индексы наклона головы для кивка; у модели без параметра — пусто, кивка нет. */
+export function headPitchIndices(internal: CubismInternal): number[] {
+  return parameterIndices(internal, HEAD_PITCH_IDS);
+}
+
+function parameterIndices(internal: CubismInternal, ids: readonly string[]): number[] {
+  const wanted = new Set(ids);
   const core = internal.coreModel;
   const indices: number[] = [];
   for (let i = 0; i < core.getParameterCount(); i++) {

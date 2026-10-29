@@ -1,10 +1,11 @@
 <script lang="ts">
   // Сцена с аватаром: холст Live2D на всю панель, статус загрузки или ошибки поверх. Логика —
-  // в session.ts и reactions.ts; движок грузится динамически, чат не ждёт Pixi и Cubism Core.
+  // в session.ts, reactions.ts и mood.ts; движок грузится динамически, чат не ждёт Pixi и Core.
   import { onMount } from "svelte";
 
   import type { AppStore } from "../../core";
-  import { reactionOf } from "./reactions";
+  import type { AvatarReaction } from "./AvatarRenderer";
+  import { isWaiting, THINKING_AFTER_MS } from "./reactions";
   import { AvatarSession, type AvatarStatus, type MouthSource } from "./session";
 
   const {
@@ -18,17 +19,38 @@
   // Не реактивна: эффекты ниже перезапускаются по статусу «ready», а не по самой сессии.
   let session: AvatarSession | null = null;
 
-  const reaction = $derived(
-    reactionOf({
+  const speaking = $derived(store.voice.speech?.speaking ?? false);
+  const waiting = $derived(
+    isWaiting({
       phase: store.phase,
       connection: store.connection,
       lastRole: store.messages.at(-1)?.role ?? null,
       hasError: store.error !== null,
+      voiceExpected: store.backends.tts === "ready",
+      voiceStarted: store.turn !== null && store.voice.speech?.turn === store.turn,
     }),
   );
+  // «Думаю» — только если ответ медленнее порога: таймер с начала ожидания.
+  let waitedLong = $state(false);
+  const reaction = $derived<AvatarReaction>(waiting && waitedLong ? "thinking" : "idle");
+  // Не реактивен: кивок один раз на ход, даже если эффект перезапустится по статусу сцены.
+  let noddedTurn: string | null = null;
 
-  // Эффекты срабатывают в том же кадре, что и изменение store (T-17): «думаю» — сразу после
-  // отправки, эмоция — в кадре, где пришёл `avatar.emotion`.
+  $effect(() => {
+    if (!waiting) {
+      waitedLong = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      waitedLong = true;
+    }, THINKING_AFTER_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  });
+
+  // Эффекты срабатывают в том же кадре, что и изменение store (T-17): кивок — в кадре
+  // `turn.started`, эмоция — в кадре, где пришёл `avatar.emotion`.
   $effect(() => {
     if (status.state === "ready") {
       session?.renderer?.react(reaction);
@@ -36,8 +58,23 @@
   });
 
   $effect(() => {
+    const turn = store.turn;
+    if (status.state === "ready" && turn !== null && turn !== noddedTurn) {
+      noddedTurn = turn;
+      session?.renderer?.nod();
+    }
+  });
+
+  $effect(() => {
+    // Эмоция читается до `session?.`: иначе при пустой сессии чтение не случится и эффект не
+    // подпишется на смену эмоции.
+    const emotion = store.emotion;
+    session?.mood.set(emotion);
+  });
+
+  $effect(() => {
     if (status.state === "ready") {
-      session?.renderer?.setEmotion(store.emotion, 1);
+      session?.renderer?.setSpeaking(speaking);
     }
   });
 
@@ -51,6 +88,8 @@
     session = current;
     // Источник рта читается при каждом кадре через замыкание: смена пропса подхватывается.
     current.mouth = (deltaMs) => mouth(deltaMs);
+    // Разговор идёт, пока идёт ход или звучит голос: эмоция угасает только после речи.
+    current.activity = () => store.phase !== "idle" || (store.voice.speech?.speaking ?? false);
     void current.start(name, async (element, size) => {
       const { Live2DRenderer } = await import("./live2d/Live2DRenderer");
       return Live2DRenderer.create(element, size);

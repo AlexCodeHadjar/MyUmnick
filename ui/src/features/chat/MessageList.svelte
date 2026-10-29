@@ -7,7 +7,14 @@
   import { computeWindow, ESTIMATED_HEIGHT, isAtBottom } from "./layout";
   import { measureHeight } from "./measure";
 
-  const { messages }: { messages: ChatMessage[] } = $props();
+  const {
+    messages,
+    textOf = (message) => message.text,
+  }: {
+    messages: ChatMessage[];
+    /** Что показать в пузыре: в режиме субтитров — часть текста, уже прозвучавшая. */
+    textOf?: (message: ChatMessage) => string;
+  } = $props();
 
   const heights = new SvelteMap<number, number>();
   let viewport: HTMLDivElement | undefined = $state();
@@ -53,7 +60,7 @@
         use:measureHeight={{ id: item.id, heights }}
       >
         <p class="bubble" class:cancelled={item.status === "cancelled"}>
-          {item.text}{#if item.status === "streaming"}<span class="caret" aria-hidden="true"
+          {textOf(item)}{#if item.status === "streaming"}<span class="caret" aria-hidden="true"
             ></span>{/if}{#if item.status === "cancelled"}<span class="mark">— прервано</span>{/if}
         </p>
       </div>

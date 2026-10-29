@@ -6,7 +6,7 @@ import { animationFrame, FrameBatch, type FrameScheduler } from "./batch";
 import type { AudioFrame } from "./frames";
 import { FIRST_AUDIO_SPAN, FIRST_CHAR_SPAN, FirstAudioProbe, FirstCharProbe } from "./probe";
 import { PROTOCOL_VERSION } from "./protocol.gen";
-import { AppStore } from "./store.svelte";
+import { AppStore, type SpeechProgress } from "./store.svelte";
 import { Transport, type Backoff, type SocketFactory } from "./transport";
 
 /** 250 мс → ×2 → потолок 5 с: ядро на localhost поднимается за секунды, чаще стучаться незачем. */
@@ -33,6 +33,7 @@ export class CoreClient {
   /** Плеер подключается из фичи audio; до него кадры отбрасываются. */
   #audio: AudioSink = () => undefined;
   #cancel: CancelSink = () => undefined;
+  readonly #batch: FrameBatch;
   readonly #probe: FirstCharProbe;
   readonly #audioProbe: FirstAudioProbe;
 
@@ -40,6 +41,7 @@ export class CoreClient {
     const { url, socketFactory, scheduleFrame = animationFrame } = options;
     const store = this.store;
     const batch = new FrameBatch(scheduleFrame);
+    this.#batch = batch;
     const now = options.now ?? (() => performance.now());
     const probe = new FirstCharProbe(now);
     const audioProbe = new FirstAudioProbe(now);
@@ -95,6 +97,13 @@ export class CoreClient {
 
   onCancel(sink: CancelSink): void {
     this.#cancel = sink;
+  }
+
+  /** Плеер: что звучит. В store — пачкой раз в кадр, как и сообщения ядра (T-16). */
+  speech(progress: SpeechProgress): void {
+    this.#batch.run(() => {
+      this.store.setSpeech(progress);
+    });
   }
 
   /** Плеер: звук хода `turn` зазвучал — замер TTFA от отправки реплики (`ui.first_audio`). */

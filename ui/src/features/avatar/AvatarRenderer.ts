@@ -36,8 +36,17 @@ export interface AvatarRenderer {
    */
   load(source: AvatarSource): Promise<void>;
 
-  /** Выражение по эмоции из ответа LLM; `intensity` 0…1 (затухание — Этап 8). */
+  /**
+   * Выражение по эмоции из ответа LLM; `intensity` 0…1 — сила при затухании (`mood.ts`). Зовётся
+   * каждый кадр: без изменений — ничего не делает.
+   */
   setEmotion(emotion: Emotion, intensity: number): void;
+
+  /** Кивок «услышала» (начало хода); повторный вызов начинает кивок заново. */
+  nod(): void;
+
+  /** Витюбер говорит: моргает чаще, как человек в разговоре. */
+  setSpeaking(speaking: boolean): void;
 
   /** Открытие рта 0…1 из громкости звука (липсинк, ADR-0003); значения вне диапазона обрезаются. */
   setMouth(openness: number): void;

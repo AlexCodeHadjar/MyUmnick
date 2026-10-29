@@ -69,7 +69,7 @@
 <main class="app">
   <SplitLayout storage={layoutStorage()}>
     {#snippet left()}
-      <Chat {client} />
+      <Chat {client} storage={layoutStorage()} />
     {/snippet}
     {#snippet right()}
       <section class="stage" aria-label="Сцена">

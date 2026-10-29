@@ -2,17 +2,30 @@
  * Live2D-реализация `AvatarRenderer` на PixiJS 8 + untitled-pixi-live2d-engine (ADR-0011).
  * Автообновление движка и его слежение за курсором выключены — кадрами управляет `AvatarLoop`
  * (R-66), взглядом — `lookAt()`. Покой, моргание, дыхание и физику движок делает сам; эмоции,
- * реакции и кадр — по `mapping.json` модели.
+ * реакции и кадр — по `mapping.json` модели; кивок и рот — поверх моушенов, перед отрисовкой.
  */
 import type { Emotion } from "../../../core";
 import type { AvatarReaction, AvatarRenderer, AvatarSource, StageSize } from "../AvatarRenderer";
 import { DEFAULT_MAPPING, expressionFor, type AvatarMapping } from "../mapping";
-import { loadEngine, mouthIndices, type Engine, type Model, type Pixi } from "./engine";
+import { NOD_MS, nodAngle } from "../nod";
+import {
+  headPitchIndices,
+  loadEngine,
+  mouthIndices,
+  type Engine,
+  type Model,
+  type Pixi,
+} from "./engine";
 import { applyFrame, fitModel } from "./fit";
 import { loadMapping, loadSettings } from "./settings";
 
 /** Группа моушенов покоя по соглашению Cubism (`Idle` в model3.json). */
 const IDLE_GROUP = "Idle";
+/** Интервал моргания, с: по умолчанию Cubism — 4; в речи люди моргают примерно вдвое чаще. */
+const CALM_BLINK_S = 4;
+const SPEAKING_BLINK_S = 2;
+/** Рот ниже этого — закрыт: после речи липсинк отпускает рот выражению. */
+const MOUTH_EPSILON = 0.01;
 
 export class Live2DRenderer implements AvatarRenderer {
   readonly #app: InstanceType<Pixi["Application"]>;
@@ -21,6 +34,9 @@ export class Live2DRenderer implements AvatarRenderer {
   #mapping: AvatarMapping = DEFAULT_MAPPING;
   #size: StageSize;
   #mouth = 0;
+  #speaking = false;
+  /** Сколько мс идёт кивок; null — кивка нет. */
+  #nodMs: number | null = null;
   #emotion: Emotion = "neutral";
   #reaction: AvatarReaction = "idle";
   /** Выражение на лице сейчас: движок не дёргается, пока нужное выражение не изменилось. */
@@ -61,7 +77,7 @@ export class Live2DRenderer implements AvatarRenderer {
     this.#unload();
     this.#mapping = mapping;
     model.anchor.set(0.5, 0.5);
-    this.#hookMouth(model);
+    this.#hookParameters(model);
     this.#app.stage.addChild(model);
     this.#model = model;
     this.#place();
@@ -69,10 +85,23 @@ export class Live2DRenderer implements AvatarRenderer {
     this.#applyExpression();
   }
 
-  setEmotion(emotion: Emotion): void {
-    // Сила эмоции (`intensity`) — с затуханием на Этапе 8; пока выражение включается целиком.
-    this.#emotion = emotion;
+  setEmotion(emotion: Emotion, intensity: number): void {
+    // Выражение Live2D — целиком или никак: частичного веса у движка нет. Плавность возврата к
+    // нейтральному — fade-out самого выражения (FadeOutTime в exp3.json).
+    this.#emotion = intensity > 0 ? emotion : "neutral";
     this.#applyExpression();
+  }
+
+  nod(): void {
+    this.#nodMs = 0;
+  }
+
+  setSpeaking(speaking: boolean): void {
+    this.#speaking = speaking;
+    const internal = this.#model?.internalModel;
+    if (internal instanceof this.#engine.CubismInternalModel) {
+      internal.eyeBlink?.setBlinkingInterval(speaking ? SPEAKING_BLINK_S : CALM_BLINK_S);
+    }
   }
 
   setMouth(openness: number): void {
@@ -100,6 +129,12 @@ export class Live2DRenderer implements AvatarRenderer {
   }
 
   update(deltaMs: number): void {
+    if (this.#nodMs !== null) {
+      this.#nodMs += deltaMs;
+      if (this.#nodMs >= NOD_MS) {
+        this.#nodMs = null;
+      }
+    }
     this.#model?.update(deltaMs);
     this.#app.render();
   }
@@ -141,17 +176,29 @@ export class Live2DRenderer implements AvatarRenderer {
     model.position.set(placement.x, placement.y);
   }
 
-  /** После моушенов и физики, до отрисовки: наш липсинк перекрывает рот из моушена. */
-  #hookMouth(model: Model): void {
+  /**
+   * После моушенов и физики, до отрисовки: наш липсинк перекрывает рот из моушена и выражения,
+   * кивок добавляется к наклону головы (покой и взгляд остаются). Рот перекрывается только в
+   * речи: иначе выражение с открытым ртом (у Haru «Smile») после речи стало бы плоским.
+   */
+  #hookParameters(model: Model): void {
     const internal = model.internalModel;
     // Точка входа `/cubism` грузит только Cubism 3–5, но тип модели — общий базовый.
     if (!(internal instanceof this.#engine.CubismInternalModel)) {
       return;
     }
-    const indices = mouthIndices(internal);
+    const mouth = mouthIndices(internal);
+    const head = headPitchIndices(internal);
     internal.on("beforeModelUpdate", () => {
-      for (const index of indices) {
-        internal.coreModel.setParameterValueByIndex(index, this.#mouth);
+      const core = internal.coreModel;
+      if (this.#speaking || this.#mouth > MOUTH_EPSILON) {
+        for (const index of mouth) {
+          core.setParameterValueByIndex(index, this.#mouth);
+        }
+      }
+      const angle = this.#nodMs === null ? 0 : nodAngle(this.#nodMs);
+      for (const index of head) {
+        core.addParameterValueByIndex(index, angle);
       }
     });
   }

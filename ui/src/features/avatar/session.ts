@@ -1,10 +1,12 @@
 /**
  * Жизнь аватара на сцене: создать рендер, загрузить модель, крутить кадры, следить за размером
- * панели и курсором; всё снять в `dispose()`. Компонент сцены только показывает статус.
+ * панели и курсором; всё снять в `dispose()`. Компонент сцены только показывает статус. Каждый
+ * кадр: эмоция с затуханием (`mood.ts`), рот из звука, шаг модели.
  */
 import type { AvatarRenderer, AvatarSource, StageSize } from "./AvatarRenderer";
 import { gazeAt } from "./live2d/fit";
 import { AvatarLoop } from "./loop";
+import { Mood } from "./mood";
 
 /** Файлы модели `<имя>` в `ui/public/avatars/<имя>/` (ADR-0011). */
 export function avatarSource(name: string): AvatarSource {
@@ -17,6 +19,8 @@ export function avatarSource(name: string): AvatarSource {
 
 /** Открытие рта 0…1 за прошедшие `deltaMs`; без звука — всегда 0. */
 export type MouthSource = (deltaMs: number) => number;
+/** Идёт ли разговор (ход или голос): пока да — эмоция не угасает. */
+export type ActivitySource = () => boolean;
 
 export type AvatarStatus =
   { state: "loading" } | { state: "ready" } | { state: "error"; message: string };
@@ -36,6 +40,9 @@ export class AvatarSession {
   #observer: ResizeObserver | null = null;
   #disposed = false;
   #mouthSource: MouthSource = () => 0;
+  #activity: ActivitySource = () => false;
+  /** Эмоция ответа во времени; `set()` — из store, затухание — в цикле кадров. */
+  readonly mood = new Mood();
 
   constructor(host: HTMLElement, onStatus: (status: AvatarStatus) => void) {
     this.#host = host;
@@ -81,6 +88,11 @@ export class AvatarSession {
     this.#mouthSource = source;
   }
 
+  /** Источник «разговор идёт»: опрашивается каждый кадр (затухание эмоции). */
+  set activity(source: ActivitySource) {
+    this.#activity = source;
+  }
+
   dispose(): void {
     this.#disposed = true;
     this.#observer?.disconnect();
@@ -94,6 +106,8 @@ export class AvatarSession {
       return;
     }
     this.#loop = new AvatarLoop((deltaMs) => {
+      const { emotion, intensity } = this.mood.update(deltaMs, this.#activity());
+      renderer.setEmotion(emotion, intensity);
       renderer.setMouth(this.#mouthSource(deltaMs));
       renderer.update(deltaMs);
     });

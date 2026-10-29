@@ -30,6 +30,23 @@ export interface ChatMessage {
 /** Сколько последних замеров стадии хранить: хватает на p95, память — копейки. */
 export const SPAN_HISTORY = 100;
 
+/** Что звучит в плеере (сообщает фича звука): ход, идёт ли звук, сыграно и получено, секунд. */
+export interface SpeechProgress {
+  turn: string;
+  speaking: boolean;
+  playedS: number;
+  receivedS: number;
+}
+
+/**
+ * Голос в UI. Ход ядра заканчивается, когда синтез готов, а звучит голос дольше (синтез
+ * быстрее речи), — поэтому «говорит» знает только плеер, а не фаза хода.
+ */
+export interface VoiceState {
+  /** Последнее, что звучало; null — ещё ничего. */
+  speech: SpeechProgress | null;
+}
+
 export class AppStore {
   connection = $state<ConnectionState>("closed");
   backends = $state<Record<Component, BackendState | "unknown">>({
@@ -43,6 +60,7 @@ export class AppStore {
   error = $state<ErrorData | null>(null);
   /** Последние замеры каждой стадии, мс, от старых к новым (панель метрик, FR-15). */
   spans = $state<Record<string, number[]>>({});
+  voice = $state<VoiceState>({ speech: null });
 
   #nextId = 0;
   /** Индекс сообщения текущего хода в `messages`: массив только растёт, индекс не сдвигается. */
@@ -64,6 +82,11 @@ export class AppStore {
     if (history.length > SPAN_HISTORY) {
       history.shift();
     }
+  }
+
+  /** Плеер: звук идёт, кончился или продвинулся. */
+  setSpeech(progress: SpeechProgress): void {
+    this.voice.speech = progress;
   }
 
   /** Разрыв посреди хода: ядро отменяет ход само (T-14), а `turn.cancelled` уже не дойдёт. */

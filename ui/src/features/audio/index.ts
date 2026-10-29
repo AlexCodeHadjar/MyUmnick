@@ -6,7 +6,8 @@ export { VoicePlayer };
 
 /**
  * Плеер, подключённый к клиенту ядра: кадры звука → плеер, отмена хода → сброс, начало звука →
- * замер TTFA. Звук не мешает чату: не создался (нет WebAudio) — ошибка наружу, чат работает.
+ * замер TTFA, что звучит → store (`voice`: «говорит», субтитры). Звук не мешает чату: не
+ * создался (нет WebAudio) — ошибка наружу, чат работает.
  */
 export async function connectVoice(client: CoreClient): Promise<VoicePlayer> {
   const player = await VoicePlayer.create();
@@ -18,6 +19,9 @@ export async function connectVoice(client: CoreClient): Promise<VoicePlayer> {
   });
   player.onStarted((turn) => {
     client.audioStarted(turn);
+  });
+  player.onSpeech((progress) => {
+    client.speech(progress);
   });
   return player;
 }

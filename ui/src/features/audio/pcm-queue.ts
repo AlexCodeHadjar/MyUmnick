@@ -64,9 +64,22 @@ export class PcmQueue {
   /** Сколько сэмплов нарастания уже прошло; `fade` — нарастание закончено. */
   #fadeIn = 0;
   #playingTag: string | null = null;
+  /** Ход, чей звук выдавался последним, и сколько его сэмплов уже выдано (субтитры, S-8.2). */
+  #lastTag: string | null = null;
+  #played = 0;
 
   constructor(fade = FADE_SAMPLES) {
     this.#fade = fade;
+  }
+
+  /** Звук идёт (включая затухание после `flush`); false — тишина. */
+  get playing(): boolean {
+    return this.#playingTag !== null || this.#fading !== null;
+  }
+
+  /** Сколько сэмплов хода, звучавшего последним, уже выдано; null — ещё ничего не звучало. */
+  get progress(): { tag: string; samples: number } | null {
+    return this.#lastTag === null ? null : { tag: this.#lastTag, samples: this.#played };
   }
 
   /** Сэмплов в очереди (без затухающего хвоста). */
@@ -110,9 +123,18 @@ export class PcmQueue {
         this.#playingTag = tag;
         started = tag;
       }
+      this.#count(tag);
       out[i] = sample * this.#fadeInGain();
     }
     return started;
+  }
+
+  #count(tag: string): void {
+    if (tag !== this.#lastTag) {
+      this.#lastTag = tag;
+      this.#played = 0;
+    }
+    this.#played += 1;
   }
 
   #fadingSample(): number {

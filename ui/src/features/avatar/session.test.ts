@@ -15,7 +15,14 @@ class FakeRenderer implements AvatarRenderer {
     this.loaded = source;
     return this.failLoad === null ? Promise.resolve() : Promise.reject(this.failLoad);
   }
-  setEmotion(): void {
+  readonly emotions: string[] = [];
+  setEmotion(emotion: string): void {
+    if (this.emotions.at(-1) !== emotion) this.emotions.push(emotion);
+  }
+  nod(): void {
+    // Не нужен в этих тестах.
+  }
+  setSpeaking(): void {
     // Не нужен в этих тестах.
   }
   setMouth(): void {
@@ -117,6 +124,17 @@ describe("AvatarSession", () => {
     session.dispose();
     expect(renderer.disposed).toBe(true);
     expect(session.renderer).toBeNull();
+  });
+
+  it("эмоция из mood доходит до рендера в каждом кадре", async () => {
+    const renderer = new FakeRenderer();
+    const session = new AvatarSession(host, () => undefined);
+    await session.start("haru", () => Promise.resolve(renderer));
+    session.activity = () => true;
+    session.mood.set("happy");
+    frames.shift()?.();
+    expect(renderer.emotions).toEqual(["happy"]);
+    session.dispose();
   });
 
   it("ошибка загрузки — статус с текстом для пользователя", async () => {
