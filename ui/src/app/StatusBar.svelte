@@ -1,9 +1,11 @@
 <script lang="ts">
   // Статус-бар: связь с ядром и состояние бэкендов (LLM, TTS). Тексты и цвета — status.ts.
+  import type { Snippet } from "svelte";
+
   import type { AppStore } from "../core";
   import { backendIndicator, connectionIndicator } from "./status";
 
-  const { store, hint }: { store: AppStore; hint: string } = $props();
+  const { store, hint, children }: { store: AppStore; hint: string; children?: Snippet } = $props();
 
   // Связь хоть раз была: потерю показываем как «нет связи», а не как первое «подключение…».
   let everOpen = $state(false);
@@ -28,6 +30,7 @@
       {item.name}: {item.label}
     </span>
   {/each}
+  {@render children?.()}
   <span class="hint">{hint}</span>
 </footer>
 

@@ -7,11 +7,10 @@
  * синтезирует быстрее реального времени и закрывает ход раньше, чем UI договорит, — отмены для
  * такого хода от ядра уже не будет.
  */
-import type { AudioFrame, SpeechProgress } from "../../core";
+import { int16ToFloat, StreamResampler, type AudioFrame, type SpeechProgress } from "../../core";
 import { isPlayerEvent, type PlayerEvent } from "./events";
 import { MouthFollower, rms } from "./lipsync";
 import workletUrl from "./player.worklet?worker&url";
-import { int16ToFloat, StreamResampler } from "./resample";
 
 const PROCESSOR_NAME = "vtuber-player";
 /** Окно анализа громкости: ~21 мс при 48 кГц — меньше кадра экрана, рот не запаздывает. */

@@ -10,6 +10,26 @@ const AUDIO_FRAME_TYPE = 0x01;
 /** Заголовок аудиокадра `<BBHIQ`: тип, версия, seq, sample_rate, turn_id — docs/protocol.md. */
 export const AUDIO_HEADER_SIZE = 16;
 
+/** Тип бинарного кадра «микрофон» — `MIC_FRAME_TYPE` в `gateway/codec.py`. */
+const MIC_FRAME_TYPE = 0x02;
+/** Заголовок кадра микрофона `<BBHI`: тип, версия, seq, sample_rate. */
+export const MIC_HEADER_SIZE = 8;
+const SEQ_MODULO = 65536;
+
+/** Кадр микрофона для ядра: заголовок + PCM s16le моно. */
+export function encodeMicFrame(seq: number, sampleRate: number, pcm: Int16Array): ArrayBuffer {
+  const frame = new ArrayBuffer(MIC_HEADER_SIZE + pcm.byteLength);
+  const view = new DataView(frame);
+  view.setUint8(0, MIC_FRAME_TYPE);
+  view.setUint8(1, PROTOCOL_VERSION);
+  view.setUint16(2, seq % SEQ_MODULO, true);
+  view.setUint32(4, sampleRate, true);
+  pcm.forEach((sample, index) => {
+    view.setInt16(MIC_HEADER_SIZE + index * 2, sample, true);
+  });
+  return frame;
+}
+
 /** Ширина номера хода в JSON: `turn_ref` в `gateway/protocol.py` (`t-000042`). */
 const TURN_DIGITS = 6;
 

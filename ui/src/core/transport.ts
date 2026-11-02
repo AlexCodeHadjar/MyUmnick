@@ -17,7 +17,7 @@ export interface SocketLike {
   onmessage: ((event: MessageEvent) => void) | null;
   onclose: ((event: CloseEvent) => void) | null;
   onerror: ((event: Event) => void) | null;
-  send(data: string): void;
+  send(data: string | ArrayBuffer): void;
   close(code?: number, reason?: string): void;
 }
 
@@ -119,6 +119,13 @@ export class Transport {
       this.#queue.shift();
     }
     this.#queue.push(message);
+  }
+
+  /** Бинарный кадр (микрофон): только при открытой связи — устаревший звук ядру не нужен. */
+  sendBinary(frame: ArrayBuffer): void {
+    if (this.#socket !== null && this.#open) {
+      this.#socket.send(frame);
+    }
   }
 
   #connect(): void {

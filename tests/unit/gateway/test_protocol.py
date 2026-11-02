@@ -16,6 +16,8 @@ from vtuber.domain import (
 from vtuber.gateway import (
     AUDIO_FRAME_HEADER_SIZE,
     AUDIO_FRAME_TYPE,
+    MIC_FRAME_HEADER_SIZE,
+    MIC_FRAME_TYPE,
     PROTOCOL_VERSION,
     AvatarEmotion,
     ChatCancel,
@@ -32,7 +34,9 @@ from vtuber.gateway import (
     TurnStartedMessage,
     decode_audio_frame,
     decode_inbound,
+    decode_mic_frame,
     encode_audio_frame,
+    encode_mic_frame,
     encode_outbound,
     turn_ref,
 )
@@ -129,3 +133,30 @@ def test_audio_frame_round_trip_and_seq_wraps_at_uint16() -> None:
 def test_bad_audio_frame_is_protocol_error(frame: bytes) -> None:
     with pytest.raises(ProtocolError):
         decode_audio_frame(frame)
+
+
+def test_mic_frame_round_trip_and_header_size() -> None:
+    chunk = AudioChunk(AudioFormat(16_000), b"\x01\x00\x02\x00")
+
+    frame = encode_mic_frame(70_000, chunk)
+
+    assert len(frame) == MIC_FRAME_HEADER_SIZE + 4
+    assert frame[0] == MIC_FRAME_TYPE
+    decoded = decode_mic_frame(frame)
+    assert decoded.seq == 70_000 % 65_536
+    assert decoded.chunk == chunk
+
+
+@pytest.mark.parametrize(
+    "frame",
+    [
+        b"\x02\x01",
+        b"\x01\x01\x00\x00\x80\x3e\x00\x00",  # тип звука ядра, а не микрофона
+        b"\x02\x09\x00\x00\x80\x3e\x00\x00",  # другая версия
+        b"\x02\x01\x00\x00\x00\x00\x00\x00",  # нулевая частота
+        b"\x02\x01\x00\x00\x80\x3e\x00\x00\x01",  # нецелый сэмпл
+    ],
+)
+def test_bad_mic_frame_is_protocol_error(frame: bytes) -> None:
+    with pytest.raises(ProtocolError):
+        decode_mic_frame(frame)

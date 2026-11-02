@@ -178,11 +178,14 @@
 ## src/vtuber/gateway
 Шлюз: протокол UI ↔ Ядро, кодек, WebSocket-сервер и терминальный чат (M1).
 
-- `AudioFrame` — `src/vtuber/gateway/codec.py:20` — Разобранный аудиокадр.
-- `decode_inbound` — `src/vtuber/gateway/codec.py:28` — Сообщение от UI; проверка один раз на границе (принцип 6 архитектуры).
-- `encode_outbound` — `src/vtuber/gateway/codec.py:43` — JSON-строка сообщения для UI (сериализация pydantic-core, без лишних пробелов).
-- `encode_audio_frame` — `src/vtuber/gateway/codec.py:48` — Бинарный кадр: 16 байт заголовка + PCM s16le моно; `seq` по модулю 2^16.
-- `decode_audio_frame` — `src/vtuber/gateway/codec.py:56` — Разбирает аудиокадр (тесты; кадры микрофона — Этап 11).
+- `AudioFrame` — `src/vtuber/gateway/codec.py:23` — Разобранный аудиокадр.
+- `MicFrame` — `src/vtuber/gateway/codec.py:32` — Разобранный кадр микрофона: PCM s16le моно от UI (Этап 11).
+- `encode_mic_frame` — `src/vtuber/gateway/codec.py:39` — Кадр микрофона: 8 байт заголовка + PCM; так его собирает UI (`core/frames.ts`).
+- `decode_mic_frame` — `src/vtuber/gateway/codec.py:49` — Разбирает бинарный кадр от UI; проверка один раз на границе.
+- `decode_inbound` — `src/vtuber/gateway/codec.py:70` — Сообщение от UI; проверка один раз на границе (принцип 6 архитектуры).
+- `encode_outbound` — `src/vtuber/gateway/codec.py:85` — JSON-строка сообщения для UI (сериализация pydantic-core, без лишних пробелов).
+- `encode_audio_frame` — `src/vtuber/gateway/codec.py:90` — Бинарный кадр: 16 байт заголовка + PCM s16le моно; `seq` по модулю 2^16.
+- `decode_audio_frame` — `src/vtuber/gateway/codec.py:98` — Разбирает аудиокадр (тесты; кадры микрофона — Этап 11).
 - `turn_ref` — `src/vtuber/gateway/protocol.py:15` — Номер хода в JSON-сообщениях: `t-000042` (в аудиокадре — uint64).
 - `ErrorCode` — `src/vtuber/gateway/protocol.py:20` — Что пошло не так — UI выбирает реакцию по коду, текст показывает пользователю.
 - `EmptyData` — `src/vtuber/gateway/protocol.py:33` — Сообщение без полезной нагрузки.
@@ -205,8 +208,8 @@
 - `MetricsSpan` — `src/vtuber/gateway/protocol.py:187` — Ядро → UI: замер стадии; `turn` — None вне хода (прогрев).
 - `Status` — `src/vtuber/gateway/protocol.py:201` — Ядро → UI: состояние бэкенда (вне хода).
 - `ErrorMessage` — `src/vtuber/gateway/protocol.py:214` — Ядро → UI: ошибка; `turn` — None, если не относится к ходу (битое сообщение).
-- `GatewayConfig` — `src/vtuber/gateway/server.py:45` — Секция `[gateway]`: где слушать UI (только localhost, ADR-0002).
-- `GatewayServer` — `src/vtuber/gateway/server.py:52` — Шлюз для UI: `async with GatewayServer(...) as server: await server.serve_forever()`.
+- `GatewayConfig` — `src/vtuber/gateway/server.py:48` — Секция `[gateway]`: где слушать UI (только localhost, ADR-0002).
+- `GatewayServer` — `src/vtuber/gateway/server.py:55` — Шлюз для UI: `async with GatewayServer(...) as server: await server.serve_forever()`.
 - `WsReplySink` — `src/vtuber/gateway/sink.py:14` — ReplySink для WebSocket: текст → `chat.delta`, эмоция → `avatar.emotion`, звук → кадр.
 - `TerminalSink` — `src/vtuber/gateway/terminal.py:21` — ReplySink для консоли: печатает ответ по мере генерации и помнит время первой порции.
 - `TerminalChat` — `src/vtuber/gateway/terminal.py:58` — Цикл чата: строка → ход; новая строка во время ответа прерывает его (T-14).
@@ -271,16 +274,20 @@
 - `CoreClientOptions` — `ui/src/core/client.ts:21` — —
 - `CoreClient` — `ui/src/core/client.ts:30` — —
 - `AUDIO_HEADER_SIZE` — `ui/src/core/frames.ts:11` — Заголовок аудиокадра `<BBHIQ`: тип, версия, seq, sample_rate, turn_id — docs/protocol.md.
-- `AudioFrame` — `ui/src/core/frames.ts:17` — Аудиокадр ядра. `turn` — в том же виде, что в JSON-сообщениях, чтобы их сопоставлять.
-- `FrameError` — `ui/src/core/frames.ts:25` — Кадр не соответствует протоколу: ядро другой версии или повреждённые данные.
-- `turnRef` — `ui/src/core/frames.ts:45` — Номер хода из аудиокадра в виде JSON-сообщений.
-- `parseMessage` — `ui/src/core/frames.ts:69` — Текстовый кадр → сообщение ядра; `FrameError`, если это не сообщение протокола.
-- `decodeAudioFrame` — `ui/src/core/frames.ts:86` — Бинарный кадр → аудиокадр. PCM не копируется: `Int16Array` смотрит в тот же буфер
+- `MIC_HEADER_SIZE` — `ui/src/core/frames.ts:16` — Заголовок кадра микрофона `<BBHI`: тип, версия, seq, sample_rate.
+- `encodeMicFrame` — `ui/src/core/frames.ts:20` — Кадр микрофона для ядра: заголовок + PCM s16le моно.
+- `AudioFrame` — `ui/src/core/frames.ts:37` — Аудиокадр ядра. `turn` — в том же виде, что в JSON-сообщениях, чтобы их сопоставлять.
+- `FrameError` — `ui/src/core/frames.ts:45` — Кадр не соответствует протоколу: ядро другой версии или повреждённые данные.
+- `turnRef` — `ui/src/core/frames.ts:65` — Номер хода из аудиокадра в виде JSON-сообщений.
+- `parseMessage` — `ui/src/core/frames.ts:89` — Текстовый кадр → сообщение ядра; `FrameError`, если это не сообщение протокола.
+- `decodeAudioFrame` — `ui/src/core/frames.ts:106` — Бинарный кадр → аудиокадр. PCM не копируется: `Int16Array` смотрит в тот же буфер
 - `FIRST_CHAR_SPAN` — `ui/src/core/probe.ts:8` — —
 - `FirstCharProbe` — `ui/src/core/probe.ts:10` — —
 - `FIRST_AUDIO_SPAN` — `ui/src/core/probe.ts:57` — —
 - `FirstAudioProbe` — `ui/src/core/probe.ts:64` — Замер UI «реплика отправлена → звук ответа зазвучал» — настоящий TTFA (NFR-02: p50 ≤ 800 мс):
 - `protocol.gen.ts` — `ui/src/core/protocol.gen.ts:1` — Автогенерация: `uv run python tools/gen_protocol.py`. Не редактировать.
+- `int16ToFloat` — `ui/src/core/resample.ts:11` — Сэмплы s16 → float [-1, 1).
+- `StreamResampler` — `ui/src/core/resample.ts:19` — —
 - `Role` — `ui/src/core/store.svelte.ts:16` — —
 - `MessageStatus` — `ui/src/core/store.svelte.ts:17` — —
 - `TurnPhase` — `ui/src/core/store.svelte.ts:19` — Фаза хода для аватара и кнопки «Стоп»: ждём первый токен / идёт ответ / ничего.
@@ -312,9 +319,7 @@
 - `PcmQueue` — `ui/src/features/audio/pcm-queue.ts:58` — —
 - `PROCESSOR_NAME` — `ui/src/features/audio/player.worklet.ts:10` — —
 - `PlayerCommand` — `ui/src/features/audio/player.worklet.ts:14` — —
-- `int16ToFloat` — `ui/src/features/audio/resample.ts:11` — Сэмплы s16 → float [-1, 1).
-- `StreamResampler` — `ui/src/features/audio/resample.ts:19` — —
-- `VoicePlayer` — `ui/src/features/audio/VoicePlayer.ts:22` — —
+- `VoicePlayer` — `ui/src/features/audio/VoicePlayer.ts:21` — —
 
 ## ui/src/features/avatar
 Публичный API фичи аватара: сцена и контракт рендера (ADR-0011).
@@ -427,3 +432,19 @@
 - `summarize` — `ui/src/features/metrics/stats.ts:36` — —
 - `summarizeAll` — `ui/src/features/metrics/stats.ts:49` — Строки панели: сначала стадии с бюджетом (главное), затем остальные по имени.
 - `overBudget` — `ui/src/features/metrics/stats.ts:58` — —
+
+## ui/src/features/mic
+Публичный API фичи микрофона: приложение монтирует только элемент управления (R-63).
+
+- `CAPTURE_PROCESSOR` — `ui/src/features/mic/capture.worklet.ts:6` — —
+- `MIC_SAMPLE_RATE` — `ui/src/features/mic/framer.ts:7` — —
+- `MIC_FRAME_SAMPLES` — `ui/src/features/mic/framer.ts:9` — 20 мс при 16 кГц: мельче — лишние кадры, крупнее — запаздывает реакция на голос.
+- `FrameSink` — `ui/src/features/mic/framer.ts:13` — —
+- `MicFramer` — `ui/src/features/mic/framer.ts:15` — —
+- `MicCapture` — `ui/src/features/mic/MicCapture.ts:10` — —
+- `MicControl.svelte` — `ui/src/features/mic/MicControl.svelte:1` — Голосовой ввод: режим «выключен / всегда слушать / по клавише F9» (FR-голос, Этап 11). Захват
+- `MicMode` — `ui/src/features/mic/mode.ts:3` — —
+- `MIC_MODES` — `ui/src/features/mic/mode.ts:5` — —
+- `TRAILING_SILENCE_MS` — `ui/src/features/mic/mode.ts:12` — Тишина после отпускания клавиши: чуть дольше паузы конца фразы в ядре — фраза закрывается сразу.
+- `parseMode` — `ui/src/features/mic/mode.ts:14` — —
+- `isPushToTalk` — `ui/src/features/mic/mode.ts:18` — —

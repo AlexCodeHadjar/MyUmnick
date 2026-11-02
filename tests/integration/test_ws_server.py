@@ -15,6 +15,8 @@ from tests.fakes import FakeClock, FakeLLM
 from tests.fakes.conversation import make_conversation
 from tools.bench_latency import percentile
 from vtuber.domain import (
+    AudioChunk,
+    AudioFormat,
     BackendState,
     BackendStatusChanged,
     Component,
@@ -22,7 +24,7 @@ from vtuber.domain import (
     MetricRecorded,
     TurnId,
 )
-from vtuber.gateway import REPLACED_CODE, GatewayConfig, GatewayServer
+from vtuber.gateway import REPLACED_CODE, GatewayConfig, GatewayServer, encode_mic_frame
 from vtuber.kernel import EventBus, Telemetry
 from vtuber.ports import GenerationParams, LLMPort
 
@@ -99,6 +101,25 @@ async def test_input_typing_prefills_llm_without_reply() -> None:
             await asyncio.wait_for(ws.recv(), timeout=0.1)
 
     assert llm.prefills[0][-1].text == "Расскажи про"
+
+
+async def test_mic_frames_reach_the_sink_in_order() -> None:
+    received: list[AudioChunk] = []
+    done = asyncio.Event()
+
+    async def sink(chunk: AudioChunk) -> None:
+        received.append(chunk)
+        if len(received) == 2:
+            done.set()
+
+    chunks = [AudioChunk(AudioFormat(16_000), bytes([i]) * 640) for i in range(2)]
+    async with _gateway(FakeLLM("Ок")) as gw, connect(gw.url()) as ws:
+        gw.server.on_mic(sink)
+        for seq, chunk in enumerate(chunks):
+            await ws.send(encode_mic_frame(seq, chunk))
+        await asyncio.wait_for(done.wait(), timeout=2)
+
+    assert received == chunks
 
 
 async def test_bad_message_gets_error_and_connection_survives() -> None:

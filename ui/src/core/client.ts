@@ -3,7 +3,7 @@
  * транспорт сами (R-63) — так связь, очередь и переподключение живут в одном месте.
  */
 import { animationFrame, FrameBatch, type FrameScheduler } from "./batch";
-import type { AudioFrame } from "./frames";
+import { encodeMicFrame, type AudioFrame } from "./frames";
 import { FIRST_AUDIO_SPAN, FIRST_CHAR_SPAN, FirstAudioProbe, FirstCharProbe } from "./probe";
 import { PROTOCOL_VERSION } from "./protocol.gen";
 import { AppStore, type SpeechProgress } from "./store.svelte";
@@ -33,6 +33,7 @@ export class CoreClient {
   /** Плеер подключается из фичи audio; до него кадры отбрасываются. */
   #audio: AudioSink = () => undefined;
   #cancel: CancelSink = () => undefined;
+  #micSeq = 0;
   readonly #batch: FrameBatch;
   readonly #probe: FirstCharProbe;
   readonly #audioProbe: FirstAudioProbe;
@@ -124,6 +125,12 @@ export class CoreClient {
     this.#probe.sent();
     this.#audioProbe.sent();
     this.#transport.send({ v: PROTOCOL_VERSION, type: "chat.send", data: { text: trimmed } });
+  }
+
+  /** Кадр микрофона (Этап 11): только при связи, очереди нет. */
+  micFrame(pcm: Int16Array, sampleRate: number): void {
+    this.#transport.sendBinary(encodeMicFrame(this.#micSeq, sampleRate, pcm));
+    this.#micSeq += 1;
   }
 
   /** Черновик реплики (с дебаунсом — у вызывающего): ядро греет кэш LLM, T-05. */

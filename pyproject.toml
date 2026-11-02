@@ -17,6 +17,8 @@ silero = ["numpy>=2.0", "torch>=2.6"]
 piper = ["piper-tts>=1.8,<2"]
 # Долговременная память (ADR-0015): e5 в ONNX на CPU, токенизатор HF, векторы в sqlite-vec.
 memory = ["numpy>=2.0", "onnxruntime>=1.20", "sqlite-vec>=0.1.6", "tokenizers>=0.20"]
+# Голосовой ввод (ADR-0016): faster-whisper (CTranslate2) и Silero VAD в ONNX.
+stt = ["faster-whisper>=1.2,<2", "numpy>=2.0", "onnxruntime>=1.20"]
 
 [dependency-groups]
 dev = [

@@ -54,8 +54,8 @@
 ## Как расширять
 - Новое сообщение — модель в `protocol.py` и вход в `InboundMessage`/`OutboundMessage`, вместе с
   кодом, который его использует (`audio.played`, `settings.*` — по мере надобности,
-  `mic.frame` — Этап 11).
-- Микрофон (Этап 11): бинарные кадры от UI → `mic.frame` вместо `bad_message`.
+  `mic.frame` — сделан, бинарный).
+- Бинарные кадры от UI — микрофон (`decode_mic_frame`, тип 0x02): `GatewayServer.on_mic(sink)`; битый кадр — `bad_message`.
 
 ## Связанные документы
 `docs/architecture.md` (Протокол UI ↔ Ядро), STAGE_03 (веха M1), STAGE_04

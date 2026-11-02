@@ -1,5 +1,6 @@
 """WebSocket-сервер шлюза: один клиент-UI, входящие → сервис хода, события шины → клиенту."""
 
+from collections.abc import Awaitable, Callable
 from types import TracebackType
 from typing import Final, Self
 
@@ -8,6 +9,7 @@ from websockets.exceptions import ConnectionClosed
 
 from vtuber.application.conversation import ConversationService
 from vtuber.domain import (
+    AudioChunk,
     BackendState,
     BackendStatusChanged,
     CancelReason,
@@ -18,7 +20,7 @@ from vtuber.domain import (
     TurnFinished,
     TurnStarted,
 )
-from vtuber.gateway.codec import decode_inbound, encode_outbound
+from vtuber.gateway.codec import decode_inbound, decode_mic_frame, encode_outbound
 from vtuber.gateway.protocol import (
     ChatCancel,
     ChatSend,
@@ -35,9 +37,10 @@ from vtuber.gateway.protocol import (
 from vtuber.gateway.sink import WsReplySink
 from vtuber.kernel import ConfigSection, EventBus, get_logger
 
+type MicSink = Callable[[AudioChunk], Awaitable[None]]
+
 REPLACED_CODE: Final = 4000
 NS_PER_MS: Final = 1_000_000
-BINARY_NOT_SUPPORTED: Final = "Бинарные кадры от UI пока не поддерживаются (микрофон — Этап 11)"
 
 _log = get_logger(__name__)
 
@@ -62,11 +65,16 @@ class GatewayServer:
         self._client: ServerConnection | None = None
         self._server: Server | None = None
         self._statuses: dict[Component, BackendState] = {}
+        self._mic: MicSink | None = None
         bus.subscribe(TurnStarted, self._on_started)
         bus.subscribe(TurnFinished, self._on_finished)
         bus.subscribe(TurnCancelled, self._on_cancelled)
         bus.subscribe(MetricRecorded, self._on_metric)
         bus.subscribe(BackendStatusChanged, self._on_status)
+
+    def on_mic(self, sink: MicSink) -> None:
+        """Куда отдавать кадры микрофона; вызов — в цикле чтения сокета, должен быть быстрым."""
+        self._mic = sink
 
     @property
     def port(self) -> int:
@@ -129,7 +137,7 @@ class GatewayServer:
 
     async def _dispatch(self, raw: str | bytes) -> None:
         if isinstance(raw, bytes):
-            await self.send(ErrorMessage.of(None, ErrorCode.BAD_MESSAGE, BINARY_NOT_SUPPORTED))
+            await self._on_mic_frame(raw)
             return
         try:
             message = decode_inbound(raw)
@@ -143,6 +151,16 @@ class GatewayServer:
         else:
             # Черновик — только прогрев кэша (T-05): ответа UI не ждёт, шлюз не блокируется.
             self._service.typing(message.data.text)
+
+    async def _on_mic_frame(self, raw: bytes) -> None:
+        try:
+            frame = decode_mic_frame(raw)
+        except ProtocolError as exc:
+            await self.send(ErrorMessage.of(None, ErrorCode.BAD_MESSAGE, str(exc)))
+            return
+        # Без голосового ввода (не загружен, выключен) кадры просто не нужны.
+        if self._mic is not None:
+            await self._mic(frame.chunk)
 
     async def _on_started(self, event: TurnStarted) -> None:
         await self.send(TurnStartedMessage.of(turn_ref(event.turn_id)))

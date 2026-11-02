@@ -7,6 +7,7 @@
   import { connectVoice, type VoicePlayer } from "../features/audio";
   import { AvatarStage } from "../features/avatar";
   import { Chat } from "../features/chat";
+  import { MicControl } from "../features/mic";
   import { isMetricsHotkey, METRICS_HOTKEY_LABEL, MetricsPanel } from "../features/metrics";
   import SplitLayout from "./SplitLayout.svelte";
   import StatusBar from "./StatusBar.svelte";
@@ -89,7 +90,9 @@
       </section>
     {/snippet}
   </SplitLayout>
-  <StatusBar store={client.store} hint={METRICS_HOTKEY_LABEL} />
+  <StatusBar store={client.store} hint={METRICS_HOTKEY_LABEL}>
+    <MicControl {client} storage={layoutStorage()} />
+  </StatusBar>
 </main>
 
 <style>

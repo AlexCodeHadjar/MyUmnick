@@ -3,10 +3,15 @@
 from vtuber.gateway.codec import (
     AUDIO_FRAME_HEADER_SIZE,
     AUDIO_FRAME_TYPE,
+    MIC_FRAME_HEADER_SIZE,
+    MIC_FRAME_TYPE,
     AudioFrame,
+    MicFrame,
     decode_audio_frame,
     decode_inbound,
+    decode_mic_frame,
     encode_audio_frame,
+    encode_mic_frame,
     encode_outbound,
 )
 from vtuber.gateway.protocol import (
@@ -36,7 +41,7 @@ from vtuber.gateway.protocol import (
     TypingData,
     turn_ref,
 )
-from vtuber.gateway.server import REPLACED_CODE, GatewayConfig, GatewayServer
+from vtuber.gateway.server import REPLACED_CODE, GatewayConfig, GatewayServer, MicSink
 from vtuber.gateway.sink import WsReplySink
 from vtuber.gateway.terminal import EXIT_COMMAND, STOP_COMMAND, TerminalChat, TerminalSink
 
@@ -44,6 +49,8 @@ __all__ = [
     "AUDIO_FRAME_HEADER_SIZE",
     "AUDIO_FRAME_TYPE",
     "EXIT_COMMAND",
+    "MIC_FRAME_HEADER_SIZE",
+    "MIC_FRAME_TYPE",
     "PROTOCOL_VERSION",
     "REPLACED_CODE",
     "STOP_COMMAND",
@@ -64,6 +71,8 @@ __all__ = [
     "InboundMessage",
     "InputTyping",
     "MetricsSpan",
+    "MicFrame",
+    "MicSink",
     "OutboundMessage",
     "SendData",
     "SpanData",
@@ -78,7 +87,9 @@ __all__ = [
     "WsReplySink",
     "decode_audio_frame",
     "decode_inbound",
+    "decode_mic_frame",
     "encode_audio_frame",
+    "encode_mic_frame",
     "encode_outbound",
     "turn_ref",
 ]

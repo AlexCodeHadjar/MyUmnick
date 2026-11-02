@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { AUDIO_HEADER_SIZE, decodeAudioFrame, FrameError, parseMessage, turnRef } from "./frames";
+import {
+  AUDIO_HEADER_SIZE,
+  decodeAudioFrame,
+  FrameError,
+  parseMessage,
+  turnRef,
+  encodeMicFrame,
+  MIC_HEADER_SIZE,
+} from "./frames";
 import type { OutboundMessage } from "./protocol.gen";
 
 /** Кадр как у `encode_audio_frame` в gateway/codec.py. */
@@ -99,5 +107,19 @@ describe("parseMessage", () => {
     ["turn не строка", '{"v": 1, "type": "turn.started", "turn": 5, "data": {}}'],
   ])("отвергает: %s", (_, raw) => {
     expect(() => parseMessage(raw)).toThrow(FrameError);
+  });
+});
+
+describe("encodeMicFrame", () => {
+  it("заголовок и PCM little-endian — как разбирает `gateway/codec.py`", () => {
+    const frame = encodeMicFrame(65537, 16000, Int16Array.from([1, -2]));
+    const view = new DataView(frame);
+    expect(frame.byteLength).toBe(MIC_HEADER_SIZE + 4);
+    expect(view.getUint8(0)).toBe(0x02);
+    expect(view.getUint8(1)).toBe(1);
+    expect(view.getUint16(2, true)).toBe(1);
+    expect(view.getUint32(4, true)).toBe(16000);
+    expect(view.getInt16(8, true)).toBe(1);
+    expect(view.getInt16(10, true)).toBe(-2);
   });
 });

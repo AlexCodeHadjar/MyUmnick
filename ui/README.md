@@ -27,6 +27,7 @@
 | `src/features/avatar/mood.ts`, `nod.ts` | затухание эмоции после речи; процедурный кивок в начале хода |
 | `public/live2d/`, `public/avatars/<имя>/` | Cubism Core и файлы модели — кладёт пользователь, не в git |
 | `src/features/audio/` | `VoicePlayer`, `connectVoice` (index.ts): кадры звука → ресемплинг → AudioWorklet (`player.worklet.ts`, `pcm-queue.ts`); липсинк `lipsync.ts` (ADR-0003) |
+| `src/features/mic/` | `MicControl`: режим «выключен / всегда / пока нажата F9»; `MicCapture` (getUserMedia с эхоподавлением, worklet), `framer.ts` (16 кГц, s16, кадры 20 мс) |
 | `src-tauri/` | оболочка Tauri: `tauri.conf.json`, права окна в `capabilities/` |
 
 ## Команды (из `ui/`)

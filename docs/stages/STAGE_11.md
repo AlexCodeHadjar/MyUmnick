@@ -16,8 +16,9 @@
 - **Цель:** `getUserMedia` с `echoCancellation` и `noiseSuppression` (эхоподавление браузерного
   движка не даёт витюберу «слышать себя»); кадры 16 кГц PCM → бинарные `mic.frame`.
 - **Scope:** `ui/src/features/mic/`, `gateway/`
-- **Готово, когда:** [ ] кадры доходят до ядра; e2e-тест протокола.
-- **Статус:** не начата
+- **Готово, когда:** [x] кадры доходят до ядра; e2e-тест протокола
+  (`test_mic_frames_reach_the_sink_in_order`, кадр `<BBHI` + PCM: `encodeMicFrame`, `decode_mic_frame`).
+- **Статус:** готово
 
 ### S-11.2 — Порт STT, адаптер, VAD
 - **Цель:** `STTPort` (промежуточные и финальные гипотезы); faster-whisper + Silero VAD; конец
