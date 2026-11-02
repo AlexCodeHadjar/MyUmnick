@@ -12,9 +12,9 @@
 Адаптеры языковых моделей (LLMPort).
 
 - `LlamaCppOptions` — `src/vtuber/adapters/llm/config.py:8` — Подсекция `[llm.llamacpp]`: особенности llama-server.
-- `GenerationConfig` — `src/vtuber/adapters/llm/config.py:19` — Подсекция `[llm.generation]`: длина и температура ответа диалога (T-07).
-- `LLMConfig` — `src/vtuber/adapters/llm/config.py:26` — Какой бэкенд, где он, тайм-ауты (R-36) и параметры генерации.
-- `LlamaCppLLM` — `src/vtuber/adapters/llm/llamacpp.py:21` — OpenAI-совместимый стрим + особенности llama-server.
+- `GenerationConfig` — `src/vtuber/adapters/llm/config.py:21` — Подсекция `[llm.generation]`: длина и температура ответа диалога (T-07).
+- `LLMConfig` — `src/vtuber/adapters/llm/config.py:28` — Какой бэкенд, где он, тайм-ауты (R-36) и параметры генерации.
+- `LlamaCppLLM` — `src/vtuber/adapters/llm/llamacpp.py:35` — OpenAI-совместимый стрим + особенности llama-server.
 - `OpenAICompatLLM` — `src/vtuber/adapters/llm/openai_compat.py:21` — Стрим ответа по HTTP/SSE; один httpx-клиент на всё время жизни (R-40, ADR-0007).
 - `wire_messages` — `src/vtuber/adapters/llm/openai_compat.py:99` — Сообщения в формате OpenAI Chat API.
 - `check_status` — `src/vtuber/adapters/llm/openai_compat.py:104` — Переводит HTTP-код ошибки в доменную: 503 (модель грузится) — недоступность, иное — сбой.

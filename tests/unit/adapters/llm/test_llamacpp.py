@@ -5,6 +5,7 @@ import httpx
 import pytest
 
 from vtuber.adapters.llm import GenerationConfig, LlamaCppLLM, LlamaCppOptions, LLMConfig
+from vtuber.adapters.llm.llamacpp import NO_FOREIGN_SCRIPTS_GRAMMAR
 from vtuber.domain import GenerationFailed, LLMUnavailable, Message, Role
 from vtuber.ports import GenerationParams
 
@@ -13,7 +14,7 @@ CFG = LLMConfig(
     model="local",
     connect_timeout_s=1,
     read_timeout_s=5,
-    llamacpp=LlamaCppOptions(slot_id=0, enable_thinking=False),
+    llamacpp=LlamaCppOptions(slot_id=0, enable_thinking=False, forbid_foreign_scripts=True),
     backend="llamacpp",
     generation=GenerationConfig(max_tokens=64, temperature=0.5),
 )
@@ -52,6 +53,17 @@ async def test_chat_request_pins_dialog_slot_reuses_cache_and_disables_thinking(
     assert body["id_slot"] == 0
     assert body["cache_prompt"] is True
     assert body["chat_template_kwargs"] == {"enable_thinking": False}
+
+
+async def test_chat_request_forbids_foreign_scripts_only_when_configured() -> None:
+    allowed = CFG.model_copy(
+        update={"llamacpp": CFG.llamacpp.model_copy(update={"forbid_foreign_scripts": False})}
+    )
+
+    body = LlamaCppLLM(CFG)._request_body(MESSAGES, PARAMS)  # noqa: SLF001
+    assert body["grammar"] == NO_FOREIGN_SCRIPTS_GRAMMAR
+    assert "grammar" not in LlamaCppLLM(allowed)._request_body(MESSAGES, PARAMS)  # noqa: SLF001
+    assert chr(0x3400) in NO_FOREIGN_SCRIPTS_GRAMMAR
 
 
 async def test_prefill_renders_template_then_evaluates_prompt_without_generation() -> None:

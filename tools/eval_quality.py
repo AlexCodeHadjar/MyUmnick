@@ -20,6 +20,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from tools.eval_checks import Expect, evaluate
 from tools.jsonl import read_jsonl
 from tools.llm_client import ROOT, SYSTEM_PROMPT, collect, open_llm
+from vtuber.application.prompting import PromptBuilder
+from vtuber.bootstrap import load_app_config, load_persona
 from vtuber.domain import LLMUnavailable, Message, Role, VtuberError
 from vtuber.ports import GenerationParams, LLMPort
 
@@ -69,9 +71,14 @@ class CaseResult:
         return not self.problems
 
 
-async def run_case(llm: LLMPort, case: EvalCase, params: GenerationParams) -> CaseResult:
+async def run_case(
+    llm: LLMPort,
+    case: EvalCase,
+    params: GenerationParams,
+    prefix: Sequence[Message] = (Message(Role.SYSTEM, SYSTEM_PROMPT),),
+) -> CaseResult:
     """Ведёт диалог по репликам кейса с историей и проверяет последний ответ."""
-    history = [Message(Role.SYSTEM, SYSTEM_PROMPT)]
+    history = list(prefix)
     reply = ""
     for turn in case.turns:
         history.append(Message(Role.USER, turn))
@@ -122,8 +129,11 @@ def main(argv: Sequence[str], env: Mapping[str, str], out: TextIO) -> int:
 async def _run_all(
     backend: str | None, env: Mapping[str, str], cases: Sequence[EvalCase], params: GenerationParams
 ) -> list[CaseResult]:
+    # Персона — настоящая (из конфига): так же, как в ходе.
+    cfg = load_app_config(ROOT, env)
+    prefix = PromptBuilder(load_persona(ROOT / cfg.persona.file)).prefix
     async with open_llm(backend, env) as llm:
-        return [await run_case(llm, case, params) for case in cases]
+        return [await run_case(llm, case, params, prefix) for case in cases]
 
 
 def _parse(argv: Sequence[str]) -> argparse.Namespace:

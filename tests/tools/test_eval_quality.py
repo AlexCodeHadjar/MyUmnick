@@ -112,8 +112,8 @@ def test_report_groups_results_by_kind() -> None:
 def test_repository_eval_set_is_valid() -> None:
     cases = load_cases(ROOT / "eval" / "qa_ru.jsonl")
 
-    assert len(cases) == 50
-    assert len({case.id for case in cases}) == 50
+    assert len(cases) == 150
+    assert len({case.id for case in cases}) == 150
     assert {case.kind for case in cases} == {"knowledge", "honesty", "persona", "memory", "russian"}
 
 

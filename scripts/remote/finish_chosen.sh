@@ -34,4 +34,9 @@ for round in 1 2; do
     $PY -m tools.bench_latency --prompts /tmp/prompts_long.jsonl --runs 3 --speculative \
         --out "$OUT/prefill_on_$round.json" >"$OUT/prefill_on_$round.txt" 2>&1
 done
+log "память: цена в TTFT и сквозной сценарий (Этап 10)"
+$PY -W ignore -m tools.bench_memory --out "$OUT/memory_ttft.json" >"$OUT/memory_ttft.txt" 2>&1
+$PY -W ignore -m tools.eval_memory --out "$OUT/memory_e2e.json" >"$OUT/memory_e2e.txt" 2>&1
+log "качество: eval на 150 кейсах (S-10.6)"
+$PY -m tools.eval_quality --out "$OUT/eval150.json" >"$OUT/eval150.txt" 2>&1
 log "FINISH-DONE"

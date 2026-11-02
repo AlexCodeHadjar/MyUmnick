@@ -14,6 +14,20 @@ from vtuber.adapters.llm.openai_compat import (
 from vtuber.domain import GenerationFailed, Message
 from vtuber.ports import GenerationParams
 
+# Иврит и арабица … сингальский, тайский, кана, ханьцзы, хангыль: модель изредка вставляет такие
+# символы в русский текст (宿敵), а голос их не прочтёт. Запрет на уровне генерации надёжнее правила
+# в промпте и не снижает скорость (docs/perf/gpu-run-2026-11-02.md). Латиница разрешена.
+FOREIGN_SCRIPTS: Final = (
+    (0x0590, 0x0DFF),
+    (0x0E00, 0x0E7F),
+    (0x3040, 0x30FF),
+    (0x3400, 0x9FFF),
+    (0xAC00, 0xD7AF),
+    (0xF900, 0xFAFF),
+)
+NO_FOREIGN_SCRIPTS_GRAMMAR: Final = (
+    "root ::= [^" + "".join(f"{chr(low)}-{chr(high)}" for low, high in FOREIGN_SCRIPTS) + "]*"
+)
 APPLY_TEMPLATE_PATH: Final = "/apply-template"
 COMPLETION_PATH: Final = "/completion"
 
@@ -60,7 +74,13 @@ class LlamaCppLLM(OpenAICompatLLM):
             "id_slot": self._cfg.llamacpp.slot_id,
             "cache_prompt": True,
             **self._template_kwargs(),
+            **self._grammar(),
         }
+
+    def _grammar(self) -> dict[str, object]:
+        if not self._cfg.llamacpp.forbid_foreign_scripts:
+            return {}
+        return {"grammar": NO_FOREIGN_SCRIPTS_GRAMMAR}
 
     def _template_kwargs(self) -> dict[str, object]:
         return {"chat_template_kwargs": {"enable_thinking": self._cfg.llamacpp.enable_thinking}}

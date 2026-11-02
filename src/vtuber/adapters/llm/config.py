@@ -10,10 +10,12 @@ class LlamaCppOptions(ConfigSection):
 
     `slot_id` — слот диалога: его KV-кэш переиспользуется между ходами (T-03); фон Этапа 10
     работает в другом слоте. `enable_thinking` — reasoning-режим шаблона чата (T-08: выключен).
+    `forbid_foreign_scripts` — запрет алфавитов, которых нет в русской речи (ADR-0004).
     """
 
     slot_id: int
     enable_thinking: bool
+    forbid_foreign_scripts: bool
 
 
 class GenerationConfig(ConfigSection):
