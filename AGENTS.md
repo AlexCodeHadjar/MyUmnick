@@ -35,6 +35,9 @@
 - Техники скорости T-01…T-17 и бюджет задержки — `docs/performance.md`
 - Требования FR/NFR, железо — `docs/requirements.md`; стек — `docs/stack.md`
 - Тесты, фейки, eval, риски — `docs/testing.md`; лицензии — `docs/licenses.md`
+- Замеры на арендованной 5070 Ti — `bench/results/remote/<модель>/<квант>/` (`bench`, `eval*`,
+  `voice`, `refusal`, `gpu.csv`, `props`); выводы по ним — в ADR-0004 (LLM) и ADR-0014 (голос):
+  читай ADR, файлы замеров — только если нужна цифра, которой там нет
 - Решения — `docs/adr/`; шаблоны — `docs/templates/`; обзор документации — `docs/README.md`
 
 ## Команды
@@ -50,7 +53,8 @@
 - UI (с Этапа 5): `cd ui && pnpm tauri dev`
 
 ## Запрещено
-- Читать `models/`, `node_modules/`, `target/`, `logs/`, lock-файлы, `docs/archive/`.
+- Читать `models/`, `node_modules/`, `target/`, `logs/`, lock-файлы, `docs/archive/`,
+  `bench/results/tts_samples/` (аудио, не в git).
 - Править автогенерируемые файлы (`docs/ai/PROJECT_MAP.md`, `docs/protocol.md`,
   `ui/src/core/protocol.gen.ts`).
 - Добавлять зависимости без ADR.

@@ -27,6 +27,8 @@ from vtuber.ports import GenerationParams, LLMPort
 
 DEFAULT_PROMPTS: Final = ROOT / "bench" / "prompts_ru.jsonl"
 WARMUP_TEXT: Final = "Привет!"
+# С репликой: шаблоны чата (Qwen3.5) отвергают промпт без реплики пользователя.
+WARMUP_MESSAGES: Final = (Message(Role.SYSTEM, SYSTEM_PROMPT), Message(Role.USER, WARMUP_TEXT))
 NS_PER_MS: Final = 1_000_000
 MS_PER_S: Final = 1000
 QUANTILES: Final = (("p50", 0.5), ("p95", 0.95), ("max", 1.0))
@@ -105,7 +107,7 @@ async def run_bench(
     По кругу, а не каждая реплика подряд: повтор той же реплики целиком попал бы в KV-кэш и
     дал бы нереально низкий TTFT. В кэше остаётся только общий системный промпт — как в жизни.
     """
-    await llm.prefill((Message(Role.SYSTEM, SYSTEM_PROMPT),))
+    await llm.prefill(WARMUP_MESSAGES)
     await measure(llm, BenchPrompt(id="warmup", kind="short", text=WARMUP_TEXT), params)
     return [await measure(llm, prompt, params) for _ in range(runs) for prompt in prompts]
 
@@ -117,7 +119,7 @@ async def run_speculative_bench(
 
     Черновик — реплика без последнего слова: так её видит ядро после паузы в наборе, до Enter.
     """
-    await llm.prefill((Message(Role.SYSTEM, SYSTEM_PROMPT),))
+    await llm.prefill(WARMUP_MESSAGES)
     await measure(llm, BenchPrompt(id="warmup", kind="short", text=WARMUP_TEXT), params)
     samples = []
     for _ in range(runs):

@@ -66,7 +66,7 @@
 | llama.cpp | LLM-рантайм | MIT | — | по памяти |
 | Tauri 2 | UI-оболочка | MIT / Apache 2.0 | — | по памяти |
 | Svelte 5, Vite | UI | MIT | — | по памяти |
-| LLM (выбирается в S-2.5) | мозг | своя у каждой модели (Apache 2.0, Llama Community, Gemma Terms…) | заполнить в ADR-0004 | не выбрана |
+| Gemma 4 12B Uncensored HauhauCS Balanced (ADR-0004) | мозг | Gemma Terms (карточка модели `license: gemma`) | перед публикацией сверить Gemma Terms и Prohibited Use Policy | проверено (API HF) |
 
 ## Источники
 

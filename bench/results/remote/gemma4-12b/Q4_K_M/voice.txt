@@ -1,0 +1,10 @@
+<torch_package_0>.tts_package/multi_acc_v3_package.py:335: SyntaxWarning: invalid escape sequence '\^'
+  text = re.sub(r'[^{}]'.format(self.symbols[3:] + '\^'), '', text)
+Метрика                    p50       p95       max
+TTFT, мс                  60.3     142.0     143.7
+TTFA, мс                 268.4     405.7     513.3
+TTFA - TTFT, мс          196.5     342.0     453.0
+Пауза max, мс            0.000     0.000     0.000
+RTF фразы                0.024     0.027     0.039
+Замеров: 40
+Без звука: 0, фраз: 122

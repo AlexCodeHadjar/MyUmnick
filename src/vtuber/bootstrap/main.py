@@ -33,6 +33,7 @@ from vtuber.domain import (
     Message,
     MetricRecorded,
     Persona,
+    Role,
     TTSUnavailable,
 )
 from vtuber.gateway import GatewayServer, TerminalChat
@@ -43,6 +44,9 @@ EXIT_CONFIG: Final = 1
 EXIT_UNAVAILABLE: Final = 2
 CHAT_MODE: Final = "chat"
 SERVE_MODE: Final = "serve"
+# Реплика в прогреве кэша: шаблоны чата (Qwen3.5) отвергают промпт без реплики пользователя, а
+# общий префикс с настоящим ходом от неё не меняется (T-06).
+WARMUP_USER: Final = "Привет!"
 # Проба голоса после загрузки: модель отвечает — TTS готов (статус для UI).
 TTS_PROBE: Final = "Готова."
 
@@ -168,7 +172,7 @@ class _Warmup:
         """None — LLM готова; иначе — текст проблемы."""
         await self.bus.publish(BackendStatusChanged(Component.LLM, BackendState.LOADING))
         try:
-            await self._llm.prefill(self._prefix)
+            await self._llm.prefill((*self._prefix, Message(Role.USER, WARMUP_USER)))
         except LLMUnavailable as exc:
             await self.bus.publish(BackendStatusChanged(Component.LLM, BackendState.FAILED))
             return str(exc)

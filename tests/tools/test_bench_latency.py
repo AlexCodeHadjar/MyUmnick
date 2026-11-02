@@ -8,6 +8,7 @@ import pytest
 from tests.fakes import FakeLLM
 from tests.llm_stub import LLMStub
 from tools.bench_latency import (
+    WARMUP_MESSAGES,
     BenchPrompt,
     Sample,
     load_prompts,
@@ -52,7 +53,7 @@ async def test_bench_warms_up_then_goes_round_robin() -> None:
     samples = await run_bench(llm, prompts, PARAMS, runs=2)
 
     assert [sample.prompt_id for sample in samples] == ["a", "b", "a", "b"]
-    assert llm.prefills == [(Message(Role.SYSTEM, SYSTEM_PROMPT),)]
+    assert llm.prefills == [WARMUP_MESSAGES]
     user_texts = [messages[-1].text for messages, _ in llm.calls]
     assert user_texts == ["Привет!", "a", "b", "a", "b"]
 
@@ -65,7 +66,7 @@ async def test_speculative_bench_prefills_draft_before_each_measure() -> None:
 
     assert [sample.prompt_id for sample in samples] == ["a"]
     system = Message(Role.SYSTEM, SYSTEM_PROMPT)
-    assert llm.prefills == [(system,), (system, Message(Role.USER, "Расскажи мне про"))]
+    assert llm.prefills == [WARMUP_MESSAGES, (system, Message(Role.USER, "Расскажи мне про"))]
 
 
 def test_summary_and_table_cover_ttft_total_and_tps() -> None:

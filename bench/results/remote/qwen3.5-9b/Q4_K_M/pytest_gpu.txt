@@ -1,0 +1,76 @@
+EE                                                                       [100%]
+==================================== ERRORS ====================================
+___________ ERROR at setup of test_real_server_streams_russian_reply ___________
+
+    @pytest.fixture
+    async def real_llm() -> AsyncIterator[LlamaCppLLM]:
+        cfg = load_app_config(ROOT, os.environ).llm
+        async with LlamaCppLLM(cfg) as llm:
+            try:
+>               await llm.prefill(MESSAGES[:1])
+
+tests/integration/test_llamacpp.py:41:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/vtuber/adapters/llm/llamacpp.py:40: in prefill
+    await check_status(template)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+response = <Response [500 Internal Server Error]>
+
+    async def check_status(response: httpx.Response) -> None:
+        """Переводит HTTP-код ошибки в доменную: 503 (модель грузится) — недоступность, иное — сбой.
+
+        Raises:
+            LLMUnavailable: HTTP 503.
+            GenerationFailed: другой код ошибки; текст ответа сервера — в сообщении.
+
+        """
+        if response.status_code == MODEL_LOADING_STATUS:
+            msg = "LLM-сервер ещё загружает модель — повторите через несколько секунд"
+            raise LLMUnavailable(msg)
+        if response.is_error:
+            text = (await response.aread()).decode(errors="replace")[:ERROR_BODY_LIMIT]
+            msg = f"LLM-сервер ответил HTTP {response.status_code}: {text}"
+>           raise GenerationFailed(msg)
+E           vtuber.domain.errors.GenerationFailed: LLM-сервер ответил HTTP 500: {"error":{"code":500,"message":"\n------------\nWhile executing CallExpression at line 79, column 24 in source:\n...lti_step_tool %}↵    {{- raise_exception('No user query found in messages.') }}↵...\n                                           ^\nError: Jinja Exception: No user query found in messag
+
+src/vtuber/adapters/llm/openai_compat.py:118: GenerationFailed
+___ ERROR at setup of test_real_server_frees_dialog_slot_after_cancellation ____
+
+    @pytest.fixture
+    async def real_llm() -> AsyncIterator[LlamaCppLLM]:
+        cfg = load_app_config(ROOT, os.environ).llm
+        async with LlamaCppLLM(cfg) as llm:
+            try:
+>               await llm.prefill(MESSAGES[:1])
+
+tests/integration/test_llamacpp.py:41:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/vtuber/adapters/llm/llamacpp.py:40: in prefill
+    await check_status(template)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+response = <Response [500 Internal Server Error]>
+
+    async def check_status(response: httpx.Response) -> None:
+        """Переводит HTTP-код ошибки в доменную: 503 (модель грузится) — недоступность, иное — сбой.
+
+        Raises:
+            LLMUnavailable: HTTP 503.
+            GenerationFailed: другой код ошибки; текст ответа сервера — в сообщении.
+
+        """
+        if response.status_code == MODEL_LOADING_STATUS:
+            msg = "LLM-сервер ещё загружает модель — повторите через несколько секунд"
+            raise LLMUnavailable(msg)
+        if response.is_error:
+            text = (await response.aread()).decode(errors="replace")[:ERROR_BODY_LIMIT]
+            msg = f"LLM-сервер ответил HTTP {response.status_code}: {text}"
+>           raise GenerationFailed(msg)
+E           vtuber.domain.errors.GenerationFailed: LLM-сервер ответил HTTP 500: {"error":{"code":500,"message":"\n------------\nWhile executing CallExpression at line 79, column 24 in source:\n...lti_step_tool %}↵    {{- raise_exception('No user query found in messages.') }}↵...\n                                           ^\nError: Jinja Exception: No user query found in messag
+
+src/vtuber/adapters/llm/openai_compat.py:118: GenerationFailed
+=========================== short test summary info ============================
+ERROR tests/integration/test_llamacpp.py::test_real_server_streams_russian_reply
+ERROR tests/integration/test_llamacpp.py::test_real_server_frees_dialog_slot_after_cancellation
+533 deselected, 2 errors in 0.88s
