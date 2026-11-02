@@ -17,6 +17,10 @@ class TTSUnavailable(BackendUnavailable):
     """Движок синтеза речи недоступен."""
 
 
+class STTUnavailable(BackendUnavailable):
+    """Распознавание речи или детектор недоступны: голосовой ввод молчит, чат работает."""
+
+
 class MemoryUnavailable(BackendUnavailable):
     """Долговременная память недоступна (модель эмбеддингов или хранилище) — ход идёт без неё."""
 

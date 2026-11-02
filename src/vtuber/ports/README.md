@@ -54,7 +54,7 @@
   модели на машине — случай пропускается с причиной, фейк проверяется всегда.
 - Новый порт: Protocol + фейк в `tests/fakes/` + контрактный тест (порядок из WORKFLOW).
 - Новый адаптер памяти: `EmbedderCase`/`StoreCase` в `tests/contract/memory_factories.py`.
-- Дальше появятся: `STTPort` (S-11.2).
+- Голосовой ввод: `VadPort`, `STTPort` (`tests/contract/test_stt_contract.py`, ADR-0016).
 
 ## Связанные документы
 ADR-0001, `docs/architecture.md` (Порты), `docs/testing.md` (Контрактные тесты), T-01, T-05, T-14

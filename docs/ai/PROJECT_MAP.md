@@ -30,7 +30,12 @@
 - `SqliteVecStore` — `src/vtuber/adapters/memory/sqlite_vec.py:41` — Реализует MemoryStorePort для векторов размерности `dimensions`; файл — `path`.
 
 ## src/vtuber/adapters/stt
-Адаптеры распознавания речи (STTPort).
+Адаптеры голосового ввода: распознавание и детектор речи (ADR-0016).
+
+- `VadConfig` — `src/vtuber/adapters/stt/silero_vad.py:31` — Секция `[stt.vad]`: файл модели и потоки CPU (1 — окно короткое, больше не нужно).
+- `SileroVad` — `src/vtuber/adapters/stt/silero_vad.py:46` — Реализует VadPort. Модели нет — отвечает `STTUnavailable`, не падает при старте.
+- `WhisperConfig` — `src/vtuber/adapters/stt/whisper.py:34` — Секция `[stt.whisper]`.
+- `WhisperSTT` — `src/vtuber/adapters/stt/whisper.py:70` — Реализует STTPort. Модели нет — не падает при старте, отвечает `STTUnavailable`.
 
 ## src/vtuber/adapters/tts
 Адаптеры синтеза речи (TTSPort).
@@ -151,11 +156,12 @@
 - `BackendUnavailable` — `src/vtuber/domain/errors.py:8` — Бэкенд не отвечает или не загружен.
 - `LLMUnavailable` — `src/vtuber/domain/errors.py:12` — LLM-сервер недоступен.
 - `TTSUnavailable` — `src/vtuber/domain/errors.py:16` — Движок синтеза речи недоступен.
-- `MemoryUnavailable` — `src/vtuber/domain/errors.py:20` — Долговременная память недоступна (модель эмбеддингов или хранилище) — ход идёт без неё.
-- `GenerationFailed` — `src/vtuber/domain/errors.py:24` — Бэкенд ответил, но генерация сорвалась посреди хода.
-- `ProtocolError` — `src/vtuber/domain/errors.py:28` — Сообщение от UI не соответствует протоколу.
-- `ConfigError` — `src/vtuber/domain/errors.py:32` — Конфигурация не читается или не проходит проверку; приложение не стартует.
-- `TurnStateError` — `src/vtuber/domain/errors.py:36` — Недопустимый переход состояния хода — ошибка в логике сервиса, а не во внешнем мире.
+- `STTUnavailable` — `src/vtuber/domain/errors.py:20` — Распознавание речи или детектор недоступны: голосовой ввод молчит, чат работает.
+- `MemoryUnavailable` — `src/vtuber/domain/errors.py:24` — Долговременная память недоступна (модель эмбеддингов или хранилище) — ход идёт без неё.
+- `GenerationFailed` — `src/vtuber/domain/errors.py:28` — Бэкенд ответил, но генерация сорвалась посреди хода.
+- `ProtocolError` — `src/vtuber/domain/errors.py:32` — Сообщение от UI не соответствует протоколу.
+- `ConfigError` — `src/vtuber/domain/errors.py:36` — Конфигурация не читается или не проходит проверку; приложение не стартует.
+- `TurnStateError` — `src/vtuber/domain/errors.py:40` — Недопустимый переход состояния хода — ошибка в логике сервиса, а не во внешнем мире.
 - `CancelReason` — `src/vtuber/domain/events.py:10` — Почему ход прерван.
 - `Component` — `src/vtuber/domain/events.py:18` — Бэкенд, о состоянии которого сообщается в UI.
 - `BackendState` — `src/vtuber/domain/events.py:25` — Состояние бэкенда для статус-бара UI.
@@ -241,6 +247,8 @@
 - `EmbedderPort` — `src/vtuber/ports/memory.py:13` — Тексты → векторы единичной длины.
 - `MemoryStorePort` — `src/vtuber/ports/memory.py:35` — Факты с векторами: добавить и найти ближайшие.
 - `ReplySink` — `src/vtuber/ports/sink.py:8` — Получатель результатов одного хода; конвейер не знает, что за ним.
+- `VadPort` — `src/vtuber/ports/stt.py:12` — Детектор речи: окно PCM → вероятность, что это речь.
+- `STTPort` — `src/vtuber/ports/stt.py:44` — Распознавание отрезка речи.
 - `TTSPort` — `src/vtuber/ports/tts.py:9` — Движок TTS; адаптеры бросают только доменные ошибки (R-43).
 
 ## ui/src/app

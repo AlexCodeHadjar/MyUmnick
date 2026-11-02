@@ -56,7 +56,9 @@
 | onnxruntime | движок Piper | MIT | — | по памяти |
 | XTTS-v2 | TTS (опция) | Coqui Public Model License | некоммерческая | по памяти |
 | F5-TTS | TTS (опция) | код MIT, веса CC BY-NC | некоммерческие веса | по памяти |
-| faster-whisper, веса Whisper | STT | MIT | — | по памяти |
+| faster-whisper 1.2, CTranslate2, веса Whisper large-v3-turbo (ADR-0016) | STT | MIT | модель не в git | проверено (PyPI, API HF) |
+| Silero VAD v5 (ADR-0016) | детектор речи | MIT | модель не в git | по памяти |
+| av (PyAV, зависимость faster-whisper) | чтение аудио (не используется: PCM идёт напрямую) | BSD-3-Clause | сборка содержит FFmpeg (LGPL): сверить при поставке | по памяти |
 | multilingual-e5-small (ONNX, ADR-0015) | эмбеддинги памяти | MIT | модель не в git | проверено (карточка HF) |
 | sqlite-vec 0.1.9 (ADR-0015) | векторный поиск в SQLite | MIT / Apache-2.0 | — | по памяти |
 | tokenizers, huggingface-hub (ADR-0015) | токенизатор e5 | Apache-2.0 | сеть не используется | по памяти |
