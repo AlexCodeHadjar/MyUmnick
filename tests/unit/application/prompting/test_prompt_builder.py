@@ -77,7 +77,9 @@ def test_dynamic_context_goes_only_into_current_user_message() -> None:
     assert with_context.messages[:-1] == plain.messages[:-1]
     last = with_context.messages[-1]
     assert last.role is Role.USER
-    assert last.text.index("Сейчас 21:40.") < last.text.index("Который час?")
+    # Реплика — первой: её начало общее с прогревом черновика и историей (T-05).
+    assert last.text.startswith("Который час?")
+    assert "Сейчас 21:40." in last.text
 
 
 def test_persona_without_examples_has_only_system_prefix() -> None:

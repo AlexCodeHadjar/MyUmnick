@@ -3,7 +3,7 @@
 import asyncio
 from collections.abc import Sequence
 from contextlib import aclosing
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from vtuber.application.pipeline.chunker import ChunkerConfig, SentenceChunker
 from vtuber.application.pipeline.filler import FillerBank
@@ -23,6 +23,14 @@ class Voice:
     tts: TTSPort
     chunker: ChunkerConfig
     fillers: FillerBank | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _Request:
+    """Запрос к LLM на один ход."""
+
+    messages: Sequence[Message]
+    params: GenerationParams
 
 
 class _PhraseFeed:
@@ -71,8 +79,16 @@ class ReplyPipeline:
         self._telemetry = telemetry
         self._voice = voice
 
-    async def run(self, messages: Sequence[Message], sink: ReplySink, parser: StreamParser) -> None:
+    async def run(
+        self,
+        messages: Sequence[Message],
+        sink: ReplySink,
+        parser: StreamParser,
+        temperature: float | None = None,
+    ) -> None:
         """Отдаёт ответ в `sink`; `parser` — состояние хода у вызывающего.
+
+        `temperature` — на этот ход вместо обычной (вопрос о фактах, S-10.5).
 
         После завершения, ошибки или отмены `parser.full_text` — показанная часть ответа для
         истории. Ошибки TTS ход не обрывают (Speaker).
@@ -82,9 +98,13 @@ class ReplyPipeline:
             GenerationFailed: генерация сорвалась посреди ответа.
 
         """
+        params = (
+            self._params if temperature is None else replace(self._params, temperature=temperature)
+        )
+        request = _Request(messages, params)
         voice = self._voice
         if voice is None:
-            await self._write(messages, sink, parser, _NO_VOICE)
+            await self._write(request, sink, parser, _NO_VOICE)
             await sink.done()
             return
         phrases: PhraseQueue = asyncio.Queue()
@@ -92,7 +112,7 @@ class ReplyPipeline:
         speaking = asyncio.create_task(speaker.run(phrases, sink))
         try:
             feed = _PhraseFeed(SentenceChunker(voice.chunker), phrases)
-            await self._write(messages, sink, parser, feed)
+            await self._write(request, sink, parser, feed)
             await speaking
         finally:
             await _stop(speaking)
@@ -110,9 +130,9 @@ class ReplyPipeline:
             await self._llm.prefill(messages)
 
     async def _write(
-        self, messages: Sequence[Message], sink: ReplySink, parser: StreamParser, feed: _PhraseFeed
+        self, request: _Request, sink: ReplySink, parser: StreamParser, feed: _PhraseFeed
     ) -> None:
-        async with aclosing(self._llm.stream(messages, self._params)) as stream:
+        async with aclosing(self._llm.stream(request.messages, request.params)) as stream:
             with self._telemetry.span("llm.stream"):
                 with self._telemetry.span("llm.first_token"):
                     first = await anext(stream, None)

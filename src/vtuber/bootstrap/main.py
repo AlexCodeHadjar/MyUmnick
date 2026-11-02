@@ -108,8 +108,8 @@ async def _run(
         metrics = tg.create_task(core.telemetry.run())
         conversation = build_conversation(cfg, persona, Backends(llm, tts, fillers), core)
         warmup = _Warmup(llm, conversation.prompts.prefix, bus, voice)
-        # Фоновая память (Этап 10): факты и резюме истории — в простое, LLM фонового слота.
-        async with background_memory(cfg, conversation.history, bus):
+        # Память (Этап 10): факты и резюме — в простое, LLM фонового слота; поиск — в ходе (T-12).
+        async with background_memory(cfg, conversation, core):
             if mode == SERVE_MODE:
                 code = await _serve(cfg, conversation.service, warmup, console)
             else:

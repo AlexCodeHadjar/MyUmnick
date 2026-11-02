@@ -35,9 +35,8 @@
 - Техники скорости T-01…T-17 и бюджет задержки — `docs/performance.md`
 - Требования FR/NFR, железо — `docs/requirements.md`; стек — `docs/stack.md`
 - Тесты, фейки, eval, риски — `docs/testing.md`; лицензии — `docs/licenses.md`
-- Замеры на арендованной 5070 Ti — `bench/results/remote/<модель>/<квант>/` (`bench`, `eval*`,
-  `voice`, `refusal`, `gpu.csv`, `props`); выводы по ним — в ADR-0004 (LLM) и ADR-0014 (голос):
-  читай ADR, файлы замеров — только если нужна цифра, которой там нет
+- Замеры на арендованной 5070 Ti: итоги — `docs/perf/gpu-run-2026-11-02.md`, решения — ADR-0004 (LLM),
+  ADR-0014 (голос); сырые файлы `bench/results/remote/` — только если нужной цифры там нет
 - Решения — `docs/adr/`; шаблоны — `docs/templates/`; обзор документации — `docs/README.md`
 
 ## Команды

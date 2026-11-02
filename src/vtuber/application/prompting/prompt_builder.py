@@ -7,7 +7,8 @@ from typing import Final
 from vtuber.domain import Emotion, Message, Persona, Role
 
 EMOTIONS_PLACEHOLDER: Final = "{emotions}"
-CONTEXT_TEMPLATE: Final = "(Справка для тебя, пользователь её не видит: {context})\n{user_text}"
+# Справка после реплики: начало реплики остаётся общим с прогревом черновика (T-05) и историей.
+CONTEXT_TEMPLATE: Final = "{user_text}\n(Справка для тебя, пользователь её не видит: {context})"
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,0 +1,23 @@
+[17:04:12] старт qwen3.5-9b Q4_K_M
+[17:04:40] ошибка инструментов qwen3.5-9b Q4_K_M — см. /workspace/vruber/bench/results/remote/qwen3.5-9b/Q4_K_M/*.txt
+[17:04:44] конец qwen3.5-9b Q4_K_M
+[17:04:44] старт qwen3.5-9b Q5_K_M
+[17:05:17] ошибка инструментов qwen3.5-9b Q5_K_M — см. /workspace/vruber/bench/results/remote/qwen3.5-9b/Q5_K_M/*.txt
+[17:05:22] конец qwen3.5-9b Q5_K_M
+[17:05:22] старт gemma4-12b Q4_K_M
+[17:07:07] конец gemma4-12b Q4_K_M
+[17:07:07] старт gemma4-12b Q5_K_M
+[17:09:00] конец gemma4-12b Q5_K_M
+[17:09:00] старт t-lite2.1-8b Q4_K_M
+[17:09:52] конец t-lite2.1-8b Q4_K_M
+[17:09:52] старт t-lite2.1-8b Q5_K_M
+[17:10:50] конец t-lite2.1-8b Q5_K_M
+[17:10:50] старт gigachat3.1-10b-a1.8b Q4_K_M
+[17:11:15] конец gigachat3.1-10b-a1.8b Q4_K_M
+[17:11:15] старт gigachat3.1-10b-a1.8b Q5_K_M
+[17:11:44] конец gigachat3.1-10b-a1.8b Q5_K_M
+[17:11:44] старт ministral3-14b Q4_K_M
+[17:14:36] конец ministral3-14b Q4_K_M
+[17:14:36] старт ministral3-14b Q5_K_M
+[17:17:45] конец ministral3-14b Q5_K_M
+[17:17:45] итоги: /workspace/vruber/bench/results/remote

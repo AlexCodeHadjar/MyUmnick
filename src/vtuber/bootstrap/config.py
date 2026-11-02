@@ -8,7 +8,7 @@ from pydantic import Field
 from vtuber.adapters.llm import GenerationConfig, LLMConfig
 from vtuber.adapters.memory import E5Config
 from vtuber.adapters.tts import TTSConfig
-from vtuber.application.memory import FactMemoryConfig
+from vtuber.application.memory import FactMemoryConfig, RetrievalConfig
 from vtuber.application.pipeline import PipelineConfig
 from vtuber.application.prompting import ContextConfig
 from vtuber.application.scheduler import SchedulerConfig
@@ -29,6 +29,7 @@ class MemoryConfig(ConfigSection):
     background_slot_id: int = Field(ge=0)
     generation: GenerationConfig
     facts: FactMemoryConfig
+    retrieval: RetrievalConfig
     e5: E5Config
 
     def resolved(self, root: Path) -> "MemoryConfig":

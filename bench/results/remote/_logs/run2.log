@@ -1,0 +1,6 @@
+    await llm.prefill((Message(Role.SYSTEM, SYSTEM_PROMPT), Message(Role.USER, WARMUP_TEXT)))
+[17:17:48] старт qwen3.5-9b Q4_K_M
+[17:19:24] конец qwen3.5-9b Q4_K_M
+[17:19:24] старт qwen3.5-9b Q5_K_M
+[17:21:11] конец qwen3.5-9b Q5_K_M
+[17:21:11] итоги: /workspace/vruber/bench/results/remote

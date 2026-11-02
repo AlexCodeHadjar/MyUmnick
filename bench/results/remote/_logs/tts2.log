@@ -1,0 +1,37 @@
+== qwen style
+qwen0.6B myagko 1_privet rtf=0.664
+qwen0.6B myagko 3_emocii rtf=0.565
+qwen0.6B zhivo 1_privet rtf=0.571
+qwen0.6B zhivo 3_emocii rtf=0.572
+qwen0.6B estestv 1_privet rtf=0.570
+qwen0.6B estestv 3_emocii rtf=0.573
+qwen1.7B myagko 1_privet rtf=0.574
+qwen1.7B myagko 3_emocii rtf=0.575
+qwen1.7B zhivo 1_privet rtf=0.576
+qwen1.7B zhivo 3_emocii rtf=0.575
+qwen1.7B estestv 1_privet rtf=0.576
+qwen1.7B estestv 3_emocii rtf=0.575
+== chatterbox
+chatterbox ex0.5 1_privet rtf=1.402 vram=3.4G
+chatterbox ex0.5 2_dlinno rtf=0.252 vram=3.5G
+chatterbox ex0.5 3_emocii rtf=0.258 vram=3.5G
+chatterbox ex0.5 4_chisla rtf=0.255 vram=3.5G
+chatterbox ex0.8 1_privet rtf=0.261 vram=3.5G
+chatterbox ex0.8 2_dlinno rtf=0.311 vram=3.5G
+chatterbox ex0.8 3_emocii rtf=0.266 vram=3.5G
+chatterbox ex0.8 4_chisla rtf=0.264 vram=3.5G
+== omni
+omni f-teen-mid v1 1_privet synth=0.35s rtf=0.092 vram=2.1G
+omni f-teen-mid v1 2_dlinno synth=0.35s rtf=0.055 vram=2.1G
+omni f-teen-mid v2 1_privet synth=0.35s rtf=0.093 vram=2.1G
+omni f-teen-mid v2 2_dlinno synth=0.35s rtf=0.055 vram=2.1G
+omni m-young-mid v1 1_privet synth=0.34s rtf=0.088 vram=2.1G
+omni m-young-mid v1 2_dlinno synth=0.35s rtf=0.055 vram=2.1G
+omni m-young-mid v2 1_privet synth=0.34s rtf=0.088 vram=2.1G
+omni m-young-mid v2 2_dlinno synth=0.35s rtf=0.055 vram=2.1G
+omni m-mid-low v1 1_privet synth=0.34s rtf=0.088 vram=2.1G
+omni m-mid-low v1 2_dlinno synth=0.35s rtf=0.055 vram=2.1G
+omni m-mid-low v2 1_privet synth=0.34s rtf=0.088 vram=2.1G
+omni m-mid-low v2 2_dlinno synth=0.35s rtf=0.055 vram=2.1G
+TTS2-DONE
+60

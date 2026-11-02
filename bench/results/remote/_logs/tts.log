@@ -1,0 +1,62 @@
+== silero
+silero xenia 1_privet synth=0.52s audio=5.16s rtf=0.101
+silero xenia 2_dlinno synth=0.14s audio=6.22s rtf=0.023
+silero xenia 3_emocii synth=0.11s audio=4.99s rtf=0.022
+silero xenia 4_chisla synth=0.13s audio=5.05s rtf=0.025
+silero baya 1_privet synth=0.12s audio=5.50s rtf=0.022
+silero baya 2_dlinno synth=0.17s audio=7.38s rtf=0.022
+silero baya 3_emocii synth=0.12s audio=5.62s rtf=0.022
+silero baya 4_chisla synth=0.13s audio=5.81s rtf=0.023
+silero kseniya 1_privet synth=0.12s audio=5.36s rtf=0.022
+silero kseniya 2_dlinno synth=0.15s audio=6.86s rtf=0.022
+silero kseniya 3_emocii synth=0.11s audio=5.08s rtf=0.022
+silero kseniya 4_chisla synth=0.13s audio=5.76s rtf=0.023
+== qwen
+0.6B load 39.4 speakers ['aiden', 'dylan', 'eric', 'ono_anna', 'ryan', 'serena', 'sohee', 'uncle_fu', 'vivian']
+/workspace/tts/q/lib/python3.12/site-packages/triton/backends/nvidia/driver.c:9:10: fatal error: Python.h: No such file or directory
+qwen0.6B serena 1_privet synth=3.96s audio=4.32s rtf=0.918 vram=2.3G
+qwen0.6B serena 2_dlinno synth=4.27s audio=7.28s rtf=0.586 vram=2.4G
+qwen0.6B serena 3_emocii synth=2.66s audio=4.64s rtf=0.573 vram=2.4G
+qwen0.6B serena 4_chisla synth=3.77s audio=6.00s rtf=0.628 vram=2.4G
+qwen0.6B vivian 1_privet synth=3.07s audio=5.36s rtf=0.572 vram=2.4G
+qwen0.6B vivian 2_dlinno synth=4.33s audio=7.44s rtf=0.582 vram=2.4G
+qwen0.6B vivian 3_emocii synth=4.12s audio=6.96s rtf=0.591 vram=2.4G
+qwen0.6B vivian 4_chisla synth=3.79s audio=6.32s rtf=0.600 vram=2.4G
+qwen0.6B sohee 1_privet synth=4.24s audio=7.28s rtf=0.582 vram=2.4G
+qwen0.6B sohee 2_dlinno synth=4.96s audio=8.16s rtf=0.607 vram=2.4G
+qwen0.6B sohee 3_emocii synth=3.72s audio=6.40s rtf=0.582 vram=2.4G
+qwen0.6B sohee 4_chisla synth=3.80s audio=6.64s rtf=0.572 vram=2.4G
+qwen0.6B ono_anna 1_privet synth=3.62s audio=6.32s rtf=0.572 vram=2.4G
+qwen0.6B ono_anna 2_dlinno synth=4.96s audio=8.80s rtf=0.564 vram=2.4G
+qwen0.6B ono_anna 3_emocii synth=3.59s audio=6.32s rtf=0.568 vram=2.4G
+qwen0.6B ono_anna 4_chisla synth=5.06s audio=8.96s rtf=0.565 vram=2.4G
+1.7B load 43.5 speakers ['aiden', 'dylan', 'eric', 'ono_anna', 'ryan', 'serena', 'sohee', 'uncle_fu', 'vivian']
+qwen1.7B serena 1_privet synth=2.85s audio=4.80s rtf=0.595 vram=6.3G
+qwen1.7B serena 2_dlinno synth=3.92s audio=6.88s rtf=0.570 vram=6.3G
+qwen1.7B serena 3_emocii synth=4.04s audio=6.96s rtf=0.580 vram=6.3G
+qwen1.7B serena 4_chisla synth=3.18s audio=5.52s rtf=0.577 vram=6.3G
+qwen1.7B vivian 1_privet synth=3.10s audio=5.36s rtf=0.579 vram=6.3G
+qwen1.7B vivian 2_dlinno synth=4.60s audio=7.92s rtf=0.581 vram=6.3G
+qwen1.7B vivian 3_emocii synth=2.91s audio=5.04s rtf=0.577 vram=6.3G
+qwen1.7B vivian 4_chisla synth=3.37s audio=5.84s rtf=0.578 vram=6.3G
+qwen1.7B sohee 1_privet synth=2.97s audio=5.12s rtf=0.579 vram=6.3G
+qwen1.7B sohee 2_dlinno synth=5.19s audio=9.04s rtf=0.575 vram=6.3G
+qwen1.7B sohee 3_emocii synth=3.58s audio=6.24s rtf=0.574 vram=6.3G
+qwen1.7B sohee 4_chisla synth=5.56s audio=9.68s rtf=0.575 vram=6.3G
+qwen1.7B ono_anna 1_privet synth=3.22s audio=5.60s rtf=0.575 vram=6.3G
+qwen1.7B ono_anna 2_dlinno synth=6.34s audio=11.04s rtf=0.575 vram=6.3G
+qwen1.7B ono_anna 3_emocii synth=3.36s audio=5.84s rtf=0.576 vram=6.3G
+qwen1.7B ono_anna 4_chisla synth=3.79s audio=6.56s rtf=0.578 vram=6.3G
+== chatterbox
+
+Fetching 6 files:   0%|          | 0/6 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Traceback (most recent call last):
+  File "/workspace/tts/chatterbox_samples.py", line 5, in <module>
+    t0 = time.perf_counter(); m = ChatterboxMultilingualTTS.from_pretrained(device="cuda"); print("load", round(time.perf_counter()-t0,1), flush=True)
+  File "/workspace/tts/c/lib/python3.11/site-packages/chatterbox/mtl_tts.py", line 220, in from_pretrained
+  File "/workspace/tts/c/lib/python3.11/site-packages/chatterbox/mtl_tts.py", line 176, in from_local
+RuntimeError: CUDA error: no kernel image is available for execution on the device
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+TTS-DONE
+17M	out
+44

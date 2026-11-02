@@ -1,12 +1,12 @@
 """Сервис хода диалога: жизненный цикл, отмена предыдущего хода, история и события."""
 
 import asyncio
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from itertools import count
 from typing import Final
 
-from vtuber.application.memory import ShortTermMemory
+from vtuber.application.memory import ShortTermMemory, TurnHints
 from vtuber.application.pipeline import ReplyPipeline, StreamParser
 from vtuber.application.prompting import PromptBuilder
 from vtuber.domain import (
@@ -26,6 +26,9 @@ from vtuber.domain import (
 )
 from vtuber.kernel import EventBus, get_logger, turn_context
 from vtuber.ports import ReplySink
+
+type HintSource = Callable[[str], Awaitable[TurnHints]]
+"""Что долговременная память добавляет ходу по реплике (`MemoryRecall.hints`)."""
 
 INTERNAL_ERROR_MESSAGE: Final = "Внутренняя ошибка при ответе — подробности в logs/app.jsonl"
 
@@ -67,11 +70,16 @@ class ConversationService:
         self._state = TurnState.IDLE
         self._prefill: asyncio.Task[None] | None = None
         self._prefilled: str | None = None
+        self._hints: HintSource | None = None
 
     @property
     def state(self) -> TurnState:
         """Состояние текущего хода."""
         return self._state
+
+    def use_memory(self, hints: HintSource) -> None:
+        """Подключить долговременную память (её собирает bootstrap, когда загружены модели)."""
+        self._hints = hints
 
     async def handle(self, user_text: str, sink: ReplySink) -> TurnId:
         """Начинает ход по реплике; текущий ход (если идёт) прерывается. Не ждёт ответа."""
@@ -130,9 +138,10 @@ class ConversationService:
         with turn_context(turn.id):
             try:
                 await self._bus.publish(TurnStarted(turn.id))
-                prompt = self._prompts.build(self._memory.messages, turn.user_text)
+                hints = TurnHints() if self._hints is None else await self._hints(turn.user_text)
+                prompt = self._prompts.build(self._memory.messages, turn.user_text, hints.context)
                 sink = _FirstOutputSink(turn.sink, self._start_speaking)
-                await self._pipeline.run(prompt.messages, sink, turn.parser)
+                await self._pipeline.run(prompt.messages, sink, turn.parser, hints.temperature)
             except asyncio.CancelledError:
                 await self._stop(turn, TurnCancelled(turn.id, turn.reason), remember=True)
                 raise

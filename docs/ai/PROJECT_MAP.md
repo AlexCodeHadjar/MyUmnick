@@ -53,7 +53,7 @@
 ## src/vtuber/application/conversation
 Сценарий «ход диалога»: реплика → промпт → конвейер → история и события.
 
-- `ConversationService` — `src/vtuber/application/conversation/service.py:45` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
+- `ConversationService` — `src/vtuber/application/conversation/service.py:48` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
 
 ## src/vtuber/application/memory
 Память витюбера: история разговора, её резюме и долговременные факты (Этап 10).
@@ -66,6 +66,11 @@
 - `MemoryKeeper` — `src/vtuber/application/memory/keeper.py:22` — По каждому записанному ходу: факты — в долговременную память, отрезанное — в резюме.
 - `collect` — `src/vtuber/application/memory/llm_text.py:15` — Ответ LLM целиком (фоновым задачам стрим не нужен); поток закрывается при отмене.
 - `strip_tags` — `src/vtuber/application/memory/llm_text.py:21` — Текст ответа без тегов эмоций.
+- `needs_memory` — `src/vtuber/application/memory/retrieval_gate.py:49` — Реплика о прошлом разговоре или вопрос о самом пользователе.
+- `is_factual_question` — `src/vtuber/application/memory/retrieval_gate.py:56` — Вопрос о мире, а не о пользователе: на нём цена выдумки выше, температура ниже.
+- `RetrievalConfig` — `src/vtuber/application/memory/retrieval_gate.py:61` — Секция `[memory.retrieval]`.
+- `TurnHints` — `src/vtuber/application/memory/retrieval_gate.py:76` — Что память добавляет ходу: справка в реплику и температура (None — обычная).
+- `MemoryRecall` — `src/vtuber/application/memory/retrieval_gate.py:83` — Подсказки хода: факты из памяти, если гейт открыт; сбой памяти ход не задерживает.
 - `ShortTermMemory` — `src/vtuber/application/memory/short_term.py:24` — История ходов для промпта (T-04).
 - `Summarizer` — `src/vtuber/application/memory/summarizer.py:23` — Прежнее резюме + отрезанные сообщения → новое резюме одним запросом к LLM.
 
@@ -79,7 +84,7 @@
 - `FillerBank` — `src/vtuber/application/pipeline/filler.py:38` — Готовые к отдаче междометия; пустой банк (голос не загружен, выключено) — молчит.
 - `AudioOut` — `src/vtuber/application/pipeline/filler.py:76` — Единственный писатель звука хода: ответ и междометие не перемешиваются.
 - `Voice` — `src/vtuber/application/pipeline/reply_pipeline.py:20` — Голос хода: движок TTS, нарезка на фразы, междометия (T-17); без голоса — только текст.
-- `ReplyPipeline` — `src/vtuber/application/pipeline/reply_pipeline.py:53` — Стримит ответ LLM получателю по мере генерации (T-01): ни одна стадия не ждёт конца.
+- `ReplyPipeline` — `src/vtuber/application/pipeline/reply_pipeline.py:61` — Стримит ответ LLM получателю по мере генерации (T-01): ни одна стадия не ждёт конца.
 - `Speaker` — `src/vtuber/application/pipeline/speaker.py:23` — Озвучивает фразы одного хода.
 - `TextDelta` — `src/vtuber/application/pipeline/stream_parser.py:20` — Порция текста: `text` — для чата, `spoken_text` — для TTS (без эмодзи и разметки).
 - `EmotionCue` — `src/vtuber/application/pipeline/stream_parser.py:32` — В ответе встретился тег эмоции; озвучивать нечего.
@@ -90,9 +95,9 @@
 
 - `ContextConfig` — `src/vtuber/application/prompting/context_budget.py:12` — Секция `[context]`.
 - `ContextBudget` — `src/vtuber/application/prompting/context_budget.py:26` — Приближённый счёт токенов — без запроса к серверу, чтобы не тормозить горячий путь.
-- `Prompt` — `src/vtuber/application/prompting/prompt_builder.py:14` — Сообщения для LLM; первые `prefix_length` — неизменный префикс (персона и примеры).
-- `PromptBuilder` — `src/vtuber/application/prompting/prompt_builder.py:21` — Строит промпт: [персона + примеры] → [история] → [справка + реплика] (T-03).
-- `render_system_prompt` — `src/vtuber/application/prompting/prompt_builder.py:45` — Системный промпт персоны; `{emotions}` в правилах → теги всех эмоций из `Emotion`.
+- `Prompt` — `src/vtuber/application/prompting/prompt_builder.py:15` — Сообщения для LLM; первые `prefix_length` — неизменный префикс (персона и примеры).
+- `PromptBuilder` — `src/vtuber/application/prompting/prompt_builder.py:22` — Строит промпт: [персона + примеры] → [история] → [справка + реплика] (T-03).
+- `render_system_prompt` — `src/vtuber/application/prompting/prompt_builder.py:46` — Системный промпт персоны; `{emotions}` в правилах → теги всех эмоций из `Emotion`.
 
 ## src/vtuber/application/scheduler
 Фоновые задачи в простое (T-13): суммаризация, факты, индексация — не во время хода.
@@ -117,8 +122,8 @@
 Корень композиции: конфиг, персона, сборка графа объектов и точка входа.
 
 - `MemoryConfig` — `src/vtuber/bootstrap/config.py:20` — Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
-- `AppConfig` — `src/vtuber/bootstrap/config.py:44` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:59` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `AppConfig` — `src/vtuber/bootstrap/config.py:45` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:60` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
 - `Core` — `src/vtuber/bootstrap/container.py:21` — Общие механизмы, которые получают все: шина событий и телеметрия.
 - `Backends` — `src/vtuber/bootstrap/container.py:29` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
 - `llm_backends` — `src/vtuber/bootstrap/container.py:40` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
@@ -129,7 +134,7 @@
 - `Console` — `src/vtuber/bootstrap/main.py:63` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
 - `main` — `src/vtuber/bootstrap/main.py:76` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
 - `run` — `src/vtuber/bootstrap/main.py:220` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
-- `background_memory` — `src/vtuber/bootstrap/memory.py:30` — Фоновая память на время контекста; выключена в конфиге — пустой контекст.
+- `background_memory` — `src/vtuber/bootstrap/memory.py:39` — Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
 
