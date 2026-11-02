@@ -187,6 +187,14 @@ describe("CoreClient", () => {
     expect(client.store.voice.speech).toEqual(progress);
   });
 
+  it("перебивание голосом глушит звук сразу, мимо пачки", () => {
+    const { client, socket } = connected();
+    const cancelled: (string | null)[] = [];
+    client.onCancel((turn) => cancelled.push(turn));
+    socket.receive(JSON.stringify({ v: 1, type: "input.barge_in", data: {} }));
+    expect(cancelled).toEqual([null]);
+  });
+
   it("dispose() закрывает связь", () => {
     const { client, frames } = connected();
     client.dispose();

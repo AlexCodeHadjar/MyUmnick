@@ -52,6 +52,7 @@ export class AppStore {
   backends = $state<Record<Component, BackendState | "unknown">>({
     llm: "unknown",
     tts: "unknown",
+    stt: "unknown",
   });
   messages = $state<ChatMessage[]>([]);
   phase = $state<TurnPhase>("idle");
@@ -61,6 +62,8 @@ export class AppStore {
   /** Последние замеры каждой стадии, мс, от старых к новым (панель метрик, FR-15). */
   spans = $state<Record<string, number[]>>({});
   voice = $state<VoiceState>({ speech: null });
+  /** Промежуточный текст фразы, которую сейчас говорит пользователь (Этап 11). */
+  hypothesis = $state("");
 
   #nextId = 0;
   /** Индекс сообщения текущего хода в `messages`: массив только растёт, индекс не сдвигается. */
@@ -122,6 +125,16 @@ export class AppStore {
         break;
       case "error":
         this.error = message.data;
+        break;
+      case "input.hypothesis":
+        this.hypothesis = message.data.text;
+        break;
+      case "input.final":
+        this.hypothesis = "";
+        this.addUserMessage(message.data.text);
+        break;
+      case "input.barge_in":
+        // Голос глушит клиент сразу, мимо пачки; состояние хода изменит `turn.cancelled`.
         break;
       default:
         message satisfies never;

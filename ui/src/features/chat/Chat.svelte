@@ -40,7 +40,9 @@
   />
   <div class="status">
     <span class="state" aria-live="polite">
-      {#if store.phase === "thinking"}
+      {#if store.hypothesis !== ""}
+        <span class="hypothesis">слышу: {store.hypothesis}</span>
+      {:else if store.phase === "thinking"}
         <span class="typing">печатает<span class="dots" aria-hidden="true">…</span></span>
       {:else if store.error !== null}
         <span class="error" role="alert">{store.error.message}</span>

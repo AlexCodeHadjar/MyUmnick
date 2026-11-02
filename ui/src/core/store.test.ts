@@ -102,7 +102,7 @@ describe("ход", () => {
 
 describe("служебные сообщения", () => {
   it("status, metrics.span, error", () => {
-    expect(store.backends).toEqual({ llm: "unknown", tts: "unknown" });
+    expect(store.backends).toEqual({ llm: "unknown", tts: "unknown", stt: "unknown" });
     store.apply({ v: 1, type: "status", data: { component: "llm", state: "ready" } });
     store.apply({ v: 1, type: "metrics.span", turn: null, data: { name: "llm.ttft", ms: 95 } });
     store.apply({
@@ -128,5 +128,16 @@ describe("замеры", () => {
     expect(history).toHaveLength(SPAN_HISTORY);
     expect(history[0]).toBe(5);
     expect(history.at(-1)).toBe(SPAN_HISTORY + 4);
+  });
+});
+
+describe("голосовой ввод", () => {
+  it("гипотеза показывается, финальная фраза становится репликой", () => {
+    const store = new AppStore();
+    store.apply({ v: 1, type: "input.hypothesis", data: { text: "как де" } });
+    expect(store.hypothesis).toBe("как де");
+    store.apply({ v: 1, type: "input.final", data: { text: "как дела" } });
+    expect(store.hypothesis).toBe("");
+    expect(store.messages.map((m) => [m.role, m.text])).toEqual([["user", "как дела"]]);
   });
 });

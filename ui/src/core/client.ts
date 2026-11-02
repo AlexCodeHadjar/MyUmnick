@@ -59,6 +59,12 @@ export class CoreClient {
         message: (message) => {
           // Отмена — мимо пачки: тишина за ≤ 100 мс (NFR-04) не ждёт следующего кадра.
           if (message.type === "turn.cancelled") this.#cancel(message.turn);
+          if (message.type === "input.barge_in") this.#cancel(null);
+          if (message.type === "input.final") {
+            // Голосовая реплика — как `say()`: замеры идут от неё.
+            probe.sent();
+            audioProbe.sent();
+          }
           audioProbe.observe(message);
           batch.run(() => {
             store.apply(message);

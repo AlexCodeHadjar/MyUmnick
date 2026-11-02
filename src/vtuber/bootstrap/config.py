@@ -7,11 +7,13 @@ from pydantic import Field
 
 from vtuber.adapters.llm import GenerationConfig, LLMConfig
 from vtuber.adapters.memory import E5Config
+from vtuber.adapters.stt import VadConfig, WhisperConfig
 from vtuber.adapters.tts import TTSConfig
 from vtuber.application.memory import FactMemoryConfig, RetrievalConfig
 from vtuber.application.pipeline import PipelineConfig
 from vtuber.application.prompting import ContextConfig
 from vtuber.application.scheduler import SchedulerConfig
+from vtuber.application.voice import VoiceConfig
 from vtuber.bootstrap.persona import PersonaConfig
 from vtuber.gateway import GatewayConfig
 from vtuber.kernel import ConfigFiles, ConfigSection, LoggingConfig, TelemetryConfig, load_config
@@ -42,6 +44,26 @@ class MemoryConfig(ConfigSection):
         )
 
 
+class SttConfig(ConfigSection):
+    """Секция `[stt]`: голосовой ввод в `serve` (Этап 11, ADR-0016); модели — при первом кадре."""
+
+    enabled: bool
+    voice: VoiceConfig
+    vad: VadConfig
+    whisper: WhisperConfig
+
+    def resolved(self, root: Path) -> "SttConfig":
+        """Копия с путями моделей от корня проекта."""
+        return self.model_copy(
+            update={
+                "vad": self.vad.model_copy(update={"model_path": root / self.vad.model_path}),
+                "whisper": self.whisper.model_copy(
+                    update={"model_dir": root / self.whisper.model_dir}
+                ),
+            }
+        )
+
+
 class AppConfig(ConfigSection):
     """Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна."""
 
@@ -55,6 +77,7 @@ class AppConfig(ConfigSection):
     tts: TTSConfig
     scheduler: SchedulerConfig
     memory: MemoryConfig
+    stt: SttConfig
 
 
 def load_app_config(root: Path, env: Mapping[str, str]) -> AppConfig:

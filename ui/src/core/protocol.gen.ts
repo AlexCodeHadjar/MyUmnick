@@ -14,7 +14,7 @@ export interface AvatarEmotion {
 export type BackendState = "loading" | "ready" | "failed";
 
 /** Почему ход прерван. */
-export type CancelReason = "user_stop" | "new_message" | "error";
+export type CancelReason = "user_stop" | "new_message" | "barge_in" | "error";
 
 /** Почему ход прерван; `message` — текст ошибки при `reason == "error"`. */
 export interface CancelledData {
@@ -45,7 +45,7 @@ export interface ChatSend {
 }
 
 /** Бэкенд, о состоянии которого сообщается в UI. */
-export type Component = "llm" | "tts";
+export type Component = "llm" | "tts" | "stt";
 
 /** Порция текста ответа. */
 export interface DeltaData {
@@ -79,6 +79,27 @@ export interface ErrorMessage {
   type: "error";
   turn: string | null;
   data: ErrorData;
+}
+
+/** Ядро → UI: пользователь заговорил — оборвать голос витюбера сразу (Этап 11). */
+export interface InputBargeIn {
+  v: Version;
+  type: "input.barge_in";
+  data: EmptyData;
+}
+
+/** Ядро → UI: распознанная фраза — реплика пользователя в чате; за ней начнётся ход. */
+export interface InputFinal {
+  v: Version;
+  type: "input.final";
+  data: DeltaData;
+}
+
+/** Ядро → UI: промежуточный текст фразы пользователя. */
+export interface InputHypothesis {
+  v: Version;
+  type: "input.hypothesis";
+  data: DeltaData;
 }
 
 /** UI → Ядро: черновик реплики (с дебаунсом ~300 мс) — прогрев кэша LLM, T-05. */
@@ -153,4 +174,4 @@ export type Version = 1;
 
 export type InboundMessage = ChatSend | ChatCancel | InputTyping;
 
-export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | ErrorMessage;
+export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ErrorMessage;

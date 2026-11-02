@@ -20,6 +20,10 @@
     { name: "Ядро", ...connectionIndicator(store.connection, everOpen) },
     { name: "LLM", ...backendIndicator(store.backends.llm, online) },
     { name: "TTS", ...backendIndicator(store.backends.tts, online) },
+    // Микрофон загружает модель по первому кадру: до этого показывать нечего.
+    ...(store.backends.stt === "unknown"
+      ? []
+      : [{ name: "STT", ...backendIndicator(store.backends.stt, online) }]),
   ]);
 </script>
 

@@ -12,6 +12,7 @@ class CancelReason(StrEnum):
 
     USER_STOP = "user_stop"
     NEW_MESSAGE = "new_message"
+    BARGE_IN = "barge_in"
     ERROR = "error"
 
 
@@ -20,6 +21,7 @@ class Component(StrEnum):
 
     LLM = "llm"
     TTS = "tts"
+    STT = "stt"
 
 
 class BackendState(StrEnum):

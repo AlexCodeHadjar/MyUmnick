@@ -92,3 +92,30 @@ dimensions = 384
 threads = 2                    # потоки CPU; GPU отдана LLM (T-11)
 max_tokens = 256               # длина входа: факты и запросы короткие
 batch_size = 8
+
+[stt]
+enabled = true                 # голосовой ввод в serve; модели грузятся при первом кадре микрофона (ADR-0016)
+
+[stt.voice]
+interim_ms = 800               # как часто считать промежуточную гипотезу: показ и прогрев LLM (T-05)
+min_phrase_ms = 250            # короче — щелчок, а не фраза
+
+[stt.voice.segmenter]
+threshold = 0.5                # вероятность речи у детектора
+start_ms = 96                  # столько речи подряд — начало фразы
+end_silence_ms = 600           # пауза конца фразы: меньше — перебивает на вдохе, больше — ждёт дольше
+barge_in_ms = 300              # столько речи — перебить витюбера (Этап 11)
+pre_roll_ms = 192              # звук до начала речи: первый слог не теряется
+max_phrase_s = 20.0            # длинная фраза закрывается принудительно
+
+[stt.vad]
+model_path = "models/stt/vad/silero_vad.onnx"
+threads = 1                    # окно короткое: один поток с запасом
+
+[stt.whisper]
+model_dir = "models/stt/whisper-turbo"
+language = "ru"
+device = "auto"                # auto: GPU, если есть CUDA с cuBLAS; иначе CPU (ADR-0016)
+compute_type = "default"       # default: как квантована модель; int8 на CPU, int8_float16 на GPU
+threads = 4
+final_beam = 3                 # поиск финальной гипотезы; промежуточные — жадные

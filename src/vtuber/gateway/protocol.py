@@ -211,6 +211,45 @@ class Status(_Model):
         return cls(data=StatusData(component=component, state=state))
 
 
+class InputBargeIn(_Model):
+    """Ядро → UI: пользователь заговорил — оборвать голос витюбера сразу (Этап 11)."""
+
+    v: Version = PROTOCOL_VERSION
+    type: Literal["input.barge_in"] = "input.barge_in"
+    data: EmptyData = EmptyData()
+
+    @classmethod
+    def of(cls) -> Self:
+        """Перебивание."""
+        return cls()
+
+
+class InputHypothesis(_Model):
+    """Ядро → UI: промежуточный текст фразы пользователя."""
+
+    v: Version = PROTOCOL_VERSION
+    type: Literal["input.hypothesis"] = "input.hypothesis"
+    data: DeltaData
+
+    @classmethod
+    def of(cls, text: str) -> Self:
+        """Гипотеза `text`."""
+        return cls(data=DeltaData(text=text))
+
+
+class InputFinal(_Model):
+    """Ядро → UI: распознанная фраза — реплика пользователя в чате; за ней начнётся ход."""
+
+    v: Version = PROTOCOL_VERSION
+    type: Literal["input.final"] = "input.final"
+    data: DeltaData
+
+    @classmethod
+    def of(cls, text: str) -> Self:
+        """Фраза `text`."""
+        return cls(data=DeltaData(text=text))
+
+
 class ErrorMessage(_Model):
     """Ядро → UI: ошибка; `turn` — None, если не относится к ходу (битое сообщение)."""
 
@@ -233,6 +272,9 @@ type OutboundMessage = Annotated[
     | TurnCancelledMessage
     | MetricsSpan
     | Status
+    | InputBargeIn
+    | InputHypothesis
+    | InputFinal
     | ErrorMessage,
     Field(discriminator="type"),
 ]

@@ -58,6 +58,9 @@ const OUTBOUND_TYPES = {
   "turn.cancelled": true,
   "metrics.span": true,
   status: true,
+  "input.barge_in": true,
+  "input.hypothesis": true,
+  "input.final": true,
   error: true,
 } satisfies Record<OutboundMessage["type"], true>;
 
