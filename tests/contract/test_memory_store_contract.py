@@ -89,11 +89,13 @@ async def test_unavailable_store_raises_memory_unavailable(case: StoreCase) -> N
             await store.search(_unit(1), limit=1)
 
 
-async def test_all_facts_and_clear(case: StoreCase) -> None:
-    async with case.available(4) as store:
-        fact = Fact("Живёт в Казани", FactSource.USER, 0.5, WHEN, note="заметка")
-        await store.add(fact, (1.0, 0.0, 0.0, 0.0))
-        assert await store.all_facts() == [fact]
-        await store.clear()
-        assert await store.all_facts() == []
-        assert await store.search((1.0, 0.0, 0.0, 0.0), 1) == []
+async def test_all_facts_and_remove_note(case: StoreCase) -> None:
+    async with case.available(8) as store:
+        kept = Fact("Любит котов", FactSource.USER, 0.5, WHEN, note="оставить")
+        gone = Fact("Живёт в Казани", FactSource.USER, 0.5, WHEN, note="удалить")
+        await store.add(kept, _unit(0.0, 1.0))
+        await store.add(gone, _unit(1.0, 0.0))
+        assert await store.all_facts() == [kept, gone]
+        await store.remove_note("удалить")
+        assert await store.all_facts() == [kept]
+        assert [hit.fact for hit in await store.search(_unit(1.0, 0.0), 5)] == [kept]

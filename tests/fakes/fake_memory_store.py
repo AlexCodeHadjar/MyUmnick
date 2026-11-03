@@ -25,9 +25,9 @@ class FakeMemoryStore:
         self._check_open()
         return [fact for fact, _ in self.facts]
 
-    async def clear(self) -> None:
+    async def remove_note(self, note: str) -> None:
         self._check_open()
-        self.facts.clear()
+        self.facts[:] = [(fact, vector) for fact, vector in self.facts if fact.note != note]
 
     def _check_open(self) -> None:
         if not self.available:

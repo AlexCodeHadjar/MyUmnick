@@ -52,6 +52,14 @@ class Fact:
 
 
 @dataclass(frozen=True, slots=True)
+class VaultScan:
+    """Заметки фактов: разобранные и те, что сейчас не читаются (их имена)."""
+
+    facts: tuple[Fact, ...]
+    broken: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class FactHit:
     """Найденный факт; `score` — косинусная близость к запросу, −1…1, больше — ближе."""
 

@@ -20,10 +20,11 @@ from vtuber.application.memory import (
     MemoryRecall,
     Summarizer,
     VaultedFacts,
+    VaultWatcher,
     reconcile,
 )
 from vtuber.application.scheduler import IdleJob, IdleScheduler
-from vtuber.bootstrap.config import AppConfig
+from vtuber.bootstrap.config import AppConfig, MemoryConfig
 from vtuber.bootstrap.container import Conversation, Core, llm_backends
 from vtuber.domain import MemoryUnavailable
 from vtuber.kernel import get_logger
@@ -62,14 +63,34 @@ async def background_memory(
     ):
         vault = ObsidianVault(memory.vault_path)
         await _restore(vault, conversation, memory.restore_turns)
-        scheduler = _wire(cfg, conversation, core, _Engines(llm, embedder, store, vault))
+        engines = _Engines(llm, embedder, store, vault)
+        scheduler = _wire(cfg, conversation, core, engines)
         loop = tg.create_task(scheduler.run())
         _log.info("memory.background_ready", store=str(memory.store_path))
         try:
-            async with _recording_chats(vault, core, tg):
+            async with (
+                _recording_chats(vault, core, tg),
+                _watching_notes(memory, engines, scheduler, core),
+            ):
                 yield
         finally:
             loop.cancel()
+
+
+@asynccontextmanager
+async def _watching_notes(
+    memory: MemoryConfig, engines: _Engines, scheduler: IdleScheduler, core: Core
+) -> AsyncIterator[None]:
+    watcher = VaultWatcher(
+        engines.vault, scheduler.submit, lambda: _reconcile(engines), memory.vault_poll_s
+    )
+    watcher.follow(core.bus)
+    watching = asyncio.create_task(watcher.run())
+    try:
+        yield
+    finally:
+        watching.cancel()
+        await asyncio.wait({watching})
 
 
 @asynccontextmanager

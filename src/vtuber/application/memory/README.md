@@ -10,7 +10,7 @@
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
-| `VaultedFacts(store, vault)`, `reconcile(vault, store, embedder)`, `ChatRecorder(vault)` | Заметки — источник истины, индекс — производная (ADR-0020): запись факта, пересборка, импорт, запись чатов своей задачей |
+| `VaultedFacts(store, vault)`, `reconcile(vault, store, embedder)`, `VaultWatcher(vault, submit, sync, poll_s)`, `ChatRecorder(vault)` | Заметки — источник истины, индекс — производная (ADR-0020): запись факта, сверка, импорт, слежение за правками, запись чатов своей задачей |
 | `without_viewer_turns(messages)` | Реплики зрителей не идут в резюме (FR-31) |
 | `ShortTermMemory(budget)` | `append(turn) → отрезанные сообщения`; `messages` (резюме — в первой реплике); `tokens`; `summary`, `set_summary` |
 | `INTERRUPTED_MARK`, `SUMMARY_TEMPLATE` | «…» на конце прерванного ответа; как резюме встраивается в первую реплику |

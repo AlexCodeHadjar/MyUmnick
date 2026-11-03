@@ -21,8 +21,8 @@ FACTS_REPLY = '{"facts": [{"text": "Пользователя зовут Алек
 class _SlowStdin:
     """Одна реплика, затем пауза (простой, фон работает) и конец ввода."""
 
-    def __init__(self, pause_s: float) -> None:
-        self._lines = ["Меня зовут Алексей\n"]
+    def __init__(self, pause_s: float, line: str = "Меня зовут Алексей\n") -> None:
+        self._lines = [line]
         self._pause_s = pause_s
 
     def readline(self) -> str:
@@ -57,3 +57,39 @@ async def test_fact_from_chat_lands_in_memory_store(tmp_path: Path) -> None:
     bodies = stub.bodies("/v1/chat/completions")
     slots = {body.get("id_slot") for body in bodies if isinstance(body, dict)}
     assert slots == {0, 1}
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not (E5_DIR / "model.onnx").is_file(), reason=f"нет модели e5 в {E5_DIR}")
+async def test_second_run_continues_the_chat_and_rebuilds_lost_index(tmp_path: Path) -> None:
+    store = tmp_path / "facts.sqlite"
+    vault = tmp_path / "vault"
+    env = {
+        "VTUBER_LOGGING__FILE": str(tmp_path / "app.jsonl"),
+        "VTUBER_TELEMETRY__TRACES_FILE": str(tmp_path / "traces.jsonl"),
+        "VTUBER_MEMORY__STORE_PATH": str(store),
+        "VTUBER_MEMORY__VAULT_PATH": str(vault),
+        "VTUBER_SCHEDULER__IDLE_AFTER_MS": "50",
+    }
+
+    async def run(line: str) -> LLMStub:
+        async with LLMStub(FACTS_REPLY, chunk_size=16, delay_s=0) as stub:
+            console = Console(_SlowStdin(3, line), io.StringIO())
+            cfg = {**env, "VTUBER_LLM__BASE_URL": stub.url}
+            assert await asyncio.to_thread(main, ["--root", str(ROOT)], cfg, console) == 0
+        structlog.reset_defaults()
+        return stub
+
+    await run("Меня зовут Алексей\n")
+    (note,) = (vault / "Факты").glob("*.md")
+    assert "Меня зовут Алексей" in next((vault / "Чаты").glob("20*.md")).read_text(encoding="utf-8")
+    store.unlink()
+
+    second = await run("Как дела?\n")
+
+    bodies = second.bodies("/v1/chat/completions")
+    dialog = [b for b in bodies if isinstance(b, dict) and b.get("id_slot") == 0]
+    assert "Меня зовут Алексей" in str(dialog[-1]["messages"])
+    with sqlite3.connect(store) as db:
+        rows = db.execute("select text, note from facts").fetchall()
+    assert rows[0] == ("Пользователя зовут Алексей", note.stem)

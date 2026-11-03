@@ -39,6 +39,7 @@ class MemoryConfig(ConfigSection):
     store_path: Path
     vault_path: Path
     restore_turns: int = Field(ge=0)
+    vault_poll_s: float = Field(gt=0)
     background_slot_id: int = Field(ge=0)
     generation: GenerationConfig
     facts: FactMemoryConfig

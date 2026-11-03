@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field, replace
 from datetime import datetime
 
-from vtuber.domain import Fact, MemoryUnavailable, Turn
+from vtuber.domain import Fact, MemoryUnavailable, Turn, VaultScan
 
 
 @dataclass(slots=True)
@@ -24,6 +24,14 @@ class FakeVault:
     async def facts(self) -> list[Fact]:
         self._check()
         return list(self.notes)
+
+    async def scan(self) -> VaultScan:
+        self._check()
+        return VaultScan(tuple(self.notes), ())
+
+    async def changes_token(self) -> str:
+        self._check()
+        return str(len(self.notes))
 
     async def save_turn(self, turn: Turn, when: datetime) -> None:
         self._check()

@@ -79,9 +79,9 @@ class SqliteVecStore:
         """Все факты по порядку записи."""
         return await asyncio.to_thread(self._read_all, self._connection())
 
-    async def clear(self) -> None:
-        """Индекс пуст; заметки — источник истины, поэтому потери нет (ADR-0020)."""
-        await asyncio.to_thread(self._delete_all, self._connection())
+    async def remove_note(self, note: str) -> None:
+        """Факты заметки — из таблицы и векторов одной транзакцией."""
+        await asyncio.to_thread(self._delete_note, self._connection(), note)
 
     def _connection(self) -> sqlite3.Connection:
         if self._db is None:
@@ -95,10 +95,11 @@ class SqliteVecStore:
             ).fetchall()
         return [_fact(*row) for row in rows]
 
-    def _delete_all(self, db: sqlite3.Connection) -> None:
+    def _delete_note(self, db: sqlite3.Connection, note: str) -> None:
         with self._lock, db:
-            db.execute("delete from fact_vectors")
-            db.execute("delete from facts")
+            ids = db.execute("select id from facts where note = ?", (note,)).fetchall()
+            db.executemany("delete from fact_vectors where rowid = ?", ids)
+            db.executemany("delete from facts where id = ?", ids)
 
     async def search(self, query: Vector, limit: int) -> list[FactHit]:
         """KNN по косинусу; близость = 1 − расстояние."""

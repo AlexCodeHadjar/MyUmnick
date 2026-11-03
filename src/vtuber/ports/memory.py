@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Protocol
 
-from vtuber.domain import EmbedKind, Fact, FactHit, FactId, Turn, Vector
+from vtuber.domain import EmbedKind, Fact, FactHit, FactId, Turn, VaultScan, Vector
 
 
 class EmbedderPort(Protocol):
@@ -60,8 +60,8 @@ class MemoryStorePort(Protocol):
         """
         ...
 
-    async def clear(self) -> None:
-        """Удаляет всё; вызывается только перед пересборкой из заметок.
+    async def remove_note(self, note: str) -> None:
+        """Удаляет факты заметки: её удалили или поправили (S-16.5).
 
         Raises:
             MemoryUnavailable: хранилище не открыто.
@@ -92,6 +92,14 @@ class MemoryVaultPort(Protocol):
 
     async def facts(self) -> list[Fact]:
         """Все факты из заметок; неразборчивая заметка пропускается."""
+        ...
+
+    async def scan(self) -> VaultScan:
+        """Факты и имена заметок, которые не читаются: те не считаются удалёнными."""
+        ...
+
+    async def changes_token(self) -> str:
+        """Меняется вместе с заметками фактов; дешёвая проверка без чтения файлов (S-16.5)."""
         ...
 
     async def save_turn(self, turn: Turn, when: datetime) -> None:

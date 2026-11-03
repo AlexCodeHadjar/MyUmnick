@@ -5,7 +5,9 @@
 """
 
 import asyncio
+import hashlib
 import os
+import threading
 from collections.abc import Callable, Iterator
 from datetime import datetime
 from pathlib import Path
@@ -27,7 +29,7 @@ from vtuber.adapters.memory.note_format import (
     render_host_note,
     render_turn,
 )
-from vtuber.domain import Fact, MemoryUnavailable, Turn
+from vtuber.domain import Fact, MemoryUnavailable, Turn, VaultScan
 from vtuber.kernel import get_logger
 
 NOTE_SUFFIX: Final = ".md"
@@ -60,6 +62,9 @@ class ObsidianVault:
 
     def __init__(self, root: Path) -> None:
         self._root = root
+        # Дозапись из нескольких потоков на Windows теряет строки (замер: 28 из 30).
+        self._write_lock = threading.Lock()
+        self._parsed: dict[str, tuple[tuple[int, int], Fact | None]] = {}
 
     async def save_fact(self, fact: Fact) -> Fact:
         """Новая заметка, строка в дневнике; возвращает факт с именем заметки."""
@@ -67,7 +72,15 @@ class ObsidianVault:
 
     async def facts(self) -> list[Fact]:
         """Все разбираемые заметки фактов; битая — предупреждение, а не сбой всей памяти."""
-        return await self._in_thread(self._read_facts)
+        return list((await self.scan()).facts)
+
+    async def scan(self) -> VaultScan:
+        """Заметки: битая — предупреждение и имя в `broken`; её факт из индекса не пропадает."""
+        return await self._in_thread(self._scan)
+
+    async def changes_token(self) -> str:
+        """Хеш имён, времён и размеров заметок фактов: файлы при этом не читаются."""
+        return await self._in_thread(self._token)
 
     async def save_turn(self, turn: Turn, when: datetime) -> None:
         """Дописывает ход в заметку чата за этот день."""
@@ -96,27 +109,54 @@ class ObsidianVault:
 
     def _save_fact(self, fact: Fact) -> Fact:
         name = fact_note_name(fact)
-        _write_atomic(self._root / FACTS_DIR / f"{name}{NOTE_SUFFIX}", render_fact(fact))
-        host = self._root / PEOPLE_DIR / f"{HOST_NOTE}{NOTE_SUFFIX}"
-        if not host.exists():
-            _write_atomic(host, render_host_note())
-        day = fact.created_at.astimezone().date().isoformat()
-        _append(self._root / DIARY_DIR / f"{day}{NOTE_SUFFIX}", render_diary_line(name))
-        return Fact(fact.text, fact.source, fact.importance, fact.created_at, note=name)
+        saved = Fact(fact.text.strip(), fact.source, fact.importance, fact.created_at, note=name)
+        target = self._root / FACTS_DIR / f"{name}{NOTE_SUFFIX}"
+        with self._write_lock:
+            if target.exists():
+                # Факт уже записан и мог быть поправлен: правка пользователя главнее (S-16.5).
+                return saved
+            _write_atomic(target, render_fact(fact))
+            host = self._root / PEOPLE_DIR / f"{HOST_NOTE}{NOTE_SUFFIX}"
+            if not host.exists():
+                _write_atomic(host, render_host_note())
+            day = fact.created_at.astimezone().date().isoformat()
+            _append(self._root / DIARY_DIR / f"{day}{NOTE_SUFFIX}", render_diary_line(name))
+        return saved
 
-    def _read_facts(self) -> list[Fact]:
-        facts = []
+    def _scan(self) -> VaultScan:
+        parsed = {path.stem: self._parse_cached(path) for path in _notes(self._root / FACTS_DIR)}
+        # Удалённые заметки из кэша убираются вместе с прошлым снимком.
+        self._parsed = {note: self._parsed[note] for note in parsed}
+        facts = tuple(fact for fact in parsed.values() if fact is not None)
+        return VaultScan(facts, tuple(note for note, fact in parsed.items() if fact is None))
+
+    def _parse_cached(self, path: Path) -> Fact | None:
+        """Читает только изменённое: заметка стоит ~13 мс, а сверка идёт после каждого факта."""
+        info = path.stat()
+        stamp = (info.st_mtime_ns, info.st_size)
+        cached = self._parsed.get(path.stem)
+        if cached is not None and cached[0] == stamp:
+            return cached[1]
+        try:
+            fact: Fact | None = parse_fact(path.read_text(encoding=_ENCODING), path.stem)
+        except (BadNoteError, UnicodeDecodeError) as exc:
+            _log.warning("vault.bad_note", note=path.name, problem=str(exc))
+            fact = None
+        self._parsed[path.stem] = (stamp, fact)
+        return fact
+
+    def _token(self) -> str:
+        digest = hashlib.sha256()
         for path in _notes(self._root / FACTS_DIR):
-            try:
-                facts.append(parse_fact(path.read_text(encoding=_ENCODING), path.stem))
-            except (BadNoteError, UnicodeDecodeError) as exc:
-                _log.warning("vault.bad_note", note=path.name, problem=str(exc))
-        return facts
+            info = path.stat()
+            digest.update(f"{path.name}|{info.st_mtime_ns}|{info.st_size}\n".encode())
+        return digest.hexdigest()
 
     def _save_turn(self, turn: Turn, when: datetime) -> None:
         local = when.astimezone()
         path = self._root / CHATS_DIR / f"{local.date().isoformat()}{NOTE_SUFFIX}"
-        _append(path, render_turn(turn, local))
+        with self._write_lock:
+            _append(path, render_turn(turn, local))
 
     def _read_recent(self, limit: int) -> list[Turn]:
         days = [p for p in _notes(self._root / CHATS_DIR) if p.stem != SUMMARY_NOTE]

@@ -45,7 +45,7 @@
 - `parse_chat` — `src/vtuber/adapters/memory/note_format.py:129` — Ходы заметки чата по порядку; блок, правленный так, что не разбирается, пропускается.
 - `render_host_note` — `src/vtuber/adapters/memory/note_format.py:148` — Заметка-узел: к ней сходятся факты, поэтому граф Obsidian не рассыпается на точки.
 - `render_diary_line` — `src/vtuber/adapters/memory/note_format.py:153` — Строка дневника о новом факте.
-- `ObsidianVault` — `src/vtuber/adapters/memory/obsidian_vault.py:58` — MemoryVaultPort; файловые операции — в потоке (R-34), сбой — `MemoryUnavailable`.
+- `ObsidianVault` — `src/vtuber/adapters/memory/obsidian_vault.py:60` — MemoryVaultPort; файловые операции — в потоке (R-34), сбой — `MemoryUnavailable`.
 - `SqliteVecStore` — `src/vtuber/adapters/memory/sqlite_vec.py:42` — Реализует MemoryStorePort для векторов размерности `dimensions`; файл — `path`.
 
 ## src/vtuber/adapters/setup
@@ -103,9 +103,10 @@
 - `MemoryRecall` — `src/vtuber/application/memory/retrieval_gate.py:83` — Подсказки хода: факты из памяти, если гейт открыт; сбой памяти ход не задерживает.
 - `ShortTermMemory` — `src/vtuber/application/memory/short_term.py:25` — История ходов для промпта (T-04).
 - `Summarizer` — `src/vtuber/application/memory/summarizer.py:23` — Прежнее резюме + отрезанные сообщения → новое резюме одним запросом к LLM.
-- `VaultedFacts` — `src/vtuber/application/memory/vault_sync.py:18` — `MemoryStorePort`: сначала заметка, потом индекс; сбой записи не оставит факт без файла.
-- `reconcile` — `src/vtuber/application/memory/vault_sync.py:43` — Приводит индекс к заметкам; старые факты из индекса сначала переносятся в заметки.
-- `ChatRecorder` — `src/vtuber/application/memory/vault_sync.py:66` — Пишет ходы в заметки своей задачей: подписчик шины только кладёт ход в очередь.
+- `VaultedFacts` — `src/vtuber/application/memory/vault_sync.py:31` — `MemoryStorePort`: сначала заметка, потом индекс; сбой записи не оставит факт без файла.
+- `reconcile` — `src/vtuber/application/memory/vault_sync.py:56` — Приводит индекс к заметкам: правка главнее индекса, а заметка без разбора его не трогает.
+- `VaultWatcher` — `src/vtuber/application/memory/vault_sync.py:88` — Замечает правки опросом: `watchdog` был бы новой зависимостью, а опрос стоит мало (замер).
+- `ChatRecorder` — `src/vtuber/application/memory/vault_sync.py:157` — Пишет ходы в заметки своей задачей: подписчик шины только кладёт ход в очередь.
 - `without_viewer_turns` — `src/vtuber/application/memory/viewer_filter.py:8` — Без реплик зрителей и ответов на них: иначе зритель попал бы в резюме, а оно — в промпт.
 
 ## src/vtuber/application/pipeline
@@ -194,9 +195,9 @@
 Корень композиции: конфиг, персона, сборка графа объектов и точка входа.
 
 - `MemoryConfig` — `src/vtuber/bootstrap/config.py:31` — Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
-- `SttConfig` — `src/vtuber/bootstrap/config.py:59` — Секция `[stt]`: голосовой ввод в `serve` (Этап 11, ADR-0016); модели — при первом кадре.
-- `AppConfig` — `src/vtuber/bootstrap/config.py:79` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:100` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `SttConfig` — `src/vtuber/bootstrap/config.py:60` — Секция `[stt]`: голосовой ввод в `serve` (Этап 11, ADR-0016); модели — при первом кадре.
+- `AppConfig` — `src/vtuber/bootstrap/config.py:80` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:101` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
 - `Core` — `src/vtuber/bootstrap/container.py:21` — Общие механизмы, которые получают все: шина событий и телеметрия.
 - `Backends` — `src/vtuber/bootstrap/container.py:29` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
 - `llm_backends` — `src/vtuber/bootstrap/container.py:40` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
@@ -207,7 +208,7 @@
 - `Console` — `src/vtuber/bootstrap/main.py:76` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
 - `main` — `src/vtuber/bootstrap/main.py:89` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
 - `run` — `src/vtuber/bootstrap/main.py:299` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
-- `background_memory` — `src/vtuber/bootstrap/memory.py:44` — Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
+- `background_memory` — `src/vtuber/bootstrap/memory.py:45` — Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
 - `PluginServices` — `src/vtuber/bootstrap/plugins.py:34` — Что плагины дали ядру в `setup`: источники реплик и справку хода.
@@ -257,7 +258,8 @@
 - `EmbedKind` — `src/vtuber/domain/memory.py:14` — Что кодируется: у e5 запрос и запоминаемый текст кодируются по-разному.
 - `FactSource` — `src/vtuber/domain/memory.py:21` — Откуда факт: от этого зависит доверие к нему при ответе.
 - `Fact` — `src/vtuber/domain/memory.py:33` — Одна запоминаемая мысль; `importance` 0…1 — что вспоминать в первую очередь.
-- `FactHit` — `src/vtuber/domain/memory.py:55` — Найденный факт; `score` — косинусная близость к запросу, −1…1, больше — ближе.
+- `VaultScan` — `src/vtuber/domain/memory.py:55` — Заметки фактов: разобранные и те, что сейчас не читаются (их имена).
+- `FactHit` — `src/vtuber/domain/memory.py:63` — Найденный факт; `score` — косинусная близость к запросу, −1…1, больше — ближе.
 - `AudioFormat` — `src/vtuber/domain/speech.py:11` — Формат звука: PCM s16le, моно — так звук передаётся в UI (ADR-0003).
 - `AudioChunk` — `src/vtuber/domain/speech.py:23` — Непрерывный фрагмент PCM в формате `format`.
 - `TurnState` — `src/vtuber/domain/turn_state.py:10` — Где сейчас ход: ждём реплику, думаем, говорим, прерваны.

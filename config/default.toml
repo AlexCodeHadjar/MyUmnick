@@ -73,6 +73,7 @@ enabled = true                 # фоновая память: факты о по
 store_path = "data/memory.sqlite"   # относительно корня; каталог создаётся при старте
 vault_path = "data/vault"      # память открытым текстом, можно открыть в Obsidian (ADR-0020); в Obsidian Sync или облачной папке она уйдёт с компьютера
 restore_turns = 40             # столько последних ходов вернуть в историю при запуске; лишнее по бюджету отрежется
+vault_poll_s = 2.0             # как быстро память замечает правку заметки; сверка всё равно ждёт простоя
 background_slot_id = 1         # слот llama-server для фона; сервер — с --parallel 2 (start_llm.ps1)
 
 [memory.generation]
