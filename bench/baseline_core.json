@@ -1,0 +1,14 @@
+{
+ "machine": "DESKTOP-5LPAA2Q Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+ "metrics": {
+  "core.first_text_ms": {
+   "p50": 0.05529999907594174,
+   "p95": 0.12069999866071157
+  },
+  "core.turn_ms": {
+   "p50": 0.27010000121663325,
+   "p95": 0.5113000006531365
+  }
+ },
+ "blocking": []
+}
