@@ -230,6 +230,17 @@ describe("CoreClient", () => {
     expect(client.store.setupResult).toEqual({ problem: null });
   });
 
+  it("заблокированные реплики зрителей копятся с пределом", () => {
+    const { client, socket, frames } = connected();
+    for (let i = 0; i < 25; i += 1) {
+      const data = { author: "враг", text: String(i) };
+      socket.receive(JSON.stringify({ v: 1, type: "viewer.blocked", data }));
+    }
+    frames.next();
+    expect(client.store.blockedViewers).toHaveLength(20);
+    expect(client.store.blockedViewers.at(-1)?.text).toBe("24");
+  });
+
   it("dispose() закрывает связь", () => {
     const { client, frames } = connected();
     client.dispose();

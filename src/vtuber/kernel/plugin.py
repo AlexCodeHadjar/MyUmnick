@@ -7,7 +7,7 @@ from typing import Final, Protocol, runtime_checkable
 
 from pydantic import Field, ValidationError
 
-from vtuber.domain import ConfigError, IncomingMessage
+from vtuber.domain import ConfigError, IncomingMessage, ViewerBlocked
 from vtuber.kernel.bus import EventBus, Handler
 from vtuber.kernel.config import ConfigSection
 from vtuber.kernel.logging import get_logger
@@ -94,6 +94,10 @@ class PluginContext:
     def commands(self) -> Mapping[str, Command]:
         """Зарегистрированные команды ведущего."""
         return self._commands
+
+    async def report_blocked(self, author: str, text: str) -> None:
+        """Сообщить ведущему о заблокированной реплике; общей публикации в шину у плагина нет."""
+        await self._bus.publish(ViewerBlocked(author, text))
 
     def settings[T: ConfigSection](self, model: type[T]) -> T:
         """Настройки плагина из `[plugins.settings.<имя>]`, проверенные моделью `model`.

@@ -5,8 +5,9 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import aclosing
 
 from vtuber.application.conversation import ConversationService
-from vtuber.domain import IncomingMessage
+from vtuber.domain import IncomingMessage, looks_like_attack, viewer_line
 from vtuber.gateway.protocol import InputFinal, OutboundMessage
+from vtuber.gateway.protocol_extras import ViewerBlockedMessage
 from vtuber.gateway.sink import WsReplySink
 from vtuber.kernel import get_logger
 
@@ -48,10 +49,16 @@ class ExternalTurns:
             # Ответ никто не услышит, а в истории и памяти он остался бы.
             _log.info("external.no_client", source=message.source)
             return
+        # Вторая линия: источник мог и не фильтровать, а до модели атака дойти не должна (FR-31).
+        if message.is_viewer and looks_like_attack(message.text):
+            _log.warning("external.viewer_blocked", author=message.author)
+            await self._send(ViewerBlockedMessage.of(message.author, message.text))
+            return
         async with self._one_at_a_time:
             await self._service.wait_silent()
-            text = f"{message.author}: {message.text}"
-            await self._send(InputFinal.of(text))
+            plain = f"{message.author}: {message.text}"
+            await self._send(InputFinal.of(plain))
+            text = viewer_line(message.author, message.text) if message.is_viewer else plain
             sink = WsReplySink(self._send, self._send_bytes)
             await self._service.handle(text, sink, external=True)
             await self._service.wait_silent()

@@ -44,6 +44,7 @@ from vtuber.gateway.protocol import (
     turn_ref,
 )
 from vtuber.gateway.protocol_base import PROTOCOL_VERSION, EmptyData
+from vtuber.gateway.protocol_extras import ViewerBlockedMessage
 from vtuber.gateway.resources_feed import ResourcesFeed
 from vtuber.gateway.server import REPLACED_CODE, GatewayConfig, GatewayServer, MicSink
 from vtuber.gateway.setup_bridge import SetupBridge
@@ -97,6 +98,7 @@ __all__ = [
     "TurnFinishedMessage",
     "TurnStartedMessage",
     "TypingData",
+    "ViewerBlockedMessage",
     "VoiceBridge",
     "WsReplySink",
     "decode_audio_frame",

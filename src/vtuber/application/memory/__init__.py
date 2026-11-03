@@ -13,6 +13,7 @@ from vtuber.application.memory.retrieval_gate import (
 )
 from vtuber.application.memory.short_term import INTERRUPTED_MARK, SUMMARY_TEMPLATE, ShortTermMemory
 from vtuber.application.memory.summarizer import MAX_SUMMARY_CHARS, Summarizer
+from vtuber.application.memory.viewer_filter import without_viewer_turns
 
 __all__ = [
     "FACTS_PREFIX",
@@ -32,4 +33,5 @@ __all__ = [
     "is_factual_question",
     "needs_memory",
     "parse_facts",
+    "without_viewer_turns",
 ]

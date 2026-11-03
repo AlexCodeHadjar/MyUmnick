@@ -9,6 +9,7 @@ import type {
   Emotion,
   ErrorData,
   OutboundMessage,
+  BlockedData,
   FinishedData,
   ProgressData,
   ResourcesData,
@@ -32,6 +33,7 @@ export interface ChatMessage {
 }
 
 /** Сколько последних замеров стадии хранить: хватает на p95, память — копейки. */
+const BLOCKED_HISTORY = 20;
 export const SPAN_HISTORY = 100;
 
 /** Что звучит в плеере (сообщает фича звука): ход, идёт ли звук, сыграно и получено, секунд. */
@@ -74,6 +76,8 @@ export class AppStore {
   setup = $state<SetupData | null>(null);
   setupProgress = $state<ProgressData | null>(null);
   setupResult = $state<FinishedData | null>(null);
+  /** Заблокированные реплики зрителей, последние — в конце (FR-31). */
+  blockedViewers = $state<BlockedData[]>([]);
 
   #nextId = 0;
   /** Индекс сообщения текущего хода в `messages`: массив только растёт, индекс не сдвигается. */
@@ -129,6 +133,12 @@ export class AppStore {
         break;
       case "resources.snapshot":
         this.resources = message.data;
+        break;
+      case "viewer.blocked":
+        this.blockedViewers.push(message.data);
+        if (this.blockedViewers.length > BLOCKED_HISTORY) {
+          this.blockedViewers.shift();
+        }
         break;
       case "setup.state":
         this.setup = message.data;

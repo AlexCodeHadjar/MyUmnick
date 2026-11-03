@@ -15,6 +15,7 @@ from vtuber.gateway.protocol_extras import (
     SetupInstall,
     SetupProgress,
     SetupStateMessage,
+    ViewerBlockedMessage,
 )
 
 
@@ -280,6 +281,7 @@ type OutboundMessage = Annotated[
     | SetupStateMessage
     | SetupProgress
     | SetupFinished
+    | ViewerBlockedMessage
     | ErrorMessage,
     Field(discriminator="type"),
 ]

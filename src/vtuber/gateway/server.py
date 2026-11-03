@@ -19,6 +19,7 @@ from vtuber.domain import (
     TurnCancelled,
     TurnFinished,
     TurnStarted,
+    ViewerBlocked,
 )
 from vtuber.gateway.codec import decode_inbound, decode_mic_frame, encode_outbound
 from vtuber.gateway.protocol import (
@@ -35,7 +36,12 @@ from vtuber.gateway.protocol import (
     TurnStartedMessage,
     turn_ref,
 )
-from vtuber.gateway.protocol_extras import ResourcesWatch, SetupCancel, SetupInstall
+from vtuber.gateway.protocol_extras import (
+    ResourcesWatch,
+    SetupCancel,
+    SetupInstall,
+    ViewerBlockedMessage,
+)
 from vtuber.gateway.resources_feed import ResourcesFeed
 from vtuber.gateway.setup_bridge import SetupBridge
 from vtuber.gateway.sink import WsReplySink
@@ -78,6 +84,7 @@ class GatewayServer:
         bus.subscribe(TurnCancelled, self._on_cancelled)
         bus.subscribe(MetricRecorded, self._on_metric)
         bus.subscribe(BackendStatusChanged, self._on_status)
+        bus.subscribe(ViewerBlocked, self._on_viewer_blocked)
 
     def use_commands(self, commands: Mapping[str, Callable[[], Awaitable[None]]]) -> None:
         """Команды ведущего от плагинов: точная реплика выполняет команду вместо хода."""
@@ -213,6 +220,9 @@ class GatewayServer:
         # Без голосового ввода (не загружен, выключен) кадры просто не нужны.
         if self._mic is not None:
             await self._mic(frame.chunk)
+
+    async def _on_viewer_blocked(self, event: ViewerBlocked) -> None:
+        await self.send(ViewerBlockedMessage.of(event.author, event.text))
 
     async def _on_started(self, event: TurnStarted) -> None:
         await self.send(TurnStartedMessage.of(turn_ref(event.turn_id)))

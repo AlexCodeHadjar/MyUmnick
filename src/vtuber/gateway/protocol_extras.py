@@ -200,3 +200,23 @@ class SetupFinished(ProtocolModel):
     def of(cls, problem: str | None) -> Self:
         """Итог; `problem` — текст для пользователя."""
         return cls(data=FinishedData(problem=problem))
+
+
+class BlockedData(ProtocolModel):
+    """Кто и что написал."""
+
+    author: str
+    text: str
+
+
+class ViewerBlockedMessage(ProtocolModel):
+    """Ядро → UI: реплика зрителя заблокирована как атака; ведущий решает, что делать (FR-31)."""
+
+    v: Version = PROTOCOL_VERSION
+    type: Literal["viewer.blocked"] = "viewer.blocked"
+    data: BlockedData
+
+    @classmethod
+    def of(cls, author: str, text: str) -> Self:
+        """Сообщение о блокировке."""
+        return cls(data=BlockedData(author=author, text=text))

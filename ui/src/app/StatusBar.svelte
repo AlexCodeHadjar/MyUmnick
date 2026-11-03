@@ -3,7 +3,7 @@
   import type { Snippet } from "svelte";
 
   import type { AppStore } from "../core";
-  import { backendIndicator, connectionIndicator } from "./status";
+  import { backendIndicator, blockedDetails, connectionIndicator } from "./status";
 
   const { store, hint, children }: { store: AppStore; hint: string; children?: Snippet } = $props();
 
@@ -35,10 +35,19 @@
     </span>
   {/each}
   {@render children?.()}
+  {#if store.blockedViewers.length > 0}
+    <span class="blocked" data-testid="status-blocked" title={blockedDetails(store.blockedViewers)}>
+      Атаки зрителей: {store.blockedViewers.length}
+    </span>
+  {/if}
   <span class="hint">{hint}</span>
 </footer>
 
 <style>
+  .blocked {
+    color: #ffc27a;
+  }
+
   .status-bar {
     display: flex;
     gap: 18px;

@@ -13,6 +13,12 @@ export interface AvatarEmotion {
 /** Состояние бэкенда для статус-бара UI. */
 export type BackendState = "loading" | "ready" | "failed";
 
+/** Кто и что написал. */
+export interface BlockedData {
+  author: string;
+  text: string;
+}
+
 /** Почему ход прерван. */
 export type CancelReason = "user_stop" | "new_message" | "barge_in" | "error";
 
@@ -285,6 +291,13 @@ export interface TypingData {
 
 export type Version = 1;
 
+/** Ядро → UI: реплика зрителя заблокирована как атака; ведущий решает, что делать (FR-31). */
+export interface ViewerBlockedMessage {
+  v: Version;
+  type: "viewer.blocked";
+  data: BlockedData;
+}
+
 /** Открыта ли панель ресурсов. */
 export interface WatchData {
   enabled: boolean;
@@ -292,4 +305,4 @@ export interface WatchData {
 
 export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel;
 
-export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ErrorMessage;
+export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | ErrorMessage;

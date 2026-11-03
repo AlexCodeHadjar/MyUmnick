@@ -6,7 +6,7 @@ from contextlib import aclosing
 
 from pydantic import Field
 
-from vtuber.domain import IncomingMessage
+from vtuber.domain import IncomingMessage, looks_like_attack
 from vtuber.kernel import ConfigSection, PluginContext
 from vtuber.ports import MessageSource
 from vtuber_stream_chat.selection import (
@@ -86,6 +86,10 @@ class StreamChatPlugin:
         try:
             async with aclosing(source.messages()) as messages:
                 async for message in messages:
-                    queue.add(message)
+                    # Атака не занимает очередь: иначе зритель тратил бы лимит частоты впустую.
+                    if looks_like_attack(message.text):
+                        await ctx.report_blocked(message.author, message.text)
+                    else:
+                        queue.add(message)
         except Exception:
             ctx.log.exception("stream_chat.source_failed")

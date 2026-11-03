@@ -5,7 +5,7 @@ from contextlib import aclosing
 
 from pydantic import Field
 
-from vtuber.domain import TurnRemembered
+from vtuber.domain import TurnRemembered, looks_like_attack
 from vtuber.kernel import ConfigSection, PluginContext
 from vtuber.ports import MessageSource
 from vtuber_obs import ObsClient
@@ -93,6 +93,10 @@ class StreamDirectorPlugin:
         try:
             async with aclosing(source.messages()) as messages:
                 async for message in messages:
-                    director.add(message)
+                    # Атака не занимает очередь: иначе зритель тратил бы лимит частоты впустую.
+                    if looks_like_attack(message.text):
+                        await ctx.report_blocked(message.author, message.text)
+                    else:
+                        director.add(message)
         except Exception:
             ctx.log.exception("stream_director.source_failed")

@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from vtuber.application.memory.facts import FactMemory
 from vtuber.application.memory.short_term import ShortTermMemory
 from vtuber.application.memory.summarizer import Summarizer
+from vtuber.application.memory.viewer_filter import without_viewer_turns
 from vtuber.application.scheduler import IdleJob, IdleScheduler
 from vtuber.domain import Message, TurnRemembered
 from vtuber.kernel import EventBus, get_logger
@@ -42,10 +43,9 @@ class MemoryKeeper:
     async def on_turn(self, event: TurnRemembered) -> None:
         """Ставит задачи хода: сначала резюме (оно меняет промпт), затем факты."""
         turn, when = event.turn, self.now()
-        if event.dropped:
-            self._scheduler.submit(
-                IdleJob(f"summary:{turn.id}", lambda: self._summarize(event.dropped))
-            )
+        dropped = without_viewer_turns(event.dropped)
+        if dropped:
+            self._scheduler.submit(IdleJob(f"summary:{turn.id}", lambda: self._summarize(dropped)))
         if not turn.is_external:
             self._scheduler.submit(IdleJob(f"facts:{turn.id}", lambda: self._learn(event, when)))
 

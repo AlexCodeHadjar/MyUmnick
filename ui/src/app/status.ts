@@ -37,3 +37,8 @@ const BACKEND: Record<BackendState | "unknown", Indicator> = {
 export function backendIndicator(state: BackendState | "unknown", online: boolean): Indicator {
   return BACKEND[online ? state : "unknown"];
 }
+
+/** Подсказка над счётчиком: кто и что написал; решение — за ведущим (`/пауза`, FR-31). */
+export function blockedDetails(blocked: readonly { author: string; text: string }[]): string {
+  return blocked.map(({ author, text }) => `${author}: ${text}`).join("\n");
+}

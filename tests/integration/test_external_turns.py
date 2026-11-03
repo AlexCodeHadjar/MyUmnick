@@ -9,7 +9,14 @@ from vtuber.application.conversation import ConversationService
 from vtuber.application.memory import ShortTermMemory, TurnHints
 from vtuber.application.pipeline import ChunkerConfig, ReplyPipeline, Voice
 from vtuber.application.prompting import ContextBudget, ContextConfig, PromptBuilder
-from vtuber.domain import AudioChunk, AudioFormat, CancelReason, IncomingMessage, Persona
+from vtuber.domain import (
+    AudioChunk,
+    AudioFormat,
+    CancelReason,
+    IncomingMessage,
+    Persona,
+    viewer_line,
+)
 from vtuber.gateway import ExternalTurns, InputFinal, OutboundMessage
 from vtuber.kernel import EventBus, Telemetry
 from vtuber.ports import GenerationParams
@@ -75,7 +82,10 @@ async def test_messages_become_turns_one_by_one() -> None:
         InputFinal.of("аня: привет"),
         InputFinal.of("боря: пока"),
     ]
-    assert [call[0][-1].text for call in llm.calls] == ["аня: привет", "боря: пока"]
+    assert [call[0][-1].text for call in llm.calls] == [
+        viewer_line("аня", "привет"),
+        viewer_line("боря", "пока"),
+    ]
 
 
 async def test_external_turn_gets_no_tools_or_memory_and_teaches_no_facts() -> None:

@@ -88,6 +88,14 @@ class PhraseVoiced:
 
 
 @dataclass(frozen=True, slots=True)
+class ViewerBlocked:
+    """Реплика зрителя похожа на атаку и не дошла до модели; ведущий видит это в UI (FR-31)."""
+
+    author: str
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
 class MetricRecorded:
     """Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев)."""
 

@@ -133,7 +133,7 @@ class ToolsPlugin:
         await asyncio.sleep(intent.seconds)
         about = f": {intent.about}" if intent.about else ""
         text = f"сработал таймер на {describe_seconds(intent.seconds)}{about}"
-        self._fired.put_nowait(IncomingMessage(_SOURCE, "Таймер", text))
+        self._fired.put_nowait(IncomingMessage(_SOURCE, "Таймер", text, is_viewer=False))
 
     def _notes_path(self) -> Path:
         if self._cfg is None:

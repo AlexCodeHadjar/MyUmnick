@@ -28,18 +28,26 @@ from vtuber.domain.events import (
     TurnFinished,
     TurnRemembered,
     TurnStarted,
+    ViewerBlocked,
 )
 from vtuber.domain.gpu import GpuMemory
 from vtuber.domain.incoming import IncomingMessage
 from vtuber.domain.memory import EmbedKind, Fact, FactHit, FactId, FactSource, Vector
 from vtuber.domain.speech import SAMPLE_WIDTH_BYTES, AudioChunk, AudioFormat
 from vtuber.domain.turn_state import TurnState, next_state
+from vtuber.domain.viewer import (
+    VIEWER_PREFIX,
+    is_viewer_line,
+    looks_like_attack,
+    viewer_line,
+)
 
 __all__ = [
     "MAX_TAG_LENGTH",
     "SAMPLE_WIDTH_BYTES",
     "TAG_CLOSE",
     "TAG_OPEN",
+    "VIEWER_PREFIX",
     "AudioChunk",
     "AudioFormat",
     "BackendState",
@@ -79,7 +87,11 @@ __all__ = [
     "TurnState",
     "TurnStateError",
     "Vector",
+    "ViewerBlocked",
     "VtuberError",
+    "is_viewer_line",
+    "looks_like_attack",
     "next_state",
     "parse_tag",
+    "viewer_line",
 ]
