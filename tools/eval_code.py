@@ -7,19 +7,22 @@
 
 import argparse
 import asyncio
+import json
 import re
 import subprocess
 import sys
 import tempfile
+import time
 from collections.abc import Sequence
-from dataclasses import dataclass
+from contextlib import aclosing
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Final, TextIO
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from tools.jsonl import read_jsonl
-from tools.llm_client import ROOT, collect
+from tools.llm_client import ROOT
 from vtuber.adapters.llm import LLMConfig, OpenAICompatLLM
 from vtuber.domain import LLMUnavailable, Message, Role, VtuberError
 from vtuber.ports import GenerationParams, LLMPort
@@ -27,6 +30,7 @@ from vtuber.ports import GenerationParams, LLMPort
 DEFAULT_CASES: Final = ROOT / "eval" / "code_en.jsonl"
 RUN_TIMEOUT_S: Final = 10.0
 PERCENT: Final = 100
+MS_PER_S: Final = 1000
 EXIT_FAILED: Final = 1
 EXIT_UNAVAILABLE: Final = 2
 _FENCE: Final = re.compile(r"```(?:python|py)?\s*\n(.*?)```", re.DOTALL | re.IGNORECASE)
@@ -50,6 +54,8 @@ class CodeResult:
     case_id: str
     passed: bool
     problem: str = ""
+    ttft_ms: float = 0.0
+    total_ms: float = 0.0
 
 
 def extract_code(reply: str) -> str:
@@ -89,9 +95,26 @@ def render(results: Sequence[CodeResult]) -> str:
     """Итог и непрошедшие задачи."""
     passed = sum(r.passed for r in results)
     share = PERCENT * passed / max(len(results), 1)
-    lines = [f"Задач: {len(results)}; прошло: {passed} ({share:.0f} %)"]
+    ttft = sum(r.ttft_ms for r in results) / max(len(results), 1)
+    lines = [
+        f"Задач: {len(results)}; прошло: {passed} ({share:.0f} %); TTFT в среднем {ttft:.0f} мс"
+    ]
     lines += [f"x {r.case_id}: {r.problem}" for r in results if not r.passed]
     return "\n".join(lines)
+
+
+async def _timed(
+    llm: LLMPort, messages: Sequence[Message], params: GenerationParams
+) -> tuple[str, float, float]:
+    started = time.perf_counter()
+    first: float | None = None
+    parts = []
+    async with aclosing(llm.stream(messages, params)) as deltas:
+        async for delta in deltas:
+            first = first if first is not None else time.perf_counter()
+            parts.append(delta)
+    ended = time.perf_counter()
+    return "".join(parts), ((first or ended) - started) * MS_PER_S, (ended - started) * MS_PER_S
 
 
 async def run_cases(
@@ -101,8 +124,9 @@ async def run_cases(
     results = []
     for case in cases:
         messages = [Message(Role.SYSTEM, _SYSTEM), Message(Role.USER, case.task)]
-        reply = await collect(llm, messages, params)
-        results.append(await asyncio.to_thread(judge, case, reply))
+        reply, ttft_ms, total_ms = await _timed(llm, messages, params)
+        verdict = await asyncio.to_thread(judge, case, reply)
+        results.append(replace(verdict, ttft_ms=ttft_ms, total_ms=total_ms))
     return results
 
 
@@ -127,6 +151,7 @@ def main(argv: Sequence[str], out: TextIO) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cases", type=Path, default=DEFAULT_CASES)
     parser.add_argument("--url", default="http://127.0.0.1:8081")
+    parser.add_argument("--out", type=Path)
     args = parser.parse_args(argv)
     try:
         results = asyncio.run(_bench(args.url, read_jsonl(args.cases, CodeCase)))
@@ -137,6 +162,9 @@ def main(argv: Sequence[str], out: TextIO) -> int:
         print(f"Оценка прервана: {exc}", file=out)
         return EXIT_FAILED
     print(render(results), file=out)
+    if args.out:
+        text = json.dumps([asdict(r) for r in results], ensure_ascii=False, indent=1)
+        args.out.write_text(text + "\n", encoding="utf-8")
     return 0
 
 

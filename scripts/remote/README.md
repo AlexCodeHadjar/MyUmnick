@@ -112,3 +112,18 @@ ssh -i ~/.ssh/gpunz_ed25519 -p PORT USER@HOST 'tar -C /workspace/vruber/bench/re
   `models.tsv` убирается, в ADR — пометка.
 - **Карта сбрасывает частоты** — видно в `gpu.csv` (clocks.sm, temperature.gpu, power.draw);
   отметить в ADR, при сильном троттлинге — сменить хост.
+
+## Набор S-9.1, S-9.3, S-12.5, S-12.6, S-18.1
+
+`run_my_set.sh` идёт по шагам `profile speed vision code assistant`, по очереди: параллельные замеры TTFT недействительны. После обрыва
+готовые шаги пропускаются. Итоги — `bench/results/remote/my_set/<шаг>/`. Оценка времени: 4–6 ч вместе с `finish_chosen.sh`.
+
+```bash
+ONLY='gemma4-12b-hauhau Q4_K_M' bash scripts/remote/download_models.sh
+MODELS_TSV=scripts/remote/models_extra.tsv bash scripts/remote/download_models.sh
+bash scripts/remote/run_my_set.sh
+```
+
+Весь список `models_extra.tsv` — около 45,4 ГБ, из них модели кода 45 ГБ. `tools.eval_code` запускает код, написанный моделью: на сервере не
+должно быть токенов и ключей. Флаги черновика (`--spec-type draft-mtp`) сверить с `help.txt` шага `speed`: при несовпадении вариант `mtp2`
+просто не поднимется, остальные шаги это не затронет.

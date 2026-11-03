@@ -9,6 +9,7 @@ MODEL=${1:?путь к .gguf}
 PORT=${PORT:-8080}
 CTX=${CTX:-16384}
 SLOTS=${SLOTS:-2}
+EXTRA_ARGS=${EXTRA_ARGS:-} # по словам: --mmproj, --model-draft и другие флаги замеров
 
 exec "$LLAMA_BIN/llama-server" \
     --model "$MODEL" \
@@ -21,4 +22,5 @@ exec "$LLAMA_BIN/llama-server" \
     --metrics \
     --no-webui \
     --host 127.0.0.1 \
-    --port "$PORT"
+    --port "$PORT" \
+    $EXTRA_ARGS

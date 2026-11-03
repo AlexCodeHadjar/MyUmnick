@@ -7,7 +7,7 @@ MODELS_DIR=${MODELS_DIR:-$WORK/models}
 LLAMA_DIR=${LLAMA_DIR:-$WORK/llama.cpp}
 LLAMA_BIN=$LLAMA_DIR/build/bin
 RESULTS_DIR=${RESULTS_DIR:-$ROOT/bench/results/remote}
-MODELS_TSV=$ROOT/scripts/remote/models.tsv
+MODELS_TSV=${MODELS_TSV:-$ROOT/scripts/remote/models.tsv}
 export PATH=$HOME/.local/bin:$PATH # uv ставится сюда (setup.sh)
 
 log() { printf '[%(%H:%M:%S)T] %s\n' -1 "$*"; }

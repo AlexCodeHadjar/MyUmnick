@@ -1,0 +1,12 @@
+# Модели набора S-9.3, S-12.5, S-18.1, сверено с API Hugging Face 2026-11-03. Формат как у models.tsv.
+# Отдельным файлом: run_candidates.sh идёт по всем строкам models.tsv, а это не кандидаты в основную LLM.
+# Файлы основной модели лежат рядом с ней: тот же каталог, ревизия та же, что в models.tsv.
+gemma4-12b-hauhau	mmproj	HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced	ae8045ac2bd216293ca49a3065da2c942dde4b68	mmproj-Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-BF16.gguf	175115264	b59e815479b7e5f0665bd29e6784c104a368092bcbc63120148c606f9276ab8e	gemma
+gemma4-12b-hauhau	mtp	HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced	ae8045ac2bd216293ca49a3065da2c942dde4b68	mtp-gemma-4-12B-it.gguf	253707328	c50c91c35f04903815b2e8930cbb8c8c5bee0e1aa00748c30a7b8ff05d2310b4	gemma
+# Кандидаты S-12.5. Основная LLM занимает 8,7 ГБ из 16: первые два могут встать рядом, остальные — только вместо неё.
+code-qwen25-7b	Q4_K_M	Qwen/Qwen2.5-Coder-7B-Instruct-GGUF	13fb94bfda8c8cf22497dc57b78f391a9acb426a	qwen2.5-coder-7b-instruct-q4_k_m.gguf	4683073536	509287f78cb4d4cf6b3843734733b914b2c158e43e22a7f4bf5e963800894d3c	apache-2.0
+code-granite42-8b	Q4_K_M	ibm-granite/granite-4.2-8b-GGUF	93f3f6a8938ee922b784cf4e5b4203cd3428df8f	granite-4.2-8b-Q4_K_M.gguf	5347917952	16a9369d0805f80b7377d25d87f937a90c05dc04ad79173a52001e42c9aab311	apache-2.0
+code-qwen25-14b	Q4_K_M	Qwen/Qwen2.5-Coder-14B-Instruct-GGUF	d0a692ef765eefbf2fabb130b3cb2e8917e3d225	qwen2.5-coder-14b-instruct-q4_k_m.gguf	8988110272	c1e659736d89ac1065fb495330fb824d94001974a4bfa78e7270e43476a8d940	apache-2.0
+code-gpt-oss-20b	Q4_K_M	unsloth/gpt-oss-20b-GGUF	d449b42d93e1c2c7bda5312f5c25c8fb91dfa9b4	gpt-oss-20b-Q4_K_M.gguf	11624759488	c27536640e410032865dc68781d80a08b98f8db5e93575919af8ccc0568aeb4f	apache-2.0
+# У сборки unsloth лицензия не указана («other»), у исходной модели mistralai — apache-2.0.
+code-devstral-small2-24b	Q4_K_M	unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF	6e458b8add42681bfd023de5eab93637694aaf82	Devstral-Small-2-24B-Instruct-2512-Q4_K_M.gguf	14334446752	d14ba9edee1bb4c4996a726deb81e49ae81800a3216f0774634238c380aee496	apache-2.0
