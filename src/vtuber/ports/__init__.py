@@ -6,7 +6,7 @@ from vtuber.ports.memory import EmbedderPort, MemoryStorePort, MemoryVaultPort
 from vtuber.ports.resources import GpuProbe, ManagedModel
 from vtuber.ports.setup import FileFetcher
 from vtuber.ports.sink import ReplySink
-from vtuber.ports.stt import STTPort, VadPort
+from vtuber.ports.stt import SoundClassifierPort, STTPort, VadPort
 from vtuber.ports.tts import TTSPort
 
 __all__ = [
@@ -21,6 +21,7 @@ __all__ = [
     "MessageSource",
     "ReplySink",
     "STTPort",
+    "SoundClassifierPort",
     "TTSPort",
     "VadPort",
 ]

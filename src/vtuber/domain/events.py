@@ -87,6 +87,24 @@ class PhraseVoiced:
     duration_s: float
 
 
+class SoundKind(StrEnum):
+    """Звук вокруг, не речь (S-14.4)."""
+
+    LAUGHTER = "laughter"
+    APPLAUSE = "applause"
+    COUGH = "cough"
+    SNEEZE = "sneeze"
+    CRY = "cry"
+    MUSIC = "music"
+
+
+@dataclass(frozen=True, slots=True)
+class SoundHeard:
+    """Микрофон услышал звук; сам звук в событие не входит."""
+
+    kind: SoundKind
+
+
 @dataclass(frozen=True, slots=True)
 class SearchSource:
     """Откуда взят ответ: заголовок и адрес страницы."""

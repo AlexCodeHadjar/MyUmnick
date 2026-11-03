@@ -1,5 +1,5 @@
 # STATE — снимок проекта
-_Обновлено: 2026-11-03, сессия S-14.1, S-14.2_
+_Обновлено: 2026-11-03, сессия S-14.4_
 
 ## Сейчас
 - **Сборку готового проекта (S-13.3, PyInstaller, установщик) не запускать до команды пользователя**; этапы ещё
@@ -112,6 +112,7 @@ _Обновлено: 2026-11-03, сессия S-14.1, S-14.2_
   `ui/src/features/privacy/`
 - [x] S-16.2 Редактор памяти: `MemoryEditor`, `gateway/memory_bridge.py`, `ui/src/features/memory/` (Ctrl+Shift+Y), `[memory].profile`
 - [x] S-16.1 Ветвление: `application/conversation/branches.py`, `gateway/branch_bridge.py`, `chat/BranchBar.svelte`
+- [ ] S-14.4 Звуки: логика `application/voice/sounds.py` готова, адаптер SenseVoice ждёт согласия на скачивание (ADR-0027)
 - [x] S-14.1, S-14.2 Слух по тексту Whisper: `[stt.addressing]`, `unfinished_hold_ms`, ADR-0026; замеры ждут записей
 - [x] S-18.2 Снимок экрана: `features/chat/screen.ts`, только по действию, ADR-0025; выбор окна вживую не проверен
 - [x] S-18.1 Картинка от пользователя: `Message.images`, `chat.send_image`, `[llama_server].mmproj`, ADR-0024; замеры ждут аренды
@@ -269,7 +270,7 @@ _Обновлено: 2026-11-03, сессия S-14.1, S-14.2_
 - Файлы — всегда `encoding="utf-8"`; `.ps1` — UTF-8 **с BOM**.
 - Протокол меняется только в `gateway/protocol.py` и `protocol_extras.py`; сообщение добавляется вместе с кодом,
   который его использует. JSON — pydantic-core, orjson не нужен.
-- Новая зависимость — ADR. ADR-0004 — выбор LLM (S-2.5); следующий свободный — ADR-0027.
+- Новая зависимость — ADR. ADR-0004 — выбор LLM (S-2.5); следующий свободный — ADR-0028.
 
 ## Последний журнал
-docs/ai/sessions/2026-11-03_S-14.1-2.md
+docs/ai/sessions/2026-11-03_S-14.4.md

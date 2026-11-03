@@ -217,6 +217,10 @@
 - `BargeIn` — `src/vtuber/application/voice/segmenter.py:38` — Речь длится достаточно, чтобы перебить витюбера; один раз на фразу.
 - `SpeechEnded` — `src/vtuber/application/voice/segmenter.py:43` — Фраза закончилась; `pcm` — вся фраза с паузой перед ней, без хвоста тишины.
 - `Segmenter` — `src/vtuber/application/voice/segmenter.py:52` — Состояние одной линии звука; `feed` принимает окна длиной `window_ms`.
+- `SoundsConfig` — `src/vtuber/application/voice/sounds.py:44` — Секция `[stt.sounds]`: выключена, пока не проверена точность на настоящих записях.
+- `SoundActions` — `src/vtuber/application/voice/sounds.py:55` — `busy` — идёт ход, речь или фраза ведущего; `react` — сказать реплику в тишине.
+- `loudness` — `src/vtuber/application/voice/sounds.py:62` — Громкость окна s16le, 0…1: на тишину модель не тратится.
+- `SoundWatcher` — `src/vtuber/application/voice/sounds.py:70` — Собирает окна и разбирает только последнее: отставшая разметка никому не нужна.
 
 ## src/vtuber/bootstrap
 Корень композиции: конфиг, персона, сборка графа объектов и точка входа.
@@ -293,12 +297,14 @@
 - `TurnCancelled` — `src/vtuber/domain/events.py:61` — Ход прерван; UI сбрасывает аудиобуфер. `message` — что сказать пользователю при ошибке.
 - `EmotionChanged` — `src/vtuber/domain/events.py:70` — В ответе встретился тег эмоции.
 - `PhraseVoiced` — `src/vtuber/domain/events.py:78` — Фраза озвучена: зазвучит через `starts_in_s` и продлится `duration_s` (субтитры, Этап 12).
-- `SearchSource` — `src/vtuber/domain/events.py:91` — Откуда взят ответ: заголовок и адрес страницы.
-- `SourcesFound` — `src/vtuber/domain/events.py:99` — Инструмент нашёл источники для этого ответа: UI покажет ссылки (FR-25).
-- `BackendNotice` — `src/vtuber/domain/events.py:106` — Сообщение пользователю о компоненте: упал, поднимается, снова работает (S-17.1).
-- `ViewerBlocked` — `src/vtuber/domain/events.py:114` — Реплика зрителя похожа на атаку и не дошла до модели; ведущий видит это в UI (FR-31).
-- `MetricRecorded` — `src/vtuber/domain/events.py:122` — Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев).
-- `BackendStatusChanged` — `src/vtuber/domain/events.py:131` — Бэкенд загрузился, упал или восстановился.
+- `SoundKind` — `src/vtuber/domain/events.py:90` — Звук вокруг, не речь (S-14.4).
+- `SoundHeard` — `src/vtuber/domain/events.py:102` — Микрофон услышал звук; сам звук в событие не входит.
+- `SearchSource` — `src/vtuber/domain/events.py:109` — Откуда взят ответ: заголовок и адрес страницы.
+- `SourcesFound` — `src/vtuber/domain/events.py:117` — Инструмент нашёл источники для этого ответа: UI покажет ссылки (FR-25).
+- `BackendNotice` — `src/vtuber/domain/events.py:124` — Сообщение пользователю о компоненте: упал, поднимается, снова работает (S-17.1).
+- `ViewerBlocked` — `src/vtuber/domain/events.py:132` — Реплика зрителя похожа на атаку и не дошла до модели; ведущий видит это в UI (FR-31).
+- `MetricRecorded` — `src/vtuber/domain/events.py:140` — Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев).
+- `BackendStatusChanged` — `src/vtuber/domain/events.py:149` — Бэкенд загрузился, упал или восстановился.
 - `GpuMemory` — `src/vtuber/domain/gpu.py:7` — Сколько видеопамяти всего и сколько занято всеми программами.
 - `IncomingMessage` — `src/vtuber/domain/incoming.py:7` — Реплика из источника `source` (например, `twitch`) от автора `author`.
 - `EmbedKind` — `src/vtuber/domain/memory.py:14` — Что кодируется: у e5 запрос и запоминаемый текст кодируются по-разному.
@@ -457,8 +463,9 @@
 - `GpuProbe` — `src/vtuber/ports/resources.py:18` — Фактическая занятость видеопамяти (ADR-0018).
 - `FileFetcher` — `src/vtuber/ports/setup.py:7` — Откуда мастер берёт файлы; сбой — `SetupFailed` с понятным текстом.
 - `ReplySink` — `src/vtuber/ports/sink.py:8` — Получатель результатов одного хода; конвейер не знает, что за ним.
-- `VadPort` — `src/vtuber/ports/stt.py:12` — Детектор речи: окно PCM → вероятность, что это речь.
-- `STTPort` — `src/vtuber/ports/stt.py:44` — Распознавание отрезка речи.
+- `SoundClassifierPort` — `src/vtuber/ports/stt.py:12` — Какой звук в окне, кроме речи (S-14.4).
+- `VadPort` — `src/vtuber/ports/stt.py:26` — Детектор речи: окно PCM → вероятность, что это речь.
+- `STTPort` — `src/vtuber/ports/stt.py:58` — Распознавание отрезка речи.
 - `TTSPort` — `src/vtuber/ports/tts.py:9` — Движок TTS; адаптеры бросают только доменные ошибки (R-43).
 
 ## ui/src/app

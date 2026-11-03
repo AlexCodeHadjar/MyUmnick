@@ -14,13 +14,24 @@ from vtuber.application.voice.segmenter import (
     SpeechEnded,
     SpeechStarted,
 )
+from vtuber.application.voice.sounds import (
+    REACTIONS,
+    SoundActions,
+    SoundsConfig,
+    SoundWatcher,
+    loudness,
+)
 
 __all__ = [
+    "REACTIONS",
     "AddressedEvents",
     "AddressingConfig",
     "BargeIn",
     "Segmenter",
     "SegmenterConfig",
+    "SoundActions",
+    "SoundWatcher",
+    "SoundsConfig",
     "SpeechEnded",
     "SpeechStarted",
     "VoiceConfig",
@@ -28,4 +39,5 @@ __all__ = [
     "VoiceListener",
     "addressed",
     "looks_unfinished",
+    "loudness",
 ]

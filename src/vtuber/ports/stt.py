@@ -6,7 +6,21 @@
 
 from typing import Protocol
 
-from vtuber.domain import AudioChunk, AudioFormat
+from vtuber.domain import AudioChunk, AudioFormat, SoundKind
+
+
+class SoundClassifierPort(Protocol):
+    """Какой звук в окне, кроме речи (S-14.4)."""
+
+    async def classify(self, audio: AudioChunk) -> SoundKind | None:
+        """Звук окна; речь, тишина и неизвестное — None.
+
+        Raises:
+            STTUnavailable: модель не загружена.
+            GenerationFailed: разбор сорвался.
+
+        """
+        ...
 
 
 class VadPort(Protocol):
