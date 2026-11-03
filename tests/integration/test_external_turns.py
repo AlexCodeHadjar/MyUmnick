@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator
 from tests.fakes import FakeClock, FakeLLM, RecordingSink
 from tests.fakes.conversation import make_conversation
 from vtuber.application.conversation import ConversationService
-from vtuber.application.memory import ShortTermMemory
+from vtuber.application.memory import ShortTermMemory, TurnHints
 from vtuber.application.pipeline import ChunkerConfig, ReplyPipeline, Voice
 from vtuber.application.prompting import ContextBudget, ContextConfig, PromptBuilder
 from vtuber.domain import AudioChunk, AudioFormat, CancelReason, IncomingMessage, Persona
@@ -76,6 +76,27 @@ async def test_messages_become_turns_one_by_one() -> None:
         InputFinal.of("боря: пока"),
     ]
     assert [call[0][-1].text for call in llm.calls] == ["аня: привет", "боря: пока"]
+
+
+async def test_external_turn_gets_no_tools_or_memory_and_teaches_no_facts() -> None:
+    llm = FakeLLM("Ок")
+    service, _, turns = _turns(llm)
+    asked: list[str] = []
+
+    async def hints(text: str) -> TurnHints:
+        asked.append(text)
+        return TurnHints(context=("секрет ведущего",))
+
+    service.use_tools(hints)
+    service.use_memory(hints)
+
+    await turns.run(_two_viewers)
+    await service.handle("вопрос ведущего", RecordingSink())
+    await service.wait_idle()
+
+    assert asked == ["вопрос ведущего", "вопрос ведущего"]
+    assert all("секрет" not in call[0][-1].text for call in llm.calls[:2])
+    assert "секрет ведущего" in llm.calls[2][0][-1].text
 
 
 async def test_without_ui_messages_are_lost_not_answered() -> None:

@@ -6,6 +6,7 @@ from vtuber.kernel.context import current_turn, turn_context
 from vtuber.kernel.logging import LoggingConfig, configure_logging, get_logger, logging_to
 from vtuber.kernel.plugin import (
     MAX_PENDING_PLUGIN_EVENTS,
+    ContextProvider,
     MessageStream,
     Plugin,
     PluginContext,
@@ -25,6 +26,7 @@ __all__ = [
     "MAX_PENDING_PLUGIN_EVENTS",
     "ConfigFiles",
     "ConfigSection",
+    "ContextProvider",
     "EventBus",
     "Handler",
     "LoggingConfig",

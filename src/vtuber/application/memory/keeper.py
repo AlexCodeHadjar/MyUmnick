@@ -46,7 +46,8 @@ class MemoryKeeper:
             self._scheduler.submit(
                 IdleJob(f"summary:{turn.id}", lambda: self._summarize(event.dropped))
             )
-        self._scheduler.submit(IdleJob(f"facts:{turn.id}", lambda: self._learn(event, when)))
+        if not turn.is_external:
+            self._scheduler.submit(IdleJob(f"facts:{turn.id}", lambda: self._learn(event, when)))
 
     async def _summarize(self, dropped: Sequence[Message]) -> None:
         summary = await self._summarizer.summarize(self._history.summary, dropped)

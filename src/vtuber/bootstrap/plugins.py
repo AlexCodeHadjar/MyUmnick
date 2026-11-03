@@ -12,13 +12,29 @@ from importlib.metadata import EntryPoint, entry_points
 from typing import Final
 
 from vtuber.domain import ConfigError
-from vtuber.kernel import EventBus, MessageStream, Plugin, PluginContext, PluginsConfig, get_logger
+from vtuber.kernel import (
+    ContextProvider,
+    EventBus,
+    MessageStream,
+    Plugin,
+    PluginContext,
+    PluginsConfig,
+    get_logger,
+)
 
 ENTRY_POINT_GROUP: Final = "vtuber.plugins"
 
 type Discover = Callable[[], Iterable[EntryPoint]]
 
 _log = get_logger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class PluginServices:
+    """Что плагины дали ядру в `setup`: источники реплик и справку хода."""
+
+    sources: tuple[MessageStream, ...] = ()
+    contexts: tuple[ContextProvider, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,20 +50,23 @@ def _installed() -> Iterable[EntryPoint]:
 @asynccontextmanager
 async def running_plugins(
     cfg: PluginsConfig, bus: EventBus, discover: Discover = _installed
-) -> AsyncIterator[tuple[MessageStream, ...]]:
+) -> AsyncIterator[PluginServices]:
     """Включённые плагины работают на время контекста; остановка — в обратном порядке.
 
-    Отдаёт источники реплик, которые плагины зарегистрировали в `setup`.
+    Отдаёт то, что плагины зарегистрировали в `setup`.
     """
     if not cfg.enabled:
-        yield ()
+        yield PluginServices()
         return
     found = {point.name: point for point in discover()}
     attempts = [await _start(name, found.get(name), cfg, bus) for name in cfg.enabled]
     started = [one for one in attempts if one is not None]
     pumps = [asyncio.create_task(one.ctx.run()) for one in started]
     try:
-        yield tuple(stream for one in started for stream in one.ctx.sources)
+        yield PluginServices(
+            tuple(stream for one in started for stream in one.ctx.sources),
+            tuple(provider for one in started for provider in one.ctx.contexts),
+        )
     finally:
         for pump in pumps:
             pump.cancel()

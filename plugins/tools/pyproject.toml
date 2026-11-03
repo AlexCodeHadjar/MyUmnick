@@ -1,0 +1,13 @@
+[project]
+name = "vtuber-tools"
+version = "0.1.0"
+description = "Плагин: время, таймер и заметки без лишней генерации LLM."
+requires-python = ">=3.12,<3.13"
+dependencies = ["vtuber"]
+
+[project.entry-points."vtuber.plugins"]
+tools = "vtuber_tools:ToolsPlugin"
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14.0"]
+build-backend = "uv_build"

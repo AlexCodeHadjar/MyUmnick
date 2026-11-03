@@ -39,7 +39,7 @@ build-backend = "uv_build"
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src", ".", "plugins/stream_chat/src", "plugins/obs/src"]  # "." — чтобы tools и tests считались своими пакетами при сортировке импортов
+src = ["src", ".", "plugins/stream_chat/src", "plugins/obs/src", "plugins/tools/src"]  # "." — чтобы tools и tests считались своими пакетами при сортировке импортов
 extend-exclude = ["docs/archive"]  # ruff форматирует код в .md; архивные примеры не трогаем
 
 [tool.ruff.lint]
@@ -73,12 +73,12 @@ plugins = ["pydantic.mypy"]
 strict = true
 warn_unreachable = true
 disallow_any_explicit = true   # R-18
-files = ["src", "tests", "tools", "plugins/example/src", "plugins/stream_chat/src", "plugins/obs/src"]
-mypy_path = "src:plugins/stream_chat/src:plugins/obs/src"
+files = ["src", "tests", "tools", "plugins/example/src", "plugins/stream_chat/src", "plugins/obs/src", "plugins/tools/src"]
+mypy_path = "src:plugins/stream_chat/src:plugins/obs/src:plugins/tools/src"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["plugins/stream_chat/src", "plugins/obs/src"]
+pythonpath = ["plugins/stream_chat/src", "plugins/obs/src", "plugins/tools/src"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 markers = ["gpu: требует видеокарту", "slow: долгий тест"]

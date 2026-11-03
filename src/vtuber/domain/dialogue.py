@@ -29,13 +29,15 @@ class Turn:
     """Завершённый ход: реплика пользователя и ответ витюбера.
 
     У прерванного хода `reply_text` — только показанная/произнесённая часть, а `is_interrupted`
-    истинно: модель должна «знать», что её перебили.
+    истинно: модель должна «знать», что её перебили. `is_external` — реплика не от ведущего
+    (зритель, таймер): о ведущем из неё ничего не узнать.
     """
 
     id: TurnId
     user_text: str
     reply_text: str
     is_interrupted: bool = False
+    is_external: bool = False
 
 
 @dataclass(frozen=True, slots=True)

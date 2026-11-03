@@ -12,6 +12,7 @@ from typing import Final, Protocol, TextIO
 
 from vtuber.application.conversation import ConversationService
 from vtuber.application.pipeline import FillerBank
+from vtuber.application.tools import ToolContext
 from vtuber.bootstrap.config import AppConfig, load_app_config
 from vtuber.bootstrap.container import (
     Backends,
@@ -23,7 +24,7 @@ from vtuber.bootstrap.container import (
 )
 from vtuber.bootstrap.memory import background_memory
 from vtuber.bootstrap.persona import load_persona
-from vtuber.bootstrap.plugins import running_plugins
+from vtuber.bootstrap.plugins import PluginServices, running_plugins
 from vtuber.bootstrap.voice_input import voice_input
 from vtuber.domain import (
     BackendState,
@@ -117,14 +118,24 @@ async def _run(
         # Память (Этап 10): факты и резюме — в простое, LLM фонового слота; поиск — в ходе (T-12).
         async with (
             background_memory(cfg, conversation, core),
-            running_plugins(cfg.plugins, bus) as sources,
+            running_plugins(cfg.plugins, bus) as plugins,
         ):
+            _connect_tools(cfg, conversation.service, plugins)
             if mode == SERVE_MODE:
-                code = await _serve((cfg, core, sources), conversation.service, warmup, console)
+                code = await _serve(
+                    (cfg, core, plugins.sources), conversation.service, warmup, console
+                )
             else:
                 code = await _chat(conversation.service, warmup, console, bus)
         metrics.cancel()
     return code
+
+
+def _connect_tools(cfg: AppConfig, service: ConversationService, plugins: PluginServices) -> None:
+    """Без инструментов сервис хода не тратит на них ни одного вызова."""
+    if plugins.contexts:
+        tools = ToolContext(plugins.contexts, cfg.plugins.context_timeout_s)
+        service.use_tools(tools.hints)
 
 
 async def _chat(

@@ -18,6 +18,9 @@ MAX_PENDING_PLUGIN_EVENTS: Final = 256
 type MessageStream = Callable[[], AsyncGenerator[IncomingMessage]]
 """Источник реплик: следующую реплику ядро запрашивает, когда готово на неё ответить."""
 
+type ContextProvider = Callable[[str], Awaitable[str | None]]
+"""Справка хода по реплике, до запроса к LLM; должна успеть за `context_timeout_s`."""
+
 _log = get_logger(__name__)
 
 
@@ -30,6 +33,7 @@ class PluginsConfig(ConfigSection):
     enabled: tuple[str, ...]
     setup_timeout_s: float = Field(gt=0)
     shutdown_timeout_s: float = Field(gt=0)
+    context_timeout_s: float = Field(gt=0)
     settings: dict[str, dict[str, object]]
 
 
@@ -50,6 +54,7 @@ class PluginContext:
         )
         self._closed = False
         self._sources: list[MessageStream] = []
+        self._contexts: list[ContextProvider] = []
 
     def subscribe[E](self, event_type: type[E], handler: Handler[E]) -> None:
         """Подписывает `handler`; события одного плагина обрабатываются строго по очереди."""
@@ -67,6 +72,15 @@ class PluginContext:
     def sources(self) -> tuple[MessageStream, ...]:
         """Зарегистрированные источники реплик."""
         return tuple(self._sources)
+
+    def add_context(self, provider: ContextProvider) -> None:
+        """Строка от `provider` попадает в справку хода: инструмент срабатывает до генерации."""
+        self._contexts.append(provider)
+
+    @property
+    def contexts(self) -> tuple[ContextProvider, ...]:
+        """Зарегистрированные поставщики справки."""
+        return tuple(self._contexts)
 
     def settings[T: ConfigSection](self, model: type[T]) -> T:
         """Настройки плагина из `[plugins.settings.<имя>]`, проверенные моделью `model`.

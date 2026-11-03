@@ -52,5 +52,6 @@ class ExternalTurns:
             await self._service.wait_silent()
             text = f"{message.author}: {message.text}"
             await self._send(InputFinal.of(text))
-            await self._service.handle(text, WsReplySink(self._send, self._send_bytes))
+            sink = WsReplySink(self._send, self._send_bytes)
+            await self._service.handle(text, sink, external=True)
             await self._service.wait_silent()

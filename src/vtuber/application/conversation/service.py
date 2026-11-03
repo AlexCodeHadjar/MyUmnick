@@ -44,6 +44,7 @@ class _ActiveTurn:
     sink: ReplySink
     parser: StreamParser = field(default_factory=StreamParser)
     reason: CancelReason = CancelReason.USER_STOP
+    external: bool = False
     task: asyncio.Task[None] | None = None
 
 
@@ -73,6 +74,7 @@ class ConversationService:
         self._prefill: asyncio.Task[None] | None = None
         self._prefilled: str | None = None
         self._hints: HintSource | None = None
+        self._tools: HintSource | None = None
         self._silent_at = 0.0
 
     @property
@@ -80,15 +82,24 @@ class ConversationService:
         """Состояние текущего хода."""
         return self._state
 
+    def use_tools(self, hints: HintSource) -> None:
+        """Подключить инструменты плагинов: их результат — в справке этого же хода (S-12.4)."""
+        self._tools = hints
+
     def use_memory(self, hints: HintSource) -> None:
         """Подключить долговременную память (её собирает bootstrap, когда загружены модели)."""
         self._hints = hints
 
-    async def handle(self, user_text: str, sink: ReplySink) -> TurnId:
-        """Начинает ход по реплике; текущий ход (если идёт) прерывается. Не ждёт ответа."""
+    async def handle(self, user_text: str, sink: ReplySink, *, external: bool = False) -> TurnId:
+        """Начинает ход по реплике; текущий ход (если идёт) прерывается. Не ждёт ответа.
+
+        `external` — реплика не от ведущего (зритель, таймер): ей не положены инструменты и факты о
+        ведущем, и в долговременную память она не идёт. Иначе зритель мог бы ставить таймеры и
+        выспрашивать личное, а текст «сработал таймер» запускал бы таймер снова.
+        """
         await self.cancel(CancelReason.NEW_MESSAGE)
         self._stop_prefill()
-        turn = _ActiveTurn(TurnId(next(self._ids)), user_text, sink)
+        turn = _ActiveTurn(TurnId(next(self._ids)), user_text, sink, external=external)
         self._move(TurnState.THINKING)
         turn.task = asyncio.create_task(self._run(turn))
         self._current = turn
@@ -152,7 +163,7 @@ class ConversationService:
         with turn_context(turn.id):
             try:
                 await self._bus.publish(TurnStarted(turn.id))
-                hints = TurnHints() if self._hints is None else await self._hints(turn.user_text)
+                hints = TurnHints() if turn.external else await self._turn_hints(turn.user_text)
                 prompt = self._prompts.build(self._memory.messages, turn.user_text, hints.context)
                 sink = _FirstOutputSink(
                     turn.sink, self._start_speaking, self._count_audio, self._publish_emotion(turn)
@@ -167,9 +178,22 @@ class ConversationService:
                 _log.exception("turn.crashed")
                 await self._fail(turn, INTERNAL_ERROR_MESSAGE)
             else:
-                await self._remember(Turn(turn.id, turn.user_text, turn.parser.full_text))
-                self._move(TurnState.IDLE)
-                await self._bus.publish(TurnFinished(turn.id))
+                await self._finish(turn)
+
+    async def _finish(self, turn: _ActiveTurn) -> None:
+        reply = turn.parser.full_text
+        await self._remember(Turn(turn.id, turn.user_text, reply, is_external=turn.external))
+        self._move(TurnState.IDLE)
+        await self._bus.publish(TurnFinished(turn.id))
+
+    async def _turn_hints(self, text: str) -> TurnHints:
+        sources = [hints for hints in (self._tools, self._hints) if hints is not None]
+        if not sources:
+            return TurnHints()
+        found = await asyncio.gather(*(hints(text) for hints in sources))
+        context = tuple(line for hint in found for line in hint.context)
+        temperature = next((h.temperature for h in found if h.temperature is not None), None)
+        return TurnHints(context=context, temperature=temperature)
 
     async def _fail(self, turn: _ActiveTurn, message: str) -> None:
         _log.warning("turn.failed", message=message)
@@ -179,7 +203,15 @@ class ConversationService:
     async def _stop(self, turn: _ActiveTurn, event: TurnCancelled, *, remember: bool) -> None:
         if remember:
             reply = turn.parser.full_text
-            await self._remember(Turn(turn.id, turn.user_text, reply, is_interrupted=True))
+            await self._remember(
+                Turn(
+                    turn.id,
+                    turn.user_text,
+                    reply,
+                    is_interrupted=True,
+                    is_external=turn.external,
+                )
+            )
         self._move(TurnState.CANCELLED)
         self._move(TurnState.IDLE)
         await self._bus.publish(event)

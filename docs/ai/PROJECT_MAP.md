@@ -58,7 +58,7 @@
 ## src/vtuber/application/conversation
 Сценарий «ход диалога»: реплика → промпт → конвейер → история и события.
 
-- `ConversationService` — `src/vtuber/application/conversation/service.py:50` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
+- `ConversationService` — `src/vtuber/application/conversation/service.py:51` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
 
 ## src/vtuber/application/memory
 Память витюбера: история разговора, её резюме и долговременные факты (Этап 10).
@@ -123,6 +123,11 @@
 - `integer_to_words` — `src/vtuber/application/speech/numbers.py:74` — Целое словами; `feminine` — род единиц («одна целая», «две десятых»).
 - `decimal_to_words` — `src/vtuber/application/speech/numbers.py:91` — Дробь из цифр до и после разделителя: «3», «5» → «три целых пять десятых».
 
+## src/vtuber/application/tools
+Справка хода от плагинов: результат инструмента попадает в промпт до генерации (S-12.4).
+
+- `ToolContext` — `src/vtuber/application/tools/context.py:12` — Опрашивает инструменты параллельно; не успели или упали — ход идёт без них (приоритет 1).
+
 ## src/vtuber/application/voice
 Голосовой ввод (Этап 11): нарезка речи на фразы, распознавание, перебивание.
 
@@ -148,14 +153,15 @@
 - `tts_backends` — `src/vtuber/bootstrap/container.py:51` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
 - `Conversation` — `src/vtuber/bootstrap/container.py:61` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
 - `build_conversation` — `src/vtuber/bootstrap/container.py:69` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
-- `LineSource` — `src/vtuber/bootstrap/main.py:58` — Откуда читать строки: `sys.stdin` или его тестовая замена.
-- `Console` — `src/vtuber/bootstrap/main.py:65` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
-- `main` — `src/vtuber/bootstrap/main.py:78` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
-- `run` — `src/vtuber/bootstrap/main.py:243` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
+- `LineSource` — `src/vtuber/bootstrap/main.py:59` — Откуда читать строки: `sys.stdin` или его тестовая замена.
+- `Console` — `src/vtuber/bootstrap/main.py:66` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
+- `main` — `src/vtuber/bootstrap/main.py:79` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
+- `run` — `src/vtuber/bootstrap/main.py:254` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
 - `background_memory` — `src/vtuber/bootstrap/memory.py:39` — Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
-- `running_plugins` — `src/vtuber/bootstrap/plugins.py:35` — Включённые плагины работают на время контекста; остановка — в обратном порядке.
+- `PluginServices` — `src/vtuber/bootstrap/plugins.py:33` — Что плагины дали ядру в `setup`: источники реплик и справку хода.
+- `running_plugins` — `src/vtuber/bootstrap/plugins.py:51` — Включённые плагины работают на время контекста; остановка — в обратном порядке.
 - `voice_input` — `src/vtuber/bootstrap/voice_input.py:64` — Подключает микрофон к шлюзу на время контекста; выключено в конфиге — кадры не нужны.
 
 ## src/vtuber/domain
@@ -164,7 +170,7 @@
 - `Role` — `src/vtuber/domain/dialogue.py:11` — Автор сообщения; значения совпадают с ролями OpenAI-совместимого API.
 - `Message` — `src/vtuber/domain/dialogue.py:20` — Одно сообщение контекста LLM.
 - `Turn` — `src/vtuber/domain/dialogue.py:28` — Завершённый ход: реплика пользователя и ответ витюбера.
-- `Persona` — `src/vtuber/domain/dialogue.py:42` — Характер витюбера, задаётся файлом `personas/*.toml` без правки кода (FR-11).
+- `Persona` — `src/vtuber/domain/dialogue.py:44` — Характер витюбера, задаётся файлом `personas/*.toml` без правки кода (FR-11).
 - `Emotion` — `src/vtuber/domain/emotion.py:10` — Единственный источник списка эмоций: из него строятся промпт персоны и разбор ответа.
 - `parse_tag` — `src/vtuber/domain/emotion.py:31` — Возвращает эмоцию по тегу вида `<happy>` или None, если тег неизвестен или искажён.
 - `VtuberError` — `src/vtuber/domain/errors.py:4` — Базовая ошибка приложения; сообщение говорит, что делать (R-45).
@@ -255,9 +261,9 @@
 - `configure_logging` — `src/vtuber/kernel/logging.py:23` — Настраивает structlog: одна JSON-строка на событие в `stream`.
 - `logging_to` — `src/vtuber/kernel/logging.py:45` — Логи идут в `stream` на время блока; на выходе — настройка по умолчанию.
 - `get_logger` — `src/vtuber/kernel/logging.py:58` — Логгер модуля; имя попадает в поле `module` каждого события.
-- `PluginsConfig` — `src/vtuber/kernel/plugin.py:24` — Секция `[plugins]`: что включено и настройки каждого плагина в `settings.<имя>`.
-- `PluginContext` — `src/vtuber/kernel/plugin.py:36` — Доступ плагина к ядру: подписка на события, своя секция конфига, логгер.
-- `Plugin` — `src/vtuber/kernel/plugin.py:107` — Плагин: entry point группы `vtuber.plugins` указывает на его класс или фабрику.
+- `PluginsConfig` — `src/vtuber/kernel/plugin.py:27` — Секция `[plugins]`: что включено и настройки каждого плагина в `settings.<имя>`.
+- `PluginContext` — `src/vtuber/kernel/plugin.py:40` — Доступ плагина к ядру: подписка на события, своя секция конфига, логгер.
+- `Plugin` — `src/vtuber/kernel/plugin.py:121` — Плагин: entry point группы `vtuber.plugins` указывает на его класс или фабрику.
 - `Registry` — `src/vtuber/kernel/registry.py:8` — Имя → фабрика `A → T`; например, `Registry[TTSConfig, TTSPort]` для движков TTS.
 - `TelemetryConfig` — `src/vtuber/kernel/telemetry.py:23` — Секция `[telemetry]`; `traces_file` открывает bootstrap (относительно корня проекта).
 - `Telemetry` — `src/vtuber/kernel/telemetry.py:29` — Замеряет стадии хода и отдаёт метрики в шину фоновой задачей `run`.

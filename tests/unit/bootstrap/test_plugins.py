@@ -71,6 +71,7 @@ def _cfg(*enabled: str, settings: Mapping[str, dict[str, object]] | None = None)
         enabled=enabled,
         setup_timeout_s=0.05,
         shutdown_timeout_s=0.05,
+        context_timeout_s=0.05,
         settings=dict(settings or {}),
     )
 
