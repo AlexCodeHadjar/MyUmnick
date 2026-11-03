@@ -14,7 +14,7 @@ from typing import Final
 from vtuber.domain import ConfigError
 from vtuber.kernel import (
     Command,
-    ContextProvider,
+    ContextTool,
     EventBus,
     MessageStream,
     Plugin,
@@ -35,7 +35,7 @@ class PluginServices:
     """Что плагины дали ядру в `setup`: источники реплик и справку хода."""
 
     sources: tuple[MessageStream, ...] = ()
-    contexts: tuple[ContextProvider, ...] = ()
+    contexts: tuple[ContextTool, ...] = ()
     commands: Mapping[str, Command] = field(default_factory=dict)
 
 

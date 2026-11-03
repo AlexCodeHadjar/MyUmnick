@@ -111,6 +111,13 @@ export interface ChatSend {
   data: SendData;
 }
 
+/** Ядро → UI: инструмент нашёл источники для этого ответа (FR-25). */
+export interface ChatSources {
+  v: Version;
+  type: "chat.sources";
+  data: SourcesData;
+}
+
 /** Контрольная точка. */
 export interface CheckpointData {
   name: string;
@@ -416,6 +423,17 @@ export interface SetupStateMessage {
   data: SetupData;
 }
 
+/** Откуда взят ответ. */
+export interface SourceData {
+  title: string;
+  url: string;
+}
+
+/** Источники текущего ответа. */
+export interface SourcesData {
+  sources: SourceData[];
+}
+
 /** Замер стадии хода для панели метрик (FR-15). */
 export interface SpanData {
   name: string;
@@ -480,4 +498,4 @@ export interface WatchData {
 
 export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint;
 
-export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryFacts | BranchState | ErrorMessage;
+export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryFacts | BranchState | ChatSources | ErrorMessage;

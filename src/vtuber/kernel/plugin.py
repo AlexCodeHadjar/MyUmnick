@@ -1,13 +1,20 @@
 """Контракт плагина: всё, что сторонний код видит в ядре, — `PluginContext` (FR-14, Этап 12)."""
 
 import asyncio
-from collections.abc import AsyncGenerator, Awaitable, Callable, Mapping
+from collections.abc import AsyncGenerator, Awaitable, Callable, Mapping, Sequence
+from dataclasses import dataclass
 from functools import partial
 from typing import Final, Protocol, runtime_checkable
 
 from pydantic import Field, ValidationError
 
-from vtuber.domain import ConfigError, IncomingMessage, ViewerBlocked
+from vtuber.domain import (
+    ConfigError,
+    IncomingMessage,
+    SearchSource,
+    SourcesFound,
+    ViewerBlocked,
+)
 from vtuber.kernel.bus import EventBus, Handler
 from vtuber.kernel.config import ConfigSection
 from vtuber.kernel.logging import get_logger
@@ -20,6 +27,15 @@ type MessageStream = Callable[[], AsyncGenerator[IncomingMessage]]
 
 type ContextProvider = Callable[[str], Awaitable[str | None]]
 """Справка хода по реплике, до запроса к LLM; должна успеть за `context_timeout_s`."""
+
+
+@dataclass(frozen=True, slots=True)
+class ContextTool:
+    """Инструмент и его срок; `None` — обычный короткий срок из `[plugins]`."""
+
+    provider: ContextProvider
+    timeout_s: float | None = None
+
 
 type Command = Callable[[], Awaitable[None]]
 """Команда ведущего: выполняется вместо хода, если реплика точно совпала с её текстом."""
@@ -57,7 +73,7 @@ class PluginContext:
         )
         self._closed = False
         self._sources: list[MessageStream] = []
-        self._contexts: list[ContextProvider] = []
+        self._contexts: list[ContextTool] = []
         self._commands: dict[str, Command] = {}
 
     def subscribe[E](self, event_type: type[E], handler: Handler[E]) -> None:
@@ -77,12 +93,20 @@ class PluginContext:
         """Зарегистрированные источники реплик."""
         return tuple(self._sources)
 
-    def add_context(self, provider: ContextProvider) -> None:
-        """Строка от `provider` попадает в справку хода: инструмент срабатывает до генерации."""
-        self._contexts.append(provider)
+    def add_context(self, provider: ContextProvider, *, timeout_s: float | None = None) -> None:
+        """Строка от `provider` попадает в справку хода: инструмент срабатывает до генерации.
+
+        Свой `timeout_s` нужен только долгому инструменту; ждать его будет лишь реплика, на которую
+        он сам решит работать, остальные он пропускает сразу.
+        """
+        self._contexts.append(ContextTool(provider, timeout_s))
+
+    async def report_sources(self, sources: Sequence[SearchSource]) -> None:
+        """Показать ведущему, откуда взят ответ."""
+        await self._bus.publish(SourcesFound(tuple(sources)))
 
     @property
-    def contexts(self) -> tuple[ContextProvider, ...]:
+    def contexts(self) -> tuple[ContextTool, ...]:
         """Зарегистрированные поставщики справки."""
         return tuple(self._contexts)
 

@@ -43,6 +43,14 @@
     }}
     textOf={(message: ChatMessage) => subtitler.text(message, subtitleView)}
   />
+  {#if store.sources.length > 0}
+    <p class="sources">
+      Источники:
+      {#each store.sources as source (source.url)}
+        <a href={source.url} target="_blank" rel="noreferrer">{source.title || source.url}</a>
+      {/each}
+    </p>
+  {/if}
   <div class="status">
     <span class="state" aria-live="polite">
       {#if store.hypothesis !== ""}
@@ -117,6 +125,20 @@
     border-color: #a77bc4;
     background: #3a2a44;
     opacity: 1;
+  }
+
+  .sources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 4px 16px;
+    font-size: 0.8em;
+    opacity: 0.8;
+  }
+
+  .sources a {
+    color: #8ab4ff;
   }
 
   .notice {

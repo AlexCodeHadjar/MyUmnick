@@ -30,9 +30,10 @@
 | `subscribe(EventType, handler)` | Подписка на событие из `vtuber.domain` |
 | `settings(Model)` | Секция `[plugins.settings.<имя>]`, проверенная наследником `ConfigSection` |
 | `add_source(stream)` | Источник реплик: асинхронный генератор `IncomingMessage` становится ходами диалога |
-| `add_context(provider)` | Инструмент: строка по реплике попадает в справку этого же хода; срок — `context_timeout_s` |
+| `add_context(provider)` | Инструмент: строка по реплике попадает в справку этого же хода; срок — `context_timeout_s` или свой `timeout_s` |
 | `add_command(text, command)` | Реплика ведущего, в точности равная `text`, выполняет `command` вместо хода (только `serve`) |
 | `report_blocked(author, text)` | Показать ведущему заблокированную реплику зрителя |
+| `report_sources(sources)` | Показать в чате, откуда взят ответ |
 | `log` | Логгер; события попадают в общий JSON-лог с полем `module = plugin.<имя>` |
 
 События: `TurnStarted`, `TurnFinished`, `TurnCancelled`, `TurnRemembered`, `EmotionChanged`,

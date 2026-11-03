@@ -88,6 +88,21 @@ class PhraseVoiced:
 
 
 @dataclass(frozen=True, slots=True)
+class SearchSource:
+    """Откуда взят ответ: заголовок и адрес страницы."""
+
+    title: str
+    url: str
+
+
+@dataclass(frozen=True, slots=True)
+class SourcesFound:
+    """Инструмент нашёл источники для этого ответа: UI покажет ссылки (FR-25)."""
+
+    sources: tuple[SearchSource, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class BackendNotice:
     """Сообщение пользователю о компоненте: упал, поднимается, снова работает (S-17.1)."""
 

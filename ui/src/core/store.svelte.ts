@@ -15,6 +15,7 @@ import type {
   FinishedData,
   ProgressData,
   ResourcesData,
+  SourceData,
   SetupData,
   TurnCancelledMessage,
 } from "./protocol.gen";
@@ -97,6 +98,8 @@ export class AppStore {
   memory = $state<FactsData>({ facts: [], problem: null });
   /** Ветки диалога и контрольные точки (S-16.1). */
   branches = $state<BranchesView>({ branches: [], checkpoints: [], problem: null });
+  /** Откуда взят текущий ответ; новая реплика их убирает (FR-25). */
+  sources = $state<SourceData[]>([]);
 
   #nextId = 0;
   /** Индекс сообщения текущего хода в `messages`: массив только растёт, индекс не сдвигается. */
@@ -106,6 +109,7 @@ export class AppStore {
     this.#push("user", text, null, "done");
     this.error = null;
     this.notice = null;
+    this.sources = [];
   }
 
   /** Замер стадии: от ядра (`metrics.span`) или измеренный самим UI (`ui.*`). */
@@ -153,6 +157,9 @@ export class AppStore {
         break;
       case "resources.snapshot":
         this.resources = message.data;
+        break;
+      case "chat.sources":
+        this.sources = message.data.sources;
         break;
       case "branch.state":
         this.#showBranch(message.data);

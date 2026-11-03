@@ -286,6 +286,14 @@ UI → Ядро: запомнить текущее место под имене�
 | `checkpoints` | `CheckpointData[]` |
 | `problem` | `string | null` |
 
+### `chat.sources` — `ChatSources`
+
+Ядро → UI: инструмент нашёл источники для этого ответа (FR-25).
+
+| Поле `data` | Тип |
+|---|---|
+| `sources` | `SourceData[]` |
+
 ### `error` — `ErrorMessage`
 
 Ядро → UI: ошибка; `turn` — None, если не относится к ходу (битое сообщение).

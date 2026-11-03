@@ -1,5 +1,6 @@
 """Сообщения вне хода диалога: панель ресурсов (S-12.10) и мастер первого запуска (S-13.2)."""
 
+from collections.abc import Sequence
 from typing import Literal, Self
 
 from vtuber.application.scheduler import ModelStatus, ResourceSnapshot
@@ -239,3 +240,29 @@ class BackendNoticeMessage(ProtocolModel):
     def of(cls, text: str) -> Self:
         """Сообщение с текстом."""
         return cls(data=NoticeData(text=text))
+
+
+class SourceData(ProtocolModel):
+    """Откуда взят ответ."""
+
+    title: str
+    url: str
+
+
+class SourcesData(ProtocolModel):
+    """Источники текущего ответа."""
+
+    sources: list[SourceData]
+
+
+class ChatSources(ProtocolModel):
+    """Ядро → UI: инструмент нашёл источники для этого ответа (FR-25)."""
+
+    v: Version = PROTOCOL_VERSION
+    type: Literal["chat.sources"] = "chat.sources"
+    data: SourcesData
+
+    @classmethod
+    def of(cls, sources: Sequence[tuple[str, str]]) -> Self:
+        """Сообщение из пар заголовок — адрес."""
+        return cls(data=SourcesData(sources=[SourceData(title=t, url=u) for t, u in sources]))

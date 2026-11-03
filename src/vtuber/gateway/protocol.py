@@ -10,6 +10,7 @@ from vtuber.gateway.protocol_base import PROTOCOL_VERSION, EmptyData, ProtocolMo
 from vtuber.gateway.protocol_branches import BranchCheckpoint, BranchGo, BranchState
 from vtuber.gateway.protocol_extras import (
     BackendNoticeMessage,
+    ChatSources,
     ResourcesMessage,
     ResourcesWatch,
     SetupCancel,
@@ -311,6 +312,7 @@ type OutboundMessage = Annotated[
     | MemoryErased
     | MemoryFacts
     | BranchState
+    | ChatSources
     | ErrorMessage,
     Field(discriminator="type"),
 ]

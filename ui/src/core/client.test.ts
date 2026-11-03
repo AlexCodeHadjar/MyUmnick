@@ -317,6 +317,16 @@ describe("CoreClient", () => {
     expect(client.store.branches.branches).toEqual([branch]);
   });
 
+  it("источники ответа видны и уходят с новой репликой", () => {
+    const { client, socket, frames } = connected();
+    const sources = [{ title: "Курс", url: "https://example.com" }];
+    socket.receive(JSON.stringify({ v: 1, type: "chat.sources", data: { sources } }));
+    frames.next();
+    expect(client.store.sources).toEqual(sources);
+    client.say("ещё");
+    expect(client.store.sources).toEqual([]);
+  });
+
   it("dispose() закрывает связь", () => {
     const { client, frames } = connected();
     client.dispose();

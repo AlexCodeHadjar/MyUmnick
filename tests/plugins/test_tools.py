@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from vtuber.application.tools import ToolContext
-from vtuber.kernel import EventBus, PluginContext
+from vtuber.kernel import ContextTool, EventBus, PluginContext
 from vtuber_tools import AddNote, AskTime, ListNotes, SetTimer, ToolsPlugin, detect_intent
 
 
@@ -89,5 +89,15 @@ async def test_context_collects_answers_and_survives_slow_and_broken_tools() -> 
     async def broken(_: str) -> str | None:
         raise RuntimeError
 
-    hints = await ToolContext((slow, fast, broken, silent), timeout_s=0.02).hints("который час")
+    tools = [ContextTool(tool) for tool in (slow, fast, broken, silent)]
+    hints = await ToolContext(tools, timeout_s=0.02).hints("который час")
     assert hints.context == ("Сейчас 14:05.",)
+
+
+async def test_long_tool_keeps_its_own_deadline_and_short_ones_do_not_wait() -> None:
+    async def long_tool(_: str) -> str | None:
+        await asyncio.sleep(0.05)
+        return "поиск"
+
+    tools = [ContextTool(long_tool, timeout_s=1.0)]
+    assert (await ToolContext(tools, timeout_s=0.001).hints("x")).context == ("поиск",)
