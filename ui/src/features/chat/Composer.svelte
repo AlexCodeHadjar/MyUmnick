@@ -3,6 +3,7 @@
   // Отправка во время ответа разрешена: новая реплика сама прерывает текущий ход (ADR-0002).
   import { attachmentFromFile, type Attachment } from "./image";
   import { isSendKey, isStopKey } from "./keys";
+  import { captureScreen, wantsCapture } from "./screen";
 
   const {
     busy,
@@ -20,21 +21,43 @@
   let text = $state("");
   let attached = $state<Attachment | null>(null);
   let attachProblem = $state<string | null>(null);
+  // Снимок показывается с предупреждением: на нём может быть то, что показывать не хотели.
+  let fromScreen = $state(false);
   const empty = $derived(text.trim() === "" && attached === null);
 
   function submit(): void {
     if (empty) {
       return;
     }
+    if (wantsCapture(text, attached !== null)) {
+      void shoot();
+      return;
+    }
     onsend(text, attached);
     text = "";
     attached = null;
+    fromScreen = false;
+  }
+
+  /** Реплика остаётся в поле: снимок уйдёт, только когда пользователь его увидит и отправит. */
+  async function shoot(): Promise<void> {
+    attachProblem = null;
+    try {
+      const shot = await captureScreen();
+      if (shot !== null) {
+        attached = shot;
+        fromScreen = true;
+      }
+    } catch {
+      attachProblem = "Не получилось снять экран";
+    }
   }
 
   async function attach(file: Blob): Promise<void> {
     attachProblem = null;
     try {
       attached = await attachmentFromFile(file);
+      fromScreen = false;
     } catch {
       attachProblem = "Не получилось открыть эту картинку";
     }
@@ -76,8 +99,15 @@
         class="stop"
         onclick={() => {
           attached = null;
+          fromScreen = false;
         }}>Убрать</button
       >
+      {#if fromScreen}
+        <span class="warning" role="status">
+          Снимок экрана: проверьте, нет ли на нём личного. На стриме его могут увидеть. Уйдёт только
+          по кнопке «Отправить».
+        </span>
+      {/if}
     {/if}
     {#if attachProblem !== null}
       <span role="alert">{attachProblem}</span>
@@ -110,6 +140,12 @@
       Картинка
       <input type="file" accept="image/*" onchange={onfile} />
     </label>
+    <button
+      type="button"
+      class="stop"
+      title="Выбрать окно и сделать один снимок"
+      onclick={() => void shoot()}>Экран</button
+    >
   </div>
 </form>
 
@@ -167,6 +203,11 @@
   .attached img {
     max-height: 64px;
     border-radius: 4px;
+  }
+
+  .warning {
+    font-size: 0.8em;
+    color: #ffc27a;
   }
 
   .attach {

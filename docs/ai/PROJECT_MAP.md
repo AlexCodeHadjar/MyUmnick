@@ -642,6 +642,12 @@
 - `MeasureTarget` — `ui/src/features/chat/measure.ts:7` — —
 - `measureHeight` — `ui/src/features/chat/measure.ts:27` — —
 - `MessageList.svelte` — `ui/src/features/chat/MessageList.svelte:1` — Виртуализированная история: в DOM только окно вокруг экрана (layout.ts), строки
+- `asksForScreen` — `ui/src/features/chat/screen.ts:11` — Просит ли реплика посмотреть на экран; решает только открыть диалог, снимка без него нет.
+- `wantsCapture` — `ui/src/features/chat/screen.ts:16` — Открыть ли диалог вместо отправки: снимок уже есть — значит, пользователь решает его судьбу.
+- `Stoppable` — `ui/src/features/chat/screen.ts:21` — Что нужно от потока: остановить его.
+- `ScreenSource` — `ui/src/features/chat/screen.ts:26` — Что нужно от захвата: в тестах — подмена.
+- `captureFrom` — `ui/src/features/chat/screen.ts:50` — Снимок выбранного окна; null — пользователь передумал. Захват завершается при любом исходе, чтобы
+- `captureScreen` — `ui/src/features/chat/screen.ts:70` — —
 - `SPEECH_CHARS_PER_S` — `ui/src/features/chat/subtitles.ts:10` — Темп речи до конца хода, символов на секунду звука: Silero `xenia` — ≈ 18 (замер S-7.6).
 - `SUBTITLES_KEY` — `ui/src/features/chat/subtitles.ts:12` — Ключ настройки в localStorage.
 - `SettingStorage` — `ui/src/features/chat/subtitles.ts:15` — Нужное от localStorage: в тестах — словарь.
