@@ -627,6 +627,23 @@
 - `Timers` — `ui/src/features/chat/typing.ts:10` — —
 - `TypingDebouncer` — `ui/src/features/chat/typing.ts:22` — —
 
+## ui/src/features/desktop
+Публичный API режима «персонаж поверх рабочего стола» (S-15.2).
+
+- `POLL_MS` — `ui/src/features/desktop/clickThrough.ts:9` — 10 раз в секунду: реакция незаметна глазу, а обращения к оболочке не мешают рендеру (NFR-05).
+- `ClickThrough` — `ui/src/features/desktop/clickThrough.ts:13` — —
+- `DesktopOverlay.svelte` — `ui/src/features/desktop/DesktopOverlay.svelte:1` — Кнопки режима поверх стола и работа с окном. Кнопки видны всегда, а не только над моделью:
+- `OVERLAY_SIZE` — `ui/src/features/desktop/mode.ts:9` — Размер небольшого окна с моделью, CSS-пиксели: модель видна целиком и не занимает экран.
+- `DesktopState` — `ui/src/features/desktop/mode.ts:11` — —
+- `Point` — `ui/src/features/desktop/mode.ts:16` — —
+- `WindowPort` — `ui/src/features/desktop/mode.ts:22` — Что режиму нужно от окна. Все вызовы асинхронны: это обращения к оболочке.
+- `DesktopStorage` — `ui/src/features/desktop/mode.ts:34` — Нужное от localStorage: в тестах — словарь.
+- `loadDesktop` — `ui/src/features/desktop/mode.ts:42` — Запись могла испортиться или устареть: тогда обычное окно, а не сюрприз при запуске.
+- `saveDesktop` — `ui/src/features/desktop/mode.ts:60` — —
+- `isDesktopHotkey` — `ui/src/features/desktop/mode.ts:65` — Хоткей: окно без рамки, а кнопка может оказаться за краем экрана.
+- `DESKTOP_HOTKEY_LABEL` — `ui/src/features/desktop/mode.ts:74` — —
+- `tauriWindow` — `ui/src/features/desktop/tauriWindow.ts:9` — —
+
 ## ui/src/features/memory
 Публичный API редактора памяти (R-63).
 

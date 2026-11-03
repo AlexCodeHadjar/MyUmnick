@@ -60,6 +60,9 @@ export interface AvatarRenderer {
   /** Шаг анимации и отрисовка; `deltaMs` — время с прошлого кадра. */
   update(deltaMs: number): void;
 
+  /** Над моделью ли точка сцены, CSS-пиксели: окно поверх стола пропускает клики вокруг неё. */
+  contains(x: number, y: number): boolean;
+
   /** Новый размер сцены (перетаскивание разделителя, окно): модель вписывается заново. */
   resize(size: StageSize): void;
 

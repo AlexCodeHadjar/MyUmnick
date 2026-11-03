@@ -25,6 +25,9 @@ class FakeRenderer implements AvatarRenderer {
   setSpeaking(): void {
     // Не нужен в этих тестах.
   }
+  contains(): boolean {
+    return false;
+  }
   setMouth(): void {
     // Не нужен в этих тестах.
   }

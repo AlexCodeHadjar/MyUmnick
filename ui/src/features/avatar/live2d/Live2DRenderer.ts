@@ -139,6 +139,10 @@ export class Live2DRenderer implements AvatarRenderer {
     this.#app.render();
   }
 
+  contains(x: number, y: number): boolean {
+    return this.#model?.getBounds().rectangle.contains(x, y) ?? false;
+  }
+
   resize(size: StageSize): void {
     this.#size = size;
     this.#app.renderer.resize(size.width, size.height);

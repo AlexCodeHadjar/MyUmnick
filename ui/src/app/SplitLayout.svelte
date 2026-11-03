@@ -16,7 +16,13 @@
     left,
     right,
     storage,
-  }: { left: Snippet; right: Snippet; storage: RatioStorage | undefined } = $props();
+    onlyRight = false,
+  }: {
+    left: Snippet;
+    right: Snippet;
+    storage: RatioStorage | undefined;
+    onlyRight?: boolean;
+  } = $props();
 
   const ARROW_STEPS: Partial<Record<string, number>> = {
     ArrowLeft: -KEYBOARD_STEP,
@@ -72,7 +78,10 @@
   class:dragging
   bind:this={container}
   bind:clientWidth={width}
-  style:grid-template-columns="{effective}fr 6px {1 - effective}fr"
+  class:only-right={onlyRight}
+  style:grid-template-columns={onlyRight
+    ? "0 0 1fr"
+    : `${String(effective)}fr 6px ${String(1 - effective)}fr`}
 >
   <div class="pane">{@render left()}</div>
   <!-- Фокусируемый separator — интерактивный виджет по WAI-ARIA (шаблон window splitter), а
@@ -118,6 +127,10 @@
     cursor: col-resize;
     background: #2c2c38;
     touch-action: none;
+  }
+
+  .only-right .divider {
+    display: none;
   }
 
   .divider:hover,

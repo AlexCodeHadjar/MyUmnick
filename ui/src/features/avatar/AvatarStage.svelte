@@ -12,7 +12,14 @@
     name,
     store,
     mouth = () => 0,
-  }: { name: string; store: AppStore; mouth?: MouthSource } = $props();
+    onhittest,
+  }: {
+    name: string;
+    store: AppStore;
+    mouth?: MouthSource;
+    /** Получить проверку «над моделью ли точка сцены»: окну поверх стола (S-15.2). */
+    onhittest?: (contains: (x: number, y: number) => boolean) => void;
+  } = $props();
 
   let host: HTMLDivElement | undefined = $state();
   let status = $state<AvatarStatus>({ state: "loading" });
@@ -86,6 +93,7 @@
       status = next;
     });
     session = current;
+    onhittest?.((x, y) => current.renderer?.contains(x, y) ?? false);
     // Источник рта читается при каждом кадре через замыкание: смена пропса подхватывается.
     current.mouth = (deltaMs) => mouth(deltaMs);
     // Разговор идёт, пока идёт ход или звучит голос: эмоция угасает только после речи.
