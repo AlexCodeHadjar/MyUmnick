@@ -10,8 +10,8 @@ from vtuber.ports import ReplySink
 HOLD_LIMIT: Final = 32
 """Сколько символов после «<» ждать «>»: дальше это уже не тег, а текст (T-01: не задерживать)."""
 
-_TAG_LIKE: Final = re.compile(r"<\s*[A-Za-z_]+\s*>")
-_TAG_PREFIX: Final = re.compile(r"<\s*[A-Za-z_]*\s*")
+_TAG_LIKE: Final = re.compile(r"<\s*/?\s*[A-Za-z_]+\s*>")
+_TAG_PREFIX: Final = re.compile(r"<\s*/?\s*[A-Za-z_]*\s*")
 _SPEECH_NOISE: Final = re.compile("[*_`#~\U0001f300-\U0001faff\u2600-\u27bf\ufe0f\u200d]")
 _KNOWN_TAGS: Final = tuple(item.tag for item in (*Emotion, *Gesture))
 GESTURE_GAP_CHARS: Final = 40
@@ -60,8 +60,9 @@ type ParseEvent = TextDelta | EmotionCue | GestureCue
 class StreamParser:
     """Разбирает дельты одного ответа по мере поступления (один экземпляр на ход).
 
-    Тег — только `<слово>` из латинских букв; прочие «<» — обычный текст («3 < 5»). Буфер
-    держится, лишь пока видно незакрытое «<», похожее на начало тега, и не дольше
+    Тег — только `<слово>` или `</слово>` из латинских букв: модель закрывает и теги, которых не
+    открывала (на замере 2026-11-03 в речь ушло `</thought>`); прочие «<» — обычный текст («3 < 5»).
+    Буфер держится, лишь пока видно незакрытое «<», похожее на начало тега, и не дольше
     `HOLD_LIMIT` символов. Известные теги → `EmotionCue` и `GestureCue`, неизвестные выбрасываются.
     Жест не чаще, чем через `GESTURE_GAP_CHARS` символов: лишний выбрасывается и из истории.
     """

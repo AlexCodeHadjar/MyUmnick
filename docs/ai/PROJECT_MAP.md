@@ -329,9 +329,9 @@
 - `AudioChunk` — `src/vtuber/domain/speech.py:23` — Непрерывный фрагмент PCM в формате `format`.
 - `TurnState` — `src/vtuber/domain/turn_state.py:10` — Где сейчас ход: ждём реплику, думаем, говорим, прерваны.
 - `next_state` — `src/vtuber/domain/turn_state.py:30` — Возвращает `target`, если переход из `current` разрешён.
-- `looks_like_attack` — `src/vtuber/domain/viewer.py:69` — Явная попытка отменить правила, сменить роль, выманить настройки или подделать разметку.
-- `viewer_line` — `src/vtuber/domain/viewer.py:77` — Реплика зрителя для промпта и истории; подделать кавычки и подпись из текста нельзя.
-- `is_viewer_line` — `src/vtuber/domain/viewer.py:84` — Реплика в истории — от зрителя, а не от ведущего.
+- `looks_like_attack` — `src/vtuber/domain/viewer.py:71` — Явная попытка отменить правила, сменить роль, выманить настройки или подделать разметку.
+- `viewer_line` — `src/vtuber/domain/viewer.py:79` — Реплика зрителя для промпта и истории; подделать кавычки и подпись из текста нельзя.
+- `is_viewer_line` — `src/vtuber/domain/viewer.py:86` — Реплика в истории — от зрителя, а не от ведущего.
 
 ## src/vtuber/gateway
 Шлюз: протокол UI ↔ Ядро, кодек, WebSocket-сервер и терминальный чат (M1).

@@ -1,0 +1,14 @@
+{
+ "fizzbuzz": "def fizzbuzz(n):\n    return ['FizzBuzz' if i%15==0 else 'Fizz' if i%3==0 else 'Buzz' if i%5==0 else str(i) for i in range(1,n+1)]",
+ "palindrome": "def is_palindrome(t):\n    s=[c.lower() for c in t if c.isalnum()]\n    return s==s[::-1]",
+ "merge-intervals": "def merge_intervals(items):\n    r=[]\n    for a,b in sorted(items):\n        if r and a<=r[-1][1]:\n            r[-1][1]=max(r[-1][1],b)\n        else:\n            r.append([a,b])\n    return r",
+ "lru-cache": "from collections import OrderedDict\nclass LRUCache:\n    def __init__(self,c):\n        self.c=c;self.d=OrderedDict()\n    def get(self,k):\n        if k not in self.d: return -1\n        self.d.move_to_end(k);return self.d[k]\n    def put(self,k,v):\n        self.d[k]=v;self.d.move_to_end(k)\n        if len(self.d)>self.c: self.d.popitem(last=False)",
+ "binary-search": "import bisect\ndef binary_search(a,t):\n    i=bisect.bisect_left(a,t)\n    return i if i<len(a) and a[i]==t else -1",
+ "topo-sort": "def topo_sort(g):\n    o=[];s={}\n    def v(n):\n        if s.get(n)==1: raise ValueError\n        if s.get(n)==2: return\n        s[n]=1\n        for d in g.get(n,[]): v(d)\n        s[n]=2;o.append(n)\n    for n in g: v(n)\n    return o",
+ "parse-csv-line": "def parse_csv_line(l):\n    r=[];f='';q=False;i=0\n    while i<len(l):\n        c=l[i]\n        if q and c=='\"' and l[i+1:i+2]=='\"':\n            f+='\"';i+=1\n        elif c=='\"':\n            q=not q\n        elif c==',' and not q:\n            r.append(f);f=''\n        else:\n            f+=c\n        i+=1\n    r.append(f)\n    return r",
+ "roman": "def to_roman(n):\n    r=''\n    for v,s in [(1000,'M'),(900,'CM'),(500,'D'),(400,'CD'),(100,'C'),(90,'XC'),(50,'L'),(40,'XL'),(10,'X'),(9,'IX'),(5,'V'),(4,'IV'),(1,'I')]:\n        while n>=v:\n            r+=s;n-=v\n    return r",
+ "dijkstra": "import heapq\ndef shortest_path(g,s,t):\n    d={s:0};h=[(0,s)]\n    while h:\n        c,n=heapq.heappop(h)\n        if n==t: return c\n        for m,w in g.get(n,{}).items():\n            if c+w<d.get(m,float('inf')):\n                d[m]=c+w;heapq.heappush(h,(c+w,m))\n    return None",
+ "async-gather-limit": "import asyncio\nasync def gather_limited(l,fs):\n    s=asyncio.Semaphore(l)\n    async def r(f):\n        async with s:\n            return await f()\n    return await asyncio.gather(*(r(f) for f in fs))",
+ "fix-bug": "def second_largest(items):\n    u=sorted(set(items))\n    return u[-2] if len(u)>1 else None",
+ "word-count": "import re\nfrom collections import Counter\ndef top_words(t,n):\n    c=Counter(re.findall(r'[a-z]+',t.lower()))\n    return sorted(c.items(),key=lambda x:(-x[1],x[0]))[:n]"
+}

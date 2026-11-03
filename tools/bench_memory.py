@@ -114,10 +114,20 @@ async def _bench(
         ):
             await seed(store, embedder, args.facts)
             recall = MemoryRecall(embedder, store, memory.retrieval, Telemetry(EventBus()))
-            for ask in [*asks] * args.runs:
-                plain = await first_token_ms(llm, prompts, ask, None)
-                timings.append(Timing(ask, plain, await first_token_ms(llm, prompts, ask, recall)))
+            for index, ask in enumerate([*asks] * args.runs):
+                timings.append(await _pair(llm, prompts, ask, recall, memory_first=index % 2 == 1))
     return timings
+
+
+async def _pair(
+    llm: LLMPort, prompts: PromptBuilder, ask: str, recall: MemoryRecall, *, memory_first: bool
+) -> Timing:
+    """Порядок чередуется: при постоянном (2026-11-03) память незаслуженно выигрывала 100 мс."""
+    if memory_first:
+        with_memory = await first_token_ms(llm, prompts, ask, recall)
+        return Timing(ask, await first_token_ms(llm, prompts, ask, None), with_memory)
+    plain = await first_token_ms(llm, prompts, ask, None)
+    return Timing(ask, plain, await first_token_ms(llm, prompts, ask, recall))
 
 
 def _parse(argv: Sequence[str]) -> argparse.Namespace:

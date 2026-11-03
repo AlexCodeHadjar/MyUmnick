@@ -71,6 +71,19 @@ def test_assistant_check_names_the_problem(outcome: Outcome, word: str) -> None:
     assert word in outcome.problem
 
 
+def test_test_data_is_not_ignored_by_git() -> None:
+    git = shutil.which("git")
+    if git is None:
+        pytest.skip("нет git")
+    done = subprocess.run(  # noqa: S603 — только проверка правила
+        [git, "check-ignore", "tests/data/recorded_replies_gemma4.json"],
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
+    )
+    assert done.returncode == 1, "git archive не повезёт эти файлы на сервер"
+
+
 def test_extra_models_are_pinned_and_verifiable() -> None:
     rows = [
         line.split("\t")

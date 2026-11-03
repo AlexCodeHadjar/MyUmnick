@@ -30,8 +30,10 @@ def test_missing_wrong_or_late_tag_does_not_fit() -> None:
     assert not late.fitting
 
 
-def test_closing_tag_that_parser_passes_through_is_a_leak() -> None:
-    assert judge(CASE, "<sad>Жаль</sad>, правда.").leaked == ("</sad>",)
+def test_closing_tag_does_not_reach_text_or_speech() -> None:
+    result = judge(CASE, "<thinking>Жаль</thought>, правда.</sad>")
+    assert result.leaked == ()
+    assert result.shown == "Жаль, правда."
 
 
 def test_report_counts_and_lists_failures() -> None:
@@ -76,3 +78,7 @@ def test_cli_reports_unavailable_server_with_exit_code_2(tmp_path: Path) -> None
     env = {"VTUBER_LLM__BASE_URL": "http://127.0.0.1:9", "VTUBER_LLM__CONNECT_TIMEOUT_S": "0.2"}
 
     assert main(["--cases", str(cases)], env, output) == 2
+
+
+def test_leak_check_still_sees_bracket_markup() -> None:
+    assert judge(CASE, "<sad>Жаль [think], правда.").leaked == ("[think]",)
