@@ -35,6 +35,7 @@ class ModelState(StrEnum):
     UNLOADED = "unloaded"
     IDLE = "idle"
     IN_USE = "in_use"
+    WAITING = "waiting"
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,3 +54,15 @@ class ModelStatus:
     spec: ModelSpec
     state: ModelState
     users: int
+    waiting_reason: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ResourceSnapshot:
+    """Что сейчас в видеопамяти: для панели ресурсов (S-12.10)."""
+
+    models: tuple[ModelStatus, ...]
+    pinned: tuple[tuple[str, int], ...]
+    limit_mb: int
+    capacity_mb: int
+    free_mb: int

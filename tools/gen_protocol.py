@@ -74,6 +74,13 @@ def ts_type(schema: Schema) -> str:
     variants = schema.get("enum") or schema.get("anyOf") or schema.get("oneOf")
     if isinstance(variants, list):
         return " | ".join(_variant(variant) for variant in variants)
+    return _list_or_scalar(schema)
+
+
+def _list_or_scalar(schema: Schema) -> str:
+    items = schema.get("items")
+    if isinstance(items, dict):
+        return f"{ts_type(items)}[]"
     return KIND_TS.get(str(schema.get("type", "")), "unknown")
 
 

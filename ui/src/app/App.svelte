@@ -9,12 +9,14 @@
   import { Chat } from "../features/chat";
   import { MicControl } from "../features/mic";
   import { isMetricsHotkey, METRICS_HOTKEY_LABEL, MetricsPanel } from "../features/metrics";
+  import { isResourcesHotkey, RESOURCES_HOTKEY_LABEL, ResourcesPanel } from "../features/resources";
   import SplitLayout from "./SplitLayout.svelte";
   import StatusBar from "./StatusBar.svelte";
 
   const { client }: { client: CoreClient } = $props();
 
   let showMetrics = $state(false);
+  let showResources = $state(false);
   // Не реактивен: рот опрашивается каждый кадр из цикла аватара, а не через Svelte (R-66).
   let player: VoicePlayer | null = null;
 
@@ -49,6 +51,9 @@
     if (isMetricsHotkey(event)) {
       event.preventDefault();
       showMetrics = !showMetrics;
+    } else if (isResourcesHotkey(event)) {
+      event.preventDefault();
+      showResources = !showResources;
     } else if (event.key === "Escape" && !event.isComposing) {
       // Ход в ядре мог уже закончиться (кнопки «Стоп» нет), а голос ещё звучит — Esc его глушит.
       player?.cancel(null);
@@ -87,10 +92,18 @@
             }}
           />
         {/if}
+        {#if showResources}
+          <ResourcesPanel
+            {client}
+            onclose={() => {
+              showResources = false;
+            }}
+          />
+        {/if}
       </section>
     {/snippet}
   </SplitLayout>
-  <StatusBar store={client.store} hint={METRICS_HOTKEY_LABEL}>
+  <StatusBar store={client.store} hint={`${METRICS_HOTKEY_LABEL}, ${RESOURCES_HOTKEY_LABEL}`}>
     <MicControl {client} storage={layoutStorage()} />
   </StatusBar>
 </main>

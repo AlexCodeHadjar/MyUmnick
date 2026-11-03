@@ -195,6 +195,18 @@ describe("CoreClient", () => {
     expect(cancelled).toEqual([null]);
   });
 
+  it("снимок ресурсов — в store, закрытая панель его сбрасывает", () => {
+    const { client, socket, frames } = connected();
+    client.watchResources(true);
+    expect(socket.sent).toEqual([{ v: 1, type: "resources.watch", data: { enabled: true } }]);
+    const data = { limit_mb: 1, capacity_mb: 1, free_mb: 1, pinned: [], models: [] };
+    socket.receive(JSON.stringify({ v: 1, type: "resources.snapshot", data }));
+    frames.next();
+    expect(client.store.resources).toEqual(data);
+    client.watchResources(false);
+    expect(client.store.resources).toBeNull();
+  });
+
   it("dispose() закрывает связь", () => {
     const { client, frames } = connected();
     client.dispose();

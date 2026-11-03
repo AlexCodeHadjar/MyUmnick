@@ -9,6 +9,7 @@ import type {
   Emotion,
   ErrorData,
   OutboundMessage,
+  ResourcesData,
   TurnCancelledMessage,
 } from "./protocol.gen";
 import type { ConnectionState } from "./transport";
@@ -64,6 +65,8 @@ export class AppStore {
   voice = $state<VoiceState>({ speech: null });
   /** Промежуточный текст фразы, которую сейчас говорит пользователь (Этап 11). */
   hypothesis = $state("");
+  /** Последний снимок видеопамяти; приходит, только пока панель ресурсов открыта. */
+  resources = $state<ResourcesData | null>(null);
 
   #nextId = 0;
   /** Индекс сообщения текущего хода в `messages`: массив только растёт, индекс не сдвигается. */
@@ -116,6 +119,9 @@ export class AppStore {
         break;
       case "turn.cancelled":
         this.#cancelTurn(message);
+        break;
+      case "resources.snapshot":
+        this.resources = message.data;
         break;
       case "metrics.span":
         this.recordSpan(message.data.name, message.data.ms);

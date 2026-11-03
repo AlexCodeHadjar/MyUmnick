@@ -144,6 +144,14 @@ export class CoreClient {
     this.#transport.send({ v: PROTOCOL_VERSION, type: "input.typing", data: { text } });
   }
 
+  /** Панель ресурсов открыли или закрыли: снимки идут только при открытой. */
+  watchResources(enabled: boolean): void {
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "resources.watch", data: { enabled } });
+    if (!enabled) {
+      this.store.resources = null;
+    }
+  }
+
   stop(): void {
     // Звук глушится сразу, не дожидаясь `turn.cancelled`: ход мог уже закончиться в ядре, а
     // голос ещё звучит (синтез быстрее реального времени).

@@ -45,6 +45,7 @@ from vtuber.gateway.protocol import (
     TypingData,
     turn_ref,
 )
+from vtuber.gateway.resources_feed import ResourcesFeed
 from vtuber.gateway.server import REPLACED_CODE, GatewayConfig, GatewayServer, MicSink
 from vtuber.gateway.sink import WsReplySink
 from vtuber.gateway.terminal import EXIT_COMMAND, STOP_COMMAND, TerminalChat, TerminalSink
@@ -84,6 +85,7 @@ __all__ = [
     "MicFrame",
     "MicSink",
     "OutboundMessage",
+    "ResourcesFeed",
     "SendData",
     "SpanData",
     "Status",

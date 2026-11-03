@@ -3,7 +3,7 @@ export { CoreClient, type AudioSink, type CancelSink, type CoreClientOptions } f
 export { type AudioFrame } from "./frames";
 export { FIRST_AUDIO_SPAN, FIRST_CHAR_SPAN } from "./probe";
 export { int16ToFloat, StreamResampler } from "./resample";
-export type { BackendState, Component, Emotion } from "./protocol.gen";
+export type { BackendState, Component, Emotion, ResourcesData } from "./protocol.gen";
 export {
   AppStore,
   SPAN_HISTORY,

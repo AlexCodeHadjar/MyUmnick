@@ -7,6 +7,7 @@ from vtuber.application.scheduler.resource_types import (
     ModelStatus,
     Priority,
     ResourcesConfig,
+    ResourceSnapshot,
 )
 from vtuber.application.scheduler.resources import ResourceManager
 
@@ -18,6 +19,7 @@ __all__ = [
     "ModelStatus",
     "Priority",
     "ResourceManager",
+    "ResourceSnapshot",
     "ResourcesConfig",
     "SchedulerConfig",
 ]

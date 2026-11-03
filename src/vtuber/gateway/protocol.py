@@ -5,6 +5,7 @@ from typing import Annotated, Final, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from vtuber.application.scheduler import ModelStatus, ResourceSnapshot
 from vtuber.domain import BackendState, CancelReason, Component, Emotion, TurnId
 
 PROTOCOL_VERSION: Final = 1
@@ -111,7 +112,23 @@ class InputTyping(_Model):
     data: TypingData
 
 
-type InboundMessage = Annotated[ChatSend | ChatCancel | InputTyping, Field(discriminator="type")]
+class WatchData(_Model):
+    """Открыта ли панель ресурсов."""
+
+    enabled: bool
+
+
+class ResourcesWatch(_Model):
+    """UI → Ядро: панель ресурсов открыли или закрыли; закрытая ничего не считает."""
+
+    v: Version
+    type: Literal["resources.watch"]
+    data: WatchData
+
+
+type InboundMessage = Annotated[
+    ChatSend | ChatCancel | InputTyping | ResourcesWatch, Field(discriminator="type")
+]
 
 
 class TurnStartedMessage(_Model):
@@ -250,6 +267,66 @@ class InputFinal(_Model):
         return cls(data=DeltaData(text=text))
 
 
+class PinnedModelData(_Model):
+    """Закреплённая модель: основная LLM, распознавание речи."""
+
+    name: str
+    vram_mb: int
+
+
+class ManagedModelData(_Model):
+    """Модель под управлением менеджера; `waiting_reason` — почему ждёт."""
+
+    name: str
+    vram_mb: int
+    priority: str
+    state: str
+    users: int
+    waiting_reason: str | None
+
+
+class ResourcesData(_Model):
+    """Снимок видеопамяти: `limit_mb` учитывает другие программы, `capacity_mb` — только конфиг."""
+
+    limit_mb: int
+    capacity_mb: int
+    free_mb: int
+    pinned: list[PinnedModelData]
+    models: list[ManagedModelData]
+
+
+class ResourcesMessage(_Model):
+    """Ядро → UI: снимок для панели ресурсов, только пока она открыта (S-12.10)."""
+
+    v: Version = PROTOCOL_VERSION
+    type: Literal["resources.snapshot"] = "resources.snapshot"
+    data: ResourcesData
+
+    @classmethod
+    def of(cls, snapshot: ResourceSnapshot) -> Self:
+        """Сообщение из снимка менеджера."""
+        return cls(
+            data=ResourcesData(
+                limit_mb=snapshot.limit_mb,
+                capacity_mb=snapshot.capacity_mb,
+                free_mb=snapshot.free_mb,
+                pinned=[PinnedModelData(name=n, vram_mb=mb) for n, mb in snapshot.pinned],
+                models=[_model_data(status) for status in snapshot.models],
+            )
+        )
+
+
+def _model_data(status: ModelStatus) -> ManagedModelData:
+    return ManagedModelData(
+        name=status.spec.name,
+        vram_mb=status.spec.vram_mb,
+        priority=status.spec.priority.name.lower(),
+        state=status.state.value,
+        users=status.users,
+        waiting_reason=status.waiting_reason,
+    )
+
+
 class ErrorMessage(_Model):
     """Ядро → UI: ошибка; `turn` — None, если не относится к ходу (битое сообщение)."""
 
@@ -275,6 +352,7 @@ type OutboundMessage = Annotated[
     | InputBargeIn
     | InputHypothesis
     | InputFinal
+    | ResourcesMessage
     | ErrorMessage,
     Field(discriminator="type"),
 ]

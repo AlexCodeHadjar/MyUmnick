@@ -30,7 +30,9 @@ def test_ts_has_every_message_and_both_unions() -> None:
 
     for name in ("ChatSend", "ChatCancel", "ChatDelta", "AvatarEmotion", "Status", "ErrorMessage"):
         assert f"export interface {name} {{" in ts
-    assert "export type InboundMessage = ChatSend | ChatCancel | InputTyping;" in ts
+    assert (
+        "export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch;" in ts
+    )
     assert "export type OutboundMessage = TurnStartedMessage | ChatDelta" in ts
     assert 'type: "chat.delta";' in ts
     assert "turn: string | null;" in ts
@@ -62,3 +64,8 @@ def test_check_reports_stale_files_until_regenerated(
 
 def test_repository_generated_files_are_up_to_date() -> None:
     assert stale_files() == []
+
+
+def test_ts_type_of_list_of_models() -> None:
+    schema = {"type": "array", "items": {"$ref": "#/$defs/PinnedModelData"}}
+    assert ts_type(schema) == "PinnedModelData[]"

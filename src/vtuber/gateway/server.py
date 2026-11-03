@@ -28,12 +28,14 @@ from vtuber.gateway.protocol import (
     ErrorMessage,
     MetricsSpan,
     OutboundMessage,
+    ResourcesWatch,
     Status,
     TurnCancelledMessage,
     TurnFinishedMessage,
     TurnStartedMessage,
     turn_ref,
 )
+from vtuber.gateway.resources_feed import ResourcesFeed
 from vtuber.gateway.sink import WsReplySink
 from vtuber.kernel import ConfigSection, EventBus, get_logger
 
@@ -66,6 +68,7 @@ class GatewayServer:
         self._server: Server | None = None
         self._statuses: dict[Component, BackendState] = {}
         self._mic: MicSink | None = None
+        self._resources: ResourcesFeed | None = None
         self._commands: Mapping[str, Callable[[], Awaitable[None]]] = {}
         bus.subscribe(TurnStarted, self._on_started)
         bus.subscribe(TurnFinished, self._on_finished)
@@ -76,6 +79,10 @@ class GatewayServer:
     def use_commands(self, commands: Mapping[str, Callable[[], Awaitable[None]]]) -> None:
         """Команды ведущего от плагинов: точная реплика выполняет команду вместо хода."""
         self._commands = commands
+
+    def use_resources(self, feed: ResourcesFeed) -> None:
+        """Снимки менеджера ресурсов для панели UI."""
+        self._resources = feed
 
     def on_mic(self, sink: MicSink) -> None:
         """Куда отдавать кадры микрофона; вызов — в цикле чтения сокета, должен быть быстрым."""
@@ -143,6 +150,8 @@ class GatewayServer:
         finally:
             if self._client is connection:
                 self._client = None
+                if self._resources is not None:
+                    self._resources.set_enabled(enabled=False)
                 await self._service.cancel(CancelReason.USER_STOP)
 
     async def _dispatch(self, raw: str | bytes) -> None:
@@ -158,6 +167,9 @@ class GatewayServer:
             await self._on_chat(message.data.text)
         elif isinstance(message, ChatCancel):
             await self._service.cancel(CancelReason.USER_STOP)
+        elif isinstance(message, ResourcesWatch):
+            if self._resources is not None:
+                self._resources.set_enabled(enabled=message.data.enabled)
         else:
             # Черновик — только прогрев кэша (T-05): ответа UI не ждёт, шлюз не блокируется.
             self._service.typing(message.data.text)

@@ -61,6 +61,7 @@ const OUTBOUND_TYPES = {
   "input.barge_in": true,
   "input.hypothesis": true,
   "input.final": true,
+  "resources.snapshot": true,
   error: true,
 } satisfies Record<OutboundMessage["type"], true>;
 

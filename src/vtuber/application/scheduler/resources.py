@@ -19,6 +19,7 @@ from vtuber.application.scheduler.resource_types import (
     ModelStatus,
     Priority,
     ResourcesConfig,
+    ResourceSnapshot,
 )
 from vtuber.domain import (
     ConfigError,
@@ -34,7 +35,7 @@ from vtuber.ports import GpuProbe, ManagedModel
 _log = get_logger(__name__)
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, eq=False)
 class _Entry:
     spec: ModelSpec
     model: ManagedModel
@@ -65,7 +66,7 @@ class ResourceManager:
         self._entries: dict[str, _Entry] = {}
         self._transition = asyncio.Lock()
         self._changed = asyncio.Event()
-        self._waiting: list[Priority] = []
+        self._waiting: list[_Entry] = []
         self._dialog_active = False
 
     async def __aenter__(self) -> Self:
@@ -133,12 +134,29 @@ class ResourceManager:
         bus.subscribe(TurnFinished, self._on_ended)
         bus.subscribe(TurnCancelled, self._on_ended)
 
-    def snapshot(self) -> tuple[ModelStatus, ...]:
-        """Что сейчас с каждой моделью."""
-        return tuple(
-            ModelStatus(entry.spec, _state_of(entry), entry.users)
-            for entry in self._entries.values()
+    def snapshot(self) -> ResourceSnapshot:
+        """Что сейчас с каждой моделью, лимиты и закреплённое."""
+        return ResourceSnapshot(
+            models=tuple(self._status(entry) for entry in self._entries.values()),
+            pinned=tuple(self._cfg.pinned.items()),
+            limit_mb=self.limit_mb(),
+            capacity_mb=self._capacity_mb,
+            free_mb=self._free_mb(),
         )
+
+    def _status(self, entry: _Entry) -> ModelStatus:
+        if entry in self._waiting:
+            reason = self._waiting_reason(entry)
+            return ModelStatus(entry.spec, ModelState.WAITING, entry.users, reason)
+        return ModelStatus(entry.spec, _state_of(entry), entry.users)
+
+    def _waiting_reason(self, entry: _Entry) -> str:
+        priority = entry.spec.priority
+        if priority is Priority.BACKGROUND and self._dialog_active:
+            return "идёт ход диалога"
+        if any(other.spec.priority > priority for other in self._waiting):
+            return "вперёд идёт более важная задача"
+        return "не хватает видеопамяти" if not self._has_room(entry) else "очередь загрузки"
 
     @asynccontextmanager
     async def use(self, name: str) -> AsyncIterator[None]:
@@ -210,8 +228,7 @@ class ResourceManager:
             raise ResourceUnavailable(msg) from exc
 
     async def _claim(self, entry: _Entry) -> None:
-        priority = entry.spec.priority
-        self._waiting.append(priority)
+        self._waiting.append(entry)
         try:
             while True:
                 async with self._transition:
@@ -221,14 +238,14 @@ class ResourceManager:
                 self._changed.clear()
                 await self._changed.wait()
         finally:
-            self._waiting.remove(priority)
+            self._waiting.remove(entry)
             self._changed.set()
 
     def _may_start(self, entry: _Entry) -> bool:
         priority = entry.spec.priority
         if priority is Priority.BACKGROUND and self._dialog_active:
             return False
-        if any(other > priority for other in self._waiting):
+        if any(other.spec.priority > priority for other in self._waiting):
             return False
         return entry.loaded or self._has_room(entry)
 

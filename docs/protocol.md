@@ -31,6 +31,14 @@ UI → Ядро: черновик реплики (с дебаунсом ~300 м�
 |---|---|
 | `text` | `string` |
 
+### `resources.watch` — `ResourcesWatch`
+
+UI → Ядро: панель ресурсов открыли или закрыли; закрытая ничего не считает.
+
+| Поле `data` | Тип |
+|---|---|
+| `enabled` | `boolean` |
+
 ## Ядро → UI
 
 ### `turn.started` — `TurnStartedMessage`
@@ -110,6 +118,18 @@ UI → Ядро: черновик реплики (с дебаунсом ~300 м�
 | Поле `data` | Тип |
 |---|---|
 | `text` | `string` |
+
+### `resources.snapshot` — `ResourcesMessage`
+
+Ядро → UI: снимок для панели ресурсов, только пока она открыта (S-12.10).
+
+| Поле `data` | Тип |
+|---|---|
+| `limit_mb` | `number` |
+| `capacity_mb` | `number` |
+| `free_mb` | `number` |
+| `pinned` | `PinnedModelData[]` |
+| `models` | `ManagedModelData[]` |
 
 ### `error` — `ErrorMessage`
 

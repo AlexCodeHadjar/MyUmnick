@@ -99,10 +99,10 @@ async def test_model_loads_on_demand_and_stays_for_next_use() -> None:
     log: list[str] = []
     manager = _manager()
     _add(manager, log, "код", 3000)
-    assert manager.snapshot()[0].state is ModelState.UNLOADED
+    assert manager.snapshot().models[0].state is ModelState.UNLOADED
     async with manager.use("код"):
-        assert manager.snapshot()[0].state is ModelState.IN_USE
-    assert manager.snapshot()[0].state is ModelState.IDLE
+        assert manager.snapshot().models[0].state is ModelState.IN_USE
+    assert manager.snapshot().models[0].state is ModelState.IDLE
     async with manager.use("код"):
         pass
     assert log == ["load код"]

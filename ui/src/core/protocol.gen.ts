@@ -109,12 +109,51 @@ export interface InputTyping {
   data: TypingData;
 }
 
+/** Модель под управлением менеджера; `waiting_reason` — почему ждёт. */
+export interface ManagedModelData {
+  name: string;
+  vram_mb: number;
+  priority: string;
+  state: string;
+  users: number;
+  waiting_reason: string | null;
+}
+
 /** Ядро → UI: замер стадии; `turn` — None вне хода (прогрев). */
 export interface MetricsSpan {
   v: Version;
   type: "metrics.span";
   turn: string | null;
   data: SpanData;
+}
+
+/** Закреплённая модель: основная LLM, распознавание речи. */
+export interface PinnedModelData {
+  name: string;
+  vram_mb: number;
+}
+
+/** Снимок видеопамяти: `limit_mb` учитывает другие программы, `capacity_mb` — только конфиг. */
+export interface ResourcesData {
+  limit_mb: number;
+  capacity_mb: number;
+  free_mb: number;
+  pinned: PinnedModelData[];
+  models: ManagedModelData[];
+}
+
+/** Ядро → UI: снимок для панели ресурсов, только пока она открыта (S-12.10). */
+export interface ResourcesMessage {
+  v: Version;
+  type: "resources.snapshot";
+  data: ResourcesData;
+}
+
+/** UI → Ядро: панель ресурсов открыли или закрыли; закрытая ничего не считает. */
+export interface ResourcesWatch {
+  v: Version;
+  type: "resources.watch";
+  data: WatchData;
 }
 
 /** Реплика пользователя. */
@@ -172,6 +211,11 @@ export interface TypingData {
 
 export type Version = 1;
 
-export type InboundMessage = ChatSend | ChatCancel | InputTyping;
+/** Открыта ли панель ресурсов. */
+export interface WatchData {
+  enabled: boolean;
+}
 
-export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ErrorMessage;
+export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch;
+
+export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | ErrorMessage;
