@@ -82,6 +82,25 @@
 10. **[И]** S-2.5: таблица в ADR-0004, модель в `config/default.toml`, `docs/licenses.md`,
     галочки S-2.4/S-2.5, STATE, коммит.
 
+## Клонирование голоса
+
+Сравнение Qwen3-TTS Base (0.6B, 1.7B), OmniVoice и Chatterbox на образцах с разрешения автора голоса.
+Образцы и результат — вне git. Скрипт на сервере ставит окружения движков, в проект они не входят.
+
+```bash
+# на своём ПК: образцы в data/voice_refs/silv/, текст в prepared/refs.json стоит проверить
+uv run --group stt python scripts/remote/clone_voice.py prepare data/voice_refs/silv
+tar -c data/voice_refs/silv/prepared | ssh -i ~/.ssh/gpunz_ed25519 -p PORT USER@HOST 'tar -x -C /workspace/vruber'
+# на сервере, в tmux; ENGINES='omni' — только выбранные
+bash /workspace/vruber/scripts/remote/clone_voice.sh 2>&1 | tee /workspace/clone.log
+# на своём ПК: забрать страницу для прослушивания
+ssh -i ~/.ssh/gpunz_ed25519 -p PORT USER@HOST 'tar -C /workspace/vruber/bench/results/tts_samples -c clone' \
+  | tar -x -C bench/results/tts_samples
+```
+
+Фраза `1_korotko` без потокового режима показывает задержку первой фразы; бюджет TTFA — ≤ 800 мс вместе
+с TTFT. VRAM считается без LLM: выбранный движок перепроверить рядом с запущенной моделью.
+
 ## Если что-то пошло не так
 
 - **Обрыв SSH** — задачи в `tmux` продолжают работать; переподключиться, `tmux ls`,
