@@ -1,11 +1,13 @@
 import asyncio
 import base64
+import contextlib
 import hashlib
 import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from websockets.asyncio.server import ServerConnection, serve
+from websockets.exceptions import ConnectionClosed
 
 from vtuber.domain import (
     CancelReason,
@@ -42,8 +44,9 @@ class _FakeObs:
         self.identify = json.loads(await ws.recv())["d"]
         await ws.send(json.dumps({"op": 2, "d": {"negotiatedRpcVersion": 1}}))
         self.ready.set()
-        async for frame in ws:
-            self.requests.append(json.loads(frame)["d"])
+        with contextlib.suppress(ConnectionClosed):
+            async for frame in ws:
+                self.requests.append(json.loads(frame)["d"])
 
     def subtitles(self) -> list[object]:
         return [
@@ -84,20 +87,20 @@ async def test_identifies_with_password() -> None:
 
 async def test_subtitle_appears_when_phrase_sounds_and_clears_after_it() -> None:
     async with _plugin(subtitle_input="Субтитры") as (bus, obs):
-        await bus.publish(PhraseVoiced("Первая.", starts_in_s=0.05, duration_s=0.05))
-        await asyncio.sleep(0.02)
+        await bus.publish(PhraseVoiced("Первая.", starts_in_s=0.3, duration_s=0.3))
+        await asyncio.sleep(0.1)
         assert obs.subtitles() == []  # звук ещё не начался
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(0.3)
         assert obs.subtitles() == ["Первая."]
-        await asyncio.sleep(0.08)
+        await asyncio.sleep(0.4)
         assert obs.subtitles() == ["Первая.", ""]
 
 
 async def test_next_phrase_is_not_erased_by_previous_one() -> None:
     async with _plugin(subtitle_input="Субтитры") as (bus, obs):
-        await bus.publish(PhraseVoiced("Первая.", starts_in_s=0.0, duration_s=0.05))
-        await bus.publish(PhraseVoiced("Вторая.", starts_in_s=0.05, duration_s=0.05))
-        await asyncio.sleep(0.15)
+        await bus.publish(PhraseVoiced("Первая.", starts_in_s=0.0, duration_s=0.2))
+        await bus.publish(PhraseVoiced("Вторая.", starts_in_s=0.2, duration_s=0.2))
+        await asyncio.sleep(0.6)
         assert obs.subtitles() == ["Первая.", "Вторая.", ""]
 
 

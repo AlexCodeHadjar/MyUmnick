@@ -1,6 +1,6 @@
 """WebSocket-сервер шлюза: один клиент-UI, входящие → сервис хода, события шины → клиенту."""
 
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from types import TracebackType
 from typing import Final, Self
 
@@ -66,11 +66,16 @@ class GatewayServer:
         self._server: Server | None = None
         self._statuses: dict[Component, BackendState] = {}
         self._mic: MicSink | None = None
+        self._commands: Mapping[str, Callable[[], Awaitable[None]]] = {}
         bus.subscribe(TurnStarted, self._on_started)
         bus.subscribe(TurnFinished, self._on_finished)
         bus.subscribe(TurnCancelled, self._on_cancelled)
         bus.subscribe(MetricRecorded, self._on_metric)
         bus.subscribe(BackendStatusChanged, self._on_status)
+
+    def use_commands(self, commands: Mapping[str, Callable[[], Awaitable[None]]]) -> None:
+        """Команды ведущего от плагинов: точная реплика выполняет команду вместо хода."""
+        self._commands = commands
 
     def on_mic(self, sink: MicSink) -> None:
         """Куда отдавать кадры микрофона; вызов — в цикле чтения сокета, должен быть быстрым."""
@@ -150,12 +155,24 @@ class GatewayServer:
             await self.send(ErrorMessage.of(None, ErrorCode.BAD_MESSAGE, str(exc)))
             return
         if isinstance(message, ChatSend):
-            await self._service.handle(message.data.text, WsReplySink(self.send, self.send_bytes))
+            await self._on_chat(message.data.text)
         elif isinstance(message, ChatCancel):
             await self._service.cancel(CancelReason.USER_STOP)
         else:
             # Черновик — только прогрев кэша (T-05): ответа UI не ждёт, шлюз не блокируется.
             self._service.typing(message.data.text)
+
+    async def _on_chat(self, text: str) -> None:
+        command = self._commands.get(text.strip())
+        if command is None:
+            await self._service.handle(text, WsReplySink(self.send, self.send_bytes))
+            return
+        # UI заглушил голос сразу при отправке реплики: ход без звука дописывать незачем.
+        await self._service.cancel(CancelReason.USER_STOP)
+        try:
+            await command()
+        except Exception:  # noqa: BLE001 — R-42: команду написал плагин, шлюз должен жить
+            _log.exception("gateway.command_failed", command=text)
 
     async def _on_mic_frame(self, raw: bytes) -> None:
         try:

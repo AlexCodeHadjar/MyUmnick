@@ -10,15 +10,17 @@ from vtuber.domain import IncomingMessage
 from vtuber.kernel import ConfigSection, PluginContext
 from vtuber.ports import MessageSource
 from vtuber_stream_chat.selection import (
+    EVENT_SOURCE,
     ChatFilterConfig,
     ChatQueue,
     ChatQueueConfig,
     RateLimiter,
     passes_filter,
 )
-from vtuber_stream_chat.twitch import TwitchChat, parse_privmsg
+from vtuber_stream_chat.twitch import TwitchChat, parse_privmsg, parse_twitch_line
 
 __all__ = [
+    "EVENT_SOURCE",
     "ChatFilterConfig",
     "ChatQueue",
     "ChatQueueConfig",
@@ -27,6 +29,7 @@ __all__ = [
     "StreamChatPlugin",
     "TwitchChat",
     "parse_privmsg",
+    "parse_twitch_line",
     "passes_filter",
 ]
 

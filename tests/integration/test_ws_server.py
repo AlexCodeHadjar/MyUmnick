@@ -74,6 +74,23 @@ async def test_chat_send_streams_turn_over_websocket() -> None:
     assert {m.get("turn") for m in messages} == {"t-000001"}
 
 
+async def test_host_command_runs_instead_of_a_turn() -> None:
+    llm = FakeLLM("Ок.")
+    ran: list[str] = []
+
+    async def pause() -> None:
+        ran.append("пауза")
+
+    async with _gateway(llm) as gw, connect(gw.url()) as ws:
+        gw.server.use_commands({"/пауза": pause})
+        await ws.send(json.dumps({"v": 1, "type": "chat.send", "data": {"text": " /пауза "}}))
+        await ws.send(SEND)
+        await _messages_until(ws, "turn.finished")
+
+    assert ran == ["пауза"]
+    assert [call[0][-1].text for call in llm.calls] == ["Привет"]
+
+
 @dataclass(slots=True)
 class _PrefillLLM:
     """Запоминает прогревы; ответ — как у FakeLLM."""

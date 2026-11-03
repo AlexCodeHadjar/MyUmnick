@@ -162,12 +162,12 @@
 - `LineSource` — `src/vtuber/bootstrap/main.py:60` — Откуда читать строки: `sys.stdin` или его тестовая замена.
 - `Console` — `src/vtuber/bootstrap/main.py:67` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
 - `main` — `src/vtuber/bootstrap/main.py:80` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
-- `run` — `src/vtuber/bootstrap/main.py:265` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
+- `run` — `src/vtuber/bootstrap/main.py:264` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
 - `background_memory` — `src/vtuber/bootstrap/memory.py:39` — Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
-- `PluginServices` — `src/vtuber/bootstrap/plugins.py:33` — Что плагины дали ядру в `setup`: источники реплик и справку хода.
-- `running_plugins` — `src/vtuber/bootstrap/plugins.py:51` — Включённые плагины работают на время контекста; остановка — в обратном порядке.
+- `PluginServices` — `src/vtuber/bootstrap/plugins.py:34` — Что плагины дали ядру в `setup`: источники реплик и справку хода.
+- `running_plugins` — `src/vtuber/bootstrap/plugins.py:53` — Включённые плагины работают на время контекста; остановка — в обратном порядке.
 - `voice_input` — `src/vtuber/bootstrap/voice_input.py:64` — Подключает микрофон к шлюзу на время контекста; выключено в конфиге — кадры не нужны.
 
 ## src/vtuber/domain
@@ -268,9 +268,9 @@
 - `configure_logging` — `src/vtuber/kernel/logging.py:23` — Настраивает structlog: одна JSON-строка на событие в `stream`.
 - `logging_to` — `src/vtuber/kernel/logging.py:45` — Логи идут в `stream` на время блока; на выходе — настройка по умолчанию.
 - `get_logger` — `src/vtuber/kernel/logging.py:58` — Логгер модуля; имя попадает в поле `module` каждого события.
-- `PluginsConfig` — `src/vtuber/kernel/plugin.py:27` — Секция `[plugins]`: что включено и настройки каждого плагина в `settings.<имя>`.
-- `PluginContext` — `src/vtuber/kernel/plugin.py:40` — Доступ плагина к ядру: подписка на события, своя секция конфига, логгер.
-- `Plugin` — `src/vtuber/kernel/plugin.py:121` — Плагин: entry point группы `vtuber.plugins` указывает на его класс или фабрику.
+- `PluginsConfig` — `src/vtuber/kernel/plugin.py:30` — Секция `[plugins]`: что включено и настройки каждого плагина в `settings.<имя>`.
+- `PluginContext` — `src/vtuber/kernel/plugin.py:43` — Доступ плагина к ядру: подписка на события, своя секция конфига, логгер.
+- `Plugin` — `src/vtuber/kernel/plugin.py:134` — Плагин: entry point группы `vtuber.plugins` указывает на его класс или фабрику.
 - `Registry` — `src/vtuber/kernel/registry.py:8` — Имя → фабрика `A → T`; например, `Registry[TTSConfig, TTSPort]` для движков TTS.
 - `TelemetryConfig` — `src/vtuber/kernel/telemetry.py:23` — Секция `[telemetry]`; `traces_file` открывает bootstrap (относительно корня проекта).
 - `Telemetry` — `src/vtuber/kernel/telemetry.py:29` — Замеряет стадии хода и отдаёт метрики в шину фоновой задачей `run`.

@@ -1,0 +1,13 @@
+[project]
+name = "vtuber-stream-director"
+version = "0.1.0"
+description = "Плагин: режиссёр стрима — выбор сообщений, паузы, реакции, сцены OBS."
+requires-python = ">=3.12,<3.13"
+dependencies = ["vtuber", "vtuber-stream-chat", "vtuber-obs"]
+
+[project.entry-points."vtuber.plugins"]
+stream_director = "vtuber_stream_director:StreamDirectorPlugin"
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14.0"]
+build-backend = "uv_build"

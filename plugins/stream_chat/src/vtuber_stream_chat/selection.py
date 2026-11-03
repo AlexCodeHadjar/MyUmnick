@@ -16,6 +16,9 @@ from vtuber.kernel import ConfigSection
 _LINK: Final = re.compile(r"https?://|www\.|\b[\w-]+\.(?:com|ru|net|org|tv|gg)\b", re.IGNORECASE)
 _COMMAND_PREFIX: Final = "!"
 
+EVENT_SOURCE: Final = "twitch_event"
+"""Источник событий канала: рейд, подписка; текст составляет Twitch, а не зритель."""
+
 _PRIORITY_MENTION: Final = 2
 _PRIORITY_QUESTION: Final = 1
 _PRIORITY_OTHER: Final = 0
@@ -55,6 +58,7 @@ def passes_filter(message: IncomingMessage, cfg: ChatFilterConfig) -> bool:
 class _Queued:
     message: IncomingMessage
     at: float
+    urgent: bool = False
 
 
 class ChatQueue:
@@ -79,6 +83,15 @@ class ChatQueue:
         self._items.append(_Queued(message, self._clock()))
         self._arrived.set()
 
+    def add_urgent(self, message: IncomingMessage) -> None:
+        """Событие канала: без фильтров и раньше любых сообщений."""
+        self._items.append(_Queued(message, self._clock(), urgent=True))
+        self._arrived.set()
+
+    def put_back(self, message: IncomingMessage) -> None:
+        """Вернуть выбранное, но не озвученное: ведущий вмешался раньше, чем оно прозвучало."""
+        self._items.append(_Queued(message, self._clock(), urgent=message.source == EVENT_SOURCE))
+
     def pick(self) -> IncomingMessage | None:
         """Лучшее из свежих: обращение, затем вопрос; при равенстве — самое новое."""
         oldest_allowed = self._clock() - self._cfg.max_age_s
@@ -87,7 +100,7 @@ class ChatQueue:
         if not fresh:
             self._arrived.clear()
             return None
-        best = max(reversed(fresh), key=lambda item: self._priority(item.message))
+        best = max(reversed(fresh), key=lambda item: (item.urgent, self._priority(item.message)))
         self._items.extend(item for item in fresh if item is not best)
         return best.message
 

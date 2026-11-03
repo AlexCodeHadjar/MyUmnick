@@ -41,7 +41,7 @@ from vtuber.domain import (
     TTSUnavailable,
 )
 from vtuber.gateway import ExternalTurns, GatewayServer, TerminalChat
-from vtuber.kernel import EventBus, MessageStream, Telemetry, TraceWriter, get_logger, logging_to
+from vtuber.kernel import EventBus, Telemetry, TraceWriter, get_logger, logging_to
 from vtuber.ports import LLMPort
 
 EXIT_CONFIG: Final = 1
@@ -126,9 +126,7 @@ async def _run(
         ):
             _connect_tools(cfg, conversation.service, plugins)
             if mode == SERVE_MODE:
-                code = await _serve(
-                    (cfg, core, plugins.sources), conversation.service, warmup, console
-                )
+                code = await _serve((cfg, core, plugins), conversation.service, warmup, console)
             else:
                 code = await _chat(conversation.service, warmup, console, bus)
         metrics.cancel()
@@ -160,14 +158,15 @@ async def _chat(
 
 
 async def _serve(
-    app: tuple[AppConfig, Core, tuple[MessageStream, ...]],
+    app: tuple[AppConfig, Core, PluginServices],
     service: ConversationService,
     warmup: "_Warmup",
     console: Console,
 ) -> int:
     """Шлюз живёт, пока открыт stdin: Tauri-родитель умер — pipe закрыт — ядро выходит."""
-    cfg, core, sources = app
+    cfg, core, plugins = app
     async with GatewayServer(service, warmup.bus, cfg.gateway) as server:
+        server.use_commands(plugins.commands)
         print(f"Шлюз для UI: ws://{cfg.gateway.host}:{server.port}", file=console.out)
         if (problem := await warmup.run()) is not None:
             _log.warning("llm.unavailable_at_start", problem=problem)
@@ -181,7 +180,7 @@ async def _serve(
             external = ExternalTurns(
                 service, server.send, server.send_bytes, lambda: server.has_client
             )
-            readers = [tg.create_task(external.run(stream)) for stream in sources]
+            readers = [tg.create_task(external.run(stream)) for stream in plugins.sources]
             while await console.read_line() is not None:
                 pass
             serving.cancel()

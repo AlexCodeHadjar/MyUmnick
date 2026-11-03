@@ -21,6 +21,9 @@ type MessageStream = Callable[[], AsyncGenerator[IncomingMessage]]
 type ContextProvider = Callable[[str], Awaitable[str | None]]
 """Справка хода по реплике, до запроса к LLM; должна успеть за `context_timeout_s`."""
 
+type Command = Callable[[], Awaitable[None]]
+"""Команда ведущего: выполняется вместо хода, если реплика точно совпала с её текстом."""
+
 _log = get_logger(__name__)
 
 
@@ -55,6 +58,7 @@ class PluginContext:
         self._closed = False
         self._sources: list[MessageStream] = []
         self._contexts: list[ContextProvider] = []
+        self._commands: dict[str, Command] = {}
 
     def subscribe[E](self, event_type: type[E], handler: Handler[E]) -> None:
         """Подписывает `handler`; события одного плагина обрабатываются строго по очереди."""
@@ -81,6 +85,15 @@ class PluginContext:
     def contexts(self) -> tuple[ContextProvider, ...]:
         """Зарегистрированные поставщики справки."""
         return tuple(self._contexts)
+
+    def add_command(self, text: str, command: Command) -> None:
+        """Реплика ведущего, в точности равная `text`, вызовет `command` и до модели не дойдёт."""
+        self._commands[text] = command
+
+    @property
+    def commands(self) -> Mapping[str, Command]:
+        """Зарегистрированные команды ведущего."""
+        return self._commands
 
     def settings[T: ConfigSection](self, model: type[T]) -> T:
         """Настройки плагина из `[plugins.settings.<имя>]`, проверенные моделью `model`.

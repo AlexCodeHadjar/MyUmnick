@@ -5,14 +5,15 @@
 """
 
 import asyncio
-from collections.abc import AsyncIterator, Callable, Iterable
+from collections.abc import AsyncIterator, Callable, Iterable, Mapping
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from importlib.metadata import EntryPoint, entry_points
 from typing import Final
 
 from vtuber.domain import ConfigError
 from vtuber.kernel import (
+    Command,
     ContextProvider,
     EventBus,
     MessageStream,
@@ -35,6 +36,7 @@ class PluginServices:
 
     sources: tuple[MessageStream, ...] = ()
     contexts: tuple[ContextProvider, ...] = ()
+    commands: Mapping[str, Command] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,6 +68,7 @@ async def running_plugins(
         yield PluginServices(
             tuple(stream for one in started for stream in one.ctx.sources),
             tuple(provider for one in started for provider in one.ctx.contexts),
+            {text: cmd for one in started for text, cmd in one.ctx.commands.items()},
         )
     finally:
         for pump in pumps:
