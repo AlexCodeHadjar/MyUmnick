@@ -171,6 +171,10 @@ class ChatRecorder:
     async def _on_turn(self, event: TurnRemembered) -> None:
         self._pending.put_nowait(event)
 
+    async def drain(self) -> None:
+        """Ждёт записи всего, что уже в очереди."""
+        await self._pending.join()
+
     def stop(self) -> None:
         """Дописать очередь и завершить `run`: последний ход перед выходом не должен пропасть."""
         self._pending.put_nowait(_STOP)
@@ -179,6 +183,9 @@ class ChatRecorder:
         """Записывает ходы, пока не вызовут `stop`; сбой диска — потеря записи, а не хода."""
         while (event := await self._pending.get()) is not _STOP:
             try:
-                await self._vault.save_turn(event.turn, self._now())
+                if not event.turn.is_private:
+                    await self._vault.save_turn(event.turn, self._now())
             except MemoryUnavailable as exc:
                 _log.warning("vault.turn_not_saved", problem=str(exc))
+            finally:
+                self._pending.task_done()

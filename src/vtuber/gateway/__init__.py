@@ -15,6 +15,8 @@ from vtuber.gateway.codec import (
     encode_outbound,
 )
 from vtuber.gateway.external_turns import ExternalTurns
+from vtuber.gateway.memory_bridge import MemoryBridge
+from vtuber.gateway.privacy_bridge import PrivacyBridge
 from vtuber.gateway.protocol import (
     AvatarEmotion,
     CancelledData,
@@ -82,10 +84,12 @@ __all__ = [
     "InputFinal",
     "InputHypothesis",
     "InputTyping",
+    "MemoryBridge",
     "MetricsSpan",
     "MicFrame",
     "MicSink",
     "OutboundMessage",
+    "PrivacyBridge",
     "ResourcesFeed",
     "SendData",
     "SetupBridge",

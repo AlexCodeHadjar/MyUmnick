@@ -30,7 +30,10 @@ def test_ts_has_every_message_and_both_unions() -> None:
 
     for name in ("ChatSend", "ChatCancel", "ChatDelta", "AvatarEmotion", "Status", "ErrorMessage"):
         assert f"export interface {name} {{" in ts
-    inbound = "ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel"
+    inbound = (
+        "ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel"
+        " | PrivacySet | MemoryErase | MemoryList | MemoryFactSave | MemoryFactDelete"
+    )
     assert f"export type InboundMessage = {inbound};" in ts
     assert "export type OutboundMessage = TurnStartedMessage | ChatDelta" in ts
     assert 'type: "chat.delta";' in ts

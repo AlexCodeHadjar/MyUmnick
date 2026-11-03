@@ -251,6 +251,43 @@ describe("CoreClient", () => {
     expect(client.store.notice).toBeNull();
   });
 
+  it("приватный режим показывает то, что сказало ядро", () => {
+    const { client, socket, frames } = connected();
+    client.setPrivate(true);
+    expect(client.store.privacy.enabled).toBe(false);
+    expect(socket.sent).toEqual([{ v: 1, type: "privacy.set", data: { enabled: true } }]);
+    const data = { enabled: true, erasable: true };
+    socket.receive(JSON.stringify({ v: 1, type: "privacy.state", data }));
+    frames.next();
+    expect(client.store.privacy.enabled).toBe(true);
+  });
+
+  it("итог очистки памяти виден пользователю", () => {
+    const { client, socket, frames } = connected();
+    client.eraseMemory();
+    expect(socket.sent).toEqual([{ v: 1, type: "memory.erase", data: { confirm: true } }]);
+    socket.receive(JSON.stringify({ v: 1, type: "memory.erased", data: { problem: null } }));
+    frames.next();
+    expect(client.store.privacy.result).toBe("Память очищена");
+  });
+
+  it("редактор памяти: запросы и список", () => {
+    const { client, socket, frames } = connected();
+    client.listMemory();
+    client.saveFact("n", "текст");
+    client.deleteFact("n");
+    expect(socket.sent).toEqual([
+      { v: 1, type: "memory.list", data: {} },
+      { v: 1, type: "memory.fact_save", data: { note: "n", text: "текст" } },
+      { v: 1, type: "memory.fact_delete", data: { note: "n" } },
+    ]);
+    const fact = { note: "n", text: "т", source: "user", importance: 1, created: "2026-11-03" };
+    const data = { facts: [fact], problem: null };
+    socket.receive(JSON.stringify({ v: 1, type: "memory.facts", data }));
+    frames.next();
+    expect(client.store.memory.facts).toEqual([fact]);
+  });
+
   it("dispose() закрывает связь", () => {
     const { client, frames } = connected();
     client.dispose();

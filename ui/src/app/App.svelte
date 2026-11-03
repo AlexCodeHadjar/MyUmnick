@@ -9,7 +9,9 @@
   import { Chat } from "../features/chat";
   import { MicControl } from "../features/mic";
   import { isMetricsHotkey, METRICS_HOTKEY_LABEL, MetricsPanel } from "../features/metrics";
+  import { isMemoryHotkey, MEMORY_HOTKEY_LABEL, MemoryPanel } from "../features/memory";
   import { chosenAvatar, Onboarding } from "../features/onboarding";
+  import { PrivacyControl } from "../features/privacy";
   import { isResourcesHotkey, RESOURCES_HOTKEY_LABEL, ResourcesPanel } from "../features/resources";
   import SplitLayout from "./SplitLayout.svelte";
   import StatusBar from "./StatusBar.svelte";
@@ -18,6 +20,7 @@
 
   let showMetrics = $state(false);
   let showResources = $state(false);
+  let showMemory = $state(false);
   let setupClosed = $state(false);
   // Не реактивен: рот опрашивается каждый кадр из цикла аватара, а не через Svelte (R-66).
   let player: VoicePlayer | null = null;
@@ -53,6 +56,9 @@
     if (isMetricsHotkey(event)) {
       event.preventDefault();
       showMetrics = !showMetrics;
+    } else if (isMemoryHotkey(event)) {
+      event.preventDefault();
+      showMemory = !showMemory;
     } else if (isResourcesHotkey(event)) {
       event.preventDefault();
       showResources = !showResources;
@@ -94,6 +100,14 @@
             }}
           />
         {/if}
+        {#if showMemory}
+          <MemoryPanel
+            {client}
+            onclose={() => {
+              showMemory = false;
+            }}
+          />
+        {/if}
         {#if showResources}
           <ResourcesPanel
             {client}
@@ -105,8 +119,12 @@
       </section>
     {/snippet}
   </SplitLayout>
-  <StatusBar store={client.store} hint={`${METRICS_HOTKEY_LABEL}, ${RESOURCES_HOTKEY_LABEL}`}>
+  <StatusBar
+    store={client.store}
+    hint={`${METRICS_HOTKEY_LABEL}, ${RESOURCES_HOTKEY_LABEL}, ${MEMORY_HOTKEY_LABEL}`}
+  >
     <MicControl {client} storage={layoutStorage()} />
+    <PrivacyControl {client} />
   </StatusBar>
   {#if client.store.setup?.needed && !setupClosed}
     <Onboarding

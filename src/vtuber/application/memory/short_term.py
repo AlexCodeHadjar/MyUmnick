@@ -20,6 +20,7 @@ SUMMARY_TEMPLATE: Final = "(Кратко о начале разговора: {su
 class _StoredTurn:
     messages: tuple[Message, Message]
     tokens: int
+    private: bool = False
 
 
 class ShortTermMemory:
@@ -61,6 +62,18 @@ class ShortTermMemory:
         """Оценка токенов всей истории."""
         return self._tokens
 
+    def forget_private(self) -> None:
+        """Приватный режим кончился: его ходы не должны остаться даже в памяти процесса."""
+        kept = [turn for turn in self._turns if not turn.private]
+        self._turns = deque(kept)
+        self._tokens = sum(turn.tokens for turn in kept)
+
+    def clear(self) -> None:
+        """Очистка всей памяти: ни ходов, ни резюме."""
+        self._turns.clear()
+        self._tokens = 0
+        self._summary = None
+
     def restore(self, turns: Sequence[Turn], summary: str | None) -> None:
         """Разговор прошлого запуска (ADR-0020); лишнее по бюджету отрезается как обычно."""
         self._summary = summary
@@ -75,7 +88,9 @@ class ShortTermMemory:
 
         """
         messages = _as_messages(turn)
-        self._turns.append(_StoredTurn(messages, self._budget.tokens(messages)))
+        self._turns.append(
+            _StoredTurn(messages, self._budget.tokens(messages), private=turn.is_private)
+        )
         self._tokens += self._turns[-1].tokens
         if self._tokens <= self._budget.max_history_tokens:
             return ()
@@ -86,7 +101,9 @@ class ShortTermMemory:
         while len(self._turns) > 1 and self._tokens > self._budget.trim_target:
             oldest = self._turns.popleft()
             self._tokens -= oldest.tokens
-            dropped.extend(oldest.messages)
+            # Приватное не уходит в резюме: оно записалось бы на диск (S-17.2).
+            if not oldest.private:
+                dropped.extend(oldest.messages)
         return tuple(dropped)
 
 

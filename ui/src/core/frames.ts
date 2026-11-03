@@ -67,6 +67,9 @@ const OUTBOUND_TYPES = {
   "setup.finished": true,
   "viewer.blocked": true,
   "backend.notice": true,
+  "privacy.state": true,
+  "memory.erased": true,
+  "memory.facts": true,
   error: true,
 } satisfies Record<OutboundMessage["type"], true>;
 

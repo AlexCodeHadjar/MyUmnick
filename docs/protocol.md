@@ -54,6 +54,45 @@ UI → Ядро: прервать загрузку; скачанное прод�
 
 `data`: `{}`
 
+### `privacy.set` — `PrivacySet`
+
+UI → Ядро: разговор не запоминается (S-17.2).
+
+| Поле `data` | Тип |
+|---|---|
+| `enabled` | `boolean` |
+
+### `memory.erase` — `MemoryErase`
+
+UI → Ядро: удалить всю память.
+
+| Поле `data` | Тип |
+|---|---|
+| `confirm` | `boolean` |
+
+### `memory.list` — `MemoryList`
+
+UI → Ядро: открыта панель памяти, нужен список.
+
+`data`: `{}`
+
+### `memory.fact_save` — `MemoryFactSave`
+
+UI → Ядро: исправить факт.
+
+| Поле `data` | Тип |
+|---|---|
+| `note` | `string` |
+| `text` | `string` |
+
+### `memory.fact_delete` — `MemoryFactDelete`
+
+UI → Ядро: удалить факт.
+
+| Поле `data` | Тип |
+|---|---|
+| `note` | `string` |
+
 ## Ядро → UI
 
 ### `turn.started` — `TurnStartedMessage`
@@ -193,6 +232,32 @@ UI → Ядро: прервать загрузку; скачанное прод�
 | Поле `data` | Тип |
 |---|---|
 | `text` | `string` |
+
+### `privacy.state` — `PrivacyState`
+
+Ядро → UI: состояние режима; приходит при подключении и после переключения.
+
+| Поле `data` | Тип |
+|---|---|
+| `enabled` | `boolean` |
+| `erasable` | `boolean` |
+
+### `memory.erased` — `MemoryErased`
+
+Ядро → UI: итог очистки.
+
+| Поле `data` | Тип |
+|---|---|
+| `problem` | `string | null` |
+
+### `memory.facts` — `MemoryFacts`
+
+Ядро → UI: факты памяти (S-16.2).
+
+| Поле `data` | Тип |
+|---|---|
+| `facts` | `FactData[]` |
+| `problem` | `string | null` |
 
 ### `error` — `ErrorMessage`
 

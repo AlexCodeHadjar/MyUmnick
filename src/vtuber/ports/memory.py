@@ -117,3 +117,25 @@ class MemoryVaultPort(Protocol):
     async def summary(self) -> str | None:
         """Резюме разговора; None — его ещё нет."""
         ...
+
+    async def update_fact(self, note: str, text: str) -> None:
+        """Новый текст заметки; свойства и имя прежние.
+
+        Raises:
+            ValueError: такой заметки нет или текст пуст.
+
+        """
+        ...
+
+    async def delete_fact(self, note: str) -> None:
+        """Удаляет заметку.
+
+        Raises:
+            ValueError: такой заметки нет.
+
+        """
+        ...
+
+    async def erase(self) -> None:
+        """Удаляет факты, чаты, дневник и резюме; чужие заметки в той же папке не трогает."""
+        ...

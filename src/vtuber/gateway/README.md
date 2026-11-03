@@ -8,6 +8,8 @@
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
+| `MemoryBridge(editor, send)` | Редактор памяти: действие и свежий список; ошибка — рядом со списком |
+| `PrivacyBridge(service, eraser, send)` | Приватный режим и очистка памяти; без `confirm` очистка не выполняется |
 | `SetupBridge(wizard, send)` | Мастер первого запуска: `send_state()`, `handle(сообщение)`; ход загрузки 4 раза в секунду |
 | `ResourcesFeed(snapshot, send, period_s)` | `set_enabled(enabled=…)`: снимки для панели ресурсов, только пока она открыта |
 | `ExternalTurns(service, send, send_bytes, has_client)` | `run(stream)`: реплики источников плагинов → ходы, по одной и только в тишине; без UI теряются |

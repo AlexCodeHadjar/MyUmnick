@@ -36,6 +36,11 @@ class MemoryKeeper:
         self._facts = facts
         self.now: Now = lambda: datetime.now(UTC)
         self.on_summary: Callable[[str], Awaitable[None]] | None = None
+        self._generation = 0
+
+    def forget(self) -> None:
+        """Очистка памяти: задачи, ждущие простоя, не должны записать старое уже после неё."""
+        self._generation += 1
 
     def follow(self, bus: EventBus) -> None:
         """Подписка на `TurnRemembered`."""
@@ -45,17 +50,26 @@ class MemoryKeeper:
         """Ставит задачи хода: сначала резюме (оно меняет промпт), затем факты."""
         turn, when = event.turn, self.now()
         dropped = without_viewer_turns(event.dropped)
+        generation = self._generation
         if dropped:
-            self._scheduler.submit(IdleJob(f"summary:{turn.id}", lambda: self._summarize(dropped)))
-        if not turn.is_external:
-            self._scheduler.submit(IdleJob(f"facts:{turn.id}", lambda: self._learn(event, when)))
+            self._scheduler.submit(
+                IdleJob(f"summary:{turn.id}", lambda: self._summarize(dropped, generation))
+            )
+        if not turn.is_external and not turn.is_private:
+            self._scheduler.submit(
+                IdleJob(f"facts:{turn.id}", lambda: self._learn(event, (when, generation)))
+            )
 
-    async def _summarize(self, dropped: Sequence[Message]) -> None:
+    async def _summarize(self, dropped: Sequence[Message], generation: int) -> None:
+        if generation != self._generation:
+            return
         summary = await self._summarizer.summarize(self._history.summary, dropped)
         self._history.set_summary(summary)
         if self.on_summary is not None:
             await self.on_summary(summary)
         _log.info("memory.summary_updated", chars=len(summary), dropped=len(dropped))
 
-    async def _learn(self, event: TurnRemembered, when: datetime) -> None:
-        await self._facts.learn(event.turn, when)
+    async def _learn(self, event: TurnRemembered, stamp: tuple[datetime, int]) -> None:
+        when, generation = stamp
+        if generation == self._generation:
+            await self._facts.learn(event.turn, when)

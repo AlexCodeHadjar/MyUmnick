@@ -10,6 +10,8 @@
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
+| `MemoryEditor(vault, store, embedder)`, `MemoryControls` | Правка и удаление фактов из UI; индекс сверяется сразу (S-16.2) |
+| `MemoryEraser(vault, store, history, quiet)` | Очистка всей памяти (S-17.2): сначала останавливает запись, потом удаляет |
 | `VaultedFacts(store, vault)`, `reconcile(vault, store, embedder)`, `VaultWatcher(vault, submit, sync, poll_s)`, `ChatRecorder(vault)` | Заметки — источник истины, индекс — производная (ADR-0020): запись факта, сверка, импорт, слежение за правками, запись чатов своей задачей |
 | `without_viewer_turns(messages)` | Реплики зрителей не идут в резюме (FR-31) |
 | `ShortTermMemory(budget)` | `append(turn) → отрезанные сообщения`; `messages` (резюме — в первой реплике); `tokens`; `summary`, `set_summary` |

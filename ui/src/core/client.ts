@@ -166,6 +166,30 @@ export class CoreClient {
     this.#transport.send({ v: PROTOCOL_VERSION, type: "setup.cancel", data: {} });
   }
 
+  /** Приватный режим: состояние вернётся от ядра, индикатор показывает то, что есть на самом деле. */
+  setPrivate(enabled: boolean): void {
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "privacy.set", data: { enabled } });
+  }
+
+  /** Очистка памяти: вызывается только после подтверждения в интерфейсе. */
+  eraseMemory(): void {
+    this.store.privacy.result = null;
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "memory.erase", data: { confirm: true } });
+  }
+
+  /** Панель памяти открыта: нужен список фактов. */
+  listMemory(): void {
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "memory.list", data: {} });
+  }
+
+  saveFact(note: string, text: string): void {
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "memory.fact_save", data: { note, text } });
+  }
+
+  deleteFact(note: string): void {
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "memory.fact_delete", data: { note } });
+  }
+
   stop(): void {
     // Звук глушится сразу, не дожидаясь `turn.cancelled`: ход мог уже закончиться в ядре, а
     // голос ещё звучит (синтез быстрее реального времени).

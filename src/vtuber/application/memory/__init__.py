@@ -1,8 +1,10 @@
 """Память витюбера: история разговора, её резюме и долговременные факты (Этап 10)."""
 
+from vtuber.application.memory.editor import MemoryControls, MemoryEditor
 from vtuber.application.memory.fact_extractor import ExtractedFact, FactExtractor, parse_facts
 from vtuber.application.memory.facts import FactMemory, FactMemoryConfig
 from vtuber.application.memory.keeper import MemoryKeeper
+from vtuber.application.memory.privacy import MemoryEraser
 from vtuber.application.memory.retrieval_gate import (
     FACTS_PREFIX,
     MemoryRecall,
@@ -31,6 +33,9 @@ __all__ = [
     "FactExtractor",
     "FactMemory",
     "FactMemoryConfig",
+    "MemoryControls",
+    "MemoryEditor",
+    "MemoryEraser",
     "MemoryKeeper",
     "MemoryRecall",
     "RetrievalConfig",

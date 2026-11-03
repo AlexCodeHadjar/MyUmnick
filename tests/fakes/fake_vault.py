@@ -49,6 +49,31 @@ class FakeVault:
         self._check()
         return self.stored_summary
 
+    async def update_fact(self, note: str, text: str) -> None:
+        self._check()
+        if not text.strip():
+            msg = "Текст факта пуст"
+            raise ValueError(msg)
+        index = self._index(note)
+        self.notes[index] = replace(self.notes[index], text=text.strip())
+
+    async def delete_fact(self, note: str) -> None:
+        self._check()
+        del self.notes[self._index(note)]
+
+    def _index(self, note: str) -> int:
+        for index, fact in enumerate(self.notes):
+            if fact.note == note:
+                return index
+        msg = f"Нет такой заметки: {note}"
+        raise ValueError(msg)
+
+    async def erase(self) -> None:
+        self._check()
+        self.notes.clear()
+        self.turns.clear()
+        self.stored_summary = None
+
     def _check(self) -> None:
         if not self.available:
             msg = "FakeVault: папка недоступна (сценарий теста)"

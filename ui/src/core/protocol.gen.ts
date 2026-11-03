@@ -77,6 +77,16 @@ export interface EmotionData {
 /** Сообщение без полезной нагрузки. */
 export type EmptyData = Record<string, never>;
 
+/** `confirm` — пользователь подтвердил: без него очистка не выполняется. */
+export interface EraseData {
+  confirm: boolean;
+}
+
+/** `problem` — None, если всё удалено. */
+export interface ErasedData {
+  problem: string | null;
+}
+
 /** Что пошло не так — UI выбирает реакцию по коду, текст показывает пользователю. */
 export type ErrorCode = "bad_message" | "llm_unavailable" | "generation_failed" | "internal";
 
@@ -92,6 +102,32 @@ export interface ErrorMessage {
   type: "error";
   turn: string | null;
   data: ErrorData;
+}
+
+/** Факт с его источником. */
+export interface FactData {
+  note: string;
+  text: string;
+  source: string;
+  importance: number;
+  created: string;
+}
+
+/** Какой факт удалить. */
+export interface FactDeleteData {
+  note: string;
+}
+
+/** Новый текст факта. */
+export interface FactSaveData {
+  note: string;
+  text: string;
+}
+
+/** Список фактов; `problem` — что не удалось сделать. */
+export interface FactsData {
+  facts: FactData[];
+  problem: string | null;
 }
 
 /** Итог установки: `problem` — None, если всё поставлено. */
@@ -143,6 +179,48 @@ export interface ManagedModelData {
   waiting_reason: string | null;
 }
 
+/** UI → Ядро: удалить всю память. */
+export interface MemoryErase {
+  v: Version;
+  type: "memory.erase";
+  data: EraseData;
+}
+
+/** Ядро → UI: итог очистки. */
+export interface MemoryErased {
+  v: Version;
+  type: "memory.erased";
+  data: ErasedData;
+}
+
+/** UI → Ядро: удалить факт. */
+export interface MemoryFactDelete {
+  v: Version;
+  type: "memory.fact_delete";
+  data: FactDeleteData;
+}
+
+/** UI → Ядро: исправить факт. */
+export interface MemoryFactSave {
+  v: Version;
+  type: "memory.fact_save";
+  data: FactSaveData;
+}
+
+/** Ядро → UI: факты памяти (S-16.2). */
+export interface MemoryFacts {
+  v: Version;
+  type: "memory.facts";
+  data: FactsData;
+}
+
+/** UI → Ядро: открыта панель памяти, нужен список. */
+export interface MemoryList {
+  v: Version;
+  type: "memory.list";
+  data: EmptyData;
+}
+
 /** Ядро → UI: замер стадии; `turn` — None вне хода (прогрев). */
 export interface MetricsSpan {
   v: Version;
@@ -160,6 +238,31 @@ export interface NoticeData {
 export interface PinnedModelData {
   name: string;
   vram_mb: number;
+}
+
+/** UI → Ядро: разговор не запоминается (S-17.2). */
+export interface PrivacySet {
+  v: Version;
+  type: "privacy.set";
+  data: PrivacySetData;
+}
+
+/** Включить или выключить приватный режим. */
+export interface PrivacySetData {
+  enabled: boolean;
+}
+
+/** Ядро → UI: состояние режима; приходит при подключении и после переключения. */
+export interface PrivacyState {
+  v: Version;
+  type: "privacy.state";
+  data: PrivacyStateData;
+}
+
+/** Режим и можно ли очистить память (она может быть выключена). */
+export interface PrivacyStateData {
+  enabled: boolean;
+  erasable: boolean;
 }
 
 /** Сколько байт готово из общего числа и какой файл качается. */
@@ -315,6 +418,6 @@ export interface WatchData {
   enabled: boolean;
 }
 
-export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel;
+export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryFactSave | MemoryFactDelete;
 
-export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | ErrorMessage;
+export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryFacts | ErrorMessage;

@@ -98,6 +98,52 @@ class ObsidianVault:
         """Резюме разговора; None — его ещё нет."""
         return await self._in_thread(self._read_summary)
 
+    async def update_fact(self, note: str, text: str) -> None:
+        """Новый текст заметки; свойства и имя прежние."""
+        if not text.strip():
+            msg = "Текст факта пуст: чтобы убрать факт, удалите его"
+            raise ValueError(msg)
+        await self._in_thread(self._update, note, text)
+
+    async def delete_fact(self, note: str) -> None:
+        """Удаляет заметку факта."""
+        await self._in_thread(self._delete, note)
+
+    def _existing(self, note: str) -> Path:
+        """Имя приходит от UI: оно обязано быть именем файла в папке фактов, а не путём."""
+        folder = self._root / FACTS_DIR
+        path = folder / f"{note}{NOTE_SUFFIX}"
+        if not note or Path(note).name != note or "\\" in note or not path.is_file():
+            msg = f"Нет такой заметки: {note}"
+            raise ValueError(msg)
+        return path
+
+    def _update(self, note: str, text: str) -> None:
+        with self._write_lock:
+            path = self._existing(note)
+            try:
+                fact = parse_fact(path.read_text(encoding=_ENCODING), note)
+            except BadNoteError as exc:
+                msg = f"Заметка {note} не читается, исправьте её в Obsidian: {exc}"
+                raise ValueError(msg) from exc
+            edited = Fact(text.strip(), fact.source, fact.importance, fact.created_at, note=note)
+            _write_atomic(path, render_fact(edited))
+
+    def _delete(self, note: str) -> None:
+        with self._write_lock:
+            self._existing(note).unlink()
+
+    async def erase(self) -> None:
+        """Только свои папки: пользователь мог указать своё хранилище с другими заметками."""
+        await self._in_thread(self._erase)
+
+    def _erase(self) -> None:
+        with self._write_lock:
+            for folder in (FACTS_DIR, CHATS_DIR, DIARY_DIR, PEOPLE_DIR):
+                for path in _notes(self._root / folder):
+                    path.unlink()
+            self._parsed.clear()
+
     async def _in_thread[**P, R](
         self, call: Callable[P, R], *args: P.args, **kwargs: P.kwargs
     ) -> R:

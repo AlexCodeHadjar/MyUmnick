@@ -10,6 +10,7 @@ import type {
   ErrorData,
   OutboundMessage,
   BlockedData,
+  FactsData,
   FinishedData,
   ProgressData,
   ResourcesData,
@@ -34,6 +35,13 @@ export interface ChatMessage {
 
 /** Сколько последних замеров стадии хранить: хватает на p95, память — копейки. */
 const BLOCKED_HISTORY = 20;
+
+export interface PrivacyView {
+  enabled: boolean;
+  erasable: boolean;
+  result: string | null;
+}
+
 export const SPAN_HISTORY = 100;
 
 /** Что звучит в плеере (сообщает фича звука): ход, идёт ли звук, сыграно и получено, секунд. */
@@ -80,6 +88,10 @@ export class AppStore {
   blockedViewers = $state<BlockedData[]>([]);
   /** Что случилось с компонентом: упал, поднимается, снова работает (S-17.1). */
   notice = $state<string | null>(null);
+  /** Приватный режим и итог очистки памяти (S-17.2). */
+  privacy = $state<PrivacyView>({ enabled: false, erasable: false, result: null });
+  /** Факты для редактора памяти; приходят, только когда панель открыта (S-16.2). */
+  memory = $state<FactsData>({ facts: [], problem: null });
 
   #nextId = 0;
   /** Индекс сообщения текущего хода в `messages`: массив только растёт, индекс не сдвигается. */
@@ -136,6 +148,16 @@ export class AppStore {
         break;
       case "resources.snapshot":
         this.resources = message.data;
+        break;
+      case "memory.facts":
+        this.memory = message.data;
+        break;
+      case "privacy.state":
+        this.privacy.enabled = message.data.enabled;
+        this.privacy.erasable = message.data.erasable;
+        break;
+      case "memory.erased":
+        this.privacy.result = message.data.problem ?? "Память очищена";
         break;
       case "backend.notice":
         this.notice = message.data.text;

@@ -18,6 +18,16 @@ from vtuber.gateway.protocol_extras import (
     SetupStateMessage,
     ViewerBlockedMessage,
 )
+from vtuber.gateway.protocol_memory import (
+    MemoryErase,
+    MemoryErased,
+    MemoryFactDelete,
+    MemoryFacts,
+    MemoryFactSave,
+    MemoryList,
+    PrivacySet,
+    PrivacyState,
+)
 
 
 def turn_ref(turn_id: TurnId) -> str:
@@ -112,7 +122,17 @@ class InputTyping(ProtocolModel):
 
 
 type InboundMessage = Annotated[
-    ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel,
+    ChatSend
+    | ChatCancel
+    | InputTyping
+    | ResourcesWatch
+    | SetupInstall
+    | SetupCancel
+    | PrivacySet
+    | MemoryErase
+    | MemoryList
+    | MemoryFactSave
+    | MemoryFactDelete,
     Field(discriminator="type"),
 ]
 
@@ -284,6 +304,9 @@ type OutboundMessage = Annotated[
     | SetupFinished
     | ViewerBlockedMessage
     | BackendNoticeMessage
+    | PrivacyState
+    | MemoryErased
+    | MemoryFacts
     | ErrorMessage,
     Field(discriminator="type"),
 ]

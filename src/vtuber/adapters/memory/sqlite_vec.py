@@ -126,6 +126,8 @@ class SqliteVecStore:
             db.enable_load_extension(True)  # noqa: FBT003 — позиционный API sqlite3
             sqlite_vec.load(db)
             db.enable_load_extension(False)  # noqa: FBT003
+            # Иначе удалённый текст остаётся в свободных страницах файла, и «очистка» — неправда.
+            db.execute("pragma secure_delete = on")
             db.executescript(SCHEMA)
             _add_note_column(db)
             self._check_dimensions(db)

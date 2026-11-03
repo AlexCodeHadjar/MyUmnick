@@ -3,7 +3,7 @@
 import asyncio
 import time
 from collections.abc import Awaitable, Callable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from itertools import count
 from typing import Final
 
@@ -45,6 +45,7 @@ class _ActiveTurn:
     parser: StreamParser = field(default_factory=StreamParser)
     reason: CancelReason = CancelReason.USER_STOP
     external: bool = False
+    private: bool = False
     task: asyncio.Task[None] | None = None
 
 
@@ -76,11 +77,23 @@ class ConversationService:
         self._hints: HintSource | None = None
         self._tools: HintSource | None = None
         self._silent_at = 0.0
+        self._private = False
 
     @property
     def state(self) -> TurnState:
         """Состояние текущего хода."""
         return self._state
+
+    @property
+    def private(self) -> bool:
+        """Включён ли приватный режим."""
+        return self._private
+
+    def set_private(self, *, enabled: bool) -> None:
+        """Разговор не запоминается (S-17.2); при выключении его ходы забываются совсем."""
+        self._private = enabled
+        if not enabled:
+            self._memory.forget_private()
 
     def use_tools(self, hints: HintSource) -> None:
         """Подключить инструменты плагинов: их результат — в справке этого же хода (S-12.4)."""
@@ -99,7 +112,9 @@ class ConversationService:
         """
         await self.cancel(CancelReason.NEW_MESSAGE)
         self._stop_prefill()
-        turn = _ActiveTurn(TurnId(next(self._ids)), user_text, sink, external=external)
+        turn = _ActiveTurn(
+            TurnId(next(self._ids)), user_text, sink, external=external, private=self._private
+        )
         self._move(TurnState.THINKING)
         turn.task = asyncio.create_task(self._run(turn))
         self._current = turn
@@ -163,7 +178,7 @@ class ConversationService:
         with turn_context(turn.id):
             try:
                 await self._bus.publish(TurnStarted(turn.id))
-                hints = TurnHints() if turn.external else await self._turn_hints(turn.user_text)
+                hints = TurnHints() if turn.external else await self._turn_hints(turn)
                 prompt = self._prompts.build(self._memory.messages, turn.user_text, hints.context)
                 sink = _FirstOutputSink(
                     turn.sink, self._start_speaking, self._count_audio, self._publish_emotion(turn)
@@ -182,15 +197,17 @@ class ConversationService:
 
     async def _finish(self, turn: _ActiveTurn) -> None:
         reply = turn.parser.full_text
-        await self._remember(Turn(turn.id, turn.user_text, reply, is_external=turn.external))
+        await self._remember(turn, reply, is_interrupted=False)
         self._move(TurnState.IDLE)
         await self._bus.publish(TurnFinished(turn.id))
 
-    async def _turn_hints(self, text: str) -> TurnHints:
-        sources = [hints for hints in (self._tools, self._hints) if hints is not None]
+    async def _turn_hints(self, turn: _ActiveTurn) -> TurnHints:
+        # В приватном режиме инструменты выключены: заметка — след на диске. Память только читается.
+        tools = None if turn.private else self._tools
+        sources = [hints for hints in (tools, self._hints) if hints is not None]
         if not sources:
             return TurnHints()
-        found = await asyncio.gather(*(hints(text) for hints in sources))
+        found = await asyncio.gather(*(hints(turn.user_text) for hints in sources))
         context = tuple(line for hint in found for line in hint.context)
         temperature = next((h.temperature for h in found if h.temperature is not None), None)
         return TurnHints(context=context, temperature=temperature)
@@ -203,23 +220,27 @@ class ConversationService:
     async def _stop(self, turn: _ActiveTurn, event: TurnCancelled, *, remember: bool) -> None:
         if remember:
             reply = turn.parser.full_text
-            await self._remember(
-                Turn(
-                    turn.id,
-                    turn.user_text,
-                    reply,
-                    is_interrupted=True,
-                    is_external=turn.external,
-                )
-            )
+            await self._remember(turn, reply, is_interrupted=True)
         self._move(TurnState.CANCELLED)
         self._move(TurnState.IDLE)
         await self._bus.publish(event)
 
-    async def _remember(self, turn: Turn) -> None:
+    async def _remember(self, turn: _ActiveTurn, reply: str, *, is_interrupted: bool) -> None:
         """В историю — и на шину: фоновая память извлечёт факты и сожмёт отрезанное (T-13)."""
-        dropped = self._memory.append(turn)
-        await self._bus.publish(TurnRemembered(turn, dropped))
+        if turn.private and not self._private:
+            return  # режим выключили, пока шёл ответ: этот ход тоже надо забыть
+        record = Turn(
+            turn.id,
+            turn.user_text,
+            reply,
+            is_interrupted=is_interrupted,
+            is_external=turn.external,
+            is_private=turn.private,
+        )
+        dropped = self._memory.append(record)
+        # Плагины и запись на диск слушают шину: текст приватного хода туда не идёт совсем.
+        public = replace(record, user_text="", reply_text="") if turn.private else record
+        await self._bus.publish(TurnRemembered(public, dropped))
 
     def _publish_emotion(self, turn: _ActiveTurn) -> Callable[[Emotion], Awaitable[None]]:
         async def publish(emotion: Emotion) -> None:

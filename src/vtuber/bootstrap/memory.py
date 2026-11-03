@@ -16,6 +16,9 @@ from vtuber.application.memory import (
     ChatRecorder,
     FactExtractor,
     FactMemory,
+    MemoryControls,
+    MemoryEditor,
+    MemoryEraser,
     MemoryKeeper,
     MemoryRecall,
     Summarizer,
@@ -44,14 +47,14 @@ class _Engines:
 @asynccontextmanager
 async def background_memory(
     cfg: AppConfig, conversation: Conversation, core: Core
-) -> AsyncIterator[None]:
+) -> AsyncIterator[MemoryControls | None]:
     """Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
 
-    `cfg.memory` — с путями от корня (`MemoryConfig.resolved`).
+    `cfg.memory` — с путями от корня (`MemoryConfig.resolved`). Отдаёт управление памятью для UI.
     """
     memory = cfg.memory
     if not memory.enabled:
-        yield
+        yield None
         return
     llm_cfg = _background_llm(cfg)
     memory.store_path.parent.mkdir(parents=True, exist_ok=True)
@@ -64,15 +67,18 @@ async def background_memory(
         vault = ObsidianVault(memory.vault_path)
         await _restore(vault, conversation, memory.restore_turns)
         engines = _Engines(llm, embedder, store, vault)
-        scheduler = _wire(cfg, conversation, core, engines)
+        scheduler, keeper = _wire(cfg, conversation, core, engines)
         loop = tg.create_task(scheduler.run())
         _log.info("memory.background_ready", store=str(memory.store_path))
         try:
             async with (
-                _recording_chats(vault, core, tg),
+                _recording_chats(vault, core, tg) as recorder,
                 _watching_notes(memory, engines, scheduler, core),
             ):
-                yield
+                yield MemoryControls(
+                    MemoryEditor(vault, store, embedder),
+                    _eraser(engines, conversation, keeper, recorder),
+                )
         finally:
             loop.cancel()
 
@@ -96,13 +102,13 @@ async def _watching_notes(
 @asynccontextmanager
 async def _recording_chats(
     vault: MemoryVaultPort, core: Core, tg: asyncio.TaskGroup
-) -> AsyncIterator[None]:
+) -> AsyncIterator[ChatRecorder]:
     """На выходе очередь дописывается: последний ход перед закрытием не должен пропасть."""
     recorder = ChatRecorder(vault)
     recorder.follow(core.bus)
     recording = tg.create_task(recorder.run())
     try:
-        yield
+        yield recorder
     finally:
         recorder.stop()
         await recording
@@ -119,7 +125,7 @@ async def _restore(vault: MemoryVaultPort, conversation: Conversation, turns: in
 
 def _wire(
     cfg: AppConfig, conversation: Conversation, core: Core, engines: _Engines
-) -> IdleScheduler:
+) -> tuple[IdleScheduler, MemoryKeeper]:
     """Фон — подпиской на шину, поиск — подключением к сервису хода."""
     memory = cfg.memory
     params = GenerationParams(
@@ -138,7 +144,17 @@ def _wire(
     scheduler.submit(IdleJob("vault:reconcile", lambda: _reconcile(engines)))
     recall = MemoryRecall(engines.embedder, engines.store, memory.retrieval, core.telemetry)
     conversation.service.use_memory(recall.hints)
-    return scheduler
+    return scheduler, keeper
+
+
+def _eraser(
+    engines: _Engines, conversation: Conversation, keeper: MemoryKeeper, recorder: ChatRecorder
+) -> MemoryEraser:
+    async def quiet() -> None:
+        keeper.forget()
+        await recorder.drain()
+
+    return MemoryEraser(engines.vault, engines.store, conversation.history, quiet)
 
 
 async def _reconcile(engines: _Engines) -> None:

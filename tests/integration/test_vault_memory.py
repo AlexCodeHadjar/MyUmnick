@@ -167,3 +167,15 @@ async def test_fact_without_a_note_never_reaches_the_index() -> None:
     with pytest.raises(MemoryUnavailable):
         await facts.add(_fact("x"), vector)
     assert store.facts == []
+
+
+def test_erase_keeps_the_users_other_notes(tmp_path: Path) -> None:
+    async def scenario() -> None:
+        vault = ObsidianVault(tmp_path)
+        await vault.save_fact(_fact("факт"))
+        (tmp_path / "Мои проекты.md").write_text("чужая заметка", encoding="utf-8")
+        await vault.erase()
+
+    asyncio.run(scenario())
+    assert (tmp_path / "Мои проекты.md").is_file()
+    assert not list((tmp_path / "Факты").glob("*.md"))

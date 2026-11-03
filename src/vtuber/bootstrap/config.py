@@ -29,6 +29,11 @@ from vtuber.kernel import (
 )
 
 
+def _for_profile(store: Path, profile: str) -> Path:
+    """Свой индекс на профиль; без профиля путь прежний, поэтому старые данные на месте."""
+    return store.with_stem(f"{store.stem}-{profile}") if profile else store
+
+
 class MemoryConfig(ConfigSection):
     """Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
 
@@ -39,6 +44,7 @@ class MemoryConfig(ConfigSection):
     enabled: bool
     store_path: Path
     vault_path: Path
+    profile: str
     restore_turns: int = Field(ge=0)
     vault_poll_s: float = Field(gt=0)
     background_slot_id: int = Field(ge=0)
@@ -49,10 +55,13 @@ class MemoryConfig(ConfigSection):
 
     def resolved(self, root: Path) -> "MemoryConfig":
         """Копия с путями базы и модели от корня проекта."""
+        if self.profile in {".", ".."} or "/" in self.profile or "\\" in self.profile:
+            msg = f"Имя профиля памяти — не путь: {self.profile}"
+            raise ValueError(msg)
         return self.model_copy(
             update={
-                "store_path": root / self.store_path,
-                "vault_path": root / self.vault_path,
+                "store_path": root / _for_profile(self.store_path, self.profile),
+                "vault_path": root / (self.vault_path / self.profile),
                 "e5": self.e5.model_copy(update={"model_dir": root / self.e5.model_dir}),
             }
         )

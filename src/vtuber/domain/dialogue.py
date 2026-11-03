@@ -30,7 +30,8 @@ class Turn:
 
     У прерванного хода `reply_text` — только показанная/произнесённая часть, а `is_interrupted`
     истинно: модель должна «знать», что её перебили. `is_external` — реплика не от ведущего
-    (зритель, таймер): о ведущем из неё ничего не узнать.
+    (зритель, таймер): о ведущем из неё ничего не узнать. `is_private` — приватный режим (S-17.2):
+    на диск и в фоновую память такой ход не попадает.
     """
 
     id: TurnId
@@ -38,6 +39,7 @@ class Turn:
     reply_text: str
     is_interrupted: bool = False
     is_external: bool = False
+    is_private: bool = False
 
 
 @dataclass(frozen=True, slots=True)

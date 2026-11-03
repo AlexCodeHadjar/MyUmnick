@@ -65,3 +65,27 @@ async def test_summary_is_replaced_and_empty_at_first(vault: MemoryVaultPort) ->
 async def test_empty_vault_has_nothing(vault: MemoryVaultPort) -> None:
     assert await vault.facts() == []
     assert await vault.recent_turns(5) == []
+
+
+async def test_erase_removes_everything(vault: MemoryVaultPort) -> None:
+    await vault.save_fact(_fact())
+    await vault.save_turn(Turn(TurnId(1), "привет", "ответ"), WHEN)
+    await vault.save_summary("резюме")
+    await vault.erase()
+    assert await vault.facts() == []
+    assert await vault.recent_turns(5) == []
+    assert await vault.summary() is None
+
+
+async def test_update_and_delete_fact(vault: MemoryVaultPort) -> None:
+    saved = await vault.save_fact(_fact())
+    await vault.update_fact(saved.note, "Живёт в Твери")
+    (fact,) = await vault.facts()
+    assert (fact.text, fact.note, fact.created_at) == ("Живёт в Твери", saved.note, WHEN)
+    await vault.delete_fact(saved.note)
+    assert await vault.facts() == []
+
+
+async def test_unknown_note_is_an_error(vault: MemoryVaultPort) -> None:
+    with pytest.raises(ValueError, match="заметки"):
+        await vault.delete_fact("нет такой")
