@@ -1,6 +1,6 @@
 """Доменный слой: неизменяемые сущности и значения диалога, речи и эмоций."""
 
-from vtuber.domain.dialogue import Message, Persona, Role, Turn, TurnId
+from vtuber.domain.dialogue import AttachedImage, Message, Persona, Role, Turn, TurnId
 from vtuber.domain.emotion import (
     MAX_TAG_LENGTH,
     TAG_CLOSE,
@@ -22,6 +22,7 @@ from vtuber.domain.errors import (
     STTUnavailable,
     TTSUnavailable,
     TurnStateError,
+    VisionUnavailable,
     VtuberError,
 )
 from vtuber.domain.events import (
@@ -59,6 +60,7 @@ __all__ = [
     "TAG_CLOSE",
     "TAG_OPEN",
     "VIEWER_PREFIX",
+    "AttachedImage",
     "AudioChunk",
     "AudioFormat",
     "BackendNotice",
@@ -104,6 +106,7 @@ __all__ = [
     "VaultScan",
     "Vector",
     "ViewerBlocked",
+    "VisionUnavailable",
     "VtuberError",
     "is_viewer_line",
     "looks_like_attack",

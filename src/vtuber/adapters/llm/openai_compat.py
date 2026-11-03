@@ -8,13 +8,17 @@ import httpx
 
 from vtuber.adapters.llm.config import LLMConfig
 from vtuber.adapters.llm.sse import SSE_DONE, data_of, delta_text
-from vtuber.domain import GenerationFailed, LLMUnavailable, Message
+from vtuber.domain import GenerationFailed, LLMUnavailable, Message, VisionUnavailable
 from vtuber.ports import GenerationParams
 
 CHAT_PATH: Final = "/v1/chat/completions"
 MODELS_PATH: Final = "/v1/models"
 MODEL_LOADING_STATUS: Final = 503
 ERROR_BODY_LIMIT: Final = 300
+NO_VISION_MESSAGE: Final = (
+    "Модель не смогла посмотреть картинку. Для этого llama-server запускают с проектором: "
+    "--mmproj, настройка [llama_server].mmproj."
+)
 UNREACHABLE: Final = (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout)
 
 
@@ -54,7 +58,7 @@ class OpenAICompatLLM:
         body = self._request_body(messages, params)
         try:
             async with self._client.stream("POST", CHAT_PATH, json=body) as response:
-                await check_status(response)
+                await _check_with_images(response, messages)
                 async for line in response.aiter_lines():
                     payload = data_of(line)
                     if payload == SSE_DONE:
@@ -96,9 +100,29 @@ class OpenAICompatLLM:
         )
 
 
-def wire_messages(messages: Sequence[Message]) -> list[dict[str, str]]:
-    """Сообщения в формате OpenAI Chat API."""
-    return [{"role": message.role.value, "content": message.text} for message in messages]
+def wire_messages(messages: Sequence[Message]) -> list[dict[str, object]]:
+    """Сообщения в формате OpenAI Chat API; без картинки — обычной строкой, как всегда."""
+    return [{"role": message.role.value, "content": _content(message)} for message in messages]
+
+
+def _content(message: Message) -> str | list[dict[str, object]]:
+    if not message.images:
+        return message.text
+    images: list[dict[str, object]] = [
+        {"type": "image_url", "image_url": {"url": f"data:{image.mime};base64,{image.base64}"}}
+        for image in message.images
+    ]
+    return [{"type": "text", "text": message.text}, *images]
+
+
+async def _check_with_images(response: httpx.Response, messages: Sequence[Message]) -> None:
+    """Сервер без проектора на картинку отвечает общей ошибкой: заранее его не спрашиваем."""
+    try:
+        await check_status(response)
+    except GenerationFailed as exc:
+        if any(message.images for message in messages):
+            raise VisionUnavailable(NO_VISION_MESSAGE) from exc
+        raise
 
 
 async def check_status(response: httpx.Response) -> None:

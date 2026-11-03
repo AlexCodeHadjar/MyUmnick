@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Final
 
-from vtuber.domain import Emotion, Gesture, Message, Persona, Role
+from vtuber.domain import AttachedImage, Emotion, Gesture, Message, Persona, Role
 
 EMOTIONS_PLACEHOLDER: Final = "{emotions}"
 GESTURES_PLACEHOLDER: Final = "{gestures}"
@@ -37,10 +37,14 @@ class PromptBuilder:
         return self._prefix
 
     def build(
-        self, history: Sequence[Message], user_text: str, context: Sequence[str] = ()
+        self,
+        history: Sequence[Message],
+        user_text: str,
+        context: Sequence[str] = (),
+        images: tuple[AttachedImage, ...] = (),
     ) -> Prompt:
         """Промпт хода. `history` только дописывается между ходами (её ведёт память, T-04)."""
-        user = Message(Role.USER, _with_context(user_text, context))
+        user = Message(Role.USER, _with_context(user_text, context), images)
         return Prompt((*self._prefix, *history, user), len(self._prefix))
 
 

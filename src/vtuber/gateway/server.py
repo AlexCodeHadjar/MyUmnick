@@ -9,6 +9,7 @@ from websockets.exceptions import ConnectionClosed
 
 from vtuber.application.conversation import ConversationService
 from vtuber.domain import (
+    AttachedImage,
     AudioChunk,
     BackendNotice,
     BackendState,
@@ -44,12 +45,14 @@ from vtuber.gateway.protocol_extras import (
     ChatSources,
     ViewerBlockedMessage,
 )
+from vtuber.gateway.protocol_vision import ChatSendImage
 from vtuber.gateway.sink import WsReplySink
 from vtuber.kernel import ConfigSection, EventBus, get_logger
 
 type MicSink = Callable[[AudioChunk], Awaitable[None]]
 
 REPLACED_CODE: Final = 4000
+MAX_FRAME_BYTES: Final = 8 * 1024 * 1024  # кадр с картинкой к реплике (ADR-0024)
 NS_PER_MS: Final = 1_000_000
 
 _log = get_logger(__name__)
@@ -109,7 +112,9 @@ class GatewayServer:
         return int(self._server.sockets[0].getsockname()[1])
 
     async def __aenter__(self) -> Self:
-        self._server = await serve(self._handle, self._cfg.host, self._cfg.port)
+        self._server = await serve(
+            self._handle, self._cfg.host, self._cfg.port, max_size=MAX_FRAME_BYTES
+        )
         _log.info("gateway.listening", host=self._cfg.host, port=self.port)
         return self
 
@@ -179,6 +184,10 @@ class GatewayServer:
             return
         if isinstance(message, ChatSend):
             await self._on_chat(message.data.text)
+        elif isinstance(message, ChatSendImage):
+            image = AttachedImage(message.data.image.mime, message.data.image.base64)
+            sink = WsReplySink(self.send, self.send_bytes)
+            await self._service.handle(message.data.text, sink, images=(image,))
         elif isinstance(message, ChatCancel):
             await self._service.cancel(CancelReason.USER_STOP)
         elif isinstance(message, InputTyping):

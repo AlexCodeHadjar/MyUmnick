@@ -40,6 +40,7 @@ class LlamaServerConfig(ConfigSection):
     ready_timeout_s: float = Field(gt=0)
     stop_timeout_s: float = Field(gt=0)
     extra_args: tuple[str, ...]
+    mmproj: Path | None = None  # проектор для картинок (ADR-0024); занимает видеопамять
 
     def resolved(self, root: Path) -> "LlamaServerConfig":
         """Копия с путями от корня проекта."""
@@ -48,6 +49,7 @@ class LlamaServerConfig(ConfigSection):
                 "executable": root / self.executable,
                 "model": root / self.model,
                 "log_file": root / self.log_file,
+                "mmproj": None if self.mmproj is None else root / self.mmproj,
             }
         )
 
@@ -57,6 +59,7 @@ def server_arguments(cfg: LlamaServerConfig, base_url: str) -> list[str]:
     address = urlsplit(base_url)
     return [
         *cfg.extra_args,
+        *(() if cfg.mmproj is None else ("--mmproj", str(cfg.mmproj))),
         "--model",
         str(cfg.model),
         "--n-gpu-layers",

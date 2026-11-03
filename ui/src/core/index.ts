@@ -8,6 +8,7 @@ export type {
   Component,
   Emotion,
   Gesture,
+  ImageData,
   ResourcesData,
   SetupData,
 } from "./protocol.gen";

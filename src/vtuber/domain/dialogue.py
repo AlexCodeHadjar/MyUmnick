@@ -17,11 +17,20 @@ class Role(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class AttachedImage:
+    """Картинка к реплике (S-18.1); только в памяти и на один ход."""
+
+    mime: str
+    base64: str
+
+
+@dataclass(frozen=True, slots=True)
 class Message:
     """Одно сообщение контекста LLM."""
 
     role: Role
     text: str
+    images: tuple[AttachedImage, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

@@ -63,6 +63,9 @@
         use:measureHeight={{ id: item.id, heights }}
       >
         <p class="bubble" class:cancelled={item.status === "cancelled"}>
+          {#if item.image !== undefined}
+            <img class="shown" src={item.image} alt="Показанная картинка" />
+          {/if}
           {textOf(item)}{#if item.status === "streaming"}<span class="caret" aria-hidden="true"
             ></span>{/if}{#if item.status === "cancelled"}<span class="mark">— прервано</span>{/if}
         </p>
@@ -121,6 +124,14 @@
   .row:hover .rewind,
   .rewind:focus-visible {
     opacity: 0.7;
+  }
+
+  .shown {
+    display: block;
+    max-width: 100%;
+    max-height: 160px;
+    margin-bottom: 4px;
+    border-radius: 4px;
   }
 
   .bubble {

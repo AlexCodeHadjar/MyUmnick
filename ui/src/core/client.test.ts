@@ -334,6 +334,19 @@ describe("CoreClient", () => {
     expect(socket.sent.at(-1)).toEqual(frame);
   });
 
+  it("картинка уходит с репликой, а без текста подставляется просьба посмотреть", () => {
+    const { client, socket } = connected();
+    const image = { mime: "image/jpeg" as const, base64: "QUJD" };
+    client.say(" ", { image, preview: "data:image/jpeg;base64,QUJD" });
+    const sent = socket.sent.at(-1);
+    expect(sent).toEqual({
+      v: 1,
+      type: "chat.send_image",
+      data: { text: "Посмотри на эту картинку.", image },
+    });
+    expect(client.store.messages.at(-1)?.image).toBe("data:image/jpeg;base64,QUJD");
+  });
+
   it("dispose() закрывает связь", () => {
     const { client, frames } = connected();
     client.dispose();

@@ -37,6 +37,10 @@ class GenerationFailed(VtuberError):
     """Бэкенд ответил, но генерация сорвалась посреди хода."""
 
 
+class VisionUnavailable(GenerationFailed):
+    """Модель не приняла картинку: сервер запущен без проектора."""
+
+
 class ProtocolError(VtuberError):
     """Сообщение от UI не соответствует протоколу."""
 

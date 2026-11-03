@@ -5,7 +5,7 @@
 import { animationFrame, FrameBatch, type FrameScheduler } from "./batch";
 import { encodeMicFrame, type AudioFrame } from "./frames";
 import { FIRST_AUDIO_SPAN, FIRST_CHAR_SPAN, FirstAudioProbe, FirstCharProbe } from "./probe";
-import { PROTOCOL_VERSION } from "./protocol.gen";
+import { PROTOCOL_VERSION, type ImageData } from "./protocol.gen";
 import { AppStore, type SpeechProgress } from "./store.svelte";
 import { Transport, type Backoff, type SocketFactory } from "./transport";
 
@@ -13,6 +13,8 @@ import { Transport, type Backoff, type SocketFactory } from "./transport";
 const BACKOFF: Backoff = { initialMs: 250, maxMs: 5000, factor: 2 };
 /** Реплики, набранные за время разрыва; больше — уже не диалог, а пачка устаревших сообщений. */
 const QUEUE_LIMIT = 16;
+/** Картинку можно отправить и без слов. */
+const IMAGE_ONLY_TEXT = "Посмотри на эту картинку.";
 
 export type AudioSink = (frame: AudioFrame) => void;
 /** Звук хода надо оборвать: `turn` — отменённый ход, null — связь потеряна (сбросить всё). */
@@ -123,17 +125,25 @@ export class CoreClient {
   }
 
   /** Реплика пользователя: в историю сразу (T-17), ядру — новым ходом. */
-  say(text: string): void {
-    const trimmed = text.trim();
+  say(text: string, attached?: { image: ImageData; preview: string }): void {
+    const trimmed = text.trim() === "" && attached !== undefined ? IMAGE_ONLY_TEXT : text.trim();
     if (trimmed === "") {
       return;
     }
-    this.store.addUserMessage(trimmed);
+    this.store.addUserMessage(trimmed, attached?.preview);
     // Новая реплика перебивает голос сразу — как ход в ядре (`new_message`), без ожидания сети.
     this.#cancel(null);
     this.#probe.sent();
     this.#audioProbe.sent();
-    this.#transport.send({ v: PROTOCOL_VERSION, type: "chat.send", data: { text: trimmed } });
+    if (attached === undefined) {
+      this.#transport.send({ v: PROTOCOL_VERSION, type: "chat.send", data: { text: trimmed } });
+    } else {
+      this.#transport.send({
+        v: PROTOCOL_VERSION,
+        type: "chat.send_image",
+        data: { text: trimmed, image: attached.image },
+      });
+    }
   }
 
   /** Кадр микрофона (Этап 11): только при связи, очереди нет. */

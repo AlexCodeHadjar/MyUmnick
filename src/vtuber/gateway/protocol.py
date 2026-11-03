@@ -32,6 +32,7 @@ from vtuber.gateway.protocol_memory import (
     PrivacyState,
 )
 from vtuber.gateway.protocol_presence import WindowVisibility
+from vtuber.gateway.protocol_vision import ChatSendImage
 
 
 def turn_ref(turn_id: TurnId) -> str:
@@ -139,7 +140,8 @@ type InboundMessage = Annotated[
     | MemoryFactDelete
     | BranchGo
     | BranchCheckpoint
-    | WindowVisibility,
+    | WindowVisibility
+    | ChatSendImage,
     Field(discriminator="type"),
 ]
 

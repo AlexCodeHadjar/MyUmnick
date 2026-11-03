@@ -7,15 +7,16 @@ from dataclasses import dataclass, field, replace
 from itertools import count
 from typing import Final
 
+from vtuber.application.conversation.first_output import FirstOutputSink
 from vtuber.application.memory import ShortTermMemory, TurnHints
 from vtuber.application.pipeline import ReplyPipeline, StreamParser
 from vtuber.application.prompting import PromptBuilder
 from vtuber.domain import (
+    AttachedImage,
     AudioChunk,
     CancelReason,
     Emotion,
     EmotionChanged,
-    Gesture,
     Message,
     Turn,
     TurnCancelled,
@@ -40,6 +41,7 @@ INTERNAL_ERROR_MESSAGE: Final = "Внутренняя ошибка при отв
 _log = get_logger(__name__)
 
 
+IMAGE_NOTE: Final = "(показана картинка, сейчас её уже не видно)"
 _HOST_REASONS = frozenset({CancelReason.USER_STOP, CancelReason.BARGE_IN})
 
 
@@ -52,6 +54,7 @@ class _ActiveTurn:
     reason: CancelReason = CancelReason.USER_STOP
     external: bool = False
     private: bool = False
+    images: tuple[AttachedImage, ...] = ()
     task: asyncio.Task[None] | None = None
 
 
@@ -140,7 +143,14 @@ class ConversationService:
         """Подключить долговременную память (её собирает bootstrap, когда загружены модели)."""
         self._hints = hints
 
-    async def handle(self, user_text: str, sink: ReplySink, *, external: bool = False) -> TurnId:
+    async def handle(
+        self,
+        user_text: str,
+        sink: ReplySink,
+        *,
+        external: bool = False,
+        images: tuple[AttachedImage, ...] = (),
+    ) -> TurnId:
         """Начинает ход по реплике; текущий ход (если идёт) прерывается. Не ждёт ответа.
 
         `external` — реплика не от ведущего (зритель, таймер): ей не положены инструменты и факты о
@@ -153,7 +163,12 @@ class ConversationService:
         await self.cancel(CancelReason.NEW_MESSAGE)
         self._stop_prefill()
         turn = _ActiveTurn(
-            TurnId(next(self._ids)), user_text, sink, external=external, private=self._private
+            TurnId(next(self._ids)),
+            user_text,
+            sink,
+            external=external,
+            private=self._private,
+            images=images,
         )
         self._move(TurnState.THINKING)
         turn.task = asyncio.create_task(self._run(turn))
@@ -223,8 +238,10 @@ class ConversationService:
             try:
                 await self._bus.publish(TurnStarted(turn.id))
                 hints = TurnHints() if turn.external else await self._turn_hints(turn)
-                prompt = self._prompts.build(self._memory.messages, turn.user_text, hints.context)
-                sink = _FirstOutputSink(
+                prompt = self._prompts.build(
+                    self._memory.messages, turn.user_text, hints.context, turn.images
+                )
+                sink = FirstOutputSink(
                     turn.sink, self._start_speaking, self._count_audio, self._publish_emotion(turn)
                 )
                 await self._pipeline.run(prompt.messages, sink, turn.parser, hints.temperature)
@@ -275,7 +292,8 @@ class ConversationService:
             return  # режим выключили, пока шёл ответ: этот ход тоже надо забыть
         record = Turn(
             turn.id,
-            turn.user_text,
+            # Картинка живёт один ход (ADR-0024); модель должна помнить, что она была.
+            f"{turn.user_text} {IMAGE_NOTE}" if turn.images else turn.user_text,
             reply,
             is_interrupted=is_interrupted,
             is_external=turn.external,
@@ -300,40 +318,3 @@ class ConversationService:
 
     def _move(self, target: TurnState) -> None:
         self._state = next_state(self._state, target)
-
-
-@dataclass(slots=True)
-class _FirstOutputSink:
-    """Пропускает всё в `inner`; на первом выводе ответа зовёт `on_first` (THINKING → SPEAKING)."""
-
-    inner: ReplySink
-    on_first: Callable[[], None]
-    on_audio: Callable[[AudioChunk], None]
-    on_emotion: Callable[[Emotion], Awaitable[None]]
-    started: bool = False
-
-    async def text(self, delta: str) -> None:
-        self._mark()
-        await self.inner.text(delta)
-
-    async def emotion(self, emotion: Emotion) -> None:
-        self._mark()
-        await self.inner.emotion(emotion)
-        await self.on_emotion(emotion)
-
-    async def gesture(self, gesture: Gesture) -> None:
-        """Жест — не вывод для замера первого символа: он только добавка к речи."""
-        await self.inner.gesture(gesture)
-
-    async def audio(self, chunk: AudioChunk) -> None:
-        self._mark()
-        self.on_audio(chunk)
-        await self.inner.audio(chunk)
-
-    async def done(self) -> None:
-        await self.inner.done()
-
-    def _mark(self) -> None:
-        if not self.started:
-            self.started = True
-            self.on_first()

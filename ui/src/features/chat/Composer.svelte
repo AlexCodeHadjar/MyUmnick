@@ -1,6 +1,7 @@
 <script lang="ts">
   // Поле ввода: Enter — отправить, Shift+Enter — перенос, Esc или «Стоп» — прервать ответ.
   // Отправка во время ответа разрешена: новая реплика сама прерывает текущий ход (ADR-0002).
+  import { attachmentFromFile, type Attachment } from "./image";
   import { isSendKey, isStopKey } from "./keys";
 
   const {
@@ -10,21 +11,49 @@
     ontyping = () => undefined,
   }: {
     busy: boolean;
-    onsend: (text: string) => void;
+    onsend: (text: string, attached: Attachment | null) => void;
     onstop: () => void;
     /** Текст поля после каждого изменения (черновик для прогрева LLM, T-05). */
     ontyping?: (text: string) => void;
   } = $props();
 
   let text = $state("");
-  const empty = $derived(text.trim() === "");
+  let attached = $state<Attachment | null>(null);
+  let attachProblem = $state<string | null>(null);
+  const empty = $derived(text.trim() === "" && attached === null);
 
   function submit(): void {
     if (empty) {
       return;
     }
-    onsend(text);
+    onsend(text, attached);
     text = "";
+    attached = null;
+  }
+
+  async function attach(file: Blob): Promise<void> {
+    attachProblem = null;
+    try {
+      attached = await attachmentFromFile(file);
+    } catch {
+      attachProblem = "Не получилось открыть эту картинку";
+    }
+  }
+
+  function onfile(event: Event & { currentTarget: HTMLInputElement }): void {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (file !== undefined) {
+      void attach(file);
+    }
+  }
+
+  function onpaste(event: ClipboardEvent): void {
+    const file = [...(event.clipboardData?.files ?? [])].find((f) => f.type.startsWith("image/"));
+    if (file !== undefined) {
+      event.preventDefault();
+      void attach(file);
+    }
   }
 
   function onkeydown(event: KeyboardEvent): void {
@@ -38,6 +67,23 @@
   }
 </script>
 
+{#if attached !== null || attachProblem !== null}
+  <div class="attached">
+    {#if attached !== null}
+      <img src={attached.preview} alt="Прикреплённая картинка" />
+      <button
+        type="button"
+        class="stop"
+        onclick={() => {
+          attached = null;
+        }}>Убрать</button
+      >
+    {/if}
+    {#if attachProblem !== null}
+      <span role="alert">{attachProblem}</span>
+    {/if}
+  </div>
+{/if}
 <form
   class="composer"
   onsubmit={(event) => {
@@ -48,6 +94,7 @@
   <textarea
     bind:value={text}
     {onkeydown}
+    {onpaste}
     oninput={() => {
       ontyping(text);
     }}
@@ -59,6 +106,10 @@
       <button type="button" class="stop" onclick={onstop} title="Esc">Стоп</button>
     {/if}
     <button type="submit" disabled={empty}>Отправить</button>
+    <label class="attach" title="Прикрепить картинку; можно и вставить из буфера">
+      Картинка
+      <input type="file" accept="image/*" onchange={onfile} />
+    </label>
   </div>
 </form>
 
@@ -104,6 +155,30 @@
   button:disabled {
     opacity: 0.4;
     cursor: default;
+  }
+
+  .attached {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px 0;
+  }
+
+  .attached img {
+    max-height: 64px;
+    border-radius: 4px;
+  }
+
+  .attach {
+    padding: 2px 8px;
+    font-size: 0.8em;
+    text-align: center;
+    cursor: pointer;
+    opacity: 0.8;
+  }
+
+  .attach input {
+    display: none;
   }
 
   .stop {

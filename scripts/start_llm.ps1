@@ -33,7 +33,10 @@ param(
     # Общий контекст на все слоты; больше, чем нужно, — лишняя VRAM и медленный prefill (T-10).
     [int] $ContextSize = 16384,
 
-    [int] $Slots = 2
+    [int] $Slots = 2,
+
+    # Проектор для картинок (ADR-0024); без него модель зрения нет, а видеопамяти свободнее.
+    [string] $MmProj = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -60,6 +63,13 @@ $arguments = @(
     "--host", $ListenHost,
     "--port", $Port
 )
+
+if ($MmProj -ne "") {
+    if (-not (Test-Path -LiteralPath $MmProj)) {
+        throw "Не найден проектор '$MmProj'"
+    }
+    $arguments += @("--mmproj", $MmProj)
+}
 
 Write-Host "llama-server $($arguments -join ' ')"
 & $Server @arguments

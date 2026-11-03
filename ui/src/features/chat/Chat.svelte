@@ -4,6 +4,7 @@
   import type { ChatMessage, CoreClient } from "../../core";
   import BranchBar from "./BranchBar.svelte";
   import Composer from "./Composer.svelte";
+  import type { Attachment } from "./image";
   import MessageList from "./MessageList.svelte";
   import { readSubtitles, Subtitles, writeSubtitles, type SettingStorage } from "./subtitles";
   import { TypingDebouncer } from "./typing";
@@ -74,9 +75,9 @@
   <!-- «Стоп» нужен и после конца хода: голос звучит дольше, чем идёт ход (синтез быстрее речи). -->
   <Composer
     busy={store.phase !== "idle" || speaking}
-    onsend={(text: string) => {
+    onsend={(text: string, attached: Attachment | null) => {
       typing.cancel();
-      client.say(text);
+      client.say(text, attached ?? undefined);
     }}
     ontyping={(text: string) => {
       typing.input(text);

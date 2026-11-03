@@ -117,6 +117,15 @@ UI → Ядро: окно свернули или вернули; свёрнут
 |---|---|
 | `visible` | `boolean` |
 
+### `chat.send_image` — `ChatSendImage`
+
+UI → Ядро: новая реплика с картинкой; прерывает текущий ход, как `chat.send`.
+
+| Поле `data` | Тип |
+|---|---|
+| `text` | `string` |
+| `image` | `ImageData` |
+
 ## Ядро → UI
 
 ### `turn.started` — `TurnStartedMessage`

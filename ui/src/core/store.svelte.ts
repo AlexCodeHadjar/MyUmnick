@@ -34,6 +34,8 @@ export interface ChatMessage {
   /** Ход ядра; у реплик пользователя — null. */
   turn: string | null;
   status: MessageStatus;
+  /** Показанная картинка, data URL (ADR-0024). */
+  image?: string;
 }
 
 /** Сколько последних замеров стадии хранить: хватает на p95, память — копейки. */
@@ -108,8 +110,12 @@ export class AppStore {
   /** Индекс сообщения текущего хода в `messages`: массив только растёт, индекс не сдвигается. */
   #streaming: number | null = null;
 
-  addUserMessage(text: string): void {
-    this.#push("user", text, null, "done");
+  addUserMessage(text: string, image?: string): void {
+    const index = this.#push("user", text, null, "done");
+    const message = this.messages[index];
+    if (image !== undefined && message !== undefined) {
+      message.image = image;
+    }
     this.error = null;
     this.notice = null;
     this.sources = [];

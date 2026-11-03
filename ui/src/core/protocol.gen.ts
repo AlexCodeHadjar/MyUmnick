@@ -119,6 +119,13 @@ export interface ChatSend {
   data: SendData;
 }
 
+/** UI → Ядро: новая реплика с картинкой; прерывает текущий ход, как `chat.send`. */
+export interface ChatSendImage {
+  v: Version;
+  type: "chat.send_image";
+  data: SendImageData;
+}
+
 /** Ядро → UI: инструмент нашёл источники для этого ответа (FR-25). */
 export interface ChatSources {
   v: Version;
@@ -216,6 +223,12 @@ export type Gesture = "nod" | "shake" | "tilt" | "startle";
 /** Какой жест показать. */
 export interface GestureData {
   gesture: Gesture;
+}
+
+/** Картинка; UI уменьшает её заранее. */
+export interface ImageData {
+  mime: "image/jpeg" | "image/png" | "image/webp";
+  base64: string;
 }
 
 /** Ядро → UI: пользователь заговорил — оборвать голос витюбера сразу (Этап 11). */
@@ -383,6 +396,12 @@ export interface SendData {
   text: string;
 }
 
+/** Реплика с картинкой. */
+export interface SendImageData {
+  text: string;
+  image: ImageData;
+}
+
 /** UI → Ядро: прервать загрузку; скачанное продолжится при следующей попытке. */
 export interface SetupCancel {
   v: Version;
@@ -524,6 +543,6 @@ export interface WindowVisibility {
   data: VisibilityData;
 }
 
-export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint | WindowVisibility;
+export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint | WindowVisibility | ChatSendImage;
 
 export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | AvatarGesture | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryFacts | BranchState | ChatSources | ErrorMessage;

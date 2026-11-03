@@ -159,6 +159,7 @@ slots = 2                      # 0 — диалог, 1 — фон (Этап 10)
 ready_timeout_s = 180.0        # загрузка модели с медленного диска
 stop_timeout_s = 5.0
 extra_args = []
+# mmproj = "models/llm/mmproj.gguf"  # зрение (ADR-0024): занимает видеопамять, поэтому по желанию
 
 [setup]                        # мастер первого запуска (S-13.2); в поставке включает config/setup.toml
 enabled = false
