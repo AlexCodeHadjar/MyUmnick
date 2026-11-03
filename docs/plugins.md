@@ -33,7 +33,7 @@
 | `log` | Логгер; события попадают в общий JSON-лог с полем `module = plugin.<имя>` |
 
 События: `TurnStarted`, `TurnFinished`, `TurnCancelled`, `TurnRemembered`, `EmotionChanged`,
-`MetricRecorded`, `BackendStatusChanged`.
+`PhraseVoiced`, `MetricRecorded`, `BackendStatusChanged`.
 
 ## Источник реплик
 

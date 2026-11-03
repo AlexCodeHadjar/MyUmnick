@@ -14,6 +14,7 @@ from vtuber.domain import (
     AudioChunk,
     CancelReason,
     Emotion,
+    EmotionChanged,
     Message,
     Turn,
     TurnCancelled,
@@ -153,7 +154,9 @@ class ConversationService:
                 await self._bus.publish(TurnStarted(turn.id))
                 hints = TurnHints() if self._hints is None else await self._hints(turn.user_text)
                 prompt = self._prompts.build(self._memory.messages, turn.user_text, hints.context)
-                sink = _FirstOutputSink(turn.sink, self._start_speaking, self._count_audio)
+                sink = _FirstOutputSink(
+                    turn.sink, self._start_speaking, self._count_audio, self._publish_emotion(turn)
+                )
                 await self._pipeline.run(prompt.messages, sink, turn.parser, hints.temperature)
             except asyncio.CancelledError:
                 await self._stop(turn, TurnCancelled(turn.id, turn.reason), remember=True)
@@ -186,6 +189,12 @@ class ConversationService:
         dropped = self._memory.append(turn)
         await self._bus.publish(TurnRemembered(turn, dropped))
 
+    def _publish_emotion(self, turn: _ActiveTurn) -> Callable[[Emotion], Awaitable[None]]:
+        async def publish(emotion: Emotion) -> None:
+            await self._bus.publish(EmotionChanged(turn.id, emotion))
+
+        return publish
+
     def _count_audio(self, chunk: AudioChunk) -> None:
         self._silent_at = max(self._silent_at, time.monotonic()) + chunk.duration_s
 
@@ -203,6 +212,7 @@ class _FirstOutputSink:
     inner: ReplySink
     on_first: Callable[[], None]
     on_audio: Callable[[AudioChunk], None]
+    on_emotion: Callable[[Emotion], Awaitable[None]]
     started: bool = False
 
     async def text(self, delta: str) -> None:
@@ -212,6 +222,7 @@ class _FirstOutputSink:
     async def emotion(self, emotion: Emotion) -> None:
         self._mark()
         await self.inner.emotion(emotion)
+        await self.on_emotion(emotion)
 
     async def audio(self, chunk: AudioChunk) -> None:
         self._mark()

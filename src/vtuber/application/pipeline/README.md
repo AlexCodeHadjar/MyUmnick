@@ -13,6 +13,7 @@ WebSocket.
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
+| `PhraseListener`, `Voice.on_phrase` | Сообщение `PhraseVoiced` об озвученной фразе: когда зазвучит и сколько продлится (субтитры) |
 | `ReplyPipeline(llm, params, telemetry, voice=None)` | `run(messages, sink, parser)` — стрим ответа в `sink`; с `Voice` — и звук |
 | `Voice(tts, chunker, fillers=None)` | Голос хода: движок, правила нарезки, междометия; нет — только текст |
 | `Speaker(tts, telemetry, fillers=None)` | TTS-ветка: `run(phrases, sink)` до маркера `None` |

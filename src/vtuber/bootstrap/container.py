@@ -75,7 +75,7 @@ def build_conversation(
     voice = (
         None
         if backends.tts is None
-        else Voice(backends.tts, cfg.pipeline.chunker, backends.fillers)
+        else Voice(backends.tts, cfg.pipeline.chunker, backends.fillers, core.bus.publish)
     )
     prompts = PromptBuilder(persona)
     history = ShortTermMemory(ContextBudget(cfg.context))

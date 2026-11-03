@@ -58,7 +58,7 @@
 ## src/vtuber/application/conversation
 Сценарий «ход диалога»: реплика → промпт → конвейер → история и события.
 
-- `ConversationService` — `src/vtuber/application/conversation/service.py:49` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
+- `ConversationService` — `src/vtuber/application/conversation/service.py:50` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
 
 ## src/vtuber/application/memory
 Память витюбера: история разговора, её резюме и долговременные факты (Этап 10).
@@ -89,8 +89,8 @@
 - `FillerBank` — `src/vtuber/application/pipeline/filler.py:38` — Готовые к отдаче междометия; пустой банк (голос не загружен, выключено) — молчит.
 - `AudioOut` — `src/vtuber/application/pipeline/filler.py:76` — Единственный писатель звука хода: ответ и междометие не перемешиваются.
 - `Voice` — `src/vtuber/application/pipeline/reply_pipeline.py:20` — Голос хода: движок TTS, нарезка на фразы, междометия (T-17); без голоса — только текст.
-- `ReplyPipeline` — `src/vtuber/application/pipeline/reply_pipeline.py:61` — Стримит ответ LLM получателю по мере генерации (T-01): ни одна стадия не ждёт конца.
-- `Speaker` — `src/vtuber/application/pipeline/speaker.py:23` — Озвучивает фразы одного хода.
+- `ReplyPipeline` — `src/vtuber/application/pipeline/reply_pipeline.py:62` — Стримит ответ LLM получателю по мере генерации (T-01): ни одна стадия не ждёт конца.
+- `Speaker` — `src/vtuber/application/pipeline/speaker.py:29` — Озвучивает фразы одного хода.
 - `TextDelta` — `src/vtuber/application/pipeline/stream_parser.py:20` — Порция текста: `text` — для чата, `spoken_text` — для TTS (без эмодзи и разметки).
 - `EmotionCue` — `src/vtuber/application/pipeline/stream_parser.py:32` — В ответе встретился тег эмоции; озвучивать нечего.
 - `StreamParser` — `src/vtuber/application/pipeline/stream_parser.py:46` — Разбирает дельты одного ответа по мере поступления (один экземпляр на ход).
@@ -185,8 +185,9 @@
 - `TurnFinished` — `src/vtuber/domain/events.py:54` — Ход завершён полностью.
 - `TurnCancelled` — `src/vtuber/domain/events.py:61` — Ход прерван; UI сбрасывает аудиобуфер. `message` — что сказать пользователю при ошибке.
 - `EmotionChanged` — `src/vtuber/domain/events.py:70` — В ответе встретился тег эмоции.
-- `MetricRecorded` — `src/vtuber/domain/events.py:78` — Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев).
-- `BackendStatusChanged` — `src/vtuber/domain/events.py:87` — Бэкенд загрузился, упал или восстановился.
+- `PhraseVoiced` — `src/vtuber/domain/events.py:78` — Фраза озвучена: зазвучит через `starts_in_s` и продлится `duration_s` (субтитры, Этап 12).
+- `MetricRecorded` — `src/vtuber/domain/events.py:91` — Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев).
+- `BackendStatusChanged` — `src/vtuber/domain/events.py:100` — Бэкенд загрузился, упал или восстановился.
 - `IncomingMessage` — `src/vtuber/domain/incoming.py:7` — Реплика из источника `source` (например, `twitch`) от автора `author`.
 - `EmbedKind` — `src/vtuber/domain/memory.py:14` — Что кодируется: у e5 запрос и запоминаемый текст кодируются по-разному.
 - `FactSource` — `src/vtuber/domain/memory.py:21` — Откуда факт: от этого зависит доверие к нему при ответе.

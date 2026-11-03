@@ -75,6 +75,19 @@ class EmotionChanged:
 
 
 @dataclass(frozen=True, slots=True)
+class PhraseVoiced:
+    """Фраза озвучена: зазвучит через `starts_in_s` и продлится `duration_s` (субтитры, Этап 12).
+
+    Ответ готов намного раньше, чем произнесён, поэтому показать фразу вовремя можно только так.
+    Время — оценка по отданному звуку: задержка сети и плеера UI не учтены.
+    """
+
+    text: str
+    starts_in_s: float
+    duration_s: float
+
+
+@dataclass(frozen=True, slots=True)
 class MetricRecorded:
     """Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев)."""
 
