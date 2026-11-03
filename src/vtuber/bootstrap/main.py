@@ -12,6 +12,7 @@ from typing import Final, Protocol, TextIO
 
 from vtuber.application.conversation import ConversationService
 from vtuber.application.pipeline import FillerBank
+from vtuber.application.scheduler import ResourceManager
 from vtuber.application.tools import ToolContext
 from vtuber.bootstrap.config import AppConfig, load_app_config
 from vtuber.bootstrap.container import (
@@ -107,12 +108,15 @@ async def _run(
     bus = EventBus()
     core = Core(bus, Telemetry(bus))
     bus.subscribe(MetricRecorded, TraceWriter(traces))
+    # Здесь, а не в TaskGroup: ошибка бюджета в конфиге должна дойти до main как ConfigError.
+    resources = _resources(cfg, bus)
     # Голос — только у шлюза: терминальный чат звук не воспроизводит (S-7.5).
     tts = tts_backends().create(cfg.tts.backend, cfg.tts) if mode == SERVE_MODE else None
     voice = None if tts is None else _Voice(tts, FillerBank(cfg.pipeline.filler))
     fillers = None if voice is None else voice.fillers
     async with llm_backends().create(cfg.llm.backend, cfg.llm) as llm, asyncio.TaskGroup() as tg:
         metrics = tg.create_task(core.telemetry.run())
+        trimming = tg.create_task(resources.run())
         conversation = build_conversation(cfg, persona, Backends(llm, tts, fillers), core)
         warmup = _Warmup(llm, conversation.prompts.prefix, bus, voice)
         # Память (Этап 10): факты и резюме — в простое, LLM фонового слота; поиск — в ходе (T-12).
@@ -128,7 +132,14 @@ async def _run(
             else:
                 code = await _chat(conversation.service, warmup, console, bus)
         metrics.cancel()
+        trimming.cancel()
     return code
+
+
+def _resources(cfg: AppConfig, bus: EventBus) -> ResourceManager:
+    manager = ResourceManager(cfg.resources)
+    manager.follow(bus)
+    return manager
 
 
 def _connect_tools(cfg: AppConfig, service: ConversationService, plugins: PluginServices) -> None:

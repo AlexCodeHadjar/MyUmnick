@@ -12,7 +12,7 @@ from vtuber.adapters.tts import TTSConfig
 from vtuber.application.memory import FactMemoryConfig, RetrievalConfig
 from vtuber.application.pipeline import PipelineConfig
 from vtuber.application.prompting import ContextConfig
-from vtuber.application.scheduler import SchedulerConfig
+from vtuber.application.scheduler import ResourcesConfig, SchedulerConfig
 from vtuber.application.voice import VoiceConfig
 from vtuber.bootstrap.persona import PersonaConfig
 from vtuber.gateway import GatewayConfig
@@ -86,6 +86,7 @@ class AppConfig(ConfigSection):
     memory: MemoryConfig
     stt: SttConfig
     plugins: PluginsConfig
+    resources: ResourcesConfig
 
 
 def load_app_config(root: Path, env: Mapping[str, str]) -> AppConfig:

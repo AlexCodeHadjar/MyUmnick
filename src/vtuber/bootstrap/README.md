@@ -9,7 +9,7 @@ LLM-адаптеров и движков TTS и сервис хода, прог�
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
-| `AppConfig` | Корень конфига: `logging`, `telemetry`, `llm`, `persona`, `context`, `gateway`, `pipeline`, `tts`, `scheduler`, `memory`, `stt`, `plugins` |
+| `AppConfig` | Корень конфига: `logging`, `telemetry`, `llm`, `persona`, `context`, `gateway`, `pipeline`, `tts`, `scheduler`, `memory`, `stt`, `plugins`, `resources` |
 | `load_app_config(root, env)` | Читает `<root>/config/default.toml` и `user.toml` поверх `env` |
 | `PersonaConfig`, `load_persona(path)` | `[persona].file` → доменная `Persona`; ошибки — `ConfigError` |
 | `llm_backends()` | Реестр LLM-адаптеров: `llamacpp`, `openai_compat` (одна строка на адаптер) |

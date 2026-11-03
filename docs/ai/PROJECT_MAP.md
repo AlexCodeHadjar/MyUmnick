@@ -105,11 +105,17 @@
 - `render_system_prompt` — `src/vtuber/application/prompting/prompt_builder.py:46` — Системный промпт персоны; `{emotions}` в правилах → теги всех эмоций из `Emotion`.
 
 ## src/vtuber/application/scheduler
-Фоновые задачи в простое (T-13): суммаризация, факты, индексация — не во время хода.
+Фоновые задачи в простое (T-13) и учёт видеопамяти моделей под управлением (ADR-0017).
 
 - `SchedulerConfig` — `src/vtuber/application/scheduler/idle.py:31` — `idle_after_ms` — сколько тишины после хода считать простоем.
 - `IdleJob` — `src/vtuber/application/scheduler/idle.py:38` — Фоновая задача: `run` можно звать повторно — отменённая задача перезапускается.
 - `IdleScheduler` — `src/vtuber/application/scheduler/idle.py:45` — Очередь фоновых задач, которые выполняются по одной и только в простое (T-13).
+- `ResourcesConfig` — `src/vtuber/application/scheduler/resources.py:32` — Секция `[resources]`: бюджет видеопамяти; `pinned` — имя → МБ, не вытесняется никогда.
+- `Priority` — `src/vtuber/application/scheduler/resources.py:42` — Кто важнее при нехватке памяти; диалог закреплён и в очереди не стоит.
+- `ModelState` — `src/vtuber/application/scheduler/resources.py:49` — Что с моделью сейчас.
+- `ModelSpec` — `src/vtuber/application/scheduler/resources.py:58` — Модель под управлением: `vram_mb` — объём из замера (ADR-0017).
+- `ModelStatus` — `src/vtuber/application/scheduler/resources.py:67` — Снимок одной модели для панели ресурсов.
+- `ResourceManager` — `src/vtuber/application/scheduler/resources.py:88` — Единственное место, которое решает, какая модель сейчас в видеопамяти.
 
 ## src/vtuber/application/speech
 Подготовка текста к синтезу речи: числа, сокращения, латиница, разметка (S-7.2).
@@ -146,17 +152,17 @@
 - `MemoryConfig` — `src/vtuber/bootstrap/config.py:29` — Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
 - `SttConfig` — `src/vtuber/bootstrap/config.py:54` — Секция `[stt]`: голосовой ввод в `serve` (Этап 11, ADR-0016); модели — при первом кадре.
 - `AppConfig` — `src/vtuber/bootstrap/config.py:74` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:91` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:92` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
 - `Core` — `src/vtuber/bootstrap/container.py:21` — Общие механизмы, которые получают все: шина событий и телеметрия.
 - `Backends` — `src/vtuber/bootstrap/container.py:29` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
 - `llm_backends` — `src/vtuber/bootstrap/container.py:40` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
 - `tts_backends` — `src/vtuber/bootstrap/container.py:51` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
 - `Conversation` — `src/vtuber/bootstrap/container.py:61` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
 - `build_conversation` — `src/vtuber/bootstrap/container.py:69` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
-- `LineSource` — `src/vtuber/bootstrap/main.py:59` — Откуда читать строки: `sys.stdin` или его тестовая замена.
-- `Console` — `src/vtuber/bootstrap/main.py:66` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
-- `main` — `src/vtuber/bootstrap/main.py:79` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
-- `run` — `src/vtuber/bootstrap/main.py:254` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
+- `LineSource` — `src/vtuber/bootstrap/main.py:60` — Откуда читать строки: `sys.stdin` или его тестовая замена.
+- `Console` — `src/vtuber/bootstrap/main.py:67` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
+- `main` — `src/vtuber/bootstrap/main.py:80` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
+- `run` — `src/vtuber/bootstrap/main.py:265` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
 - `background_memory` — `src/vtuber/bootstrap/memory.py:39` — Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
@@ -176,13 +182,14 @@
 - `VtuberError` — `src/vtuber/domain/errors.py:4` — Базовая ошибка приложения; сообщение говорит, что делать (R-45).
 - `BackendUnavailable` — `src/vtuber/domain/errors.py:8` — Бэкенд не отвечает или не загружен.
 - `LLMUnavailable` — `src/vtuber/domain/errors.py:12` — LLM-сервер недоступен.
-- `TTSUnavailable` — `src/vtuber/domain/errors.py:16` — Движок синтеза речи недоступен.
-- `STTUnavailable` — `src/vtuber/domain/errors.py:20` — Распознавание речи или детектор недоступны: голосовой ввод молчит, чат работает.
-- `MemoryUnavailable` — `src/vtuber/domain/errors.py:24` — Долговременная память недоступна (модель эмбеддингов или хранилище) — ход идёт без неё.
-- `GenerationFailed` — `src/vtuber/domain/errors.py:28` — Бэкенд ответил, но генерация сорвалась посреди хода.
-- `ProtocolError` — `src/vtuber/domain/errors.py:32` — Сообщение от UI не соответствует протоколу.
-- `ConfigError` — `src/vtuber/domain/errors.py:36` — Конфигурация не читается или не проходит проверку; приложение не стартует.
-- `TurnStateError` — `src/vtuber/domain/errors.py:40` — Недопустимый переход состояния хода — ошибка в логике сервиса, а не во внешнем мире.
+- `ResourceUnavailable` — `src/vtuber/domain/errors.py:16` — Модели не хватило видеопамяти или она не загрузилась (ADR-0017); диалог не страдает.
+- `TTSUnavailable` — `src/vtuber/domain/errors.py:20` — Движок синтеза речи недоступен.
+- `STTUnavailable` — `src/vtuber/domain/errors.py:24` — Распознавание речи или детектор недоступны: голосовой ввод молчит, чат работает.
+- `MemoryUnavailable` — `src/vtuber/domain/errors.py:28` — Долговременная память недоступна (модель эмбеддингов или хранилище) — ход идёт без неё.
+- `GenerationFailed` — `src/vtuber/domain/errors.py:32` — Бэкенд ответил, но генерация сорвалась посреди хода.
+- `ProtocolError` — `src/vtuber/domain/errors.py:36` — Сообщение от UI не соответствует протоколу.
+- `ConfigError` — `src/vtuber/domain/errors.py:40` — Конфигурация не читается или не проходит проверку; приложение не стартует.
+- `TurnStateError` — `src/vtuber/domain/errors.py:44` — Недопустимый переход состояния хода — ошибка в логике сервиса, а не во внешнем мире.
 - `CancelReason` — `src/vtuber/domain/events.py:10` — Почему ход прерван.
 - `Component` — `src/vtuber/domain/events.py:19` — Бэкенд, о состоянии которого сообщается в UI.
 - `BackendState` — `src/vtuber/domain/events.py:27` — Состояние бэкенда для статус-бара UI.
@@ -278,6 +285,7 @@
 - `LLMPort` — `src/vtuber/ports/llm.py:19` — Локальная LLM; адаптеры бросают только доменные ошибки (R-43).
 - `EmbedderPort` — `src/vtuber/ports/memory.py:13` — Тексты → векторы единичной длины.
 - `MemoryStorePort` — `src/vtuber/ports/memory.py:35` — Факты с векторами: добавить и найти ближайшие.
+- `ManagedModel` — `src/vtuber/ports/resources.py:6` — Модель, которую можно загрузить в видеопамять и выгрузить по требованию.
 - `ReplySink` — `src/vtuber/ports/sink.py:8` — Получатель результатов одного хода; конвейер не знает, что за ним.
 - `VadPort` — `src/vtuber/ports/stt.py:12` — Детектор речи: окно PCM → вероятность, что это речь.
 - `STTPort` — `src/vtuber/ports/stt.py:44` — Распознавание отрезка речи.

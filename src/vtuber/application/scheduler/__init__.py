@@ -1,5 +1,23 @@
-"""Фоновые задачи в простое (T-13): суммаризация, факты, индексация — не во время хода."""
+"""Фоновые задачи в простое (T-13) и учёт видеопамяти моделей под управлением (ADR-0017)."""
 
 from vtuber.application.scheduler.idle import IdleJob, IdleScheduler, SchedulerConfig
+from vtuber.application.scheduler.resources import (
+    ModelSpec,
+    ModelState,
+    ModelStatus,
+    Priority,
+    ResourceManager,
+    ResourcesConfig,
+)
 
-__all__ = ["IdleJob", "IdleScheduler", "SchedulerConfig"]
+__all__ = [
+    "IdleJob",
+    "IdleScheduler",
+    "ModelSpec",
+    "ModelState",
+    "ModelStatus",
+    "Priority",
+    "ResourceManager",
+    "ResourcesConfig",
+    "SchedulerConfig",
+]

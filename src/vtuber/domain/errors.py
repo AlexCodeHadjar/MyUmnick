@@ -13,6 +13,10 @@ class LLMUnavailable(BackendUnavailable):
     """LLM-сервер недоступен."""
 
 
+class ResourceUnavailable(VtuberError):
+    """Модели не хватило видеопамяти или она не загрузилась (ADR-0017); диалог не страдает."""
+
+
 class TTSUnavailable(BackendUnavailable):
     """Движок синтеза речи недоступен."""
 
