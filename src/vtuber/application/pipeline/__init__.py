@@ -8,6 +8,7 @@ from vtuber.application.pipeline.speaker import PhraseListener, PhraseQueue, Spe
 from vtuber.application.pipeline.stream_parser import (
     HOLD_LIMIT,
     EmotionCue,
+    GestureCue,
     ParseEvent,
     StreamParser,
     TextDelta,
@@ -20,6 +21,7 @@ __all__ = [
     "EmotionCue",
     "FillerBank",
     "FillerConfig",
+    "GestureCue",
     "ParseEvent",
     "PhraseListener",
     "PhraseQueue",

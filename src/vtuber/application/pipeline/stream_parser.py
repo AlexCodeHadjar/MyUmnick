@@ -1,10 +1,10 @@
-"""Разбор потока ответа LLM: теги эмоций → события, текст для чата, озвучки и истории."""
+"""Разбор потока ответа LLM: теги эмоций и жестов → события, текст для чата, озвучки и истории."""
 
 import re
 from dataclasses import dataclass
 from typing import Final
 
-from vtuber.domain import TAG_CLOSE, TAG_OPEN, Emotion, parse_tag
+from vtuber.domain import TAG_CLOSE, TAG_OPEN, Emotion, Gesture, parse_gesture, parse_tag
 from vtuber.ports import ReplySink
 
 HOLD_LIMIT: Final = 32
@@ -13,7 +13,9 @@ HOLD_LIMIT: Final = 32
 _TAG_LIKE: Final = re.compile(r"<\s*[A-Za-z_]+\s*>")
 _TAG_PREFIX: Final = re.compile(r"<\s*[A-Za-z_]*\s*")
 _SPEECH_NOISE: Final = re.compile("[*_`#~\U0001f300-\U0001faff\u2600-\u27bf\ufe0f\u200d]")
-_KNOWN_TAGS: Final = tuple(emotion.tag for emotion in Emotion)
+_KNOWN_TAGS: Final = tuple(item.tag for item in (*Emotion, *Gesture))
+GESTURE_GAP_CHARS: Final = 40
+"""Сколько текста между жестами: модель, увлёкшись, не должна превращать фразу в дёргание."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,7 +42,19 @@ class EmotionCue:
         await sink.emotion(self.emotion)
 
 
-type ParseEvent = TextDelta | EmotionCue
+@dataclass(frozen=True, slots=True)
+class GestureCue:
+    """В ответе встретился тег жеста; озвучивать нечего, речь он не задерживает."""
+
+    gesture: Gesture
+    spoken_text: str = ""
+
+    async def deliver(self, sink: ReplySink) -> None:
+        """Отдаёт жест получателю."""
+        await sink.gesture(self.gesture)
+
+
+type ParseEvent = TextDelta | EmotionCue | GestureCue
 
 
 class StreamParser:
@@ -48,12 +62,14 @@ class StreamParser:
 
     Тег — только `<слово>` из латинских букв; прочие «<» — обычный текст («3 < 5»). Буфер
     держится, лишь пока видно незакрытое «<», похожее на начало тега, и не дольше
-    `HOLD_LIMIT` символов. Известные теги → `EmotionCue`, неизвестные выбрасываются.
+    `HOLD_LIMIT` символов. Известные теги → `EmotionCue` и `GestureCue`, неизвестные выбрасываются.
+    Жест не чаще, чем через `GESTURE_GAP_CHARS` символов: лишний выбрасывается и из истории.
     """
 
     def __init__(self) -> None:
         self._pending = ""
         self._full: list[str] = []
+        self._since_gesture = GESTURE_GAP_CHARS
 
     @property
     def full_text(self) -> str:
@@ -89,15 +105,23 @@ class StreamParser:
                 self._pending = tail
                 return len(text)
         elif _TAG_LIKE.fullmatch(candidate := text[open_at : close_at + 1]):
-            if emotion := parse_tag(candidate):
-                events.append(EmotionCue(emotion))
-                self._full.append(emotion.tag)
+            self._apply_tag(candidate, events)
             return close_at + 1
         self._emit_text(TAG_OPEN, events)
         return open_at + 1
 
+    def _apply_tag(self, tag: str, events: list[ParseEvent]) -> None:
+        if emotion := parse_tag(tag):
+            events.append(EmotionCue(emotion))
+            self._full.append(emotion.tag)
+        elif (gesture := parse_gesture(tag)) and self._since_gesture >= GESTURE_GAP_CHARS:
+            self._since_gesture = 0
+            events.append(GestureCue(gesture))
+            self._full.append(gesture.tag)
+
     def _emit_text(self, text: str, events: list[ParseEvent]) -> None:
         if text:
+            self._since_gesture += len(text)
             events.append(TextDelta(text, _SPEECH_NOISE.sub("", text)))
             self._full.append(text)
 

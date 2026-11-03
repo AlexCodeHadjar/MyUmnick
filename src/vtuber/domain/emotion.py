@@ -28,6 +28,31 @@ MAX_TAG_LENGTH: Final = max(len(emotion.tag) for emotion in Emotion)
 """Длина самого длинного тега: дальше этого разборщику потока нет смысла ждать `>`."""
 
 
+class Gesture(StrEnum):
+    """Жест по смыслу фразы (S-18.4): тег как у эмоций, вид — в `mapping.json` модели."""
+
+    NOD = "nod"
+    SHAKE = "shake"
+    TILT = "tilt"
+    STARTLE = "startle"
+
+    @property
+    def tag(self) -> str:
+        """Тег жеста в тексте ответа, например `<nod>`."""
+        return f"{TAG_OPEN}{self.value}{TAG_CLOSE}"
+
+
+def parse_gesture(tag: str) -> Gesture | None:
+    """Жест по тегу вида `<nod>` или None; регистр и пробелы — как у `parse_tag`."""
+    if not (tag.startswith(TAG_OPEN) and tag.endswith(TAG_CLOSE)):
+        return None
+    name = tag[len(TAG_OPEN) : len(tag) - len(TAG_CLOSE)].strip().lower()
+    try:
+        return Gesture(name)
+    except ValueError:
+        return None
+
+
 def parse_tag(tag: str) -> Emotion | None:
     """Возвращает эмоцию по тегу вида `<happy>` или None, если тег неизвестен или искажён.
 

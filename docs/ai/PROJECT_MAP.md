@@ -90,7 +90,7 @@
 - `InitiativeConfig` — `src/vtuber/application/conversation/initiative.py:20` — Секция `[initiative]`: выключена по умолчанию, персонаж молчит, пока его не попросят.
 - `InitiativeActions` — `src/vtuber/application/conversation/initiative.py:31` — `speak` возвращается, когда реплика прозвучала; `blocked` — занято: ход, речь, набор, фон.
 - `Initiative` — `src/vtuber/application/conversation/initiative.py:39` — Считает тишину и говорит, когда её набралось; `user_input` обрывает реплику сразу.
-- `ConversationService` — `src/vtuber/application/conversation/service.py:57` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
+- `ConversationService` — `src/vtuber/application/conversation/service.py:58` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
 
 ## src/vtuber/application/memory
 Память витюбера: история разговора, её резюме и долговременные факты (Этап 10).
@@ -131,18 +131,19 @@
 - `Voice` — `src/vtuber/application/pipeline/reply_pipeline.py:20` — Голос хода: движок TTS, нарезка на фразы, междометия (T-17); без голоса — только текст.
 - `ReplyPipeline` — `src/vtuber/application/pipeline/reply_pipeline.py:62` — Стримит ответ LLM получателю по мере генерации (T-01): ни одна стадия не ждёт конца.
 - `Speaker` — `src/vtuber/application/pipeline/speaker.py:29` — Озвучивает фразы одного хода.
-- `TextDelta` — `src/vtuber/application/pipeline/stream_parser.py:20` — Порция текста: `text` — для чата, `spoken_text` — для TTS (без эмодзи и разметки).
-- `EmotionCue` — `src/vtuber/application/pipeline/stream_parser.py:32` — В ответе встретился тег эмоции; озвучивать нечего.
-- `StreamParser` — `src/vtuber/application/pipeline/stream_parser.py:46` — Разбирает дельты одного ответа по мере поступления (один экземпляр на ход).
+- `TextDelta` — `src/vtuber/application/pipeline/stream_parser.py:22` — Порция текста: `text` — для чата, `spoken_text` — для TTS (без эмодзи и разметки).
+- `EmotionCue` — `src/vtuber/application/pipeline/stream_parser.py:34` — В ответе встретился тег эмоции; озвучивать нечего.
+- `GestureCue` — `src/vtuber/application/pipeline/stream_parser.py:46` — В ответе встретился тег жеста; озвучивать нечего, речь он не задерживает.
+- `StreamParser` — `src/vtuber/application/pipeline/stream_parser.py:60` — Разбирает дельты одного ответа по мере поступления (один экземпляр на ход).
 
 ## src/vtuber/application/prompting
 Сборка промпта: персона, история, динамический блок — от неизменного к изменчивому (T-03).
 
 - `ContextConfig` — `src/vtuber/application/prompting/context_budget.py:12` — Секция `[context]`.
 - `ContextBudget` — `src/vtuber/application/prompting/context_budget.py:26` — Приближённый счёт токенов — без запроса к серверу, чтобы не тормозить горячий путь.
-- `Prompt` — `src/vtuber/application/prompting/prompt_builder.py:15` — Сообщения для LLM; первые `prefix_length` — неизменный префикс (персона и примеры).
-- `PromptBuilder` — `src/vtuber/application/prompting/prompt_builder.py:22` — Строит промпт: [персона + примеры] → [история] → [справка + реплика] (T-03).
-- `render_system_prompt` — `src/vtuber/application/prompting/prompt_builder.py:46` — Системный промпт персоны; `{emotions}` в правилах → теги всех эмоций из `Emotion`.
+- `Prompt` — `src/vtuber/application/prompting/prompt_builder.py:16` — Сообщения для LLM; первые `prefix_length` — неизменный префикс (персона и примеры).
+- `PromptBuilder` — `src/vtuber/application/prompting/prompt_builder.py:23` — Строит промпт: [персона + примеры] → [история] → [справка + реплика] (T-03).
+- `render_system_prompt` — `src/vtuber/application/prompting/prompt_builder.py:47` — Системный промпт персоны; `{emotions}` в правилах → теги всех эмоций из `Emotion`.
 
 ## src/vtuber/application/scheduler
 Фоновые задачи в простое (T-13) и учёт видеопамяти моделей под управлением (ADR-0017).
@@ -260,7 +261,9 @@
 - `Turn` — `src/vtuber/domain/dialogue.py:28` — Завершённый ход: реплика пользователя и ответ витюбера.
 - `Persona` — `src/vtuber/domain/dialogue.py:46` — Характер витюбера, задаётся файлом `personas/*.toml` без правки кода (FR-11).
 - `Emotion` — `src/vtuber/domain/emotion.py:10` — Единственный источник списка эмоций: из него строятся промпт персоны и разбор ответа.
-- `parse_tag` — `src/vtuber/domain/emotion.py:31` — Возвращает эмоцию по тегу вида `<happy>` или None, если тег неизвестен или искажён.
+- `Gesture` — `src/vtuber/domain/emotion.py:31` — Жест по смыслу фразы (S-18.4): тег как у эмоций, вид — в `mapping.json` модели.
+- `parse_gesture` — `src/vtuber/domain/emotion.py:45` — Жест по тегу вида `<nod>` или None; регистр и пробелы — как у `parse_tag`.
+- `parse_tag` — `src/vtuber/domain/emotion.py:56` — Возвращает эмоцию по тегу вида `<happy>` или None, если тег неизвестен или искажён.
 - `VtuberError` — `src/vtuber/domain/errors.py:4` — Базовая ошибка приложения; сообщение говорит, что делать (R-45).
 - `BackendUnavailable` — `src/vtuber/domain/errors.py:8` — Бэкенд не отвечает или не загружен.
 - `LLMUnavailable` — `src/vtuber/domain/errors.py:12` — LLM-сервер недоступен.
@@ -320,30 +323,32 @@
 - `MemoryBridge` — `src/vtuber/gateway/memory_bridge.py:16` — Список запрашивается только при открытой панели: чтение заметок не должно идти просто так.
 - `Panels` — `src/vtuber/gateway/panels.py:37` — Панель не подключена — её сообщения просто не нужны.
 - `PrivacyBridge` — `src/vtuber/gateway/privacy_bridge.py:17` — Режим держит сервис хода, а UI получает его состояние при каждом подключении.
-- `turn_ref` — `src/vtuber/gateway/protocol.py:36` — Номер хода в JSON-сообщениях: `t-000042` (в аудиокадре — uint64).
-- `ErrorCode` — `src/vtuber/gateway/protocol.py:41` — Что пошло не так — UI выбирает реакцию по коду, текст показывает пользователю.
-- `SendData` — `src/vtuber/gateway/protocol.py:50` — Реплика пользователя.
-- `TypingData` — `src/vtuber/gateway/protocol.py:56` — Черновик реплики, пока пользователь печатает; пустой — поле очищено.
-- `DeltaData` — `src/vtuber/gateway/protocol.py:62` — Порция текста ответа.
-- `EmotionData` — `src/vtuber/gateway/protocol.py:68` — Эмоция аватара; `intensity` 0…1 (затухание — Этап 8).
-- `CancelledData` — `src/vtuber/gateway/protocol.py:75` — Почему ход прерван; `message` — текст ошибки при `reason == "error"`.
-- `SpanData` — `src/vtuber/gateway/protocol.py:82` — Замер стадии хода для панели метрик (FR-15).
-- `StatusData` — `src/vtuber/gateway/protocol.py:89` — Состояние бэкенда для статус-бара.
-- `ErrorData` — `src/vtuber/gateway/protocol.py:96` — Ошибка для пользователя.
-- `ChatSend` — `src/vtuber/gateway/protocol.py:103` — UI → Ядро: новая реплика; прерывает текущий ход.
-- `ChatCancel` — `src/vtuber/gateway/protocol.py:111` — UI → Ядро: остановить ответ.
-- `InputTyping` — `src/vtuber/gateway/protocol.py:119` — UI → Ядро: черновик реплики (с дебаунсом ~300 мс) — прогрев кэша LLM, T-05.
-- `TurnStartedMessage` — `src/vtuber/gateway/protocol.py:146` — Ядро → UI: ход начат — аватар «думает» (T-17).
-- `ChatDelta` — `src/vtuber/gateway/protocol.py:160` — Ядро → UI: порция текста ответа.
-- `AvatarEmotion` — `src/vtuber/gateway/protocol.py:174` — Ядро → UI: сменить выражение аватара.
-- `TurnFinishedMessage` — `src/vtuber/gateway/protocol.py:188` — Ядро → UI: ответ закончен полностью.
-- `TurnCancelledMessage` — `src/vtuber/gateway/protocol.py:202` — Ядро → UI: ход прерван — UI сбрасывает аудиобуфер.
-- `MetricsSpan` — `src/vtuber/gateway/protocol.py:216` — Ядро → UI: замер стадии; `turn` — None вне хода (прогрев).
-- `Status` — `src/vtuber/gateway/protocol.py:230` — Ядро → UI: состояние бэкенда (вне хода).
-- `InputBargeIn` — `src/vtuber/gateway/protocol.py:243` — Ядро → UI: пользователь заговорил — оборвать голос витюбера сразу (Этап 11).
-- `InputHypothesis` — `src/vtuber/gateway/protocol.py:256` — Ядро → UI: промежуточный текст фразы пользователя.
-- `InputFinal` — `src/vtuber/gateway/protocol.py:269` — Ядро → UI: распознанная фраза — реплика пользователя в чате; за ней начнётся ход.
-- `ErrorMessage` — `src/vtuber/gateway/protocol.py:282` — Ядро → UI: ошибка; `turn` — None, если не относится к ходу (битое сообщение).
+- `turn_ref` — `src/vtuber/gateway/protocol.py:37` — Номер хода в JSON-сообщениях: `t-000042` (в аудиокадре — uint64).
+- `ErrorCode` — `src/vtuber/gateway/protocol.py:42` — Что пошло не так — UI выбирает реакцию по коду, текст показывает пользователю.
+- `SendData` — `src/vtuber/gateway/protocol.py:51` — Реплика пользователя.
+- `TypingData` — `src/vtuber/gateway/protocol.py:57` — Черновик реплики, пока пользователь печатает; пустой — поле очищено.
+- `DeltaData` — `src/vtuber/gateway/protocol.py:63` — Порция текста ответа.
+- `EmotionData` — `src/vtuber/gateway/protocol.py:69` — Эмоция аватара; `intensity` 0…1 (затухание — Этап 8).
+- `CancelledData` — `src/vtuber/gateway/protocol.py:76` — Почему ход прерван; `message` — текст ошибки при `reason == "error"`.
+- `SpanData` — `src/vtuber/gateway/protocol.py:83` — Замер стадии хода для панели метрик (FR-15).
+- `StatusData` — `src/vtuber/gateway/protocol.py:90` — Состояние бэкенда для статус-бара.
+- `ErrorData` — `src/vtuber/gateway/protocol.py:97` — Ошибка для пользователя.
+- `ChatSend` — `src/vtuber/gateway/protocol.py:104` — UI → Ядро: новая реплика; прерывает текущий ход.
+- `ChatCancel` — `src/vtuber/gateway/protocol.py:112` — UI → Ядро: остановить ответ.
+- `InputTyping` — `src/vtuber/gateway/protocol.py:120` — UI → Ядро: черновик реплики (с дебаунсом ~300 мс) — прогрев кэша LLM, T-05.
+- `TurnStartedMessage` — `src/vtuber/gateway/protocol.py:147` — Ядро → UI: ход начат — аватар «думает» (T-17).
+- `ChatDelta` — `src/vtuber/gateway/protocol.py:161` — Ядро → UI: порция текста ответа.
+- `AvatarEmotion` — `src/vtuber/gateway/protocol.py:175` — Ядро → UI: сменить выражение аватара.
+- `TurnFinishedMessage` — `src/vtuber/gateway/protocol.py:189` — Ядро → UI: ответ закончен полностью.
+- `TurnCancelledMessage` — `src/vtuber/gateway/protocol.py:203` — Ядро → UI: ход прерван — UI сбрасывает аудиобуфер.
+- `MetricsSpan` — `src/vtuber/gateway/protocol.py:217` — Ядро → UI: замер стадии; `turn` — None вне хода (прогрев).
+- `Status` — `src/vtuber/gateway/protocol.py:231` — Ядро → UI: состояние бэкенда (вне хода).
+- `InputBargeIn` — `src/vtuber/gateway/protocol.py:244` — Ядро → UI: пользователь заговорил — оборвать голос витюбера сразу (Этап 11).
+- `InputHypothesis` — `src/vtuber/gateway/protocol.py:257` — Ядро → UI: промежуточный текст фразы пользователя.
+- `InputFinal` — `src/vtuber/gateway/protocol.py:270` — Ядро → UI: распознанная фраза — реплика пользователя в чате; за ней начнётся ход.
+- `ErrorMessage` — `src/vtuber/gateway/protocol.py:283` — Ядро → UI: ошибка; `turn` — None, если не относится к ходу (битое сообщение).
+- `GestureData` — `src/vtuber/gateway/protocol_avatar.py:9` — Какой жест показать.
+- `AvatarGesture` — `src/vtuber/gateway/protocol_avatar.py:15` — Ядро → UI: жест по смыслу фразы; модель без такого жеста его пропускает (S-18.4).
 - `ProtocolModel` — `src/vtuber/gateway/protocol_base.py:13` — База сообщений: неизменяемы, лишнее поле — ошибка протокола.
 - `EmptyData` — `src/vtuber/gateway/protocol_base.py:19` — Сообщение без полезной нагрузки.
 - `BranchGoData` — `src/vtuber/gateway/protocol_branches.py:8` — К какой реплике вернуться.
@@ -400,9 +405,9 @@
 - `GatewayConfig` — `src/vtuber/gateway/server.py:58` — Секция `[gateway]`: где слушать UI (только localhost, ADR-0002).
 - `GatewayServer` — `src/vtuber/gateway/server.py:65` — Шлюз для UI: `async with GatewayServer(...) as server: await server.serve_forever()`.
 - `SetupBridge` — `src/vtuber/gateway/setup_bridge.py:22` — Переводит сообщения UI в вызовы мастера; ход установки шлёт реже, чем приходят данные.
-- `WsReplySink` — `src/vtuber/gateway/sink.py:14` — ReplySink для WebSocket: текст → `chat.delta`, эмоция → `avatar.emotion`, звук → кадр.
-- `TerminalSink` — `src/vtuber/gateway/terminal.py:21` — ReplySink для консоли: печатает ответ по мере генерации и помнит время первой порции.
-- `TerminalChat` — `src/vtuber/gateway/terminal.py:58` — Цикл чата: строка → ход; новая строка во время ответа прерывает его (T-14).
+- `WsReplySink` — `src/vtuber/gateway/sink.py:15` — ReplySink для WebSocket: текст → `chat.delta`, эмоция → `avatar.emotion`, звук → кадр.
+- `TerminalSink` — `src/vtuber/gateway/terminal.py:29` — ReplySink для консоли: печатает ответ по мере генерации и помнит время первой порции.
+- `TerminalChat` — `src/vtuber/gateway/terminal.py:69` — Цикл чата: строка → ход; новая строка во время ответа прерывает его (T-14).
 - `VoiceBridge` — `src/vtuber/gateway/voice_bridge.py:17` — Реализует `VoiceEvents`: перебивание, гипотезы в UI, финальная фраза — новый ход.
 
 ## src/vtuber/kernel
@@ -481,9 +486,9 @@
 - `encodeMicFrame` — `ui/src/core/frames.ts:20` — Кадр микрофона для ядра: заголовок + PCM s16le моно.
 - `AudioFrame` — `ui/src/core/frames.ts:37` — Аудиокадр ядра. `turn` — в том же виде, что в JSON-сообщениях, чтобы их сопоставлять.
 - `FrameError` — `ui/src/core/frames.ts:45` — Кадр не соответствует протоколу: ядро другой версии или повреждённые данные.
-- `turnRef` — `ui/src/core/frames.ts:79` — Номер хода из аудиокадра в виде JSON-сообщений.
-- `parseMessage` — `ui/src/core/frames.ts:103` — Текстовый кадр → сообщение ядра; `FrameError`, если это не сообщение протокола.
-- `decodeAudioFrame` — `ui/src/core/frames.ts:120` — Бинарный кадр → аудиокадр. PCM не копируется: `Int16Array` смотрит в тот же буфер
+- `turnRef` — `ui/src/core/frames.ts:80` — Номер хода из аудиокадра в виде JSON-сообщений.
+- `parseMessage` — `ui/src/core/frames.ts:104` — Текстовый кадр → сообщение ядра; `FrameError`, если это не сообщение протокола.
+- `decodeAudioFrame` — `ui/src/core/frames.ts:121` — Бинарный кадр → аудиокадр. PCM не копируется: `Int16Array` смотрит в тот же буфер
 - `FIRST_CHAR_SPAN` — `ui/src/core/probe.ts:8` — —
 - `FirstCharProbe` — `ui/src/core/probe.ts:10` — —
 - `FIRST_AUDIO_SPAN` — `ui/src/core/probe.ts:57` — —
@@ -491,16 +496,16 @@
 - `protocol.gen.ts` — `ui/src/core/protocol.gen.ts:1` — Автогенерация: `uv run python tools/gen_protocol.py`. Не редактировать.
 - `int16ToFloat` — `ui/src/core/resample.ts:11` — Сэмплы s16 → float [-1, 1).
 - `StreamResampler` — `ui/src/core/resample.ts:19` — —
-- `Role` — `ui/src/core/store.svelte.ts:24` — —
-- `MessageStatus` — `ui/src/core/store.svelte.ts:25` — —
-- `TurnPhase` — `ui/src/core/store.svelte.ts:27` — Фаза хода для аватара и кнопки «Стоп»: ждём первый токен / идёт ответ / ничего.
-- `ChatMessage` — `ui/src/core/store.svelte.ts:29` — —
-- `BranchesView` — `ui/src/core/store.svelte.ts:41` — —
-- `PrivacyView` — `ui/src/core/store.svelte.ts:43` — —
-- `SPAN_HISTORY` — `ui/src/core/store.svelte.ts:49` — —
-- `SpeechProgress` — `ui/src/core/store.svelte.ts:52` — Что звучит в плеере (сообщает фича звука): ход, идёт ли звук, сыграно и получено, секунд.
-- `VoiceState` — `ui/src/core/store.svelte.ts:63` — Голос в UI. Ход ядра заканчивается, когда синтез готов, а звучит голос дольше (синтез
-- `AppStore` — `ui/src/core/store.svelte.ts:68` — —
+- `Role` — `ui/src/core/store.svelte.ts:25` — —
+- `MessageStatus` — `ui/src/core/store.svelte.ts:26` — —
+- `TurnPhase` — `ui/src/core/store.svelte.ts:28` — Фаза хода для аватара и кнопки «Стоп»: ждём первый токен / идёт ответ / ничего.
+- `ChatMessage` — `ui/src/core/store.svelte.ts:30` — —
+- `BranchesView` — `ui/src/core/store.svelte.ts:42` — —
+- `PrivacyView` — `ui/src/core/store.svelte.ts:44` — —
+- `SPAN_HISTORY` — `ui/src/core/store.svelte.ts:50` — —
+- `SpeechProgress` — `ui/src/core/store.svelte.ts:53` — Что звучит в плеере (сообщает фича звука): ход, идёт ли звук, сыграно и получено, секунд.
+- `VoiceState` — `ui/src/core/store.svelte.ts:64` — Голос в UI. Ход ядра заканчивается, когда синтез готов, а звучит голос дольше (синтез
+- `AppStore` — `ui/src/core/store.svelte.ts:69` — —
 - `CLOSE_REPLACED` — `ui/src/core/transport.ts:10` — Код закрытия «вытеснен новым клиентом» — `gateway/server.py` (ADR-0008).
 - `SocketLike` — `ui/src/core/transport.ts:14` — Часть WebSocket, нужная транспорту: в тестах подменяется фейком.
 - `SocketFactory` — `ui/src/core/transport.ts:24` — —
@@ -534,21 +539,24 @@
 - `StageSize` — `ui/src/features/avatar/AvatarRenderer.ts:27` — Размер области сцены в CSS-пикселях; рендер сам учитывает devicePixelRatio.
 - `AvatarRenderer` — `ui/src/features/avatar/AvatarRenderer.ts:32` — —
 - `AvatarStage.svelte` — `ui/src/features/avatar/AvatarStage.svelte:1` — Сцена с аватаром: холст Live2D на всю панель, статус загрузки или ошибки поверх. Логика —
+- `HeadAxis` — `ui/src/features/avatar/gesture.ts:6` — —
+- `GestureSpec` — `ui/src/features/avatar/gesture.ts:8` — —
+- `gestureAngle` — `ui/src/features/avatar/gesture.ts:18` — Добавка к углу головы через `elapsedMs`; огибающая возвращает голову на место к концу жеста.
 - `MAX_DELTA_MS` — `ui/src/features/avatar/loop.ts:7` — Шаг после паузы или подвисания ограничен: иначе физика волос «выстрелит» за один кадр.
 - `FrameSource` — `ui/src/features/avatar/loop.ts:10` — Источник кадров: в окне — `requestAnimationFrame`, в тестах — ручной.
 - `Visibility` — `ui/src/features/avatar/loop.ts:16` — Видимость окна: `onChange` возвращает функцию отписки.
 - `browserFrames` — `ui/src/features/avatar/loop.ts:21` — —
 - `browserVisibility` — `ui/src/features/avatar/loop.ts:28` — —
 - `AvatarLoop` — `ui/src/features/avatar/loop.ts:38` — —
-- `MAPPING_VERSION` — `ui/src/features/avatar/mapping.ts:9` — —
-- `MotionRef` — `ui/src/features/avatar/mapping.ts:11` — —
-- `ReactionSpec` — `ui/src/features/avatar/mapping.ts:16` — —
-- `FrameSpec` — `ui/src/features/avatar/mapping.ts:24` — Кадр поверх «вписать целиком»: масштаб и сдвиг центра в долях сцены (y — вниз).
-- `AvatarMapping` — `ui/src/features/avatar/mapping.ts:30` — —
-- `DEFAULT_MAPPING` — `ui/src/features/avatar/mapping.ts:39` — Маппинга нет — модель как есть: без выражений и реакций, кадр «вписать целиком».
-- `MappingError` — `ui/src/features/avatar/mapping.ts:61` — —
-- `parseMapping` — `ui/src/features/avatar/mapping.ts:160` — JSON маппинга → проверенный маппинг; ошибка называет поле и что с ним не так.
-- `expressionFor` — `ui/src/features/avatar/mapping.ts:178` — Какое выражение должно быть на лице: реакция (например, «думаю» до первого токена) важнее
+- `MAPPING_VERSION` — `ui/src/features/avatar/mapping.ts:10` — —
+- `MotionRef` — `ui/src/features/avatar/mapping.ts:12` — —
+- `ReactionSpec` — `ui/src/features/avatar/mapping.ts:17` — —
+- `FrameSpec` — `ui/src/features/avatar/mapping.ts:25` — Кадр поверх «вписать целиком»: масштаб и сдвиг центра в долях сцены (y — вниз).
+- `AvatarMapping` — `ui/src/features/avatar/mapping.ts:31` — —
+- `DEFAULT_MAPPING` — `ui/src/features/avatar/mapping.ts:42` — Маппинга нет — модель как есть: без выражений и реакций, кадр «вписать целиком».
+- `MappingError` — `ui/src/features/avatar/mapping.ts:71` — —
+- `parseMapping` — `ui/src/features/avatar/mapping.ts:199` — JSON маппинга → проверенный маппинг; ошибка называет поле и что с ним не так.
+- `expressionFor` — `ui/src/features/avatar/mapping.ts:218` — Какое выражение должно быть на лице: реакция (например, «думаю» до первого токена) важнее
 - `MoodConfig` — `ui/src/features/avatar/mood.ts:8` — —
 - `DEFAULT_MOOD` — `ui/src/features/avatar/mood.ts:16` — Пара фраз тишины — эмоция ещё «про» ответ; дольше — лицо застывает маской.
 - `MoodFrame` — `ui/src/features/avatar/mood.ts:18` — —
@@ -577,20 +585,21 @@
 - `ScriptHost` — `ui/src/features/avatar/live2d/core-loader.ts:33` — Части `window`/`document`, нужные загрузчику: в тестах — подмена.
 - `browserHost` — `ui/src/features/avatar/live2d/core-loader.ts:55` — —
 - `loadCubismCore` — `ui/src/features/avatar/live2d/core-loader.ts:82` — Подключить Core один раз на окно; повторные вызовы ждут ту же загрузку.
-- `Engine` — `ui/src/features/avatar/live2d/engine.ts:8` — —
-- `Pixi` — `ui/src/features/avatar/live2d/engine.ts:9` — —
-- `Model` — `ui/src/features/avatar/live2d/engine.ts:10` — —
-- `CubismInternal` — `ui/src/features/avatar/live2d/engine.ts:11` — —
-- `loadEngine` — `ui/src/features/avatar/live2d/engine.ts:18` — —
-- `mouthIndices` — `ui/src/features/avatar/live2d/engine.ts:32` — Индексы параметров рта: ищутся один раз при загрузке, в кадре — запись по индексу.
-- `headPitchIndices` — `ui/src/features/avatar/live2d/engine.ts:38` — Индексы наклона головы для кивка; у модели без параметра — пусто, кивка нет.
+- `Engine` — `ui/src/features/avatar/live2d/engine.ts:9` — —
+- `Pixi` — `ui/src/features/avatar/live2d/engine.ts:10` — —
+- `Model` — `ui/src/features/avatar/live2d/engine.ts:11` — —
+- `CubismInternal` — `ui/src/features/avatar/live2d/engine.ts:12` — —
+- `loadEngine` — `ui/src/features/avatar/live2d/engine.ts:21` — —
+- `mouthIndices` — `ui/src/features/avatar/live2d/engine.ts:35` — Индексы параметров рта: ищутся один раз при загрузке, в кадре — запись по индексу.
+- `headPitchIndices` — `ui/src/features/avatar/live2d/engine.ts:41` — Индексы наклона головы для кивка; у модели без параметра — пусто, кивка нет.
+- `headAxisIndices` — `ui/src/features/avatar/live2d/engine.ts:46` — Индексы параметров головы по осям для жестов; нет параметра — жест по этой оси не виден.
 - `Size` — `ui/src/features/avatar/live2d/fit.ts:3` — —
 - `Placement` — `ui/src/features/avatar/live2d/fit.ts:8` — —
 - `FIT_MARGIN` — `ui/src/features/avatar/live2d/fit.ts:16` — Поля вокруг модели, доля сцены: не упираться в края при наклонах головы и физике волос.
 - `fitModel` — `ui/src/features/avatar/live2d/fit.ts:19` — Масштаб «вписать целиком» с полями; модель по центру. Пустая сцена или модель — масштаб 0.
 - `applyFrame` — `ui/src/features/avatar/live2d/fit.ts:32` — Кадр маппинга (масштаб и сдвиг центра в долях сцены) поверх «вписать целиком».
 - `gazeAt` — `ui/src/features/avatar/live2d/fit.ts:48` — Курсор → взгляд: -1…1 по осям, y вверх (как `AvatarRenderer.lookAt`). За пределами сцены
-- `Live2DRenderer` — `ui/src/features/avatar/live2d/Live2DRenderer.ts:30` — —
+- `Live2DRenderer` — `ui/src/features/avatar/live2d/Live2DRenderer.ts:32` — —
 - `Fetcher` — `ui/src/features/avatar/live2d/settings.ts:8` — —
 - `loadMapping` — `ui/src/features/avatar/live2d/settings.ts:23` — `mapping.json` модели; нет файла — модель как есть, битый файл — ошибка с полем.
 - `withExpressions` — `ui/src/features/avatar/live2d/settings.ts:46` — Копия model3.json с выражениями маппинга (поверх одноимённых из манифеста) и `url` — по нему

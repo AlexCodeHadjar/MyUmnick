@@ -142,6 +142,14 @@ UI → Ядро: окно свернули или вернули; свёрнут
 | `emotion` | `Emotion` |
 | `intensity` | `number` |
 
+### `avatar.gesture` — `AvatarGesture`
+
+Ядро → UI: жест по смыслу фразы; модель без такого жеста его пропускает (S-18.4).
+
+| Поле `data` | Тип |
+|---|---|
+| `gesture` | `Gesture` |
+
 ### `turn.finished` — `TurnFinishedMessage`
 
 Ядро → UI: ответ закончен полностью.

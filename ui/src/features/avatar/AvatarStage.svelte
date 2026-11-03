@@ -42,6 +42,8 @@
   const reaction = $derived<AvatarReaction>(waiting && waitedLong ? "thinking" : "idle");
   // Не реактивен: кивок один раз на ход, даже если эффект перезапустится по статусу сцены.
   let noddedTurn: string | null = null;
+  // Не реактивен: тот же жест не играется второй раз, если эффект перезапустится по статусу.
+  let playedGesture = 0;
 
   $effect(() => {
     if (!waiting) {
@@ -69,6 +71,14 @@
     if (status.state === "ready" && turn !== null && turn !== noddedTurn) {
       noddedTurn = turn;
       session?.renderer?.nod();
+    }
+  });
+
+  $effect(() => {
+    const gesture = store.gesture;
+    if (status.state === "ready" && gesture !== null && gesture.seq !== playedGesture) {
+      playedGesture = gesture.seq;
+      session?.renderer?.gesture(gesture.name);
     }
   });
 

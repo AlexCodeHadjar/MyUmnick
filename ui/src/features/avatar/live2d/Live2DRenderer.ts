@@ -4,11 +4,13 @@
  * (R-66), взглядом — `lookAt()`. Покой, моргание, дыхание и физику движок делает сам; эмоции,
  * реакции и кадр — по `mapping.json` модели; кивок и рот — поверх моушенов, перед отрисовкой.
  */
-import type { Emotion } from "../../../core";
+import type { Emotion, Gesture } from "../../../core";
 import type { AvatarReaction, AvatarRenderer, AvatarSource, StageSize } from "../AvatarRenderer";
+import { gestureAngle, type GestureSpec } from "../gesture";
 import { DEFAULT_MAPPING, expressionFor, type AvatarMapping } from "../mapping";
 import { NOD_MS, nodAngle } from "../nod";
 import {
+  headAxisIndices,
   headPitchIndices,
   loadEngine,
   mouthIndices,
@@ -37,6 +39,8 @@ export class Live2DRenderer implements AvatarRenderer {
   #speaking = false;
   /** Сколько мс идёт кивок; null — кивка нет. */
   #nodMs: number | null = null;
+  /** Идущий жест и сколько мс он длится. */
+  #gesture: { spec: GestureSpec; ms: number } | null = null;
   #emotion: Emotion = "neutral";
   #reaction: AvatarReaction = "idle";
   /** Выражение на лице сейчас: движок не дёргается, пока нужное выражение не изменилось. */
@@ -96,6 +100,13 @@ export class Live2DRenderer implements AvatarRenderer {
     this.#nodMs = 0;
   }
 
+  gesture(gesture: Gesture): void {
+    const spec = this.#mapping.gestures[gesture];
+    if (spec !== undefined) {
+      this.#gesture = { spec, ms: 0 };
+    }
+  }
+
   setSpeaking(speaking: boolean): void {
     this.#speaking = speaking;
     const internal = this.#model?.internalModel;
@@ -133,6 +144,12 @@ export class Live2DRenderer implements AvatarRenderer {
       this.#nodMs += deltaMs;
       if (this.#nodMs >= NOD_MS) {
         this.#nodMs = null;
+      }
+    }
+    if (this.#gesture !== null) {
+      this.#gesture.ms += deltaMs;
+      if (this.#gesture.ms >= this.#gesture.spec.ms) {
+        this.#gesture = null;
       }
     }
     this.#model?.update(deltaMs);
@@ -193,6 +210,7 @@ export class Live2DRenderer implements AvatarRenderer {
     }
     const mouth = mouthIndices(internal);
     const head = headPitchIndices(internal);
+    const axes = headAxisIndices(internal);
     internal.on("beforeModelUpdate", () => {
       const core = internal.coreModel;
       if (this.#speaking || this.#mouth > MOUTH_EPSILON) {
@@ -203,6 +221,13 @@ export class Live2DRenderer implements AvatarRenderer {
       const angle = this.#nodMs === null ? 0 : nodAngle(this.#nodMs);
       for (const index of head) {
         core.addParameterValueByIndex(index, angle);
+      }
+      const gesture = this.#gesture;
+      if (gesture !== null) {
+        const offset = gestureAngle(gesture.spec, gesture.ms);
+        for (const index of axes[gesture.spec.axis]) {
+          core.addParameterValueByIndex(index, offset);
+        }
       }
     });
   }

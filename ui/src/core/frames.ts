@@ -54,6 +54,7 @@ const OUTBOUND_TYPES = {
   "turn.started": true,
   "chat.delta": true,
   "avatar.emotion": true,
+  "avatar.gesture": true,
   "turn.finished": true,
   "turn.cancelled": true,
   "metrics.span": true,

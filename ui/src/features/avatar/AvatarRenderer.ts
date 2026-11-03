@@ -7,7 +7,7 @@
  * `lookAt` и др.) только запоминают цель — применяется она в ближайшем `update()`, поэтому их
  * можно звать чаще кадра без лишней работы.
  */
-import type { Emotion } from "../../core";
+import type { Emotion, Gesture } from "../../core";
 
 /** Что загрузить: файлы модели в `ui/public/avatars/<имя>/` (ADR-0011). */
 export interface AvatarSource {
@@ -44,6 +44,9 @@ export interface AvatarRenderer {
 
   /** Кивок «услышала» (начало хода); повторный вызов начинает кивок заново. */
   nod(): void;
+
+  /** Жест по смыслу фразы; у модели такого жеста нет — ничего не происходит. */
+  gesture(gesture: Gesture): void;
 
   /** Витюбер говорит: моргает чаще, как человек в разговоре. */
   setSpeaking(speaking: boolean): void;

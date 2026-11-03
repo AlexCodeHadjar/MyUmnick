@@ -4,9 +4,10 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Final
 
-from vtuber.domain import Emotion, Message, Persona, Role
+from vtuber.domain import Emotion, Gesture, Message, Persona, Role
 
 EMOTIONS_PLACEHOLDER: Final = "{emotions}"
+GESTURES_PLACEHOLDER: Final = "{gestures}"
 # Справка после реплики: начало реплики остаётся общим с прогревом черновика (T-05) и историей.
 CONTEXT_TEMPLATE: Final = "{user_text}\n(Справка для тебя, пользователь её не видит: {context})"
 
@@ -46,7 +47,11 @@ class PromptBuilder:
 def render_system_prompt(persona: Persona) -> str:
     """Системный промпт персоны; `{emotions}` в правилах → теги всех эмоций из `Emotion`."""
     tags = ", ".join(emotion.tag for emotion in Emotion)
-    rules = [f"- {rule.replace(EMOTIONS_PLACEHOLDER, tags)}" for rule in persona.rules]
+    gestures = ", ".join(gesture.tag for gesture in Gesture)
+    rules = [
+        f"- {rule.replace(EMOTIONS_PLACEHOLDER, tags).replace(GESTURES_PLACEHOLDER, gestures)}"
+        for rule in persona.rules
+    ]
     parts = [
         f"Ты — {persona.name}.",
         persona.description,

@@ -7,6 +7,7 @@ import type {
   BackendState,
   Component,
   Emotion,
+  Gesture,
   ErrorData,
   OutboundMessage,
   BlockedData,
@@ -76,6 +77,8 @@ export class AppStore {
   phase = $state<TurnPhase>("idle");
   turn = $state<string | null>(null);
   emotion = $state<Emotion>("neutral");
+  /** Последний жест; `seq` — чтобы тот же жест подряд тоже сыграл (S-18.4). */
+  gesture = $state<{ name: Gesture; seq: number } | null>(null);
   error = $state<ErrorData | null>(null);
   /** Последние замеры каждой стадии, мс, от старых к новым (панель метрик, FR-15). */
   spans = $state<Record<string, number[]>>({});
@@ -148,6 +151,11 @@ export class AppStore {
         break;
       case "avatar.emotion":
         if (message.turn === this.turn) this.emotion = message.data.emotion;
+        break;
+      case "avatar.gesture":
+        if (message.turn === this.turn) {
+          this.gesture = { name: message.data.gesture, seq: (this.gesture?.seq ?? 0) + 1 };
+        }
         break;
       case "turn.finished":
         if (message.turn === this.turn) this.#endTurn("done");

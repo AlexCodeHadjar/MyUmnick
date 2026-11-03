@@ -2,9 +2,10 @@
 
 from collections.abc import Awaitable, Callable
 
-from vtuber.domain import AudioChunk, Emotion, TurnId, TurnStateError
+from vtuber.domain import AudioChunk, Emotion, Gesture, TurnId, TurnStateError
 from vtuber.gateway.codec import encode_audio_frame
 from vtuber.gateway.protocol import AvatarEmotion, ChatDelta, OutboundMessage, turn_ref
+from vtuber.gateway.protocol_avatar import AvatarGesture
 from vtuber.kernel import current_turn
 
 type Send = Callable[[OutboundMessage], Awaitable[None]]
@@ -31,6 +32,10 @@ class WsReplySink:
     async def emotion(self, emotion: Emotion) -> None:
         """Смена эмоции → `avatar.emotion`."""
         await self._send(AvatarEmotion.of(turn_ref(_turn()), emotion))
+
+    async def gesture(self, gesture: Gesture) -> None:
+        """Жест → `avatar.gesture`."""
+        await self._send(AvatarGesture.of(turn_ref(_turn()), gesture))
 
     async def audio(self, chunk: AudioChunk) -> None:
         """Фрагмент речи → бинарный кадр `<BBHIQ` + PCM (docs/protocol.md)."""

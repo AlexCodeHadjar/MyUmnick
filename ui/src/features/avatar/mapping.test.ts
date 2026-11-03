@@ -46,6 +46,17 @@ describe("parseMapping", () => {
       { version: 1, reactions: { idle: { motion: { group: 1, index: 0 } } } },
       "reactions.idle.motion.group",
     ],
+    ["неизвестный жест", { version: 1, gestures: { dance: {} } }, "gestures.dance"],
+    [
+      "жест по неизвестной оси",
+      { version: 1, gestures: { nod: { axis: "z", degrees: 1, ms: 200, waves: 1 } } },
+      "gestures.nod.axis",
+    ],
+    [
+      "слишком длинный жест",
+      { version: 1, gestures: { nod: { axis: "pitch", degrees: 1, ms: 9999, waves: 1 } } },
+      "gestures.nod.ms",
+    ],
     ["масштаб вне диапазона", { version: 1, frame: { zoom: 0 } }, "frame.zoom"],
     ["сдвиг не число", { version: 1, frame: { offsetY: "0.3" } }, "frame.offsetY"],
   ])("ошибка называет поле: %s", (_, raw, field) => {

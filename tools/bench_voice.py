@@ -41,6 +41,7 @@ from vtuber.domain import (
     AudioFormat,
     ConfigError,
     Emotion,
+    Gesture,
     LLMUnavailable,
     Message,
     Role,
@@ -182,6 +183,10 @@ class VoiceProbe:
     async def emotion(self, emotion: Emotion) -> None:
         """Эмоция задержку не меняет."""
         del emotion
+
+    async def gesture(self, gesture: Gesture) -> None:
+        """Жест задержку не меняет."""
+        del gesture
 
     async def audio(self, chunk: AudioChunk) -> None:
         """Приход фрагмента и его длительность."""

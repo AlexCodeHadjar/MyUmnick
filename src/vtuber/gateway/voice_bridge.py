@@ -4,7 +4,7 @@ import time
 from collections.abc import Awaitable, Callable
 
 from vtuber.application.conversation import ConversationService
-from vtuber.domain import AudioChunk, CancelReason, Emotion
+from vtuber.domain import AudioChunk, CancelReason, Emotion, Gesture
 from vtuber.gateway.protocol import InputBargeIn, InputFinal, InputHypothesis, OutboundMessage
 from vtuber.gateway.sink import WsReplySink
 from vtuber.kernel import Telemetry
@@ -61,6 +61,9 @@ class _FirstAudioSink:
 
     async def emotion(self, emotion: Emotion) -> None:
         await self._inner.emotion(emotion)
+
+    async def gesture(self, gesture: Gesture) -> None:
+        await self._inner.gesture(gesture)
 
     async def audio(self, chunk: AudioChunk) -> None:
         if not self._measured:

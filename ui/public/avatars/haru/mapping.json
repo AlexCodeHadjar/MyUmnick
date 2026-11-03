@@ -22,5 +22,11 @@
   "reactions": {
     "thinking": { "expression": "Pensive" }
   },
+  "gestures": {
+    "nod": { "axis": "pitch", "degrees": -9, "ms": 500, "waves": 1 },
+    "shake": { "axis": "yaw", "degrees": 10, "ms": 800, "waves": 4 },
+    "tilt": { "axis": "roll", "degrees": 10, "ms": 1100, "waves": 1 },
+    "startle": { "axis": "pitch", "degrees": 8, "ms": 350, "waves": 1 }
+  },
   "frame": { "zoom": 1.55, "offsetY": 0.3 }
 }

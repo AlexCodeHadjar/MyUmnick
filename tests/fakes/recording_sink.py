@@ -5,9 +5,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Literal
 
-from vtuber.domain import AudioChunk, Emotion
+from vtuber.domain import AudioChunk, Emotion, Gesture
 
-type Kind = Literal["text", "emotion", "audio", "done"]
+type Kind = Literal["text", "emotion", "gesture", "audio", "done"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -16,7 +16,7 @@ class Entry:
 
     at_ns: int
     kind: Kind
-    value: str | Emotion | AudioChunk | None
+    value: str | Emotion | Gesture | AudioChunk | None
 
 
 @dataclass(slots=True)
@@ -31,6 +31,9 @@ class RecordingSink:
 
     async def emotion(self, emotion: Emotion) -> None:
         self.entries.append(Entry(self.clock(), "emotion", emotion))
+
+    async def gesture(self, gesture: Gesture) -> None:
+        self.entries.append(Entry(self.clock(), "gesture", gesture))
 
     async def audio(self, chunk: AudioChunk) -> None:
         self.entries.append(Entry(self.clock(), "audio", chunk))

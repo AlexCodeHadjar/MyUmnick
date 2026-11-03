@@ -15,6 +15,7 @@ from vtuber.domain import (
     CancelReason,
     Emotion,
     EmotionChanged,
+    Gesture,
     Message,
     Turn,
     TurnCancelled,
@@ -319,6 +320,10 @@ class _FirstOutputSink:
         self._mark()
         await self.inner.emotion(emotion)
         await self.on_emotion(emotion)
+
+    async def gesture(self, gesture: Gesture) -> None:
+        """Жест — не вывод для замера первого символа: он только добавка к речи."""
+        await self.inner.gesture(gesture)
 
     async def audio(self, chunk: AudioChunk) -> None:
         self._mark()

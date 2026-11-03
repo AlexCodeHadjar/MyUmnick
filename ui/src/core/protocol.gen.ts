@@ -10,6 +10,14 @@ export interface AvatarEmotion {
   data: EmotionData;
 }
 
+/** Ядро → UI: жест по смыслу фразы; модель без такого жеста его пропускает (S-18.4). */
+export interface AvatarGesture {
+  v: Version;
+  type: "avatar.gesture";
+  turn: string;
+  data: GestureData;
+}
+
 /** Ядро → UI: компонент упал, поднимается или снова работает (S-17.1). */
 export interface BackendNoticeMessage {
   v: Version;
@@ -200,6 +208,14 @@ export interface FactsData {
 /** Итог установки: `problem` — None, если всё поставлено. */
 export interface FinishedData {
   problem: string | null;
+}
+
+/** Жест по смыслу фразы (S-18.4): тег как у эмоций, вид — в `mapping.json` модели. */
+export type Gesture = "nod" | "shake" | "tilt" | "startle";
+
+/** Какой жест показать. */
+export interface GestureData {
+  gesture: Gesture;
 }
 
 /** Ядро → UI: пользователь заговорил — оборвать голос витюбера сразу (Этап 11). */
@@ -510,4 +526,4 @@ export interface WindowVisibility {
 
 export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint | WindowVisibility;
 
-export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryFacts | BranchState | ChatSources | ErrorMessage;
+export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | AvatarGesture | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryFacts | BranchState | ChatSources | ErrorMessage;

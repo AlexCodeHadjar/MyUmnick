@@ -3,8 +3,9 @@
  * выражение включает, чем модель реагирует на ход и как она стоит в кадре. Замена модели —
  * замена файлов и этого маппинга, без кода (критерий Этапа 6).
  */
-import type { Emotion } from "../../core";
+import type { Emotion, Gesture } from "../../core";
 import type { AvatarReaction } from "./AvatarRenderer";
+import type { GestureSpec, HeadAxis } from "./gesture";
 
 export const MAPPING_VERSION = 1;
 
@@ -33,6 +34,8 @@ export interface AvatarMapping {
   emotions: Partial<Record<Emotion, string>>;
   reactions: Partial<Record<AvatarReaction, ReactionSpec>>;
   frame: FrameSpec;
+  /** Жесты этой модели; жеста нет в списке — он пропускается, ответ идёт как шёл. */
+  gestures: Partial<Record<Gesture, GestureSpec>>;
 }
 
 /** Маппинга нет — модель как есть: без выражений и реакций, кадр «вписать целиком». */
@@ -41,6 +44,7 @@ export const DEFAULT_MAPPING: AvatarMapping = {
   emotions: {},
   reactions: {},
   frame: { zoom: 1, offsetX: 0, offsetY: 0 },
+  gestures: {},
 };
 
 /** Ключи сверяются с типами протокола и контракта: новый член — ошибка компиляции здесь. */
@@ -58,6 +62,12 @@ const REACTIONS = { idle: true, listening: true, thinking: true } satisfies Reco
   true
 >;
 
+const GESTURES = { nod: true, shake: true, tilt: true, startle: true } satisfies Record<
+  Gesture,
+  true
+>;
+const AXES = { pitch: true, yaw: true, roll: true } satisfies Record<HeadAxis, true>;
+
 export class MappingError extends Error {
   override name = "MappingError";
 }
@@ -72,6 +82,14 @@ function isEmotion(key: string): key is Emotion {
 
 function isReaction(key: string): key is AvatarReaction {
   return Object.hasOwn(REACTIONS, key);
+}
+
+function isGesture(key: string): key is Gesture {
+  return Object.hasOwn(GESTURES, key);
+}
+
+function isAxis(value: unknown): value is HeadAxis {
+  return typeof value === "string" && Object.hasOwn(AXES, value);
 }
 
 function fail(path: string, problem: string): never {
@@ -156,6 +174,27 @@ function parseFrame(raw: unknown): FrameSpec {
   };
 }
 
+function parseGesture(raw: unknown, path: string): GestureSpec {
+  const spec = record(raw, path);
+  return {
+    axis: isAxis(spec.axis) ? spec.axis : fail(`${path}.axis`, "ожидается pitch, yaw или roll"),
+    degrees: finite(spec.degrees, `${path}.degrees`, -30, 30),
+    ms: finite(spec.ms, `${path}.ms`, 100, 3000),
+    waves: finite(spec.waves, `${path}.waves`, 1, 8),
+  };
+}
+
+function parseGestures(raw: unknown): AvatarMapping["gestures"] {
+  const result: AvatarMapping["gestures"] = {};
+  for (const [key, value] of Object.entries(record(raw ?? {}, "gestures"))) {
+    if (!isGesture(key)) {
+      fail(`gestures.${key}`, `неизвестный жест; есть: ${Object.keys(GESTURES).join(", ")}`);
+    }
+    result[key] = parseGesture(value, `gestures.${key}`);
+  }
+  return result;
+}
+
 /** JSON маппинга → проверенный маппинг; ошибка называет поле и что с ним не так. */
 export function parseMapping(raw: unknown): AvatarMapping {
   const root = record(raw, "корень");
@@ -168,6 +207,7 @@ export function parseMapping(raw: unknown): AvatarMapping {
     emotions: parseEmotions(root.emotions, expressions),
     reactions: parseReactions(root.reactions, expressions),
     frame: parseFrame(root.frame),
+    gestures: parseGestures(root.gestures),
   };
 }
 

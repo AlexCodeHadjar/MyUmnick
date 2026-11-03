@@ -6,7 +6,15 @@ from dataclasses import dataclass, field
 from typing import Final, TextIO
 
 from vtuber.application.conversation import ConversationService
-from vtuber.domain import AudioChunk, CancelReason, Emotion, TurnCancelled, TurnFinished, TurnId
+from vtuber.domain import (
+    AudioChunk,
+    CancelReason,
+    Emotion,
+    Gesture,
+    TurnCancelled,
+    TurnFinished,
+    TurnId,
+)
 from vtuber.kernel import EventBus
 
 EXIT_COMMAND: Final = "/exit"
@@ -38,6 +46,9 @@ class TerminalSink:
         """Показывает смену эмоции как `[happy]`."""
         self._mark()
         self._write(f"[{emotion.value}] ")
+
+    async def gesture(self, gesture: Gesture) -> None:
+        """В терминале жеста не видно: тело только у аватара."""
 
     async def audio(self, chunk: AudioChunk) -> None:
         """Терминал звук не воспроизводит: в чате TTS-ветка выключена, сюда звук не приходит."""

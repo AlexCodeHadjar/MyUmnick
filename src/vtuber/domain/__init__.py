@@ -1,7 +1,15 @@
 """Доменный слой: неизменяемые сущности и значения диалога, речи и эмоций."""
 
 from vtuber.domain.dialogue import Message, Persona, Role, Turn, TurnId
-from vtuber.domain.emotion import MAX_TAG_LENGTH, TAG_CLOSE, TAG_OPEN, Emotion, parse_tag
+from vtuber.domain.emotion import (
+    MAX_TAG_LENGTH,
+    TAG_CLOSE,
+    TAG_OPEN,
+    Emotion,
+    Gesture,
+    parse_gesture,
+    parse_tag,
+)
 from vtuber.domain.errors import (
     BackendUnavailable,
     ConfigError,
@@ -68,6 +76,7 @@ __all__ = [
     "FactId",
     "FactSource",
     "GenerationFailed",
+    "Gesture",
     "GpuMemory",
     "IncomingMessage",
     "LLMUnavailable",
@@ -99,6 +108,7 @@ __all__ = [
     "is_viewer_line",
     "looks_like_attack",
     "next_state",
+    "parse_gesture",
     "parse_tag",
     "viewer_line",
 ]

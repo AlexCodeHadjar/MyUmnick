@@ -2,7 +2,7 @@
 
 from typing import Protocol
 
-from vtuber.domain import AudioChunk, Emotion
+from vtuber.domain import AudioChunk, Emotion, Gesture
 
 
 class ReplySink(Protocol):
@@ -13,6 +13,9 @@ class ReplySink(Protocol):
 
     async def emotion(self, emotion: Emotion) -> None:
         """В ответе сменилась эмоция."""
+
+    async def gesture(self, gesture: Gesture) -> None:
+        """В ответе встретился жест."""
 
     async def audio(self, chunk: AudioChunk) -> None:
         """Фрагмент речи ответа; приходят по порядку, пока идёт ход (S-7.5)."""

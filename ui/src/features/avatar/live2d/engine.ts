@@ -3,6 +3,7 @@
  * регистрация плагина. И то, что нужно от внутренней модели Cubism: индексы параметров рта и
  * наклона головы.
  */
+import type { HeadAxis } from "../gesture";
 import { loadCubismCore } from "./core-loader";
 
 export type Engine = typeof import("untitled-pixi-live2d-engine/cubism");
@@ -14,6 +15,8 @@ export type CubismInternal = InstanceType<Engine["CubismInternalModel"]>;
 const DEFAULT_MOUTH_IDS = ["ParamMouthOpenY", "PARAM_MOUTH_OPEN_Y"];
 /** Наклон головы вверх-вниз (кивок): стандартные id Cubism 3+ и 2.1. */
 const HEAD_PITCH_IDS = ["ParamAngleY", "PARAM_ANGLE_Y"];
+const HEAD_YAW_IDS = ["ParamAngleX", "PARAM_ANGLE_X"];
+const HEAD_ROLL_IDS = ["ParamAngleZ", "PARAM_ANGLE_Z"];
 
 export async function loadEngine(): Promise<{ pixi: Pixi; engine: Engine }> {
   await loadCubismCore();
@@ -37,6 +40,15 @@ export function mouthIndices(internal: CubismInternal): number[] {
 /** Индексы наклона головы для кивка; у модели без параметра — пусто, кивка нет. */
 export function headPitchIndices(internal: CubismInternal): number[] {
   return parameterIndices(internal, HEAD_PITCH_IDS);
+}
+
+/** Индексы параметров головы по осям для жестов; нет параметра — жест по этой оси не виден. */
+export function headAxisIndices(internal: CubismInternal): Record<HeadAxis, number[]> {
+  return {
+    pitch: parameterIndices(internal, HEAD_PITCH_IDS),
+    yaw: parameterIndices(internal, HEAD_YAW_IDS),
+    roll: parameterIndices(internal, HEAD_ROLL_IDS),
+  };
 }
 
 function parameterIndices(internal: CubismInternal, ids: readonly string[]): number[] {
