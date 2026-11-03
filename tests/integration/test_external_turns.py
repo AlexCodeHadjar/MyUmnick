@@ -17,7 +17,7 @@ from vtuber.domain import (
     Persona,
     viewer_line,
 )
-from vtuber.gateway import ExternalTurns, InputFinal, OutboundMessage
+from vtuber.gateway import ExternalTurns, InputBargeIn, InputFinal, OutboundMessage
 from vtuber.kernel import EventBus, Telemetry
 from vtuber.ports import GenerationParams
 
@@ -153,3 +153,33 @@ async def test_cancel_means_silence_at_once() -> None:
     await service.wait_silent()
 
     assert loop.time() - started < SPEECH_S / 2
+
+
+async def test_initiative_line_is_not_shown_as_a_message_and_stays_external() -> None:
+    llm = FakeLLM("Как прошёл день?")
+    service, sent, external = _turns(llm)
+    await external.initiate("(заговори сама)")
+    assert not [message for message in sent if isinstance(message, InputFinal)]
+    assert not service.engaged
+    assert llm.calls[-1][0][-1].text == "(заговори сама)"
+
+
+async def test_host_input_is_reported_and_stops_only_external_speech() -> None:
+    service, sent, external = _turns(FakeLLM("Да."))
+    seen: list[str] = []
+    service.observe_input(lambda: seen.append("ввод"))
+    await external.initiate("(заговори сама)")
+    assert seen == []
+
+    service.typing("черновик")
+    assert seen == ["ввод"]
+    assert service.engaged, "недописанная реплика: заговаривать нельзя"
+    await external.stop_initiative()
+    assert [m for m in sent if isinstance(m, InputBargeIn)], "голос законченного хода глушит UI"
+
+    sink = RecordingSink()
+    await service.handle("Привет", sink)
+    before = len([m for m in sent if isinstance(m, InputBargeIn)])
+    await external.stop_initiative()
+    await service.wait_idle()
+    assert len([m for m in sent if isinstance(m, InputBargeIn)]) == before

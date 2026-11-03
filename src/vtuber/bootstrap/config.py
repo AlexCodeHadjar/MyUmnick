@@ -10,6 +10,7 @@ from vtuber.adapters.llm import GenerationConfig, LlamaServerConfig, LLMConfig
 from vtuber.adapters.memory import E5Config
 from vtuber.adapters.stt import VadConfig, WhisperConfig
 from vtuber.adapters.tts import TTSConfig
+from vtuber.application.conversation import InitiativeConfig
 from vtuber.application.memory import FactMemoryConfig, RetrievalConfig
 from vtuber.application.pipeline import PipelineConfig
 from vtuber.application.prompting import ContextConfig
@@ -107,6 +108,7 @@ class AppConfig(ConfigSection):
     gpu_probe: NvidiaSmiConfig
     setup: SetupConfig
     supervisor: SupervisorConfig
+    initiative: InitiativeConfig
 
 
 def load_app_config(root: Path, env: Mapping[str, str]) -> AppConfig:

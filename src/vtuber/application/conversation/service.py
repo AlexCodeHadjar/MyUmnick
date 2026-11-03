@@ -39,6 +39,9 @@ INTERNAL_ERROR_MESSAGE: Final = "Внутренняя ошибка при отв
 _log = get_logger(__name__)
 
 
+_HOST_REASONS = frozenset({CancelReason.USER_STOP, CancelReason.BARGE_IN})
+
+
 @dataclass(slots=True)
 class _ActiveTurn:
     id: TurnId
@@ -80,6 +83,26 @@ class ConversationService:
         self._tools: HintSource | None = None
         self._silent_at = 0.0
         self._private = False
+        self._has_draft = False
+        self._on_input: Callable[[], None] = lambda: None
+
+    @property
+    def engaged(self) -> bool:
+        """Идёт ход, звучит речь или ведущий набирает реплику: заговаривать самому нельзя."""
+        task = None if self._current is None else self._current.task
+        turn_alive = task is not None and not task.done()
+        return turn_alive or self._has_draft or time.monotonic() < self._silent_at
+
+    def observe_input(self, callback: Callable[[], None]) -> None:
+        """Сообщать о любом действии ведущего: реплика, набор, голос, остановка (S-15.1)."""
+        self._on_input = callback
+
+    async def stop_external(self) -> bool:
+        """Оборвать реплику не от ведущего; его собственный ответ остаётся. True — была такая."""
+        if self._current is None or not self._current.external:
+            return False
+        await self.cancel(CancelReason.USER_STOP)
+        return True
 
     @property
     def state(self) -> TurnState:
@@ -123,6 +146,9 @@ class ConversationService:
         ведущем, и в долговременную память она не идёт. Иначе зритель мог бы ставить таймеры и
         выспрашивать личное, а текст «сработал таймер» запускал бы таймер снова.
         """
+        if not external:
+            self._has_draft = False
+            self._on_input()
         await self.cancel(CancelReason.NEW_MESSAGE)
         self._stop_prefill()
         turn = _ActiveTurn(
@@ -140,6 +166,8 @@ class ConversationService:
         Новый черновик отменяет устаревший прогрев; тот же черновик повторно не греется.
         """
         text = draft.strip()
+        self._has_draft = bool(text)
+        self._on_input()
         if self._state is not TurnState.IDLE or not text or text == self._prefilled:
             return
         self._stop_prefill()
@@ -150,6 +178,8 @@ class ConversationService:
     async def cancel(self, reason: CancelReason) -> bool:
         """Прерывает текущий ход и ждёт его завершения; False — прерывать было нечего."""
         self._silent_at = 0.0  # UI глушит звук сразу при отмене и новом ходе
+        if reason in _HOST_REASONS:
+            self._on_input()
         turn = self._current
         if turn is None or turn.task is None or turn.task.done():
             return False

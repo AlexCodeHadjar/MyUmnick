@@ -1,5 +1,6 @@
 """Редактор памяти (S-16.2): правка и удаление фактов из UI; заметки по-прежнему источник истины."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from vtuber.application.memory.privacy import MemoryEraser
@@ -55,3 +56,4 @@ class MemoryControls:
 
     editor: MemoryEditor
     eraser: MemoryEraser
+    is_working: Callable[[], bool]

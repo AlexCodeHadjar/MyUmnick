@@ -3,15 +3,22 @@
 from dataclasses import dataclass
 
 from vtuber.adapters.gpu import NvidiaSmiProbe
-from vtuber.application.conversation import ConversationService, DialogueTree
+from vtuber.application.conversation import (
+    ConversationService,
+    DialogueTree,
+    Initiative,
+    InitiativeActions,
+)
 from vtuber.application.memory import MemoryControls, ShortTermMemory
 from vtuber.application.scheduler import ResourceManager
 from vtuber.bootstrap.config import AppConfig
 from vtuber.bootstrap.container import Core
 from vtuber.bootstrap.plugins import PluginServices
 from vtuber.bootstrap.setup import build_wizard
+from vtuber.domain import Persona
 from vtuber.gateway import (
     BranchBridge,
+    ExternalTurns,
     GatewayServer,
     MemoryBridge,
     PrivacyBridge,
@@ -30,6 +37,7 @@ class AppParts:
     resources: ResourceManager
     memory: MemoryControls | None
     history: ShortTermMemory
+    persona: Persona
 
 
 def connect_memory(
@@ -59,6 +67,28 @@ def connect_panels(app: AppParts, server: GatewayServer, service: ConversationSe
     connect_setup(app.cfg, server)
     connect_memory(app.memory, server, service)
     connect_branches(app.history, app.core, server, service)
+
+
+def connect_initiative(
+    app: AppParts, server: GatewayServer, service: ConversationService, external: ExternalTurns
+) -> Initiative | None:
+    """Персонаж сам заговаривает, только если это включили (S-15.1); фон памяти не прерывается."""
+    if not app.cfg.initiative.enabled:
+        return None
+    memory = app.memory
+
+    async def speak() -> None:
+        await external.initiate(app.persona.initiative)
+
+    def blocked() -> bool:
+        working = memory is not None and memory.is_working()
+        return service.engaged or working or not server.has_client
+
+    actions = InitiativeActions(speak, external.stop_initiative, blocked)
+    initiative = Initiative(app.cfg.initiative, actions)
+    service.observe_input(initiative.user_input)
+    server.panels.window = lambda visible: initiative.set_visible(visible=visible)
+    return initiative
 
 
 def connect_setup(cfg: AppConfig, server: GatewayServer) -> None:

@@ -34,6 +34,7 @@ export class CoreClient {
   #audio: AudioSink = () => undefined;
   #cancel: CancelSink = () => undefined;
   #micSeq = 0;
+  #hidden = false;
   readonly #batch: FrameBatch;
   readonly #probe: FirstCharProbe;
   readonly #audioProbe: FirstAudioProbe;
@@ -79,6 +80,8 @@ export class CoreClient {
         connection: (state) => {
           // Разрыв отменяет ход на ядре (T-14), а `turn.cancelled` уже не придёт.
           if (state !== "open" && state !== "connecting") this.#cancel(null);
+          // Ядро считает новое окно видимым, а скрытое должно сказать о себе само.
+          if (state === "open" && this.#hidden) this.#sendVisibility();
           batch.run(() => {
             store.setConnection(state);
           });
@@ -142,6 +145,17 @@ export class CoreClient {
   /** Черновик реплики (с дебаунсом — у вызывающего): ядро греет кэш LLM, T-05. */
   typing(text: string): void {
     this.#transport.send({ v: PROTOCOL_VERSION, type: "input.typing", data: { text } });
+  }
+
+  /** Окно свернули или вернули: скрытому персонаж сам не заговорит (S-15.1). */
+  setWindowVisible(visible: boolean): void {
+    this.#hidden = !visible;
+    this.#sendVisibility();
+  }
+
+  #sendVisibility(): void {
+    const data = { visible: !this.#hidden };
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "window.visibility", data });
   }
 
   /** Панель ресурсов открыли или закрыли: снимки идут только при открытой. */

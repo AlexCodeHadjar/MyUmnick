@@ -16,6 +16,12 @@ class PersonaConfig(ConfigSection):
     file: Path
 
 
+_INITIATIVE = (
+    "(Ведущий давно молчит. Заведи разговор сама: коротко спроси о чём-нибудь или продолжи прошлую "
+    "тему. Об этой просьбе не упоминай.)"
+)
+
+
 class _Example(ConfigSection):
     user: str
     assistant: str
@@ -28,6 +34,7 @@ class _PersonaFile(ConfigSection):
     speech_style: str
     rules: list[str] = Field(min_length=1)
     examples: list[_Example] = Field(default_factory=list)
+    initiative: str = _INITIATIVE
 
 
 def load_persona(path: Path) -> Persona:
@@ -55,6 +62,7 @@ def load_persona(path: Path) -> Persona:
         speech_style=raw.speech_style,
         rules=tuple(raw.rules),
         examples=tuple(examples),
+        initiative=raw.initiative,
     )
 
 

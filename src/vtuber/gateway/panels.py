@@ -1,5 +1,6 @@
 """Панели UI вне хода диалога: мастер, ресурсы, память, ветки; у каждой свой мост."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from vtuber.gateway.branch_bridge import BranchBridge
@@ -14,6 +15,7 @@ from vtuber.gateway.protocol_memory import (
     MemoryList,
     PrivacySet,
 )
+from vtuber.gateway.protocol_presence import WindowVisibility
 from vtuber.gateway.resources_feed import ResourcesFeed
 from vtuber.gateway.setup_bridge import SetupBridge
 
@@ -22,7 +24,12 @@ type _PrivacyMessage = PrivacySet | MemoryErase
 type _MemoryMessage = MemoryList | MemoryFactSave | MemoryFactDelete
 type _BranchMessage = BranchGo | BranchCheckpoint
 type PanelMessage = (
-    ResourcesWatch | _SetupMessage | _PrivacyMessage | _MemoryMessage | _BranchMessage
+    ResourcesWatch
+    | WindowVisibility
+    | _SetupMessage
+    | _PrivacyMessage
+    | _MemoryMessage
+    | _BranchMessage
 )
 
 
@@ -35,6 +42,7 @@ class Panels:
     privacy: PrivacyBridge | None = None
     memory: MemoryBridge | None = None
     branches: BranchBridge | None = None
+    window: Callable[[bool], None] | None = None
 
     async def greet(self) -> None:
         """Что новый клиент должен узнать сразу: окно могло перезапуститься посреди работы."""
@@ -49,12 +57,18 @@ class Panels:
         """Некому показывать снимки ресурсов."""
         if self.resources is not None:
             self.resources.set_enabled(enabled=False)
+        # Новое окно видно с первого кадра; свёрнутое скажет об этом само при подключении.
+        if self.window is not None:
+            self.window(True)  # noqa: FBT003 — позиционный вызов обратного вызова
 
     async def handle(self, message: PanelMessage) -> None:
         """Передаёт сообщение мосту его панели."""
         if isinstance(message, ResourcesWatch):
             if self.resources is not None:
                 self.resources.set_enabled(enabled=message.data.enabled)
+        elif isinstance(message, WindowVisibility):
+            if self.window is not None:
+                self.window(message.data.visible)
         elif isinstance(message, SetupInstall | SetupCancel):
             if self.setup is not None:
                 await self.setup.handle(message)

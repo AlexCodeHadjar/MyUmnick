@@ -12,7 +12,7 @@ from typing import Final, Protocol, TextIO
 
 from vtuber.adapters.gpu import NvidiaSmiProbe
 from vtuber.adapters.llm import LlamaServerProcess
-from vtuber.application.conversation import ConversationService
+from vtuber.application.conversation import ConversationService, Initiative
 from vtuber.application.scheduler import ResourceManager
 from vtuber.application.supervision import Supervised, Supervisor
 from vtuber.application.tools import ToolContext
@@ -29,7 +29,7 @@ from vtuber.bootstrap.supervision import (
     with_voice,
 )
 from vtuber.bootstrap.voice_input import voice_input
-from vtuber.bootstrap.wiring import AppParts, connect_panels
+from vtuber.bootstrap.wiring import AppParts, connect_initiative, connect_panels
 from vtuber.domain import (
     BackendState,
     BackendStatusChanged,
@@ -138,7 +138,9 @@ async def _run(
             _connect_tools(cfg, conversation.service, plugins)
             if mode == SERVE_MODE:
                 code = await _serve(
-                    AppParts(cfg, core, plugins, resources, controls, conversation.history),
+                    AppParts(
+                        cfg, core, plugins, resources, controls, conversation.history, persona
+                    ),
                     conversation.service,
                     warmup,
                     console,
@@ -198,6 +200,9 @@ async def _serve(
                 service, server.send, server.send_bytes, lambda: server.has_client
             )
             readers = [tg.create_task(external.run(stream)) for stream in plugins.sources]
+            initiative = connect_initiative(app, server, service, external)
+            if initiative is not None:
+                readers.append(tg.create_task(_forever(initiative)))
             while await console.read_line() is not None:
                 pass
             serving.cancel()
@@ -205,6 +210,10 @@ async def _serve(
             for reader in readers:
                 reader.cancel()
     return 0
+
+
+async def _forever(initiative: Initiative) -> None:
+    await initiative.run()
 
 
 def _supervisor(cfg: AppConfig, warmup: "_Warmup", hearing: Supervised | None) -> Supervisor:

@@ -6,7 +6,7 @@ from contextlib import aclosing
 
 from vtuber.application.conversation import ConversationService
 from vtuber.domain import IncomingMessage, looks_like_attack, viewer_line
-from vtuber.gateway.protocol import InputFinal, OutboundMessage
+from vtuber.gateway.protocol import InputBargeIn, InputFinal, OutboundMessage
 from vtuber.gateway.protocol_extras import ViewerBlockedMessage
 from vtuber.gateway.sink import WsReplySink
 from vtuber.kernel import get_logger
@@ -43,6 +43,21 @@ class ExternalTurns:
                     await self._answer(message)
         except Exception:  # noqa: BLE001 — R-42: источник — чужой код, диалог продолжается
             _log.exception("external.source_failed")
+
+    async def initiate(self, text: str) -> None:
+        """Реплика по своей инициативе (S-15.1): `text` — просьба модели, в чате её нет.
+
+        Ход внешний: инструменты и память о ведущем ей не положены, как и зрителю.
+        """
+        async with self._one_at_a_time:
+            sink = WsReplySink(self._send, self._send_bytes)
+            await self._service.handle(text, sink, external=True)
+            await self._service.wait_silent()
+
+    async def stop_initiative(self) -> None:
+        """Ведущий вернулся: ход мог закончиться, а голос ещё звучит, поэтому UI глушим отдельно."""
+        if await self._service.stop_external():
+            await self._send(InputBargeIn.of())
 
     async def _answer(self, message: IncomingMessage) -> None:
         if not self._has_client():

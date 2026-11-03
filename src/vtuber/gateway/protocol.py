@@ -30,6 +30,7 @@ from vtuber.gateway.protocol_memory import (
     PrivacySet,
     PrivacyState,
 )
+from vtuber.gateway.protocol_presence import WindowVisibility
 
 
 def turn_ref(turn_id: TurnId) -> str:
@@ -136,7 +137,8 @@ type InboundMessage = Annotated[
     | MemoryFactSave
     | MemoryFactDelete
     | BranchGo
-    | BranchCheckpoint,
+    | BranchCheckpoint
+    | WindowVisibility,
     Field(discriminator="type"),
 ]
 

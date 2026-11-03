@@ -78,6 +78,7 @@ async def background_memory(
                 yield MemoryControls(
                     MemoryEditor(vault, store, embedder),
                     _eraser(engines, conversation, keeper, recorder),
+                    lambda: scheduler.working,
                 )
         finally:
             loop.cancel()

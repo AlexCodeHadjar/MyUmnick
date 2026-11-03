@@ -491,11 +491,23 @@ export interface ViewerBlockedMessage {
   data: BlockedData;
 }
 
+/** Видно ли окно. */
+export interface VisibilityData {
+  visible: boolean;
+}
+
 /** Открыта ли панель ресурсов. */
 export interface WatchData {
   enabled: boolean;
 }
 
-export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint;
+/** UI → Ядро: окно свернули или вернули; свёрнутому персонаж сам не заговорит (S-15.1). */
+export interface WindowVisibility {
+  v: Version;
+  type: "window.visibility";
+  data: VisibilityData;
+}
+
+export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint | WindowVisibility;
 
 export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryFacts | BranchState | ChatSources | ErrorMessage;

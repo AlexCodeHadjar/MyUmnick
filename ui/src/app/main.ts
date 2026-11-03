@@ -10,5 +10,8 @@ if (target === null) {
 
 const client = new CoreClient({ url: import.meta.env.VITE_CORE_URL });
 client.start();
+document.addEventListener("visibilitychange", () => {
+  client.setWindowVisible(!document.hidden);
+});
 
 export default mount(App, { target, props: { client } });

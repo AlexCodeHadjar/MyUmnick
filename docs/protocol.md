@@ -109,6 +109,14 @@ UI → Ядро: запомнить текущее место под имене�
 |---|---|
 | `name` | `string` |
 
+### `window.visibility` — `WindowVisibility`
+
+UI → Ядро: окно свернули или вернули; свёрнутому персонаж сам не заговорит (S-15.1).
+
+| Поле `data` | Тип |
+|---|---|
+| `visible` | `boolean` |
+
 ## Ядро → UI
 
 ### `turn.started` — `TurnStartedMessage`

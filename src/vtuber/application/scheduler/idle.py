@@ -70,6 +70,11 @@ class IdleScheduler:
         """Задач в очереди (без выполняемой)."""
         return len(self._queue)
 
+    @property
+    def working(self) -> bool:
+        """Есть незавершённая фоновая работа."""
+        return self._current is not None or bool(self._queue)
+
     def submit(self, job: IdleJob) -> None:
         """Поставить задачу в очередь; выполнится в ближайшем простое."""
         self._queue.append(job)

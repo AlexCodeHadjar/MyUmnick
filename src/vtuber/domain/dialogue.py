@@ -56,3 +56,4 @@ class Persona:
     speech_style: str
     rules: tuple[str, ...]
     examples: tuple[Message, ...] = ()
+    initiative: str = ""

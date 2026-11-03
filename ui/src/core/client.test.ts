@@ -327,6 +327,13 @@ describe("CoreClient", () => {
     expect(client.store.sources).toEqual([]);
   });
 
+  it("скрытое окно сообщает о себе и после переподключения", () => {
+    const { client, socket } = connected();
+    client.setWindowVisible(false);
+    const frame = { v: 1, type: "window.visibility", data: { visible: false } };
+    expect(socket.sent.at(-1)).toEqual(frame);
+  });
+
   it("dispose() закрывает связь", () => {
     const { client, frames } = connected();
     client.dispose();
