@@ -97,6 +97,14 @@ class PerformanceRequested:
     audio: AsyncGenerator[AudioChunk]
 
 
+@dataclass(frozen=True, slots=True)
+class TextShown:
+    """Плагин просит показать текст в чате; озвучки у него нет (S-12.6)."""
+
+    title: str
+    text: str
+
+
 class SoundKind(StrEnum):
     """Звук вокруг, не речь (S-14.4)."""
 

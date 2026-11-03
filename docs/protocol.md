@@ -159,6 +159,15 @@ UI → Ядро: новая реплика с картинкой; прерыва
 |---|---|
 | `gesture` | `Gesture` |
 
+### `chat.attachment` — `ChatAttachment`
+
+Ядро → UI: показать текст отдельным сообщением; озвучки у него нет.
+
+| Поле `data` | Тип |
+|---|---|
+| `title` | `string` |
+| `text` | `string` |
+
 ### `turn.finished` — `TurnFinishedMessage`
 
 Ядро → UI: ответ закончен полностью.

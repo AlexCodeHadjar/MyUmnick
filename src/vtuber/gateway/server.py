@@ -20,6 +20,7 @@ from vtuber.domain import (
     PerformanceRequested,
     ProtocolError,
     SourcesFound,
+    TextShown,
     TurnCancelled,
     TurnFinished,
     TurnStarted,
@@ -41,6 +42,7 @@ from vtuber.gateway.protocol import (
     TurnStartedMessage,
     turn_ref,
 )
+from vtuber.gateway.protocol_attachment import ChatAttachment
 from vtuber.gateway.protocol_extras import (
     BackendNoticeMessage,
     ChatSources,
@@ -90,6 +92,7 @@ class GatewayServer:
         bus.subscribe(ViewerBlocked, self._on_viewer_blocked)
         bus.subscribe(BackendNotice, self._on_notice)
         bus.subscribe(SourcesFound, self._on_sources)
+        bus.subscribe(TextShown, self._on_text_shown)
         bus.subscribe(PerformanceRequested, self._on_performance)
 
     def use_commands(self, commands: Mapping[str, Callable[[], Awaitable[None]]]) -> None:
@@ -223,6 +226,9 @@ class GatewayServer:
     async def _on_performance(self, event: PerformanceRequested) -> None:
         sink = WsReplySink(self.send, self.send_bytes)
         await self._service.perform(event.title, event.audio, sink)
+
+    async def _on_text_shown(self, event: TextShown) -> None:
+        await self.send(ChatAttachment.of(event.title, event.text))
 
     async def _on_sources(self, event: SourcesFound) -> None:
         await self.send(ChatSources.of([(s.title, s.url) for s in event.sources]))

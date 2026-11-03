@@ -172,6 +172,10 @@ export class AppStore {
       case "resources.snapshot":
         this.resources = message.data;
         break;
+      case "chat.attachment":
+        // Без хода и без голоса: код читают глазами, идущий ответ это не прерывает.
+        this.#push("assistant", `${message.data.title}\n\n${message.data.text}`, null, "done");
+        break;
       case "chat.sources":
         this.sources = message.data.sources;
         break;

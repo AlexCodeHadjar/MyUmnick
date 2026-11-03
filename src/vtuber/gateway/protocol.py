@@ -6,6 +6,7 @@ from typing import Annotated, Literal, Self
 from pydantic import Field
 
 from vtuber.domain import BackendState, CancelReason, Component, Emotion, TurnId
+from vtuber.gateway.protocol_attachment import ChatAttachment
 from vtuber.gateway.protocol_avatar import AvatarGesture
 from vtuber.gateway.protocol_base import PROTOCOL_VERSION, EmptyData, ProtocolModel, Version
 from vtuber.gateway.protocol_branches import BranchCheckpoint, BranchGo, BranchState
@@ -301,6 +302,7 @@ type OutboundMessage = Annotated[
     | ChatDelta
     | AvatarEmotion
     | AvatarGesture
+    | ChatAttachment
     | TurnFinishedMessage
     | TurnCancelledMessage
     | MetricsSpan

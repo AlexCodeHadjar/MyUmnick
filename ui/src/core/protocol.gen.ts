@@ -2,6 +2,12 @@
 
 export const PROTOCOL_VERSION = 1 as const;
 
+/** Заголовок и текст. */
+export interface AttachmentData {
+  title: string;
+  text: string;
+}
+
 /** Ядро → UI: сменить выражение аватара. */
 export interface AvatarEmotion {
   v: Version;
@@ -95,6 +101,13 @@ export type CancelReason = "user_stop" | "new_message" | "barge_in" | "error";
 export interface CancelledData {
   reason: CancelReason;
   message: string;
+}
+
+/** Ядро → UI: показать текст отдельным сообщением; озвучки у него нет. */
+export interface ChatAttachment {
+  v: Version;
+  type: "chat.attachment";
+  data: AttachmentData;
 }
 
 /** UI → Ядро: остановить ответ. */
@@ -545,4 +558,4 @@ export interface WindowVisibility {
 
 export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint | WindowVisibility | ChatSendImage;
 
-export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | AvatarGesture | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryFacts | BranchState | ChatSources | ErrorMessage;
+export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | AvatarGesture | ChatAttachment | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryFacts | BranchState | ChatSources | ErrorMessage;

@@ -347,6 +347,15 @@ describe("CoreClient", () => {
     expect(client.store.messages.at(-1)?.image).toBe("data:image/jpeg;base64,QUJD");
   });
 
+  it("текст мимо голоса появляется отдельным сообщением", () => {
+    const { client, socket, frames } = connected();
+    const data = { title: "Помощник", text: "def add(): ..." };
+    socket.receive(JSON.stringify({ v: 1, type: "chat.attachment", data }));
+    frames.next();
+    expect(client.store.messages.at(-1)?.text).toBe("Помощник\n\ndef add(): ...");
+    expect(client.store.messages.at(-1)?.turn).toBeNull();
+  });
+
   it("dispose() закрывает связь", () => {
     const { client, frames } = connected();
     client.dispose();

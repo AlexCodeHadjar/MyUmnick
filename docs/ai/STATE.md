@@ -1,5 +1,5 @@
 # STATE — снимок проекта
-_Обновлено: 2026-11-03, сессия S-14.3_
+_Обновлено: 2026-11-03, сессия S-12.6_
 
 ## Сейчас
 - **Сборку готового проекта (S-13.3, PyInstaller, установщик) не запускать до команды пользователя**; этапы ещё
@@ -116,6 +116,7 @@ _Обновлено: 2026-11-03, сессия S-14.3_
 - [x] S-16.2 Редактор памяти: `MemoryEditor`, `gateway/memory_bridge.py`, `ui/src/features/memory/` (Ctrl+Shift+Y), `[memory].profile`
 - [x] S-16.1 Ветвление: `application/conversation/branches.py`, `gateway/branch_bridge.py`, `chat/BranchBar.svelte`
 - [ ] S-18.5 Пение: `plugins/singing` исполняет готовую запись, движок не выбран (ADR-0028)
+- [x] S-12.6 Помощник-программист: `plugins/code_assistant`, `chat.attachment`, `ModelHost`; модель и замер ждут аренды. S-12.5: `eval/code_en.jsonl`, `tools/eval_code.py`
 - [x] S-9.4 Гейт регрессий: `tools/perf_gate.py`, `tools/bench_core.py`, `bench/baseline_core.json`; блокировок цикла на пути без GPU нет
 - [x] S-14.3 Собеседники: отпечаток на фразу, `application/voice/speakers.py`, `[stt.speakers]` выключено; ошибки на людях ждут записи (ADR-0029)
 - [x] S-14.4 Звуки: `application/voice/sounds.py`, `adapters/stt/sensevoice.py`, `[stt.sounds]` выключено; точность ждёт записей, `tools.eval_sounds` (ADR-0027)
@@ -279,4 +280,4 @@ _Обновлено: 2026-11-03, сессия S-14.3_
 - Новая зависимость — ADR. ADR-0004 — выбор LLM (S-2.5); следующий свободный — ADR-0030.
 
 ## Последний журнал
-docs/ai/sessions/2026-11-03_S-9.4.md
+docs/ai/sessions/2026-11-03_S-12.5-6.md

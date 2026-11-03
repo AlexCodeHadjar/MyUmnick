@@ -2,6 +2,7 @@
 
 import asyncio
 from collections.abc import AsyncGenerator, Awaitable, Callable, Mapping, Sequence
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from functools import partial
 from typing import Final, Protocol, runtime_checkable
@@ -15,6 +16,7 @@ from vtuber.domain import (
     PerformanceRequested,
     SearchSource,
     SourcesFound,
+    TextShown,
     ViewerBlocked,
 )
 from vtuber.kernel.bus import EventBus, Handler
@@ -58,6 +60,28 @@ class PluginsConfig(ConfigSection):
     settings: dict[str, dict[str, object]]
 
 
+class LoadableModel(Protocol):
+    """Модель, которую можно загрузить в видеопамять и выгрузить."""
+
+    async def load(self) -> None:
+        """Загрузить."""
+        ...
+
+    async def unload(self) -> None:
+        """Выгрузить и освободить память."""
+        ...
+
+
+class ModelHost(Protocol):
+    """Менеджер видеопамяти для плагинов; сам он живёт выше ядра (ADR-0005)."""
+
+    def hold(
+        self, name: str, vram_mb: int, model: LoadableModel
+    ) -> Callable[[], AbstractAsyncContextManager[None]]:
+        """Поставить модель на учёт; вызов результата — модель в памяти на время блока."""
+        ...
+
+
 class PluginContext:
     """Доступ плагина к ядру: подписка на события, своя секция конфига, логгер.
 
@@ -65,8 +89,15 @@ class PluginContext:
     подписчиков шины, и медленный плагин задерживал бы начало ответа (приоритет 1, T-15).
     """
 
-    def __init__(self, name: str, bus: EventBus, settings: Mapping[str, object]) -> None:
+    def __init__(
+        self,
+        name: str,
+        bus: EventBus,
+        settings: Mapping[str, object],
+        models: ModelHost | None = None,
+    ) -> None:
         self.name = name
+        self.models = models
         self.log = get_logger(f"plugin.{name}")
         self._bus = bus
         self._settings = settings
@@ -106,6 +137,10 @@ class PluginContext:
     async def perform(self, title: str, audio: AsyncGenerator[AudioChunk]) -> None:
         """Исполнить готовый звук ходом без модели; прерывается, как обычный ответ."""
         await self._bus.publish(PerformanceRequested(title, audio))
+
+    async def show_text(self, title: str, text: str) -> None:
+        """Показать текст в чате мимо голоса: например, код."""
+        await self._bus.publish(TextShown(title, text))
 
     async def report_sources(self, sources: Sequence[SearchSource]) -> None:
         """Показать ведущему, откуда взят ответ."""

@@ -20,7 +20,7 @@ from vtuber.bootstrap.config import AppConfig, load_app_config
 from vtuber.bootstrap.container import Core, build_conversation, llm_backends
 from vtuber.bootstrap.memory import background_memory
 from vtuber.bootstrap.persona import load_persona
-from vtuber.bootstrap.plugins import PluginServices, running_plugins
+from vtuber.bootstrap.plugins import PluginServices, ResourceModels, running_plugins
 from vtuber.bootstrap.supervision import (
     LlmSupervised,
     TtsSupervised,
@@ -133,7 +133,7 @@ async def _run(
         # Память (Этап 10): факты и резюме — в простое, LLM фонового слота; поиск — в ходе (T-12).
         async with (
             background_memory(cfg, conversation, core) as controls,
-            running_plugins(cfg.plugins, bus) as plugins,
+            running_plugins(cfg.plugins, bus, models=ResourceModels(resources)) as plugins,
         ):
             _connect_tools(cfg, conversation.service, plugins)
             if mode == SERVE_MODE:
