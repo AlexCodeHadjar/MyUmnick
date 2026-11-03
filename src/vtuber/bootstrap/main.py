@@ -13,22 +13,22 @@ from typing import Final, Protocol, TextIO
 from vtuber.adapters.gpu import NvidiaSmiProbe
 from vtuber.adapters.llm import LlamaServerProcess
 from vtuber.application.conversation import ConversationService
-from vtuber.application.pipeline import FillerBank
 from vtuber.application.scheduler import ResourceManager
+from vtuber.application.supervision import Supervised, Supervisor
 from vtuber.application.tools import ToolContext
 from vtuber.bootstrap.config import AppConfig, load_app_config
-from vtuber.bootstrap.container import (
-    Backends,
-    Core,
-    TTSAdapter,
-    build_conversation,
-    llm_backends,
-    tts_backends,
-)
+from vtuber.bootstrap.container import Core, build_conversation, llm_backends
 from vtuber.bootstrap.memory import background_memory
 from vtuber.bootstrap.persona import load_persona
 from vtuber.bootstrap.plugins import PluginServices, running_plugins
 from vtuber.bootstrap.setup import build_wizard
+from vtuber.bootstrap.supervision import (
+    LlmSupervised,
+    TtsSupervised,
+    VoiceParts,
+    build_voice,
+    with_voice,
+)
 from vtuber.bootstrap.voice_input import voice_input
 from vtuber.domain import (
     BackendState,
@@ -122,9 +122,7 @@ async def _run(
     # Здесь, а не в TaskGroup: ошибка бюджета в конфиге должна дойти до main как ConfigError.
     resources = _resources(cfg, bus)
     # Голос — только у шлюза: терминальный чат звук не воспроизводит (S-7.5).
-    tts = tts_backends().create(cfg.tts.backend, cfg.tts) if mode == SERVE_MODE else None
-    voice = None if tts is None else _Voice(tts, FillerBank(cfg.pipeline.filler))
-    fillers = None if voice is None else voice.fillers
+    voice = build_voice(cfg) if mode == SERVE_MODE else None
     async with (
         LlamaServerProcess(cfg.llama_server, cfg.llm.base_url) as server,
         llm_backends().create(cfg.llm.backend, cfg.llm) as llm,
@@ -132,7 +130,7 @@ async def _run(
     ):
         metrics = tg.create_task(core.telemetry.run())
         trimming = tg.create_task(resources.run(NvidiaSmiProbe(cfg.gpu_probe)))
-        conversation = build_conversation(cfg, persona, Backends(llm, tts, fillers), core)
+        conversation = build_conversation(cfg, persona, with_voice(llm, voice), core)
         warmup = _Warmup(_Llm(llm, server), conversation.prompts.prefix, bus, voice)
         # Память (Этап 10): факты и резюме — в простое, LLM фонового слота; поиск — в ходе (T-12).
         async with (
@@ -199,9 +197,10 @@ async def _serve(
         # Модель голоса грузится уже при открытом шлюзе: UI видит «TTS загружается».
         async with (
             warmup.voice(),
-            voice_input(cfg.stt, server, service, core),
+            voice_input(cfg, server, service, core) as hearing,
             asyncio.TaskGroup() as tg,
         ):
+            supervising = tg.create_task(_supervisor(cfg, warmup, hearing).run())
             serving = tg.create_task(server.serve_forever())
             external = ExternalTurns(
                 service, server.send, server.send_bytes, lambda: server.has_client
@@ -210,9 +209,16 @@ async def _serve(
             while await console.read_line() is not None:
                 pass
             serving.cancel()
+            supervising.cancel()
             for reader in readers:
                 reader.cancel()
     return 0
+
+
+def _supervisor(cfg: AppConfig, warmup: "_Warmup", hearing: Supervised | None) -> Supervisor:
+    """Наблюдаем за тем, что можем поднять: внешний llama-server ядру не подчиняется."""
+    items = [*warmup.supervised(), *([hearing] if hearing is not None else [])]
+    return Supervisor(items if cfg.supervisor.enabled else (), cfg.supervisor, warmup.bus)
 
 
 @dataclass(frozen=True, slots=True)
@@ -223,14 +229,6 @@ class _Llm:
     server: LlamaServerProcess
 
 
-@dataclass(frozen=True, slots=True)
-class _Voice:
-    """Голос шлюза: движок (грузится при старте) и его междометия (синтез после загрузки)."""
-
-    tts: TTSAdapter
-    fillers: FillerBank
-
-
 class _Warmup:
     """Прогрев бэкендов (T-06) со статусами для UI: загружается → готов / сбой.
 
@@ -239,12 +237,21 @@ class _Warmup:
     """
 
     def __init__(
-        self, llm: _Llm, prefix: Sequence[Message], bus: EventBus, voice: _Voice | None
+        self, llm: _Llm, prefix: Sequence[Message], bus: EventBus, voice: VoiceParts | None
     ) -> None:
         self._llm = llm
         self._prefix = prefix
         self.bus = bus
         self._voice = voice
+
+    def supervised(self) -> list[Supervised]:
+        """Что из прогретого подчиняется ядру и может быть поднято заново (S-17.1)."""
+        items: list[Supervised] = []
+        if self._llm.server.started:
+            items.append(LlmSupervised(self._llm.server, self.run))
+        if self._voice is not None:
+            items.append(TtsSupervised(self._voice.tts, self._voice.flag))
+        return items
 
     async def run(self) -> str | None:
         """None — LLM готова; иначе — текст проблемы."""

@@ -10,6 +10,13 @@ export interface AvatarEmotion {
   data: EmotionData;
 }
 
+/** Ядро → UI: компонент упал, поднимается или снова работает (S-17.1). */
+export interface BackendNoticeMessage {
+  v: Version;
+  type: "backend.notice";
+  data: NoticeData;
+}
+
 /** Состояние бэкенда для статус-бара UI. */
 export type BackendState = "loading" | "ready" | "failed";
 
@@ -142,6 +149,11 @@ export interface MetricsSpan {
   type: "metrics.span";
   turn: string | null;
   data: SpanData;
+}
+
+/** Текст для пользователя. */
+export interface NoticeData {
+  text: string;
 }
 
 /** Закреплённая модель: основная LLM, распознавание речи. */
@@ -305,4 +317,4 @@ export interface WatchData {
 
 export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel;
 
-export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | ErrorMessage;
+export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | ErrorMessage;

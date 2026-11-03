@@ -88,6 +88,14 @@ class PhraseVoiced:
 
 
 @dataclass(frozen=True, slots=True)
+class BackendNotice:
+    """Сообщение пользователю о компоненте: упал, поднимается, снова работает (S-17.1)."""
+
+    component: Component
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
 class ViewerBlocked:
     """Реплика зрителя похожа на атаку и не дошла до модели; ведущий видит это в UI (FR-31)."""
 

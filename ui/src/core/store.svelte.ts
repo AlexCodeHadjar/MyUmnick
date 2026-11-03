@@ -78,6 +78,8 @@ export class AppStore {
   setupResult = $state<FinishedData | null>(null);
   /** Заблокированные реплики зрителей, последние — в конце (FR-31). */
   blockedViewers = $state<BlockedData[]>([]);
+  /** Что случилось с компонентом: упал, поднимается, снова работает (S-17.1). */
+  notice = $state<string | null>(null);
 
   #nextId = 0;
   /** Индекс сообщения текущего хода в `messages`: массив только растёт, индекс не сдвигается. */
@@ -86,6 +88,7 @@ export class AppStore {
   addUserMessage(text: string): void {
     this.#push("user", text, null, "done");
     this.error = null;
+    this.notice = null;
   }
 
   /** Замер стадии: от ядра (`metrics.span`) или измеренный самим UI (`ui.*`). */
@@ -133,6 +136,9 @@ export class AppStore {
         break;
       case "resources.snapshot":
         this.resources = message.data;
+        break;
+      case "backend.notice":
+        this.notice = message.data.text;
         break;
       case "viewer.blocked":
         this.blockedViewers.push(message.data);

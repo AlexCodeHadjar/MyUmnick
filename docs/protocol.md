@@ -186,6 +186,14 @@ UI → Ядро: прервать загрузку; скачанное прод�
 | `author` | `string` |
 | `text` | `string` |
 
+### `backend.notice` — `BackendNoticeMessage`
+
+Ядро → UI: компонент упал, поднимается или снова работает (S-17.1).
+
+| Поле `data` | Тип |
+|---|---|
+| `text` | `string` |
+
 ### `error` — `ErrorMessage`
 
 Ядро → UI: ошибка; `turn` — None, если не относится к ходу (битое сообщение).

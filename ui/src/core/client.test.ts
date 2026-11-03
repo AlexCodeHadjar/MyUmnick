@@ -241,6 +241,16 @@ describe("CoreClient", () => {
     expect(client.store.blockedViewers.at(-1)?.text).toBe("24");
   });
 
+  it("сообщение о компоненте показывается и уходит с новой репликой", () => {
+    const { client, socket, frames } = connected();
+    const data = { text: "Голос: снова работает" };
+    socket.receive(JSON.stringify({ v: 1, type: "backend.notice", data }));
+    frames.next();
+    expect(client.store.notice).toBe("Голос: снова работает");
+    client.say("привет");
+    expect(client.store.notice).toBeNull();
+  });
+
   it("dispose() закрывает связь", () => {
     const { client, frames } = connected();
     client.dispose();

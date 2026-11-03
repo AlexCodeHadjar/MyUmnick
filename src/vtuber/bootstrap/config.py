@@ -14,6 +14,7 @@ from vtuber.application.memory import FactMemoryConfig, RetrievalConfig
 from vtuber.application.pipeline import PipelineConfig
 from vtuber.application.prompting import ContextConfig
 from vtuber.application.scheduler import ResourcesConfig, SchedulerConfig
+from vtuber.application.supervision import SupervisorConfig
 from vtuber.application.voice import VoiceConfig
 from vtuber.bootstrap.persona import PersonaConfig
 from vtuber.bootstrap.setup import SetupConfig
@@ -96,6 +97,7 @@ class AppConfig(ConfigSection):
     resources: ResourcesConfig
     gpu_probe: NvidiaSmiConfig
     setup: SetupConfig
+    supervisor: SupervisorConfig
 
 
 def load_app_config(root: Path, env: Mapping[str, str]) -> AppConfig:

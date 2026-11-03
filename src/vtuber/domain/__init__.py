@@ -17,6 +17,7 @@ from vtuber.domain.errors import (
     VtuberError,
 )
 from vtuber.domain.events import (
+    BackendNotice,
     BackendState,
     BackendStatusChanged,
     CancelReason,
@@ -50,6 +51,7 @@ __all__ = [
     "VIEWER_PREFIX",
     "AudioChunk",
     "AudioFormat",
+    "BackendNotice",
     "BackendState",
     "BackendStatusChanged",
     "BackendUnavailable",

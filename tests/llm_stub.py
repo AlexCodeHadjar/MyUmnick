@@ -16,6 +16,7 @@ JSON_ANSWERS: Final[dict[str, object]] = {
     "/v1/models": {"data": [{"id": "stub"}]},
     "/apply-template": {"prompt": STUB_PROMPT},
     "/completion": {"content": ""},
+    "/health": {"status": "ok"},
 }
 
 
@@ -29,6 +30,7 @@ class LLMStub:
     reply: str
     chunk_size: int = 3
     delay_s: float = 0.002
+    port: int = 0
     requests: list[tuple[str, object]] = field(default_factory=list)
     client_gone: asyncio.Event = field(default_factory=asyncio.Event)
     _server: asyncio.Server | None = None
@@ -44,7 +46,7 @@ class LLMStub:
         return [body for request_path, body in self.requests if request_path == path]
 
     async def __aenter__(self) -> Self:
-        self._server = await asyncio.start_server(self._handle, "127.0.0.1", 0)
+        self._server = await asyncio.start_server(self._handle, "127.0.0.1", self.port)
         return self
 
     async def __aexit__(

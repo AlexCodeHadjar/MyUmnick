@@ -10,6 +10,7 @@ from websockets.exceptions import ConnectionClosed
 from vtuber.application.conversation import ConversationService
 from vtuber.domain import (
     AudioChunk,
+    BackendNotice,
     BackendState,
     BackendStatusChanged,
     CancelReason,
@@ -37,6 +38,7 @@ from vtuber.gateway.protocol import (
     turn_ref,
 )
 from vtuber.gateway.protocol_extras import (
+    BackendNoticeMessage,
     ResourcesWatch,
     SetupCancel,
     SetupInstall,
@@ -85,6 +87,7 @@ class GatewayServer:
         bus.subscribe(MetricRecorded, self._on_metric)
         bus.subscribe(BackendStatusChanged, self._on_status)
         bus.subscribe(ViewerBlocked, self._on_viewer_blocked)
+        bus.subscribe(BackendNotice, self._on_notice)
 
     def use_commands(self, commands: Mapping[str, Callable[[], Awaitable[None]]]) -> None:
         """Команды ведущего от плагинов: точная реплика выполняет команду вместо хода."""
@@ -220,6 +223,9 @@ class GatewayServer:
         # Без голосового ввода (не загружен, выключен) кадры просто не нужны.
         if self._mic is not None:
             await self._mic(frame.chunk)
+
+    async def _on_notice(self, event: BackendNotice) -> None:
+        await self.send(BackendNoticeMessage.of(event.text))
 
     async def _on_viewer_blocked(self, event: ViewerBlocked) -> None:
         await self.send(ViewerBlockedMessage.of(event.author, event.text))

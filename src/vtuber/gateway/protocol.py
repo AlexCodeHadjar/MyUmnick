@@ -8,6 +8,7 @@ from pydantic import Field
 from vtuber.domain import BackendState, CancelReason, Component, Emotion, TurnId
 from vtuber.gateway.protocol_base import PROTOCOL_VERSION, EmptyData, ProtocolModel, Version
 from vtuber.gateway.protocol_extras import (
+    BackendNoticeMessage,
     ResourcesMessage,
     ResourcesWatch,
     SetupCancel,
@@ -282,6 +283,7 @@ type OutboundMessage = Annotated[
     | SetupProgress
     | SetupFinished
     | ViewerBlockedMessage
+    | BackendNoticeMessage
     | ErrorMessage,
     Field(discriminator="type"),
 ]

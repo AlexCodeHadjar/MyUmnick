@@ -9,7 +9,7 @@ LLM-адаптеров и движков TTS и сервис хода, прог�
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
-| `AppConfig` | Корень конфига: `logging`, `telemetry`, `llm`, `persona`, `context`, `gateway`, `pipeline`, `tts`, `scheduler`, `memory`, `stt`, `plugins`, `resources` |
+| `AppConfig` | Корень конфига: `logging`, `telemetry`, `llm`, `persona`, `context`, `gateway`, `pipeline`, `tts`, `scheduler`, `memory`, `stt`, `plugins`, `resources`, `llama_server`, `setup`, `supervisor` |
 | `load_app_config(root, env)` | Читает `<root>/config/default.toml` и `user.toml` поверх `env` |
 | `PersonaConfig`, `load_persona(path)` | `[persona].file` → доменная `Persona`; ошибки — `ConfigError` |
 | `llm_backends()` | Реестр LLM-адаптеров: `llamacpp`, `openai_compat` (одна строка на адаптер) |
@@ -18,6 +18,7 @@ LLM-адаптеров и движков TTS и сервис хода, прог�
 | `MemoryConfig` | Секция `[memory]`: `enabled`, `store_path`, `background_slot_id`, `generation`, `facts`, `e5`; `resolved(root)` |
 | `background_memory(cfg, history, bus)` (`bootstrap/memory.py`) | Фоновая память на время работы: LLM слота `background_slot_id`, e5, sqlite-vec, `IdleScheduler`, `MemoryKeeper` |
 | `running_plugins(cfg, bus, discover)` (`bootstrap/plugins.py`) | Включённые плагины на время работы: entry points `vtuber.plugins`, сбой плагина — только лог (`docs/plugins.md`) |
+| `LlmSupervised`, `TtsSupervised`, `build_voice`, `with_voice` (`bootstrap/supervision.py`) | Что поднимает наблюдатель и голос с обёрткой (ADR-0021) |
 | `main(argv, env, console)`, `run()`, `Console`, `LineSource` | `python -m vtuber [chat или serve] [--root]`; коды 0 / 1 (конфиг) / 2 (LLM недоступна в чате) |
 
 ## Зависимости

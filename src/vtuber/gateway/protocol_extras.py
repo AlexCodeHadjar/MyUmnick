@@ -220,3 +220,22 @@ class ViewerBlockedMessage(ProtocolModel):
     def of(cls, author: str, text: str) -> Self:
         """Сообщение о блокировке."""
         return cls(data=BlockedData(author=author, text=text))
+
+
+class NoticeData(ProtocolModel):
+    """Текст для пользователя."""
+
+    text: str
+
+
+class BackendNoticeMessage(ProtocolModel):
+    """Ядро → UI: компонент упал, поднимается или снова работает (S-17.1)."""
+
+    v: Version = PROTOCOL_VERSION
+    type: Literal["backend.notice"] = "backend.notice"
+    data: NoticeData
+
+    @classmethod
+    def of(cls, text: str) -> Self:
+        """Сообщение с текстом."""
+        return cls(data=NoticeData(text=text))

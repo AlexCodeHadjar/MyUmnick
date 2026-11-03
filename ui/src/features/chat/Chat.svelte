@@ -46,6 +46,8 @@
         <span class="typing">печатает<span class="dots" aria-hidden="true">…</span></span>
       {:else if store.error !== null}
         <span class="error" role="alert">{store.error.message}</span>
+      {:else if store.notice !== null}
+        <span class="notice" role="status">{store.notice}</span>
       {/if}
     </span>
     <button
@@ -110,6 +112,10 @@
     border-color: #a77bc4;
     background: #3a2a44;
     opacity: 1;
+  }
+
+  .notice {
+    color: #ffc27a;
   }
 
   .error {

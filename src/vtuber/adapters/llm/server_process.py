@@ -15,6 +15,7 @@ from urllib.parse import urlsplit
 import httpx
 from pydantic import Field
 
+from vtuber.adapters.llm.job_object import ChildBinding
 from vtuber.domain import LLMUnavailable
 from vtuber.kernel import ConfigSection, get_logger
 
@@ -85,6 +86,30 @@ class LlamaServerProcess:
         self._cfg = cfg
         self._base_url = base_url.rstrip("/")
         self._process: asyncio.subprocess.Process | None = None
+        self._binding = ChildBinding()
+        # Один клиент и без SSL (адрес — localhost): новый на проверку стоит 873 мс против 5 мс,
+        # он грузит сертификаты и держит цикл событий, и здоровый сервер считался зависшим.
+        self._client = httpx.AsyncClient(
+            timeout=POLL_S * 5,
+            verify=False,  # noqa: S501
+            trust_env=False,
+        )
+
+    @property
+    def started(self) -> bool:
+        """Запущен ли сервер ядром: только такой наблюдатель может поднять заново."""
+        return self._process is not None
+
+    async def healthy(self) -> bool:
+        """Процесс жив и отвечает; для наблюдателя (S-17.1)."""
+        if self._process is None or self._process.returncode is not None:
+            return False
+        return await _healthy(self._client, self._base_url + HEALTH_PATH)
+
+    async def restart(self) -> None:
+        """Останавливает прежний процесс, даже зависший, и запускает новый; затем — `wait_ready`."""
+        await self._stop()
+        await self._start()
 
     async def __aenter__(self) -> Self:
         if self._cfg.autostart:
@@ -97,6 +122,10 @@ class LlamaServerProcess:
         exc: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
+        await self._stop()
+        await self._client.aclose()
+
+    async def _stop(self) -> None:
         process = self._process
         if process is None or process.returncode is not None:
             return
@@ -118,15 +147,14 @@ class LlamaServerProcess:
         if self._process is None:
             return
         deadline = time.monotonic() + self._cfg.ready_timeout_s
-        async with httpx.AsyncClient(timeout=POLL_S * 5) as client:
-            while time.monotonic() < deadline:
-                if self._process.returncode is not None:
-                    code = self._process.returncode
-                    msg = f"llama-server завершился с кодом {code}: см. {self._cfg.log_file}"
-                    raise LLMUnavailable(msg)
-                if await _healthy(client, self._base_url + HEALTH_PATH):
-                    return
-                await asyncio.sleep(POLL_S)
+        while time.monotonic() < deadline:
+            if self._process.returncode is not None:
+                code = self._process.returncode
+                msg = f"llama-server завершился с кодом {code}: см. {self._cfg.log_file}"
+                raise LLMUnavailable(msg)
+            if await _healthy(self._client, self._base_url + HEALTH_PATH):
+                return
+            await asyncio.sleep(POLL_S)
         limit = self._cfg.ready_timeout_s
         msg = f"llama-server не загрузил модель за {limit} с: см. {self._cfg.log_file}"
         raise LLMUnavailable(msg)
@@ -152,6 +180,7 @@ class LlamaServerProcess:
                 # Диалога не будет, но окно и настройки должны открыться: статус LLM покажет сбой.
                 _log.warning("llama_server.not_started", problem=str(exc))
                 return
+        self._binding.bind(self._process.pid)
         _log.info("llama_server.started", pid=self._process.pid)
 
 
