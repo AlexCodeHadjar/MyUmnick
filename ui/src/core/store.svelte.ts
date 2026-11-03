@@ -9,7 +9,10 @@ import type {
   Emotion,
   ErrorData,
   OutboundMessage,
+  FinishedData,
+  ProgressData,
   ResourcesData,
+  SetupData,
   TurnCancelledMessage,
 } from "./protocol.gen";
 import type { ConnectionState } from "./transport";
@@ -67,6 +70,10 @@ export class AppStore {
   hypothesis = $state("");
   /** Последний снимок видеопамяти; приходит, только пока панель ресурсов открыта. */
   resources = $state<ResourcesData | null>(null);
+  /** Мастер первого запуска: состояние, ход загрузки, итог (S-13.2). */
+  setup = $state<SetupData | null>(null);
+  setupProgress = $state<ProgressData | null>(null);
+  setupResult = $state<FinishedData | null>(null);
 
   #nextId = 0;
   /** Индекс сообщения текущего хода в `messages`: массив только растёт, индекс не сдвигается. */
@@ -122,6 +129,15 @@ export class AppStore {
         break;
       case "resources.snapshot":
         this.resources = message.data;
+        break;
+      case "setup.state":
+        this.setup = message.data;
+        break;
+      case "setup.progress":
+        this.setupProgress = message.data;
+        break;
+      case "setup.finished":
+        this.setupResult = message.data;
         break;
       case "metrics.span":
         this.recordSpan(message.data.name, message.data.ms);

@@ -38,10 +38,11 @@ def _free_port() -> int:
 def _cfg(tmp_path: Path, *behaviour: str, **overrides: object) -> LlamaServerConfig:
     script = tmp_path / "fake_server.py"
     script.write_text(FAKE_SERVER, encoding="utf-8")
+    (tmp_path / "model.gguf").write_bytes(b"")
     values: dict[str, object] = {
         "autostart": True,
         "executable": Path(sys.executable),
-        "model": Path("model.gguf"),
+        "model": tmp_path / "model.gguf",
         "log_file": tmp_path / "logs" / "llama.log",
         "context_size": 16384,
         "slots": 2,
@@ -90,6 +91,13 @@ async def test_missing_executable_does_not_crash_the_app(tmp_path: Path) -> None
     cfg = _cfg(tmp_path, "0", "ok", executable=tmp_path / "нет.exe")
     async with LlamaServerProcess(cfg, "http://127.0.0.1:9") as server:
         await server.wait_ready()
+
+
+async def test_missing_model_means_not_started(tmp_path: Path) -> None:
+    cfg = _cfg(tmp_path, "0", "crash", model=tmp_path / "нет.gguf")
+    async with LlamaServerProcess(cfg, "http://127.0.0.1:9") as server:
+        await server.wait_ready()
+    assert not cfg.log_file.exists()
 
 
 def test_arguments_match_the_start_script_and_config(tmp_path: Path) -> None:

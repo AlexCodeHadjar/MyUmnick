@@ -62,6 +62,9 @@ const OUTBOUND_TYPES = {
   "input.hypothesis": true,
   "input.final": true,
   "resources.snapshot": true,
+  "setup.state": true,
+  "setup.progress": true,
+  "setup.finished": true,
   error: true,
 } satisfies Record<OutboundMessage["type"], true>;
 

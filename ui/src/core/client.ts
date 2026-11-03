@@ -152,6 +152,20 @@ export class CoreClient {
     }
   }
 
+  /** Согласие на загрузку в мастере первого запуска: только по действию пользователя. */
+  installSetup(itemIds: string[], voice: string): void {
+    this.store.setupResult = null;
+    this.#transport.send({
+      v: PROTOCOL_VERSION,
+      type: "setup.install",
+      data: { item_ids: itemIds, voice },
+    });
+  }
+
+  cancelSetup(): void {
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "setup.cancel", data: {} });
+  }
+
   stop(): void {
     // Звук глушится сразу, не дожидаясь `turn.cancelled`: ход мог уже закончиться в ядре, а
     // голос ещё звучит (синтез быстрее реального времени).

@@ -9,6 +9,7 @@
   import { Chat } from "../features/chat";
   import { MicControl } from "../features/mic";
   import { isMetricsHotkey, METRICS_HOTKEY_LABEL, MetricsPanel } from "../features/metrics";
+  import { chosenAvatar, Onboarding } from "../features/onboarding";
   import { isResourcesHotkey, RESOURCES_HOTKEY_LABEL, ResourcesPanel } from "../features/resources";
   import SplitLayout from "./SplitLayout.svelte";
   import StatusBar from "./StatusBar.svelte";
@@ -17,6 +18,7 @@
 
   let showMetrics = $state(false);
   let showResources = $state(false);
+  let setupClosed = $state(false);
   // Не реактивен: рот опрашивается каждый кадр из цикла аватара, а не через Svelte (R-66).
   let player: VoicePlayer | null = null;
 
@@ -80,7 +82,7 @@
     {#snippet right()}
       <section class="stage" aria-label="Сцена">
         <AvatarStage
-          name={import.meta.env.VITE_AVATAR}
+          name={chosenAvatar(layoutStorage()) ?? import.meta.env.VITE_AVATAR}
           store={client.store}
           mouth={(deltaMs: number) => player?.mouth(deltaMs) ?? 0}
         />
@@ -106,6 +108,16 @@
   <StatusBar store={client.store} hint={`${METRICS_HOTKEY_LABEL}, ${RESOURCES_HOTKEY_LABEL}`}>
     <MicControl {client} storage={layoutStorage()} />
   </StatusBar>
+  {#if client.store.setup?.needed && !setupClosed}
+    <Onboarding
+      {client}
+      storage={layoutStorage()}
+      fallbackAvatar={import.meta.env.VITE_AVATAR}
+      onclose={() => {
+        setupClosed = true;
+      }}
+    />
+  {/if}
 </main>
 
 <style>

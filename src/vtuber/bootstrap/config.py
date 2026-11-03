@@ -16,6 +16,7 @@ from vtuber.application.prompting import ContextConfig
 from vtuber.application.scheduler import ResourcesConfig, SchedulerConfig
 from vtuber.application.voice import VoiceConfig
 from vtuber.bootstrap.persona import PersonaConfig
+from vtuber.bootstrap.setup import SetupConfig
 from vtuber.gateway import GatewayConfig
 from vtuber.kernel import (
     ConfigFiles,
@@ -90,6 +91,7 @@ class AppConfig(ConfigSection):
     plugins: PluginsConfig
     resources: ResourcesConfig
     gpu_probe: NvidiaSmiConfig
+    setup: SetupConfig
 
 
 def load_app_config(root: Path, env: Mapping[str, str]) -> AppConfig:
@@ -100,5 +102,9 @@ def load_app_config(root: Path, env: Mapping[str, str]) -> AppConfig:
 
     """
     config_dir = root / "config"
-    files = ConfigFiles(default=config_dir / "default.toml", user=config_dir / "user.toml")
+    files = ConfigFiles(
+        default=config_dir / "default.toml",
+        user=config_dir / "user.toml",
+        generated=config_dir / "setup.toml",
+    )
     return load_config(AppConfig, files, env)

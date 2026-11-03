@@ -8,6 +8,7 @@
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
+| `FileFetcher` | `fetch(url, offset)` → байты файла: загрузка для мастера первого запуска |
 | `GpuProbe` | `memory()` → `GpuMemory` или None: фактическая занятость видеопамяти (ADR-0018) |
 | `ManagedModel` | `load()`, `unload()`: модель под управлением менеджера ресурсов (ADR-0017) |
 | `MessageSource` | `messages()` → `AsyncGenerator[IncomingMessage]`: реплики извне (чат стрима), сам восстанавливает соединение |

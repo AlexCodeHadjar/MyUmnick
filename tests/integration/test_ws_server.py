@@ -91,6 +91,18 @@ async def test_host_command_runs_instead_of_a_turn() -> None:
     assert [call[0][-1].text for call in llm.calls] == ["Привет"]
 
 
+async def test_replaced_client_is_not_a_handler_failure(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    async with _gateway(FakeLLM("Ок.")) as gw, connect(gw.url()) as first:
+        async with connect(gw.url()) as second:
+            await second.send(SEND)
+            await _messages_until(second, "turn.finished")
+        with pytest.raises(ConnectionClosed):
+            await first.recv()
+    assert "connection handler failed" not in caplog.text
+
+
 @dataclass(slots=True)
 class _PrefillLLM:
     """Запоминает прогревы; ответ — как у FakeLLM."""

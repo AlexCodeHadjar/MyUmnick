@@ -5,7 +5,8 @@ from collections.abc import Awaitable, Callable
 from typing import Final
 
 from vtuber.application.scheduler import ResourceSnapshot
-from vtuber.gateway.protocol import OutboundMessage, ResourcesMessage
+from vtuber.gateway.protocol import OutboundMessage
+from vtuber.gateway.protocol_extras import ResourcesMessage
 
 SNAPSHOT_PERIOD_S: Final = 1.0
 """График в секундах; чаще — лишние кадры Svelte рядом с аватаром (NFR-05)."""

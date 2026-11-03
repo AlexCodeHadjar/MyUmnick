@@ -1,0 +1,100 @@
+# Что ставит мастер первого запуска (S-13.2). Адреса закреплены на ревизиях, суммы проверяются.
+# Значения min_vram_mb — из замеров: ADR-0004, ADR-0016.
+llm_item = "llm"
+llm_model_path = "models/llm/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf"
+voices = ["xenia", "baya", "kseniya", "aidar", "eugene"]
+default_voice = "xenia"   # ADR-0014, выбор голоса открыт
+
+[[items]]
+id = "llm"
+title = "Языковая модель Gemma 4 12B (мозг)"
+license = "Gemma Terms"
+required = true
+min_vram_mb = 8900
+
+[[items.files]]
+path = "models/llm/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf"
+url = "https://huggingface.co/HauhauCS/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced/resolve/ae8045ac2bd216293ca49a3065da2c942dde4b68/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf"
+size = 7381381760
+sha256 = "59656d7494d6376ca97e9e20b64ea2e16cd97f12ec6d47bfccba91cb785b5134"
+
+[[items]]
+id = "voice"
+title = "Голос Silero"
+license = "CC BY-NC, только некоммерческое использование"
+required = true
+min_vram_mb = 0
+
+[[items.files]]
+path = "models/tts/silero/v5_6_ru.pt"
+url = "https://models.silero.ai/models/tts/ru/v5_6_ru.pt"
+size = 147664410
+sha256 = "04cc9b1d08ce38bcaa9d02c488d80d3e6806d17f7eaa7c95982f36a3cbf50b2e"
+
+[[items]]
+id = "stt"
+title = "Распознавание речи Whisper turbo и детектор речи"
+license = "MIT"
+required = false
+min_vram_mb = 1700
+
+[[items.files]]
+path = "models/stt/whisper-turbo/model.bin"
+url = "https://huggingface.co/deepdml/faster-whisper-large-v3-turbo-ct2/resolve/4df90f75321148c3a29a9e2351b7ddf8f5b115a8/model.bin"
+size = 1617884929
+sha256 = "e76620f83d5f5b69efd3d87e3dc180c1bd21df9fbebacfd4335e5e1efcc018da"
+
+[[items.files]]
+path = "models/stt/whisper-turbo/config.json"
+url = "https://huggingface.co/deepdml/faster-whisper-large-v3-turbo-ct2/resolve/4df90f75321148c3a29a9e2351b7ddf8f5b115a8/config.json"
+size = 2263
+sha256 = "b0253ea6c0d3bea6b1e19e91a02acfd3b53f4467362efcb5a3e6b16c9b3a9b7e"
+
+[[items.files]]
+path = "models/stt/whisper-turbo/preprocessor_config.json"
+url = "https://huggingface.co/deepdml/faster-whisper-large-v3-turbo-ct2/resolve/4df90f75321148c3a29a9e2351b7ddf8f5b115a8/preprocessor_config.json"
+size = 340
+sha256 = "7ccc62c6f2765af1f3b46c00c9b5894426835a05021c8b9c01eecb6dfb542711"
+
+[[items.files]]
+path = "models/stt/whisper-turbo/tokenizer.json"
+url = "https://huggingface.co/deepdml/faster-whisper-large-v3-turbo-ct2/resolve/4df90f75321148c3a29a9e2351b7ddf8f5b115a8/tokenizer.json"
+size = 2710337
+sha256 = "297b13372ac43916285644fb9687add3cc62ee2a1adb60da3dc25cc94c1871fd"
+
+[[items.files]]
+path = "models/stt/whisper-turbo/vocabulary.json"
+url = "https://huggingface.co/deepdml/faster-whisper-large-v3-turbo-ct2/resolve/4df90f75321148c3a29a9e2351b7ddf8f5b115a8/vocabulary.json"
+size = 1068114
+sha256 = "c69260f2ab26d659b7c398f9a2b2b48ed0df16c3b47d7326782fd9cba71690c1"
+
+[[items.files]]
+path = "models/stt/vad/silero_vad.onnx"
+url = "https://raw.githubusercontent.com/snakers4/silero-vad/v5.1.2/src/silero_vad/data/silero_vad.onnx"
+size = 2327524
+sha256 = "2623a2953f6ff3d2c1e61740c6cdb7168133479b267dfef114a4a3cc5bdd788f"
+
+[[items]]
+id = "memory"
+title = "Долговременная память e5-small"
+license = "MIT"
+required = false
+min_vram_mb = 0
+
+[[items.files]]
+path = "models/memory/e5-small/model.onnx"
+url = "https://huggingface.co/intfloat/multilingual-e5-small/resolve/614241f622f53c4eeff9890bdc4f31cfecc418b3/onnx/model.onnx"
+size = 470268510
+sha256 = "ca456c06b3a9505ddfd9131408916dd79290368331e7d76bb621f1cba6bc8665"
+
+[[items.files]]
+path = "models/memory/e5-small/tokenizer.json"
+url = "https://huggingface.co/intfloat/multilingual-e5-small/resolve/614241f622f53c4eeff9890bdc4f31cfecc418b3/onnx/tokenizer.json"
+size = 17082730
+sha256 = "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39"
+
+[[items.files]]
+path = "models/memory/e5-small/config.json"
+url = "https://huggingface.co/intfloat/multilingual-e5-small/resolve/614241f622f53c4eeff9890bdc4f31cfecc418b3/onnx/config.json"
+size = 653
+sha256 = "bbb7c1333fc4b3e27fbc9cd5d2070aabcc1d4dfb99917c3633e772f97545a6b6"

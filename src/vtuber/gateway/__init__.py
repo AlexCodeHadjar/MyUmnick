@@ -16,7 +16,6 @@ from vtuber.gateway.codec import (
 )
 from vtuber.gateway.external_turns import ExternalTurns
 from vtuber.gateway.protocol import (
-    PROTOCOL_VERSION,
     AvatarEmotion,
     CancelledData,
     ChatCancel,
@@ -24,7 +23,6 @@ from vtuber.gateway.protocol import (
     ChatSend,
     DeltaData,
     EmotionData,
-    EmptyData,
     ErrorCode,
     ErrorData,
     ErrorMessage,
@@ -45,8 +43,10 @@ from vtuber.gateway.protocol import (
     TypingData,
     turn_ref,
 )
+from vtuber.gateway.protocol_base import PROTOCOL_VERSION, EmptyData
 from vtuber.gateway.resources_feed import ResourcesFeed
 from vtuber.gateway.server import REPLACED_CODE, GatewayConfig, GatewayServer, MicSink
+from vtuber.gateway.setup_bridge import SetupBridge
 from vtuber.gateway.sink import WsReplySink
 from vtuber.gateway.terminal import EXIT_COMMAND, STOP_COMMAND, TerminalChat, TerminalSink
 from vtuber.gateway.voice_bridge import END_TO_AUDIO_SPAN, VoiceBridge
@@ -87,6 +87,7 @@ __all__ = [
     "OutboundMessage",
     "ResourcesFeed",
     "SendData",
+    "SetupBridge",
     "SpanData",
     "Status",
     "StatusData",

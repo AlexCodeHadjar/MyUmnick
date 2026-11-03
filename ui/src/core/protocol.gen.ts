@@ -81,6 +81,11 @@ export interface ErrorMessage {
   data: ErrorData;
 }
 
+/** Итог установки: `problem` — None, если всё поставлено. */
+export interface FinishedData {
+  problem: string | null;
+}
+
 /** Ядро → UI: пользователь заговорил — оборвать голос витюбера сразу (Этап 11). */
 export interface InputBargeIn {
   v: Version;
@@ -109,6 +114,12 @@ export interface InputTyping {
   data: TypingData;
 }
 
+/** Что выбрал пользователь в мастере. */
+export interface InstallData {
+  item_ids: string[];
+  voice: string;
+}
+
 /** Модель под управлением менеджера; `waiting_reason` — почему ждёт. */
 export interface ManagedModelData {
   name: string;
@@ -131,6 +142,13 @@ export interface MetricsSpan {
 export interface PinnedModelData {
   name: string;
   vram_mb: number;
+}
+
+/** Сколько байт готово из общего числа и какой файл качается. */
+export interface ProgressData {
+  done: number;
+  total: number;
+  file: string;
 }
 
 /** Снимок видеопамяти: `limit_mb` учитывает другие программы, `capacity_mb` — только конфиг. */
@@ -159,6 +177,62 @@ export interface ResourcesWatch {
 /** Реплика пользователя. */
 export interface SendData {
   text: string;
+}
+
+/** UI → Ядро: прервать загрузку; скачанное продолжится при следующей попытке. */
+export interface SetupCancel {
+  v: Version;
+  type: "setup.cancel";
+  data: EmptyData;
+}
+
+/** Состояние мастера: `gpu_total_mb` — None, если карта NVIDIA не найдена. */
+export interface SetupData {
+  needed: boolean;
+  gpu_total_mb: number | null;
+  voices: string[];
+  voice: string;
+  warnings: string[];
+  items: SetupItemData[];
+}
+
+/** Ядро → UI: установка закончена; после успеха приложение перезапускается. */
+export interface SetupFinished {
+  v: Version;
+  type: "setup.finished";
+  data: FinishedData;
+}
+
+/** UI → Ядро: согласие на загрузку; без этого сообщения ничего не скачивается (S-13.2). */
+export interface SetupInstall {
+  v: Version;
+  type: "setup.install";
+  data: InstallData;
+}
+
+/** Компонент в мастере; `license` пользователь видит до согласия. */
+export interface SetupItemData {
+  id: string;
+  title: string;
+  license: string;
+  size: number;
+  required: boolean;
+  recommended: boolean;
+  installed: boolean;
+}
+
+/** Ядро → UI: ход загрузки. */
+export interface SetupProgress {
+  v: Version;
+  type: "setup.progress";
+  data: ProgressData;
+}
+
+/** Ядро → UI: нужен ли мастер и что он предлагает; приходит при подключении. */
+export interface SetupStateMessage {
+  v: Version;
+  type: "setup.state";
+  data: SetupData;
 }
 
 /** Замер стадии хода для панели метрик (FR-15). */
@@ -216,6 +290,6 @@ export interface WatchData {
   enabled: boolean;
 }
 
-export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch;
+export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel;
 
-export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | ErrorMessage;
+export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ErrorMessage;

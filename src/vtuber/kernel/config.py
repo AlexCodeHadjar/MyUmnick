@@ -30,10 +30,14 @@ class ConfigSection(BaseModel):
 
 @dataclass(frozen=True, slots=True)
 class ConfigFiles:
-    """Файлы конфигурации: `default` обязателен, `user` — если существует."""
+    """Файлы конфигурации: `default` обязателен, остальные — если есть.
+
+    `generated` пишет мастер первого запуска: он не должен трогать правки пользователя в `user`.
+    """
 
     default: Path
     user: Path
+    generated: Path | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,7 +49,7 @@ class _Source:
 def load_config[T: ConfigSection](model: type[T], files: ConfigFiles, env: Mapping[str, str]) -> T:
     """Собирает конфиг из файлов и окружения и проверяет его моделью `model`.
 
-    Приоритет: env > user > default. Переменная `VTUBER_<СЕКЦИЯ>__<ПОЛЕ>` задаёт поле секции.
+    Приоритет: env > user > generated > default. `VTUBER_<СЕКЦИЯ>__<ПОЛЕ>` задаёт поле секции.
 
     Raises:
         ConfigError: файл не найден или не разбирается как TOML; значение не проходит проверку —
@@ -53,6 +57,8 @@ def load_config[T: ConfigSection](model: type[T], files: ConfigFiles, env: Mappi
 
     """
     sources = [_read(files.default)]
+    if files.generated is not None and files.generated.is_file():
+        sources.append(_read(files.generated))
     if files.user.is_file():
         sources.append(_read(files.user))
     sources.append(_Source(ENV_SOURCE, _env_tree(env)))

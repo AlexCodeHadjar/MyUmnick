@@ -7,7 +7,8 @@ from typing import Final
 from pydantic import TypeAdapter, ValidationError
 
 from vtuber.domain import SAMPLE_WIDTH_BYTES, AudioChunk, AudioFormat, ProtocolError, TurnId
-from vtuber.gateway.protocol import PROTOCOL_VERSION, InboundMessage, OutboundMessage
+from vtuber.gateway.protocol import InboundMessage, OutboundMessage
+from vtuber.gateway.protocol_base import PROTOCOL_VERSION
 
 AUDIO_FRAME_TYPE: Final = 0x01
 _AUDIO_HEADER: Final = struct.Struct("<BBHIQ")  # тип, версия, seq, sample_rate, turn_id (LE)

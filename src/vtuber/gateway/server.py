@@ -26,16 +26,18 @@ from vtuber.gateway.protocol import (
     ChatSend,
     ErrorCode,
     ErrorMessage,
+    InputTyping,
     MetricsSpan,
     OutboundMessage,
-    ResourcesWatch,
     Status,
     TurnCancelledMessage,
     TurnFinishedMessage,
     TurnStartedMessage,
     turn_ref,
 )
+from vtuber.gateway.protocol_extras import ResourcesWatch, SetupCancel, SetupInstall
 from vtuber.gateway.resources_feed import ResourcesFeed
+from vtuber.gateway.setup_bridge import SetupBridge
 from vtuber.gateway.sink import WsReplySink
 from vtuber.kernel import ConfigSection, EventBus, get_logger
 
@@ -69,6 +71,7 @@ class GatewayServer:
         self._statuses: dict[Component, BackendState] = {}
         self._mic: MicSink | None = None
         self._resources: ResourcesFeed | None = None
+        self._setup: SetupBridge | None = None
         self._commands: Mapping[str, Callable[[], Awaitable[None]]] = {}
         bus.subscribe(TurnStarted, self._on_started)
         bus.subscribe(TurnFinished, self._on_finished)
@@ -83,6 +86,10 @@ class GatewayServer:
     def use_resources(self, feed: ResourcesFeed) -> None:
         """Снимки менеджера ресурсов для панели UI."""
         self._resources = feed
+
+    def use_setup(self, bridge: SetupBridge) -> None:
+        """Мастер первого запуска: UI получает его состояние при подключении."""
+        self._setup = bridge
 
     def on_mic(self, sink: MicSink) -> None:
         """Куда отдавать кадры микрофона; вызов — в цикле чтения сокета, должен быть быстрым."""
@@ -144,9 +151,14 @@ class GatewayServer:
             await previous.close(REPLACED_CODE, "Подключился другой клиент")
         for component, state in self._statuses.items():
             await self.send(Status.of(component, state))
+        if self._setup is not None:
+            await self._setup.send_state()
         try:
             async for raw in connection:
                 await self._dispatch(raw)
+        except ConnectionClosed:
+            # В т.ч. код 4000: клиента заменил новый. Обычное завершение, а не сбой обработчика.
+            _log.info("gateway.client_closed")
         finally:
             if self._client is connection:
                 self._client = None
@@ -167,12 +179,18 @@ class GatewayServer:
             await self._on_chat(message.data.text)
         elif isinstance(message, ChatCancel):
             await self._service.cancel(CancelReason.USER_STOP)
-        elif isinstance(message, ResourcesWatch):
-            if self._resources is not None:
-                self._resources.set_enabled(enabled=message.data.enabled)
-        else:
+        elif isinstance(message, InputTyping):
             # Черновик — только прогрев кэша (T-05): ответа UI не ждёт, шлюз не блокируется.
             self._service.typing(message.data.text)
+        else:
+            await self._on_panel(message)
+
+    async def _on_panel(self, message: ResourcesWatch | SetupInstall | SetupCancel) -> None:
+        if isinstance(message, ResourcesWatch):
+            if self._resources is not None:
+                self._resources.set_enabled(enabled=message.data.enabled)
+        elif self._setup is not None:
+            await self._setup.handle(message)
 
     async def _on_chat(self, text: str) -> None:
         command = self._commands.get(text.strip())

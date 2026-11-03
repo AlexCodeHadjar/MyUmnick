@@ -133,6 +133,10 @@ class LlamaServerProcess:
 
     async def _start(self) -> None:
         cfg = self._cfg
+        if not cfg.model.is_file():
+            # Обычное состояние до мастера первого запуска: окно должно открыться и без модели.
+            _log.info("llama_server.no_model", model=str(cfg.model))
+            return
         cfg.log_file.parent.mkdir(parents=True, exist_ok=True)
         with cfg.log_file.open("ab") as log:
             try:

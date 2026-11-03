@@ -17,6 +17,10 @@ class ResourceUnavailable(VtuberError):
     """Модели не хватило видеопамяти или она не загрузилась (ADR-0017); диалог не страдает."""
 
 
+class SetupFailed(VtuberError):
+    """Мастер первого запуска не смог поставить компонент; текст показывается пользователю."""
+
+
 class TTSUnavailable(BackendUnavailable):
     """Движок синтеза речи недоступен."""
 

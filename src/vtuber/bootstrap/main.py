@@ -28,6 +28,7 @@ from vtuber.bootstrap.container import (
 from vtuber.bootstrap.memory import background_memory
 from vtuber.bootstrap.persona import load_persona
 from vtuber.bootstrap.plugins import PluginServices, running_plugins
+from vtuber.bootstrap.setup import build_wizard
 from vtuber.bootstrap.voice_input import voice_input
 from vtuber.domain import (
     BackendState,
@@ -42,7 +43,13 @@ from vtuber.domain import (
     Role,
     TTSUnavailable,
 )
-from vtuber.gateway import ExternalTurns, GatewayServer, ResourcesFeed, TerminalChat
+from vtuber.gateway import (
+    ExternalTurns,
+    GatewayServer,
+    ResourcesFeed,
+    SetupBridge,
+    TerminalChat,
+)
 from vtuber.kernel import EventBus, Telemetry, TraceWriter, get_logger, logging_to
 from vtuber.ports import LLMPort
 
@@ -92,6 +99,7 @@ def main(argv: Sequence[str], env: Mapping[str, str], console: Console) -> int:
             "memory": cfg.memory.resolved(args.root),
             "stt": cfg.stt.resolved(args.root),
             "llama_server": cfg.llama_server.resolved(args.root),
+            "setup": cfg.setup.resolved(args.root),
         }
         cfg = cfg.model_copy(update=resolved)
         persona = load_persona(args.root / cfg.persona.file)
@@ -149,6 +157,13 @@ def _resources(cfg: AppConfig, bus: EventBus) -> ResourceManager:
     return manager
 
 
+def _connect_setup(cfg: AppConfig, server: GatewayServer) -> None:
+    """Мастер есть только в поставке: при разработке модели кладут сами."""
+    if cfg.setup.enabled:
+        wizard = build_wizard(cfg.setup, NvidiaSmiProbe(cfg.gpu_probe))
+        server.use_setup(SetupBridge(wizard, server.send))
+
+
 def _connect_tools(cfg: AppConfig, service: ConversationService, plugins: PluginServices) -> None:
     """Без инструментов сервис хода не тратит на них ни одного вызова."""
     if plugins.contexts:
@@ -177,6 +192,7 @@ async def _serve(
     async with GatewayServer(service, warmup.bus, cfg.gateway) as server:
         server.use_commands(plugins.commands)
         server.use_resources(ResourcesFeed(resources.snapshot, server.send))
+        _connect_setup(cfg, server)
         print(f"Шлюз для UI: ws://{cfg.gateway.host}:{server.port}", file=console.out)
         if (problem := await warmup.run()) is not None:
             _log.warning("llm.unavailable_at_start", problem=problem)

@@ -15,6 +15,12 @@ ROOT: Final = Path(__file__).resolve().parent.parent
 PACKAGING: Final = ROOT / "packaging"
 DIST: Final = PACKAGING / "dist"
 PLUGINS: Final = ("obs", "stream_chat", "stream_director", "tools")
+SHIPPED_SETUP: Final = """[setup]
+enabled = true
+
+[llama_server]
+autostart = true
+"""
 
 
 def _run(*command: str) -> None:
@@ -41,6 +47,8 @@ def main() -> int:
     for folder in ("config", "personas"):
         shutil.copytree(ROOT / folder, target / folder, dirs_exist_ok=True)
     (target / "config" / "user.toml").unlink(missing_ok=True)
+    # В поставке мастер включён, а llama-server запускает само приложение.
+    (target / "config" / "setup.toml").write_text(SHIPPED_SETUP, encoding="utf-8", newline="\n")
     # Рядом с ядром, путь — `[llama_server].executable`; без неё ядро всё равно работает.
     llama = DIST / "llama"
     if llama.is_dir():

@@ -39,6 +39,21 @@ UI → Ядро: панель ресурсов открыли или закры�
 |---|---|
 | `enabled` | `boolean` |
 
+### `setup.install` — `SetupInstall`
+
+UI → Ядро: согласие на загрузку; без этого сообщения ничего не скачивается (S-13.2).
+
+| Поле `data` | Тип |
+|---|---|
+| `item_ids` | `string[]` |
+| `voice` | `string` |
+
+### `setup.cancel` — `SetupCancel`
+
+UI → Ядро: прервать загрузку; скачанное продолжится при следующей попытке.
+
+`data`: `{}`
+
 ## Ядро → UI
 
 ### `turn.started` — `TurnStartedMessage`
@@ -130,6 +145,37 @@ UI → Ядро: панель ресурсов открыли или закры�
 | `free_mb` | `number` |
 | `pinned` | `PinnedModelData[]` |
 | `models` | `ManagedModelData[]` |
+
+### `setup.state` — `SetupStateMessage`
+
+Ядро → UI: нужен ли мастер и что он предлагает; приходит при подключении.
+
+| Поле `data` | Тип |
+|---|---|
+| `needed` | `boolean` |
+| `gpu_total_mb` | `number | null` |
+| `voices` | `string[]` |
+| `voice` | `string` |
+| `warnings` | `string[]` |
+| `items` | `SetupItemData[]` |
+
+### `setup.progress` — `SetupProgress`
+
+Ядро → UI: ход загрузки.
+
+| Поле `data` | Тип |
+|---|---|
+| `done` | `number` |
+| `total` | `number` |
+| `file` | `string` |
+
+### `setup.finished` — `SetupFinished`
+
+Ядро → UI: установка закончена; после успеха приложение перезапускается.
+
+| Поле `data` | Тип |
+|---|---|
+| `problem` | `string | null` |
 
 ### `error` — `ErrorMessage`
 

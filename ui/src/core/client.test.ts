@@ -207,6 +207,29 @@ describe("CoreClient", () => {
     expect(client.store.resources).toBeNull();
   });
 
+  it("мастер: загрузка только по явному вызову, итог — в store", () => {
+    const { client, socket, frames } = connected();
+    const data = {
+      needed: true,
+      gpu_total_mb: 16384,
+      voices: ["xenia"],
+      voice: "xenia",
+      warnings: [],
+      items: [],
+    };
+    socket.receive(JSON.stringify({ v: 1, type: "setup.state", data }));
+    frames.next();
+    expect(client.store.setup).toEqual(data);
+    expect(socket.sent).toEqual([]);
+    client.installSetup(["llm"], "xenia");
+    expect(socket.sent).toEqual([
+      { v: 1, type: "setup.install", data: { item_ids: ["llm"], voice: "xenia" } },
+    ]);
+    socket.receive(JSON.stringify({ v: 1, type: "setup.finished", data: { problem: null } }));
+    frames.next();
+    expect(client.store.setupResult).toEqual({ problem: null });
+  });
+
   it("dispose() закрывает связь", () => {
     const { client, frames } = connected();
     client.dispose();
