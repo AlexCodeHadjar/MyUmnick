@@ -8,6 +8,7 @@
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
+| `GpuProbe` | `memory()` → `GpuMemory` или None: фактическая занятость видеопамяти (ADR-0018) |
 | `ManagedModel` | `load()`, `unload()`: модель под управлением менеджера ресурсов (ADR-0017) |
 | `MessageSource` | `messages()` → `AsyncGenerator[IncomingMessage]`: реплики извне (чат стрима), сам восстанавливает соединение |
 | `LLMPort` | `stream(messages, params)` → `AsyncGenerator[str]` (закрывать через `aclosing`); `prefill(messages)` |

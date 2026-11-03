@@ -28,6 +28,7 @@ from vtuber.domain.events import (
     TurnRemembered,
     TurnStarted,
 )
+from vtuber.domain.gpu import GpuMemory
 from vtuber.domain.incoming import IncomingMessage
 from vtuber.domain.memory import EmbedKind, Fact, FactHit, FactId, FactSource, Vector
 from vtuber.domain.speech import SAMPLE_WIDTH_BYTES, AudioChunk, AudioFormat
@@ -54,6 +55,7 @@ __all__ = [
     "FactId",
     "FactSource",
     "GenerationFailed",
+    "GpuMemory",
     "IncomingMessage",
     "LLMUnavailable",
     "MemoryUnavailable",

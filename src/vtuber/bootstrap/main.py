@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, Protocol, TextIO
 
+from vtuber.adapters.gpu import NvidiaSmiProbe
 from vtuber.application.conversation import ConversationService
 from vtuber.application.pipeline import FillerBank
 from vtuber.application.scheduler import ResourceManager
@@ -116,7 +117,7 @@ async def _run(
     fillers = None if voice is None else voice.fillers
     async with llm_backends().create(cfg.llm.backend, cfg.llm) as llm, asyncio.TaskGroup() as tg:
         metrics = tg.create_task(core.telemetry.run())
-        trimming = tg.create_task(resources.run())
+        trimming = tg.create_task(resources.run(NvidiaSmiProbe(cfg.gpu_probe)))
         conversation = build_conversation(cfg, persona, Backends(llm, tts, fillers), core)
         warmup = _Warmup(llm, conversation.prompts.prefix, bus, voice)
         # Память (Этап 10): факты и резюме — в простое, LLM фонового слота; поиск — в ходе (T-12).

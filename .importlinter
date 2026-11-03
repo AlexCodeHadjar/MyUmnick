@@ -32,6 +32,7 @@ modules =
     vtuber.adapters.tts
     vtuber.adapters.stt
     vtuber.adapters.memory
+    vtuber.adapters.gpu
 
 [importlinter:contract:domain-pure]
 name = Домен без внешних зависимостей и kernel

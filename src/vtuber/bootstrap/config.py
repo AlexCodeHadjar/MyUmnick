@@ -5,6 +5,7 @@ from pathlib import Path
 
 from pydantic import Field
 
+from vtuber.adapters.gpu import NvidiaSmiConfig
 from vtuber.adapters.llm import GenerationConfig, LLMConfig
 from vtuber.adapters.memory import E5Config
 from vtuber.adapters.stt import VadConfig, WhisperConfig
@@ -87,6 +88,7 @@ class AppConfig(ConfigSection):
     stt: SttConfig
     plugins: PluginsConfig
     resources: ResourcesConfig
+    gpu_probe: NvidiaSmiConfig
 
 
 def load_app_config(root: Path, env: Mapping[str, str]) -> AppConfig:

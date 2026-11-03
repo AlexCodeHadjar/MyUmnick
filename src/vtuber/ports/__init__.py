@@ -3,7 +3,7 @@
 from vtuber.ports.incoming import MessageSource
 from vtuber.ports.llm import GenerationParams, LLMPort
 from vtuber.ports.memory import EmbedderPort, MemoryStorePort
-from vtuber.ports.resources import ManagedModel
+from vtuber.ports.resources import GpuProbe, ManagedModel
 from vtuber.ports.sink import ReplySink
 from vtuber.ports.stt import STTPort, VadPort
 from vtuber.ports.tts import TTSPort
@@ -11,6 +11,7 @@ from vtuber.ports.tts import TTSPort
 __all__ = [
     "EmbedderPort",
     "GenerationParams",
+    "GpuProbe",
     "LLMPort",
     "ManagedModel",
     "MemoryStorePort",

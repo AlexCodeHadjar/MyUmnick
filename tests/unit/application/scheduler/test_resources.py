@@ -49,6 +49,10 @@ def _manager(
         system_reserve_mb=1000,
         wait_timeout_s=timeout_s,
         keep_loaded_s=10.0,
+        gpu_poll_s=0,
+        gpu_margin_mb=0,
+        max_tool_mb=15000,
+        max_background_mb=15000,
         pinned={"llm": 15000 - free_mb},
     )
     return ResourceManager(cfg) if clock is None else ResourceManager(cfg, clock)
@@ -81,6 +85,10 @@ def test_pinned_above_budget_is_a_config_error() -> None:
         system_reserve_mb=1000,
         wait_timeout_s=1,
         keep_loaded_s=1,
+        gpu_poll_s=0,
+        gpu_margin_mb=0,
+        max_tool_mb=1,
+        max_background_mb=1,
         pinned={"llm": 8700},
     )
     with pytest.raises(ConfigError, match="pinned"):

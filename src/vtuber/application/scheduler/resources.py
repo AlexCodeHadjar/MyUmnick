@@ -10,66 +10,28 @@ import time
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from enum import IntEnum, StrEnum
 from types import TracebackType
 from typing import Self
 
-from pydantic import Field
-
+from vtuber.application.scheduler.resource_types import (
+    ModelSpec,
+    ModelState,
+    ModelStatus,
+    Priority,
+    ResourcesConfig,
+)
 from vtuber.domain import (
     ConfigError,
+    GpuMemory,
     ResourceUnavailable,
     TurnCancelled,
     TurnFinished,
     TurnStarted,
 )
-from vtuber.kernel import ConfigSection, EventBus, get_logger
-from vtuber.ports import ManagedModel
+from vtuber.kernel import EventBus, get_logger
+from vtuber.ports import GpuProbe, ManagedModel
 
 _log = get_logger(__name__)
-
-
-class ResourcesConfig(ConfigSection):
-    """Секция `[resources]`: бюджет видеопамяти; `pinned` — имя → МБ, не вытесняется никогда."""
-
-    total_vram_mb: int = Field(gt=0)
-    system_reserve_mb: int = Field(ge=0)
-    wait_timeout_s: float = Field(gt=0)
-    keep_loaded_s: float = Field(gt=0)
-    pinned: dict[str, int]
-
-
-class Priority(IntEnum):
-    """Кто важнее при нехватке памяти; диалог закреплён и в очереди не стоит."""
-
-    BACKGROUND = 0
-    TOOL = 1
-
-
-class ModelState(StrEnum):
-    """Что с моделью сейчас."""
-
-    UNLOADED = "unloaded"
-    IDLE = "idle"
-    IN_USE = "in_use"
-
-
-@dataclass(frozen=True, slots=True)
-class ModelSpec:
-    """Модель под управлением: `vram_mb` — объём из замера (ADR-0017)."""
-
-    name: str
-    vram_mb: int
-    priority: Priority
-
-
-@dataclass(frozen=True, slots=True)
-class ModelStatus:
-    """Снимок одной модели для панели ресурсов."""
-
-    spec: ModelSpec
-    state: ModelState
-    users: int
 
 
 @dataclass(slots=True)
@@ -98,6 +60,8 @@ class ResourceManager:
                 f"{-self._capacity_mb} МБ) — уменьшите pinned или system_reserve_mb"
             )
             raise ConfigError(msg)
+        self._others_mb: int | None = None
+        self._card_mb = cfg.total_vram_mb
         self._entries: dict[str, _Entry] = {}
         self._transition = asyncio.Lock()
         self._changed = asyncio.Event()
@@ -119,8 +83,37 @@ class ResourceManager:
 
     @property
     def capacity_mb(self) -> int:
-        """Сколько видеопамяти доступно незакреплённым моделям."""
+        """Лимит незакреплённых моделей по конфигу; `limit_mb` учитывает и саму видеокарту."""
         return self._capacity_mb
+
+    def limit_mb(self) -> int:
+        """Лимит сейчас: по конфигу, но не больше того, что другие программы оставили на карте."""
+        if self._others_mb is None:
+            return self._capacity_mb
+        left = self._card_mb - self._others_mb - self._cfg.gpu_margin_mb
+        return max(0, min(self._capacity_mb, left))
+
+    async def observe(self, memory: GpuMemory | None) -> None:
+        """Новый замер: лимит сжался — простаивающие модели уходят; вырос — ожидающие идут."""
+        loaded = sum(e.spec.vram_mb for e in self._entries.values() if e.loaded)
+        if memory is None:
+            self._others_mb = None
+        else:
+            self._others_mb = max(0, memory.used_mb - loaded)
+            self._card_mb = memory.total_mb
+        async with self._transition:
+            for entry in self._evictable(Priority.TOOL):
+                if self._free_mb() >= 0:
+                    break
+                await self._unload(entry)
+        self._changed.set()
+
+    async def watch(self, probe: GpuProbe) -> None:
+        """Опрашивает карту, пока задачу не отменят; во время хода не трогает её совсем (T-11)."""
+        while True:
+            await asyncio.sleep(self._cfg.gpu_poll_s)
+            if not self._dialog_active:
+                await self.observe(await probe.memory())
 
     def register(self, spec: ModelSpec, model: ManagedModel) -> None:
         """Поставить модель на учёт; она не загружается, пока её не попросят.
@@ -156,12 +149,7 @@ class ResourceManager:
 
         """
         entry = self._entries[name]
-        if entry.spec.vram_mb > self._capacity_mb:
-            msg = (
-                f"Модели '{name}' нужно {entry.spec.vram_mb} МБ видеопамяти, а после основной "
-                f"модели и голоса остаётся {self._capacity_mb} МБ"
-            )
-            raise ResourceUnavailable(msg)
+        self._refuse_if_never_fits(entry)
         await self._claim_within_timeout(entry)
         try:
             yield
@@ -169,6 +157,24 @@ class ResourceManager:
             entry.users -= 1
             entry.last_used = self._clock()
             self._changed.set()
+
+    def _refuse_if_never_fits(self, entry: _Entry) -> None:
+        spec = entry.spec
+        if spec.vram_mb > self._capacity_mb:
+            msg = (
+                f"Модели '{spec.name}' нужно {spec.vram_mb} МБ видеопамяти, а после основной "
+                f"модели и голоса остаётся {self._capacity_mb} МБ"
+            )
+            raise ResourceUnavailable(msg)
+        limit = self._priority_limit(spec.priority)
+        if spec.vram_mb > limit:
+            msg = f"Модели '{spec.name}' нужно {spec.vram_mb} МБ, а её вид ограничен {limit} МБ"
+            raise ResourceUnavailable(msg)
+
+    def _priority_limit(self, priority: Priority) -> int:
+        if priority is Priority.BACKGROUND:
+            return self._cfg.max_background_mb
+        return self._cfg.max_tool_mb
 
     async def trim(self) -> None:
         """Выгрузить модели, которые простаивают дольше `keep_loaded_s`."""
@@ -179,11 +185,14 @@ class ResourceManager:
                     await self._unload(entry)
         self._changed.set()
 
-    async def run(self) -> None:
-        """Выгружает простаивающие модели, пока задачу не отменят (владелец — bootstrap)."""
-        while True:
-            await asyncio.sleep(self._cfg.keep_loaded_s / 2)
-            await self.trim()
+    async def run(self, probe: GpuProbe) -> None:
+        """Выгрузка простаивающих и опрос карты, пока задачу не отменят (владелец — bootstrap)."""
+        async with asyncio.TaskGroup() as tg:
+            if self._cfg.gpu_poll_s > 0:
+                tg.create_task(self.watch(probe))
+            while True:
+                await asyncio.sleep(self._cfg.keep_loaded_s / 2)
+                await self.trim()
 
     async def _on_started(self, _: TurnStarted) -> None:
         self._dialog_active = True
@@ -221,11 +230,33 @@ class ResourceManager:
             return False
         if any(other > priority for other in self._waiting):
             return False
-        return entry.loaded or self._free_after_eviction(priority) >= entry.spec.vram_mb
+        return entry.loaded or self._has_room(entry)
+
+    def _has_room(self, entry: _Entry) -> bool:
+        need = entry.spec.vram_mb
+        if self._busy_background_mb(entry) + need > self._background_room(entry):
+            return False
+        return self._free_after_eviction(entry.spec.priority) >= need
 
     def _free_mb(self) -> int:
         used = sum(e.spec.vram_mb for e in self._entries.values() if e.loaded)
-        return self._capacity_mb - used
+        return self.limit_mb() - used
+
+    def _background_room(self, entry: _Entry) -> int:
+        """Инструмента общий лимит фона не касается."""
+        if entry.spec.priority is Priority.BACKGROUND:
+            return self._cfg.max_background_mb
+        return self._capacity_mb
+
+    def _busy_background_mb(self, entry: _Entry) -> int:
+        if entry.spec.priority is not Priority.BACKGROUND:
+            return 0
+        running = (e for e in self._entries.values() if e.loaded and e.users)
+        return sum(e.spec.vram_mb for e in running if e.spec.priority is Priority.BACKGROUND)
+
+    def _background_loaded_mb(self) -> int:
+        loaded = (e for e in self._entries.values() if e.loaded)
+        return sum(e.spec.vram_mb for e in loaded if e.spec.priority is Priority.BACKGROUND)
 
     def _free_after_eviction(self, priority: Priority) -> int:
         return self._free_mb() + sum(e.spec.vram_mb for e in self._evictable(priority))
@@ -238,11 +269,17 @@ class ResourceManager:
     async def _bring_up(self, entry: _Entry) -> None:
         if not entry.loaded:
             for victim in self._evictable(entry.spec.priority):
-                if self._free_mb() >= entry.spec.vram_mb:
+                if not self._needs_room(entry):
                     break
                 await self._unload(victim)
             await self._load(entry)
         entry.users += 1
+
+    def _needs_room(self, entry: _Entry) -> bool:
+        if self._free_mb() < entry.spec.vram_mb:
+            return True
+        over = self._background_loaded_mb() + entry.spec.vram_mb > self._cfg.max_background_mb
+        return entry.spec.priority is Priority.BACKGROUND and over
 
     async def _load(self, entry: _Entry) -> None:
         _log.info("resources.load", model=entry.spec.name, vram_mb=entry.spec.vram_mb)

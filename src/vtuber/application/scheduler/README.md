@@ -11,7 +11,7 @@
 |---|---|
 | `IdleScheduler(cfg, clock=perf_counter_ns, sleep=asyncio.sleep)` | `submit(job)`, `busy()`, `idle()`, `follow(bus)`, `run()` (цикл — задачей у владельца), `pending` |
 | `IdleJob(name, run)` | Задача: `run()` — перезапускаемая корутина-фабрика |
-| `ResourceManager(cfg, clock)`, `ResourcesConfig`, `ModelSpec`, `Priority`, `ModelState`, `ModelStatus` | Учёт видеопамяти (ADR-0017): `register`, `async with use(name)`, `snapshot()`, `trim()`, `run()`, `follow(bus)`; отказ — `ResourceUnavailable` |
+| `ResourceManager(cfg, clock)`, `ResourcesConfig`, `ModelSpec`, `Priority`, `ModelState`, `ModelStatus` | Учёт видеопамяти (ADR-0017): `register`, `async with use(name)`, `snapshot()`, `limit_mb()`, `observe(memory)`, `watch(probe)`, `trim()`, `run(probe)`, `follow(bus)`; отказ — `ResourceUnavailable` |
 | `SchedulerConfig` | `idle_after_ms` — сколько тишины после хода считать простоем |
 
 ## Зависимости
@@ -34,7 +34,9 @@
 ## Инварианты менеджера ресурсов (`test_resources.py`)
 - Закреплённое не вытесняется; работающая модель не вытесняется; загрузки и выгрузки идут по одной.
 - Инструмент идёт раньше фона; фон не вытесняет простаивающий инструмент и не начинается во время хода.
-- Модель больше бюджета получает отказ сразу, не трогая остальные.
+- Модель больше бюджета или своего вида (`max_tool_mb`, `max_background_mb`) получает отказ сразу.
+- Лимит — не больше фактически свободного (ADR-0018); при сжатии уходят простаивающие, работающая
+  дорабатывает; во время хода карта не опрашивается.
 
 ## Производительность
 - Горячий путь: нет. `busy()` — O(1), без ожидания: ход не ждёт фона.

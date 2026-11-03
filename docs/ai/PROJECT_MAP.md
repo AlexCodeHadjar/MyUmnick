@@ -8,6 +8,13 @@
 ## src/vtuber/adapters
 Адаптеры: реализации портов для конкретных движков.
 
+## src/vtuber/adapters/gpu
+Опрос видеокарты для менеджера ресурсов (ADR-0018).
+
+- `NvidiaSmiConfig` — `src/vtuber/adapters/gpu/nvidia_smi.py:22` — Подсекция опроса: срок одного вызова.
+- `parse_memory` — `src/vtuber/adapters/gpu/nvidia_smi.py:28` — Первая видеокарта из вывода `nvidia-smi`; непонятный вывод — None.
+- `NvidiaSmiProbe` — `src/vtuber/adapters/gpu/nvidia_smi.py:37` — `GpuProbe`: None, если утилиты нет, карта не NVIDIA или вызов не уложился в срок.
+
 ## src/vtuber/adapters/llm
 Адаптеры языковых моделей (LLMPort).
 
@@ -110,12 +117,12 @@
 - `SchedulerConfig` — `src/vtuber/application/scheduler/idle.py:31` — `idle_after_ms` — сколько тишины после хода считать простоем.
 - `IdleJob` — `src/vtuber/application/scheduler/idle.py:38` — Фоновая задача: `run` можно звать повторно — отменённая задача перезапускается.
 - `IdleScheduler` — `src/vtuber/application/scheduler/idle.py:45` — Очередь фоновых задач, которые выполняются по одной и только в простое (T-13).
-- `ResourcesConfig` — `src/vtuber/application/scheduler/resources.py:32` — Секция `[resources]`: бюджет видеопамяти; `pinned` — имя → МБ, не вытесняется никогда.
-- `Priority` — `src/vtuber/application/scheduler/resources.py:42` — Кто важнее при нехватке памяти; диалог закреплён и в очереди не стоит.
-- `ModelState` — `src/vtuber/application/scheduler/resources.py:49` — Что с моделью сейчас.
-- `ModelSpec` — `src/vtuber/application/scheduler/resources.py:58` — Модель под управлением: `vram_mb` — объём из замера (ADR-0017).
-- `ModelStatus` — `src/vtuber/application/scheduler/resources.py:67` — Снимок одной модели для панели ресурсов.
-- `ResourceManager` — `src/vtuber/application/scheduler/resources.py:88` — Единственное место, которое решает, какая модель сейчас в видеопамяти.
+- `ResourcesConfig` — `src/vtuber/application/scheduler/resource_types.py:11` — Секция `[resources]`: бюджет видеопамяти; `pinned` — имя → МБ, не вытесняется никогда.
+- `Priority` — `src/vtuber/application/scheduler/resource_types.py:25` — Кто важнее при нехватке памяти; диалог закреплён и в очереди не стоит.
+- `ModelState` — `src/vtuber/application/scheduler/resource_types.py:32` — Что с моделью сейчас.
+- `ModelSpec` — `src/vtuber/application/scheduler/resource_types.py:41` — Модель под управлением: `vram_mb` — объём из замера (ADR-0017).
+- `ModelStatus` — `src/vtuber/application/scheduler/resource_types.py:50` — Снимок одной модели для панели ресурсов.
+- `ResourceManager` — `src/vtuber/application/scheduler/resources.py:50` — Единственное место, которое решает, какая модель сейчас в видеопамяти.
 
 ## src/vtuber/application/speech
 Подготовка текста к синтезу речи: числа, сокращения, латиница, разметка (S-7.2).
@@ -149,20 +156,20 @@
 ## src/vtuber/bootstrap
 Корень композиции: конфиг, персона, сборка графа объектов и точка входа.
 
-- `MemoryConfig` — `src/vtuber/bootstrap/config.py:29` — Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
-- `SttConfig` — `src/vtuber/bootstrap/config.py:54` — Секция `[stt]`: голосовой ввод в `serve` (Этап 11, ADR-0016); модели — при первом кадре.
-- `AppConfig` — `src/vtuber/bootstrap/config.py:74` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:92` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `MemoryConfig` — `src/vtuber/bootstrap/config.py:30` — Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
+- `SttConfig` — `src/vtuber/bootstrap/config.py:55` — Секция `[stt]`: голосовой ввод в `serve` (Этап 11, ADR-0016); модели — при первом кадре.
+- `AppConfig` — `src/vtuber/bootstrap/config.py:75` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:94` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
 - `Core` — `src/vtuber/bootstrap/container.py:21` — Общие механизмы, которые получают все: шина событий и телеметрия.
 - `Backends` — `src/vtuber/bootstrap/container.py:29` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
 - `llm_backends` — `src/vtuber/bootstrap/container.py:40` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
 - `tts_backends` — `src/vtuber/bootstrap/container.py:51` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
 - `Conversation` — `src/vtuber/bootstrap/container.py:61` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
 - `build_conversation` — `src/vtuber/bootstrap/container.py:69` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
-- `LineSource` — `src/vtuber/bootstrap/main.py:60` — Откуда читать строки: `sys.stdin` или его тестовая замена.
-- `Console` — `src/vtuber/bootstrap/main.py:67` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
-- `main` — `src/vtuber/bootstrap/main.py:80` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
-- `run` — `src/vtuber/bootstrap/main.py:264` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
+- `LineSource` — `src/vtuber/bootstrap/main.py:61` — Откуда читать строки: `sys.stdin` или его тестовая замена.
+- `Console` — `src/vtuber/bootstrap/main.py:68` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
+- `main` — `src/vtuber/bootstrap/main.py:81` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
+- `run` — `src/vtuber/bootstrap/main.py:265` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
 - `background_memory` — `src/vtuber/bootstrap/memory.py:39` — Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
@@ -201,6 +208,7 @@
 - `PhraseVoiced` — `src/vtuber/domain/events.py:78` — Фраза озвучена: зазвучит через `starts_in_s` и продлится `duration_s` (субтитры, Этап 12).
 - `MetricRecorded` — `src/vtuber/domain/events.py:91` — Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев).
 - `BackendStatusChanged` — `src/vtuber/domain/events.py:100` — Бэкенд загрузился, упал или восстановился.
+- `GpuMemory` — `src/vtuber/domain/gpu.py:7` — Сколько видеопамяти всего и сколько занято всеми программами.
 - `IncomingMessage` — `src/vtuber/domain/incoming.py:7` — Реплика из источника `source` (например, `twitch`) от автора `author`.
 - `EmbedKind` — `src/vtuber/domain/memory.py:14` — Что кодируется: у e5 запрос и запоминаемый текст кодируются по-разному.
 - `FactSource` — `src/vtuber/domain/memory.py:21` — Откуда факт: от этого зависит доверие к нему при ответе.
@@ -285,7 +293,8 @@
 - `LLMPort` — `src/vtuber/ports/llm.py:19` — Локальная LLM; адаптеры бросают только доменные ошибки (R-43).
 - `EmbedderPort` — `src/vtuber/ports/memory.py:13` — Тексты → векторы единичной длины.
 - `MemoryStorePort` — `src/vtuber/ports/memory.py:35` — Факты с векторами: добавить и найти ближайшие.
-- `ManagedModel` — `src/vtuber/ports/resources.py:6` — Модель, которую можно загрузить в видеопамять и выгрузить по требованию.
+- `ManagedModel` — `src/vtuber/ports/resources.py:8` — Модель, которую можно загрузить в видеопамять и выгрузить по требованию.
+- `GpuProbe` — `src/vtuber/ports/resources.py:18` — Фактическая занятость видеопамяти (ADR-0018).
 - `ReplySink` — `src/vtuber/ports/sink.py:8` — Получатель результатов одного хода; конвейер не знает, что за ним.
 - `VadPort` — `src/vtuber/ports/stt.py:12` — Детектор речи: окно PCM → вероятность, что это речь.
 - `STTPort` — `src/vtuber/ports/stt.py:44` — Распознавание отрезка речи.

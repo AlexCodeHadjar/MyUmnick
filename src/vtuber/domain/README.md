@@ -10,6 +10,7 @@ websockets, torch и о kernel (контракт `domain-pure`). Ошибка �
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
+| `GpuMemory(total_mb, used_mb)` | Видеопамять: всего и занято всеми программами (ADR-0018) |
 | `PhraseVoiced(text, starts_in_s, duration_s)` | Событие: фраза озвучена; время — оценка по отданному звуку |
 | `IncomingMessage(source, author, text)` | Реплика извне: сообщение зрителя |
 | `Role`, `Message` | Роль (`system`/`user`/`assistant`) и сообщение контекста LLM |
