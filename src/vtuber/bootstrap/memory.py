@@ -11,19 +11,23 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
 from vtuber.adapters.llm import LLMConfig
-from vtuber.adapters.memory import E5Embedder, SqliteVecStore
+from vtuber.adapters.memory import E5Embedder, ObsidianVault, SqliteVecStore
 from vtuber.application.memory import (
+    ChatRecorder,
     FactExtractor,
     FactMemory,
     MemoryKeeper,
     MemoryRecall,
     Summarizer,
+    VaultedFacts,
+    reconcile,
 )
-from vtuber.application.scheduler import IdleScheduler
+from vtuber.application.scheduler import IdleJob, IdleScheduler
 from vtuber.bootstrap.config import AppConfig
 from vtuber.bootstrap.container import Conversation, Core, llm_backends
+from vtuber.domain import MemoryUnavailable
 from vtuber.kernel import get_logger
-from vtuber.ports import EmbedderPort, GenerationParams, LLMPort, MemoryStorePort
+from vtuber.ports import EmbedderPort, GenerationParams, LLMPort, MemoryStorePort, MemoryVaultPort
 
 _log = get_logger(__name__)
 
@@ -33,6 +37,7 @@ class _Engines:
     llm: LLMPort
     embedder: EmbedderPort
     store: MemoryStorePort
+    vault: MemoryVaultPort
 
 
 @asynccontextmanager
@@ -55,13 +60,40 @@ async def background_memory(
         SqliteVecStore(memory.store_path, memory.e5.dimensions) as store,
         asyncio.TaskGroup() as tg,
     ):
-        scheduler = _wire(cfg, conversation, core, _Engines(llm, embedder, store))
+        vault = ObsidianVault(memory.vault_path)
+        await _restore(vault, conversation, memory.restore_turns)
+        scheduler = _wire(cfg, conversation, core, _Engines(llm, embedder, store, vault))
         loop = tg.create_task(scheduler.run())
         _log.info("memory.background_ready", store=str(memory.store_path))
         try:
-            yield
+            async with _recording_chats(vault, core, tg):
+                yield
         finally:
             loop.cancel()
+
+
+@asynccontextmanager
+async def _recording_chats(
+    vault: MemoryVaultPort, core: Core, tg: asyncio.TaskGroup
+) -> AsyncIterator[None]:
+    """На выходе очередь дописывается: последний ход перед закрытием не должен пропасть."""
+    recorder = ChatRecorder(vault)
+    recorder.follow(core.bus)
+    recording = tg.create_task(recorder.run())
+    try:
+        yield
+    finally:
+        recorder.stop()
+        await recording
+
+
+async def _restore(vault: MemoryVaultPort, conversation: Conversation, turns: int) -> None:
+    """Папка недоступна — разговор начнётся с чистого листа: диалог важнее истории."""
+    try:
+        restored = await vault.recent_turns(turns)
+        conversation.history.restore(restored, await vault.summary())
+    except MemoryUnavailable as exc:
+        _log.warning("memory.not_restored", problem=str(exc))
 
 
 def _wire(
@@ -75,12 +107,21 @@ def _wire(
     scheduler = IdleScheduler(cfg.scheduler)
     scheduler.follow(core.bus)
     extractor = FactExtractor(engines.llm, params)
-    facts = FactMemory(extractor, engines.embedder, engines.store, memory.facts)
+    vaulted = VaultedFacts(engines.store, engines.vault)
+    facts = FactMemory(extractor, engines.embedder, vaulted, memory.facts)
     summarizer = Summarizer(engines.llm, params)
-    MemoryKeeper(scheduler, conversation.history, summarizer, facts).follow(core.bus)
+    keeper = MemoryKeeper(scheduler, conversation.history, summarizer, facts)
+    keeper.on_summary = engines.vault.save_summary
+    keeper.follow(core.bus)
+    # В простое: e5 на CPU и другая работа по файлам не должны задерживать первую реплику.
+    scheduler.submit(IdleJob("vault:reconcile", lambda: _reconcile(engines)))
     recall = MemoryRecall(engines.embedder, engines.store, memory.retrieval, core.telemetry)
     conversation.service.use_memory(recall.hints)
     return scheduler
+
+
+async def _reconcile(engines: _Engines) -> None:
+    await reconcile(engines.vault, engines.store, engines.embedder)
 
 
 def _background_llm(cfg: AppConfig) -> LLMConfig:

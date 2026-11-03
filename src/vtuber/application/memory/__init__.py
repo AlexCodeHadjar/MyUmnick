@@ -13,6 +13,7 @@ from vtuber.application.memory.retrieval_gate import (
 )
 from vtuber.application.memory.short_term import INTERRUPTED_MARK, SUMMARY_TEMPLATE, ShortTermMemory
 from vtuber.application.memory.summarizer import MAX_SUMMARY_CHARS, Summarizer
+from vtuber.application.memory.vault_sync import ChatRecorder, VaultedFacts, reconcile
 from vtuber.application.memory.viewer_filter import without_viewer_turns
 
 __all__ = [
@@ -20,6 +21,7 @@ __all__ = [
     "INTERRUPTED_MARK",
     "MAX_SUMMARY_CHARS",
     "SUMMARY_TEMPLATE",
+    "ChatRecorder",
     "ExtractedFact",
     "FactExtractor",
     "FactMemory",
@@ -30,8 +32,10 @@ __all__ = [
     "ShortTermMemory",
     "Summarizer",
     "TurnHints",
+    "VaultedFacts",
     "is_factual_question",
     "needs_memory",
     "parse_facts",
+    "reconcile",
     "without_viewer_turns",
 ]

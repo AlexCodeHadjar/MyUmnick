@@ -1,6 +1,7 @@
 """Краткосрочная память: история текущего разговора, только дописывание и усечение блоком."""
 
 from collections import deque
+from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import chain
 from typing import Final
@@ -59,6 +60,12 @@ class ShortTermMemory:
     def tokens(self) -> int:
         """Оценка токенов всей истории."""
         return self._tokens
+
+    def restore(self, turns: Sequence[Turn], summary: str | None) -> None:
+        """Разговор прошлого запуска (ADR-0020); лишнее по бюджету отрезается как обычно."""
+        self._summary = summary
+        for turn in turns:
+            self.append(turn)
 
     def append(self, turn: Turn) -> tuple[Message, ...]:
         """Дописывает ход; при превышении бюджета отрезает старший блок.

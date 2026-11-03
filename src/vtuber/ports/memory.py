@@ -5,9 +5,10 @@
 """
 
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Protocol
 
-from vtuber.domain import EmbedKind, Fact, FactHit, FactId, Vector
+from vtuber.domain import EmbedKind, Fact, FactHit, FactId, Turn, Vector
 
 
 class EmbedderPort(Protocol):
@@ -50,6 +51,24 @@ class MemoryStorePort(Protocol):
         """
         ...
 
+    async def all_facts(self) -> list[Fact]:
+        """Все факты: сверка индекса с заметками (ADR-0020).
+
+        Raises:
+            MemoryUnavailable: хранилище не открыто.
+
+        """
+        ...
+
+    async def clear(self) -> None:
+        """Удаляет всё; вызывается только перед пересборкой из заметок.
+
+        Raises:
+            MemoryUnavailable: хранилище не открыто.
+
+        """
+        ...
+
     async def search(self, query: Vector, limit: int) -> list[FactHit]:
         """До `limit` ближайших к `query` фактов, от самого близкого (T-12: ≤ 40 мс на топ-k).
 
@@ -58,4 +77,35 @@ class MemoryStorePort(Protocol):
             MemoryUnavailable: хранилище не открыто.
 
         """
+        ...
+
+
+class MemoryVaultPort(Protocol):
+    """Заметки — источник истины памяти (ADR-0020); контракт — `test_vault_contract.py`.
+
+    Все методы при недоступной папке бросают `MemoryUnavailable`.
+    """
+
+    async def save_fact(self, fact: Fact) -> Fact:
+        """Записывает заметку; возвращает факт с заполненным `note`."""
+        ...
+
+    async def facts(self) -> list[Fact]:
+        """Все факты из заметок; неразборчивая заметка пропускается."""
+        ...
+
+    async def save_turn(self, turn: Turn, when: datetime) -> None:
+        """Дописывает ход в чат."""
+        ...
+
+    async def recent_turns(self, limit: int) -> list[Turn]:
+        """Последние `limit` ходов по порядку."""
+        ...
+
+    async def save_summary(self, summary: str) -> None:
+        """Заменяет резюме разговора."""
+        ...
+
+    async def summary(self) -> str | None:
+        """Резюме разговора; None — его ещё нет."""
         ...

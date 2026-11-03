@@ -31,12 +31,16 @@ class FactSource(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class Fact:
-    """Одна запоминаемая мысль; `importance` 0…1 — что вспоминать в первую очередь."""
+    """Одна запоминаемая мысль; `importance` 0…1 — что вспоминать в первую очередь.
+
+    `note` — имя заметки в хранилище (ADR-0020); пусто у факта, ещё не записанного в заметку.
+    """
 
     text: str
     source: FactSource
     importance: float
     created_at: datetime
+    note: str = ""
 
     def __post_init__(self) -> None:
         if not 0 <= self.importance <= 1:

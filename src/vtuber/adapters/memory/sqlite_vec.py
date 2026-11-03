@@ -27,11 +27,12 @@ create table if not exists facts (
     text text not null,
     source text not null,
     importance real not null,
-    created_at text not null
+    created_at text not null,
+    note text not null default ''
 );
 """
 SEARCH: Final = """
-select f.id, f.text, f.source, f.importance, f.created_at, v.distance
+select f.id, f.text, f.source, f.importance, f.created_at, f.note, v.distance
 from fact_vectors v join facts f on f.id = v.rowid
 where v.embedding match ? and k = ?
 order by v.distance
@@ -74,6 +75,31 @@ class SqliteVecStore:
         db = self._ready(vector)
         return await asyncio.to_thread(self._insert, db, fact, vector)
 
+    async def all_facts(self) -> list[Fact]:
+        """Все факты по порядку записи."""
+        return await asyncio.to_thread(self._read_all, self._connection())
+
+    async def clear(self) -> None:
+        """Индекс пуст; заметки — источник истины, поэтому потери нет (ADR-0020)."""
+        await asyncio.to_thread(self._delete_all, self._connection())
+
+    def _connection(self) -> sqlite3.Connection:
+        if self._db is None:
+            raise MemoryUnavailable(self._unavailable)
+        return self._db
+
+    def _read_all(self, db: sqlite3.Connection) -> list[Fact]:
+        with self._lock:
+            rows = db.execute(
+                "select text, source, importance, created_at, note from facts order by id"
+            ).fetchall()
+        return [_fact(*row) for row in rows]
+
+    def _delete_all(self, db: sqlite3.Connection) -> None:
+        with self._lock, db:
+            db.execute("delete from fact_vectors")
+            db.execute("delete from facts")
+
     async def search(self, query: Vector, limit: int) -> list[FactHit]:
         """KNN по косинусу; близость = 1 − расстояние."""
         db = self._ready(query)
@@ -100,6 +126,7 @@ class SqliteVecStore:
             sqlite_vec.load(db)
             db.enable_load_extension(False)  # noqa: FBT003
             db.executescript(SCHEMA)
+            _add_note_column(db)
             self._check_dimensions(db)
         except BaseException:
             db.close()
@@ -126,8 +153,15 @@ class SqliteVecStore:
     def _insert(self, db: sqlite3.Connection, fact: Fact, vector: Vector) -> FactId:
         with self._lock, db:
             cursor = db.execute(
-                "insert into facts (text, source, importance, created_at) values (?, ?, ?, ?)",
-                (fact.text, fact.source.value, fact.importance, fact.created_at.isoformat()),
+                "insert into facts (text, source, importance, created_at, note)"
+                " values (?, ?, ?, ?, ?)",
+                (
+                    fact.text,
+                    fact.source.value,
+                    fact.importance,
+                    fact.created_at.isoformat(),
+                    fact.note,
+                ),
             )
             fact_id = cursor.lastrowid
             if fact_id is None:  # pragma: no cover — sqlite3 всегда даёт rowid после insert
@@ -142,18 +176,23 @@ class SqliteVecStore:
     def _knn(self, db: sqlite3.Connection, query: Vector, limit: int) -> list[FactHit]:
         with self._lock:
             rows = db.execute(SEARCH, (_blob(query), limit)).fetchall()
-        return [
-            FactHit(
-                FactId(fact_id),
-                Fact(text, FactSource(source), importance, datetime.fromisoformat(created)),
-                1.0 - distance,
-            )
-            for fact_id, text, source, importance, created, distance in rows
-        ]
+        return [FactHit(FactId(row[0]), _fact(*row[1:6]), 1.0 - row[6]) for row in rows]
 
     def _locked_close(self, db: sqlite3.Connection) -> None:
         with self._lock:
             db.close()
+
+
+def _fact(text: str, source: str, importance: float, created: str, note: str) -> Fact:
+    return Fact(text, FactSource(source), importance, datetime.fromisoformat(created), note=note)
+
+
+def _add_note_column(db: sqlite3.Connection) -> None:
+    """База прошлой версии: столбца нет; факты из неё перенесёт в заметки `reconcile`."""
+    columns = {row[1] for row in db.execute("pragma table_info(facts)")}
+    if "note" not in columns:
+        db.execute("alter table facts add column note text not null default ''")
+        db.commit()
 
 
 def _blob(vector: Vector) -> bytes:

@@ -9,6 +9,7 @@ S-10.5), не строит промпт.
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
+| `ObsidianVault(root)` | `MemoryVaultPort` на папке с Markdown (ADR-0020): заметка факта — атомарно, чаты и дневник — дописыванием; битая заметка — предупреждение |
 | `E5Embedder(cfg)` | `EmbedderPort` в `async with`: модель грузится один раз с прогревом; нет файлов — `MemoryUnavailable` на запрос |
 | `E5Config` | `model_dir` (`model.onnx`, `tokenizer.json`), `dimensions` (384), `threads`, `max_tokens` (≤ 512), `batch_size` |
 | `SqliteVecStore(path, dimensions)` | `MemoryStorePort` в `async with`: открывает или создаёт базу; не открылась — `MemoryUnavailable` |

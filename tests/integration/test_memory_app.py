@@ -42,6 +42,7 @@ async def test_fact_from_chat_lands_in_memory_store(tmp_path: Path) -> None:
             "VTUBER_LOGGING__FILE": str(tmp_path / "app.jsonl"),
             "VTUBER_TELEMETRY__TRACES_FILE": str(tmp_path / "traces.jsonl"),
             "VTUBER_MEMORY__STORE_PATH": str(store),
+            "VTUBER_MEMORY__VAULT_PATH": str(store.parent / "vault"),
             "VTUBER_SCHEDULER__IDLE_AFTER_MS": "50",
         }
         console = Console(_SlowStdin(pause_s=3), io.StringIO())

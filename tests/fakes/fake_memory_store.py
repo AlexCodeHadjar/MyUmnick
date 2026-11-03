@@ -21,6 +21,19 @@ class FakeMemoryStore:
         self.facts.append((fact, vector))
         return FactId(len(self.facts))
 
+    async def all_facts(self) -> list[Fact]:
+        self._check_open()
+        return [fact for fact, _ in self.facts]
+
+    async def clear(self) -> None:
+        self._check_open()
+        self.facts.clear()
+
+    def _check_open(self) -> None:
+        if not self.available:
+            msg = "FakeMemoryStore: хранилище не открыто (сценарий теста)"
+            raise MemoryUnavailable(msg)
+
     async def search(self, query: Vector, limit: int) -> list[FactHit]:
         self._check(query)
         if limit < 1:

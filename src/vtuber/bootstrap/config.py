@@ -37,6 +37,8 @@ class MemoryConfig(ConfigSection):
 
     enabled: bool
     store_path: Path
+    vault_path: Path
+    restore_turns: int = Field(ge=0)
     background_slot_id: int = Field(ge=0)
     generation: GenerationConfig
     facts: FactMemoryConfig
@@ -48,6 +50,7 @@ class MemoryConfig(ConfigSection):
         return self.model_copy(
             update={
                 "store_path": root / self.store_path,
+                "vault_path": root / self.vault_path,
                 "e5": self.e5.model_copy(update={"model_dir": root / self.e5.model_dir}),
             }
         )

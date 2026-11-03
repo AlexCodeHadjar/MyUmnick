@@ -4,7 +4,7 @@
 пользователь молчит, и прерываются его новой репликой.
 """
 
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import UTC, datetime
 
 from vtuber.application.memory.facts import FactMemory
@@ -35,6 +35,7 @@ class MemoryKeeper:
         self._summarizer = summarizer
         self._facts = facts
         self.now: Now = lambda: datetime.now(UTC)
+        self.on_summary: Callable[[str], Awaitable[None]] | None = None
 
     def follow(self, bus: EventBus) -> None:
         """Подписка на `TurnRemembered`."""
@@ -52,6 +53,8 @@ class MemoryKeeper:
     async def _summarize(self, dropped: Sequence[Message]) -> None:
         summary = await self._summarizer.summarize(self._history.summary, dropped)
         self._history.set_summary(summary)
+        if self.on_summary is not None:
+            await self.on_summary(summary)
         _log.info("memory.summary_updated", chars=len(summary), dropped=len(dropped))
 
     async def _learn(self, event: TurnRemembered, when: datetime) -> None:
