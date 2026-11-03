@@ -144,6 +144,7 @@
           name={chosenAvatar(layoutStorage()) ?? import.meta.env.VITE_AVATAR}
           store={client.store}
           mouth={(deltaMs: number) => player?.mouth(deltaMs) ?? 0}
+          mouthForm={() => player?.mouthForm() ?? 0}
         />
         {#if showMetrics}
           <MetricsPanel

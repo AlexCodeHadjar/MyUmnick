@@ -15,6 +15,7 @@ class FakeRenderer implements AvatarRenderer {
     this.loaded = source;
     return this.failLoad === null ? Promise.resolve() : Promise.reject(this.failLoad);
   }
+  form = 0;
   readonly emotions: string[] = [];
   setEmotion(emotion: string): void {
     if (this.emotions.at(-1) !== emotion) this.emotions.push(emotion);
@@ -24,6 +25,9 @@ class FakeRenderer implements AvatarRenderer {
   }
   setSpeaking(): void {
     // Не нужен в этих тестах.
+  }
+  setMouthForm(form: number): void {
+    this.form = form;
   }
   gesture(): void {
     // Не нужен в этих тестах.

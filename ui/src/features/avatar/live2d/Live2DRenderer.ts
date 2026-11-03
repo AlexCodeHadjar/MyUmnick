@@ -13,6 +13,7 @@ import {
   headAxisIndices,
   headPitchIndices,
   loadEngine,
+  mouthFormIndices,
   mouthIndices,
   type Engine,
   type Model,
@@ -36,6 +37,7 @@ export class Live2DRenderer implements AvatarRenderer {
   #mapping: AvatarMapping = DEFAULT_MAPPING;
   #size: StageSize;
   #mouth = 0;
+  #mouthForm = 0;
   #speaking = false;
   /** Сколько мс идёт кивок; null — кивка нет. */
   #nodMs: number | null = null;
@@ -117,6 +119,10 @@ export class Live2DRenderer implements AvatarRenderer {
 
   setMouth(openness: number): void {
     this.#mouth = Math.max(0, Math.min(1, openness));
+  }
+
+  setMouthForm(form: number): void {
+    this.#mouthForm = Math.max(-1, Math.min(1, form));
   }
 
   lookAt(x: number, y: number): void {
@@ -209,6 +215,8 @@ export class Live2DRenderer implements AvatarRenderer {
       return;
     }
     const mouth = mouthIndices(internal);
+    const { formParam, strength } = this.#mapping.lipsync;
+    const form = mouthFormIndices(internal, formParam);
     const head = headPitchIndices(internal);
     const axes = headAxisIndices(internal);
     internal.on("beforeModelUpdate", () => {
@@ -216,6 +224,9 @@ export class Live2DRenderer implements AvatarRenderer {
       if (this.#speaking || this.#mouth > MOUTH_EPSILON) {
         for (const index of mouth) {
           core.setParameterValueByIndex(index, this.#mouth);
+        }
+        for (const index of form) {
+          core.setParameterValueByIndex(index, this.#mouthForm * strength);
         }
       }
       const angle = this.#nodMs === null ? 0 : nodAngle(this.#nodMs);

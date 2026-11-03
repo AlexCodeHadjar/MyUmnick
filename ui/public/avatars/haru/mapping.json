@@ -22,6 +22,7 @@
   "reactions": {
     "thinking": { "expression": "Pensive" }
   },
+  "lipsync": { "formParam": "PARAM_MOUTH_FORM", "strength": 0.8 },
   "gestures": {
     "nod": { "axis": "pitch", "degrees": -9, "ms": 500, "waves": 1 },
     "shake": { "axis": "yaw", "degrees": 10, "ms": 800, "waves": 4 },

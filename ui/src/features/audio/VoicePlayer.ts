@@ -10,6 +10,7 @@
 import { int16ToFloat, StreamResampler, type AudioFrame, type SpeechProgress } from "../../core";
 import { isPlayerEvent, type PlayerEvent } from "./events";
 import { MouthFollower, rms } from "./lipsync";
+import { FormFollower, mouthShape, NEUTRAL_SHAPE } from "./viseme";
 import workletUrl from "./player.worklet?worker&url";
 
 const PROCESSOR_NAME = "vtuber-player";
@@ -17,13 +18,18 @@ const PROCESSOR_NAME = "vtuber-player";
 const ANALYSER_FFT_SIZE = 1024;
 /** Сколько отменённых ходов помнить: поздние кадры приходят в пределах пары ходов. */
 const CANCELLED_MEMORY = 16;
+/** Рот ниже этого закрыт: спектр тишины считать незачем и нечего. */
+const MOUTH_EPSILON = 0.01;
 
 export class VoicePlayer {
   readonly #context: AudioContext;
   readonly #node: AudioWorkletNode;
   readonly #analyser: AnalyserNode;
   readonly #window: Float32Array<ArrayBuffer>;
+  readonly #spectrum: Float32Array<ArrayBuffer>;
   readonly #mouth = new MouthFollower();
+  readonly #form = new FormFollower();
+  #mouthForm = 0;
   readonly #cancelled: string[] = [];
   #turn: string | null = null;
   #resampler: StreamResampler | null = null;
@@ -38,6 +44,7 @@ export class VoicePlayer {
     this.#node = node;
     this.#analyser = analyser;
     this.#window = new Float32Array(analyser.fftSize);
+    this.#spectrum = new Float32Array(analyser.frequencyBinCount);
     node.port.onmessage = (event: MessageEvent<unknown>) => {
       if (isPlayerEvent(event.data)) {
         this.#handle(event.data);
@@ -51,6 +58,8 @@ export class VoicePlayer {
     const node = new AudioWorkletNode(context, PROCESSOR_NAME, { outputChannelCount: [1] });
     const analyser = context.createAnalyser();
     analyser.fftSize = ANALYSER_FFT_SIZE;
+    // Форма рта должна меняться со слогом, а сглаживание спектра размазало бы их (ADR-0023).
+    analyser.smoothingTimeConstant = 0;
     node.connect(analyser);
     analyser.connect(context.destination);
     return new VoicePlayer(context, node, analyser);
@@ -107,7 +116,20 @@ export class VoicePlayer {
   /** Открытие рта 0…1 по звучащему сигналу; звать раз в кадр с временем от прошлого вызова. */
   mouth(deltaMs: number): number {
     this.#analyser.getFloatTimeDomainData(this.#window);
-    return this.#mouth.update(rms(this.#window), deltaMs);
+    const open = this.#mouth.update(rms(this.#window), deltaMs);
+    const shape = open > MOUTH_EPSILON ? this.#shape() : null;
+    this.#mouthForm = this.#form.update(shape?.form ?? null, deltaMs);
+    return open * (shape ?? NEUTRAL_SHAPE).openness;
+  }
+
+  /** Форма рта -1…1 (ADR-0023); считается в `mouth()`, звать после него в том же кадре. */
+  mouthForm(): number {
+    return this.#mouthForm;
+  }
+
+  #shape(): ReturnType<typeof mouthShape> {
+    this.#analyser.getFloatFrequencyData(this.#spectrum);
+    return mouthShape(this.#spectrum, this.#context.sampleRate / this.#analyser.fftSize);
   }
 
   async dispose(): Promise<void> {

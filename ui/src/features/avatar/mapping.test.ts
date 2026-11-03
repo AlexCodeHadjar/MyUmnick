@@ -46,6 +46,8 @@ describe("parseMapping", () => {
       { version: 1, reactions: { idle: { motion: { group: 1, index: 0 } } } },
       "reactions.idle.motion.group",
     ],
+    ["сила формы рта вне диапазона", { version: 1, lipsync: { strength: 2 } }, "lipsync.strength"],
+    ["параметр формы не строка", { version: 1, lipsync: { formParam: 1 } }, "lipsync.formParam"],
     ["неизвестный жест", { version: 1, gestures: { dance: {} } }, "gestures.dance"],
     [
       "жест по неизвестной оси",

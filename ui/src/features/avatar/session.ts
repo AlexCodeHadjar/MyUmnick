@@ -40,6 +40,7 @@ export class AvatarSession {
   #observer: ResizeObserver | null = null;
   #disposed = false;
   #mouthSource: MouthSource = () => 0;
+  #formSource: () => number = () => 0;
   #activity: ActivitySource = () => false;
   /** Эмоция ответа во времени; `set()` — из store, затухание — в цикле кадров. */
   readonly mood = new Mood();
@@ -88,6 +89,11 @@ export class AvatarSession {
     this.#mouthSource = source;
   }
 
+  /** Форма рта (ADR-0023); читается после `mouth`, в том же кадре. */
+  set mouthForm(source: () => number) {
+    this.#formSource = source;
+  }
+
   /** Источник «разговор идёт»: опрашивается каждый кадр (затухание эмоции). */
   set activity(source: ActivitySource) {
     this.#activity = source;
@@ -109,6 +115,7 @@ export class AvatarSession {
       const { emotion, intensity } = this.mood.update(deltaMs, this.#activity());
       renderer.setEmotion(emotion, intensity);
       renderer.setMouth(this.#mouthSource(deltaMs));
+      renderer.setMouthForm(this.#formSource());
       renderer.update(deltaMs);
     });
     this.#loop.start();

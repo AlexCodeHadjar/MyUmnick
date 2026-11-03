@@ -529,7 +529,11 @@
 - `PcmQueue` — `ui/src/features/audio/pcm-queue.ts:58` — —
 - `PROCESSOR_NAME` — `ui/src/features/audio/player.worklet.ts:10` — —
 - `PlayerCommand` — `ui/src/features/audio/player.worklet.ts:14` — —
-- `VoicePlayer` — `ui/src/features/audio/VoicePlayer.ts:21` — —
+- `MouthShape` — `ui/src/features/audio/viseme.ts:23` — —
+- `NEUTRAL_SHAPE` — `ui/src/features/audio/viseme.ts:30` — —
+- `mouthShape` — `ui/src/features/audio/viseme.ts:46` — Спектр в дБ (`getFloatFrequencyData`) → форма рта; пустой спектр — откат к громкости.
+- `FormFollower` — `ui/src/features/audio/viseme.ts:65` — —
+- `VoicePlayer` — `ui/src/features/audio/VoicePlayer.ts:24` — —
 
 ## ui/src/features/avatar
 Публичный API фичи аватара: сцена и контракт рендера (ADR-0011).
@@ -552,11 +556,12 @@
 - `MotionRef` — `ui/src/features/avatar/mapping.ts:12` — —
 - `ReactionSpec` — `ui/src/features/avatar/mapping.ts:17` — —
 - `FrameSpec` — `ui/src/features/avatar/mapping.ts:25` — Кадр поверх «вписать целиком»: масштаб и сдвиг центра в долях сцены (y — вниз).
-- `AvatarMapping` — `ui/src/features/avatar/mapping.ts:31` — —
-- `DEFAULT_MAPPING` — `ui/src/features/avatar/mapping.ts:42` — Маппинга нет — модель как есть: без выражений и реакций, кадр «вписать целиком».
-- `MappingError` — `ui/src/features/avatar/mapping.ts:71` — —
-- `parseMapping` — `ui/src/features/avatar/mapping.ts:199` — JSON маппинга → проверенный маппинг; ошибка называет поле и что с ним не так.
-- `expressionFor` — `ui/src/features/avatar/mapping.ts:218` — Какое выражение должно быть на лице: реакция (например, «думаю» до первого токена) важнее
+- `LipsyncSpec` — `ui/src/features/avatar/mapping.ts:32` — Форма рта при речи (ADR-0023): параметр модели и насколько сильно его двигать.
+- `AvatarMapping` — `ui/src/features/avatar/mapping.ts:38` — —
+- `DEFAULT_MAPPING` — `ui/src/features/avatar/mapping.ts:50` — Маппинга нет — модель как есть: без выражений и реакций, кадр «вписать целиком».
+- `MappingError` — `ui/src/features/avatar/mapping.ts:80` — —
+- `parseMapping` — `ui/src/features/avatar/mapping.ts:217` — JSON маппинга → проверенный маппинг; ошибка называет поле и что с ним не так.
+- `expressionFor` — `ui/src/features/avatar/mapping.ts:237` — Какое выражение должно быть на лице: реакция (например, «думаю» до первого токена) важнее
 - `MoodConfig` — `ui/src/features/avatar/mood.ts:8` — —
 - `DEFAULT_MOOD` — `ui/src/features/avatar/mood.ts:16` — Пара фраз тишины — эмоция ещё «про» ответ; дольше — лицо застывает маской.
 - `MoodFrame` — `ui/src/features/avatar/mood.ts:18` — —
@@ -589,17 +594,18 @@
 - `Pixi` — `ui/src/features/avatar/live2d/engine.ts:10` — —
 - `Model` — `ui/src/features/avatar/live2d/engine.ts:11` — —
 - `CubismInternal` — `ui/src/features/avatar/live2d/engine.ts:12` — —
-- `loadEngine` — `ui/src/features/avatar/live2d/engine.ts:21` — —
-- `mouthIndices` — `ui/src/features/avatar/live2d/engine.ts:35` — Индексы параметров рта: ищутся один раз при загрузке, в кадре — запись по индексу.
-- `headPitchIndices` — `ui/src/features/avatar/live2d/engine.ts:41` — Индексы наклона головы для кивка; у модели без параметра — пусто, кивка нет.
-- `headAxisIndices` — `ui/src/features/avatar/live2d/engine.ts:46` — Индексы параметров головы по осям для жестов; нет параметра — жест по этой оси не виден.
+- `loadEngine` — `ui/src/features/avatar/live2d/engine.ts:22` — —
+- `mouthIndices` — `ui/src/features/avatar/live2d/engine.ts:36` — Индексы параметров рта: ищутся один раз при загрузке, в кадре — запись по индексу.
+- `headPitchIndices` — `ui/src/features/avatar/live2d/engine.ts:42` — Индексы наклона головы для кивка; у модели без параметра — пусто, кивка нет.
+- `mouthFormIndices` — `ui/src/features/avatar/live2d/engine.ts:47` — Индексы формы рта; `declared` — из `mapping.json`. У модели без параметра список пуст.
+- `headAxisIndices` — `ui/src/features/avatar/live2d/engine.ts:52` — Индексы параметров головы по осям для жестов; нет параметра — жест по этой оси не виден.
 - `Size` — `ui/src/features/avatar/live2d/fit.ts:3` — —
 - `Placement` — `ui/src/features/avatar/live2d/fit.ts:8` — —
 - `FIT_MARGIN` — `ui/src/features/avatar/live2d/fit.ts:16` — Поля вокруг модели, доля сцены: не упираться в края при наклонах головы и физике волос.
 - `fitModel` — `ui/src/features/avatar/live2d/fit.ts:19` — Масштаб «вписать целиком» с полями; модель по центру. Пустая сцена или модель — масштаб 0.
 - `applyFrame` — `ui/src/features/avatar/live2d/fit.ts:32` — Кадр маппинга (масштаб и сдвиг центра в долях сцены) поверх «вписать целиком».
 - `gazeAt` — `ui/src/features/avatar/live2d/fit.ts:48` — Курсор → взгляд: -1…1 по осям, y вверх (как `AvatarRenderer.lookAt`). За пределами сцены
-- `Live2DRenderer` — `ui/src/features/avatar/live2d/Live2DRenderer.ts:32` — —
+- `Live2DRenderer` — `ui/src/features/avatar/live2d/Live2DRenderer.ts:33` — —
 - `Fetcher` — `ui/src/features/avatar/live2d/settings.ts:8` — —
 - `loadMapping` — `ui/src/features/avatar/live2d/settings.ts:23` — `mapping.json` модели; нет файла — модель как есть, битый файл — ошибка с полем.
 - `withExpressions` — `ui/src/features/avatar/live2d/settings.ts:46` — Копия model3.json с выражениями маппинга (поверх одноимённых из манифеста) и `url` — по нему

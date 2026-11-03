@@ -28,12 +28,20 @@ export interface FrameSpec {
   offsetY: number;
 }
 
+/** Форма рта при речи (ADR-0023): параметр модели и насколько сильно его двигать. */
+export interface LipsyncSpec {
+  /** Параметр формы; null — стандартные id Cubism. Нет такого у модели — только открытие рта. */
+  formParam: string | null;
+  strength: number;
+}
+
 export interface AvatarMapping {
   /** Имя выражения → файл `.exp3.json` относительно каталога модели. */
   expressions: Record<string, string>;
   emotions: Partial<Record<Emotion, string>>;
   reactions: Partial<Record<AvatarReaction, ReactionSpec>>;
   frame: FrameSpec;
+  lipsync: LipsyncSpec;
   /** Жесты этой модели; жеста нет в списке — он пропускается, ответ идёт как шёл. */
   gestures: Partial<Record<Gesture, GestureSpec>>;
 }
@@ -44,6 +52,7 @@ export const DEFAULT_MAPPING: AvatarMapping = {
   emotions: {},
   reactions: {},
   frame: { zoom: 1, offsetX: 0, offsetY: 0 },
+  lipsync: { formParam: null, strength: 1 },
   gestures: {},
 };
 
@@ -174,6 +183,15 @@ function parseFrame(raw: unknown): FrameSpec {
   };
 }
 
+function parseLipsync(raw: unknown): LipsyncSpec {
+  const spec = record(raw ?? {}, "lipsync");
+  const formParam = spec.formParam ?? null;
+  if (formParam !== null && typeof formParam !== "string") {
+    fail("lipsync.formParam", "ожидается строка");
+  }
+  return { formParam, strength: finite(spec.strength ?? 1, "lipsync.strength", 0, 1) };
+}
+
 function parseGesture(raw: unknown, path: string): GestureSpec {
   const spec = record(raw, path);
   return {
@@ -207,6 +225,7 @@ export function parseMapping(raw: unknown): AvatarMapping {
     emotions: parseEmotions(root.emotions, expressions),
     reactions: parseReactions(root.reactions, expressions),
     frame: parseFrame(root.frame),
+    lipsync: parseLipsync(root.lipsync),
     gestures: parseGestures(root.gestures),
   };
 }

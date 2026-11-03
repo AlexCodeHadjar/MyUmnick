@@ -12,11 +12,14 @@
     name,
     store,
     mouth = () => 0,
+    mouthForm = () => 0,
     onhittest,
   }: {
     name: string;
     store: AppStore;
     mouth?: MouthSource;
+    /** Форма рта, -1…1 (ADR-0023). */
+    mouthForm?: () => number;
     /** Получить проверку «над моделью ли точка сцены»: окну поверх стола (S-15.2). */
     onhittest?: (contains: (x: number, y: number) => boolean) => void;
   } = $props();
@@ -106,6 +109,7 @@
     onhittest?.((x, y) => current.renderer?.contains(x, y) ?? false);
     // Источник рта читается при каждом кадре через замыкание: смена пропса подхватывается.
     current.mouth = (deltaMs) => mouth(deltaMs);
+    current.mouthForm = () => mouthForm();
     // Разговор идёт, пока идёт ход или звучит голос: эмоция угасает только после речи.
     current.activity = () => store.phase !== "idle" || (store.voice.speech?.speaking ?? false);
     void current.start(name, async (element, size) => {
