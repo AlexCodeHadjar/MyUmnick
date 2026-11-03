@@ -9,8 +9,10 @@ from typing import Final, Protocol, runtime_checkable
 from pydantic import Field, ValidationError
 
 from vtuber.domain import (
+    AudioChunk,
     ConfigError,
     IncomingMessage,
+    PerformanceRequested,
     SearchSource,
     SourcesFound,
     ViewerBlocked,
@@ -100,6 +102,10 @@ class PluginContext:
         он сам решит работать, остальные он пропускает сразу.
         """
         self._contexts.append(ContextTool(provider, timeout_s))
+
+    async def perform(self, title: str, audio: AsyncGenerator[AudioChunk]) -> None:
+        """Исполнить готовый звук ходом без модели; прерывается, как обычный ответ."""
+        await self._bus.publish(PerformanceRequested(title, audio))
 
     async def report_sources(self, sources: Sequence[SearchSource]) -> None:
         """Показать ведущему, откуда взят ответ."""

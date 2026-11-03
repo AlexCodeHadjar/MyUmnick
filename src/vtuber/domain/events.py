@@ -1,10 +1,12 @@
 """События шины управления: что произошло в ядре (горячий путь идёт очередями, T-15)."""
 
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from enum import StrEnum
 
 from vtuber.domain.dialogue import Message, Turn, TurnId
 from vtuber.domain.emotion import Emotion
+from vtuber.domain.speech import AudioChunk
 
 
 class CancelReason(StrEnum):
@@ -85,6 +87,14 @@ class PhraseVoiced:
     text: str
     starts_in_s: float
     duration_s: float
+
+
+@dataclass(frozen=True, slots=True)
+class PerformanceRequested:
+    """Плагин просит исполнить готовый звук (S-18.5)."""
+
+    title: str
+    audio: AsyncGenerator[AudioChunk]
 
 
 class SoundKind(StrEnum):

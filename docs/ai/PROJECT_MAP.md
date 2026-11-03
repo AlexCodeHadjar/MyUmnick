@@ -94,7 +94,8 @@
 - `InitiativeConfig` — `src/vtuber/application/conversation/initiative.py:20` — Секция `[initiative]`: выключена по умолчанию, персонаж молчит, пока его не попросят.
 - `InitiativeActions` — `src/vtuber/application/conversation/initiative.py:31` — `speak` возвращается, когда реплика прозвучала; `blocked` — занято: ход, речь, набор, фон.
 - `Initiative` — `src/vtuber/application/conversation/initiative.py:39` — Считает тишину и говорит, когда её набралось; `user_input` обрывает реплику сразу.
-- `ConversationService` — `src/vtuber/application/conversation/service.py:61` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
+- `play_performance` — `src/vtuber/application/conversation/performance.py:10` — Текст и эмоция — сразу, звук — по мере чтения; отмена закрывает источник.
+- `ConversationService` — `src/vtuber/application/conversation/service.py:62` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
 
 ## src/vtuber/application/memory
 Память витюбера: история разговора, её резюме и долговременные факты (Этап 10).
@@ -145,9 +146,9 @@
 
 - `ContextConfig` — `src/vtuber/application/prompting/context_budget.py:12` — Секция `[context]`.
 - `ContextBudget` — `src/vtuber/application/prompting/context_budget.py:26` — Приближённый счёт токенов — без запроса к серверу, чтобы не тормозить горячий путь.
-- `Prompt` — `src/vtuber/application/prompting/prompt_builder.py:16` — Сообщения для LLM; первые `prefix_length` — неизменный префикс (персона и примеры).
-- `PromptBuilder` — `src/vtuber/application/prompting/prompt_builder.py:23` — Строит промпт: [персона + примеры] → [история] → [справка + реплика] (T-03).
-- `render_system_prompt` — `src/vtuber/application/prompting/prompt_builder.py:51` — Системный промпт персоны; `{emotions}` в правилах → теги всех эмоций из `Emotion`.
+- `Prompt` — `src/vtuber/application/prompting/prompt_builder.py:17` — Сообщения для LLM; первые `prefix_length` — неизменный префикс (персона и примеры).
+- `PromptBuilder` — `src/vtuber/application/prompting/prompt_builder.py:24` — Строит промпт: [персона + примеры] → [история] → [справка + реплика] (T-03).
+- `render_system_prompt` — `src/vtuber/application/prompting/prompt_builder.py:52` — Системный промпт персоны; `{emotions}` в правилах → теги всех эмоций из `Emotion`.
 
 ## src/vtuber/application/scheduler
 Фоновые задачи в простое (T-13) и учёт видеопамяти моделей под управлением (ADR-0017).
@@ -291,23 +292,24 @@
 - `ProtocolError` — `src/vtuber/domain/errors.py:44` — Сообщение от UI не соответствует протоколу.
 - `ConfigError` — `src/vtuber/domain/errors.py:48` — Конфигурация не читается или не проходит проверку; приложение не стартует.
 - `TurnStateError` — `src/vtuber/domain/errors.py:52` — Недопустимый переход состояния хода — ошибка в логике сервиса, а не во внешнем мире.
-- `CancelReason` — `src/vtuber/domain/events.py:10` — Почему ход прерван.
-- `Component` — `src/vtuber/domain/events.py:19` — Бэкенд, о состоянии которого сообщается в UI.
-- `BackendState` — `src/vtuber/domain/events.py:27` — Состояние бэкенда для статус-бара UI.
-- `TurnStarted` — `src/vtuber/domain/events.py:36` — Ход начат: аватар сразу показывает «думаю» (T-17).
-- `TurnRemembered` — `src/vtuber/domain/events.py:43` — Ход записан в историю; `dropped` — сообщения, отрезанные из неё при этом (T-04).
-- `TurnFinished` — `src/vtuber/domain/events.py:54` — Ход завершён полностью.
-- `TurnCancelled` — `src/vtuber/domain/events.py:61` — Ход прерван; UI сбрасывает аудиобуфер. `message` — что сказать пользователю при ошибке.
-- `EmotionChanged` — `src/vtuber/domain/events.py:70` — В ответе встретился тег эмоции.
-- `PhraseVoiced` — `src/vtuber/domain/events.py:78` — Фраза озвучена: зазвучит через `starts_in_s` и продлится `duration_s` (субтитры, Этап 12).
-- `SoundKind` — `src/vtuber/domain/events.py:90` — Звук вокруг, не речь (S-14.4).
-- `SoundHeard` — `src/vtuber/domain/events.py:102` — Микрофон услышал звук; сам звук в событие не входит.
-- `SearchSource` — `src/vtuber/domain/events.py:109` — Откуда взят ответ: заголовок и адрес страницы.
-- `SourcesFound` — `src/vtuber/domain/events.py:117` — Инструмент нашёл источники для этого ответа: UI покажет ссылки (FR-25).
-- `BackendNotice` — `src/vtuber/domain/events.py:124` — Сообщение пользователю о компоненте: упал, поднимается, снова работает (S-17.1).
-- `ViewerBlocked` — `src/vtuber/domain/events.py:132` — Реплика зрителя похожа на атаку и не дошла до модели; ведущий видит это в UI (FR-31).
-- `MetricRecorded` — `src/vtuber/domain/events.py:140` — Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев).
-- `BackendStatusChanged` — `src/vtuber/domain/events.py:149` — Бэкенд загрузился, упал или восстановился.
+- `CancelReason` — `src/vtuber/domain/events.py:12` — Почему ход прерван.
+- `Component` — `src/vtuber/domain/events.py:21` — Бэкенд, о состоянии которого сообщается в UI.
+- `BackendState` — `src/vtuber/domain/events.py:29` — Состояние бэкенда для статус-бара UI.
+- `TurnStarted` — `src/vtuber/domain/events.py:38` — Ход начат: аватар сразу показывает «думаю» (T-17).
+- `TurnRemembered` — `src/vtuber/domain/events.py:45` — Ход записан в историю; `dropped` — сообщения, отрезанные из неё при этом (T-04).
+- `TurnFinished` — `src/vtuber/domain/events.py:56` — Ход завершён полностью.
+- `TurnCancelled` — `src/vtuber/domain/events.py:63` — Ход прерван; UI сбрасывает аудиобуфер. `message` — что сказать пользователю при ошибке.
+- `EmotionChanged` — `src/vtuber/domain/events.py:72` — В ответе встретился тег эмоции.
+- `PhraseVoiced` — `src/vtuber/domain/events.py:80` — Фраза озвучена: зазвучит через `starts_in_s` и продлится `duration_s` (субтитры, Этап 12).
+- `PerformanceRequested` — `src/vtuber/domain/events.py:93` — Плагин просит исполнить готовый звук (S-18.5).
+- `SoundKind` — `src/vtuber/domain/events.py:100` — Звук вокруг, не речь (S-14.4).
+- `SoundHeard` — `src/vtuber/domain/events.py:112` — Микрофон услышал звук; сам звук в событие не входит.
+- `SearchSource` — `src/vtuber/domain/events.py:119` — Откуда взят ответ: заголовок и адрес страницы.
+- `SourcesFound` — `src/vtuber/domain/events.py:127` — Инструмент нашёл источники для этого ответа: UI покажет ссылки (FR-25).
+- `BackendNotice` — `src/vtuber/domain/events.py:134` — Сообщение пользователю о компоненте: упал, поднимается, снова работает (S-17.1).
+- `ViewerBlocked` — `src/vtuber/domain/events.py:142` — Реплика зрителя похожа на атаку и не дошла до модели; ведущий видит это в UI (FR-31).
+- `MetricRecorded` — `src/vtuber/domain/events.py:150` — Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев).
+- `BackendStatusChanged` — `src/vtuber/domain/events.py:159` — Бэкенд загрузился, упал или восстановился.
 - `GpuMemory` — `src/vtuber/domain/gpu.py:7` — Сколько видеопамяти всего и сколько занято всеми программами.
 - `IncomingMessage` — `src/vtuber/domain/incoming.py:7` — Реплика из источника `source` (например, `twitch`) от автора `author`.
 - `EmbedKind` — `src/vtuber/domain/memory.py:14` — Что кодируется: у e5 запрос и запоминаемый текст кодируются по-разному.
@@ -422,8 +424,8 @@
 - `SendImageData` — `src/vtuber/gateway/protocol_vision.py:19` — Реплика с картинкой.
 - `ChatSendImage` — `src/vtuber/gateway/protocol_vision.py:26` — UI → Ядро: новая реплика с картинкой; прерывает текущий ход, как `chat.send`.
 - `ResourcesFeed` — `src/vtuber/gateway/resources_feed.py:15` — Закрытая панель ничего не считает: задачи нет, пока UI не попросит.
-- `GatewayConfig` — `src/vtuber/gateway/server.py:61` — Секция `[gateway]`: где слушать UI (только localhost, ADR-0002).
-- `GatewayServer` — `src/vtuber/gateway/server.py:68` — Шлюз для UI: `async with GatewayServer(...) as server: await server.serve_forever()`.
+- `GatewayConfig` — `src/vtuber/gateway/server.py:62` — Секция `[gateway]`: где слушать UI (только localhost, ADR-0002).
+- `GatewayServer` — `src/vtuber/gateway/server.py:69` — Шлюз для UI: `async with GatewayServer(...) as server: await server.serve_forever()`.
 - `SetupBridge` — `src/vtuber/gateway/setup_bridge.py:22` — Переводит сообщения UI в вызовы мастера; ход установки шлёт реже, чем приходят данные.
 - `WsReplySink` — `src/vtuber/gateway/sink.py:15` — ReplySink для WebSocket: текст → `chat.delta`, эмоция → `avatar.emotion`, звук → кадр.
 - `TerminalSink` — `src/vtuber/gateway/terminal.py:29` — ReplySink для консоли: печатает ответ по мере генерации и помнит время первой порции.
@@ -443,10 +445,10 @@
 - `configure_logging` — `src/vtuber/kernel/logging.py:23` — Настраивает structlog: одна JSON-строка на событие в `stream`.
 - `logging_to` — `src/vtuber/kernel/logging.py:45` — Логи идут в `stream` на время блока; на выходе — настройка по умолчанию.
 - `get_logger` — `src/vtuber/kernel/logging.py:58` — Логгер модуля; имя попадает в поле `module` каждого события.
-- `ContextTool` — `src/vtuber/kernel/plugin.py:33` — Инструмент и его срок; `None` — обычный короткий срок из `[plugins]`.
-- `PluginsConfig` — `src/vtuber/kernel/plugin.py:46` — Секция `[plugins]`: что включено и настройки каждого плагина в `settings.<имя>`.
-- `PluginContext` — `src/vtuber/kernel/plugin.py:59` — Доступ плагина к ядру: подписка на события, своя секция конфига, логгер.
-- `Plugin` — `src/vtuber/kernel/plugin.py:162` — Плагин: entry point группы `vtuber.plugins` указывает на его класс или фабрику.
+- `ContextTool` — `src/vtuber/kernel/plugin.py:35` — Инструмент и его срок; `None` — обычный короткий срок из `[plugins]`.
+- `PluginsConfig` — `src/vtuber/kernel/plugin.py:48` — Секция `[plugins]`: что включено и настройки каждого плагина в `settings.<имя>`.
+- `PluginContext` — `src/vtuber/kernel/plugin.py:61` — Доступ плагина к ядру: подписка на события, своя секция конфига, логгер.
+- `Plugin` — `src/vtuber/kernel/plugin.py:168` — Плагин: entry point группы `vtuber.plugins` указывает на его класс или фабрику.
 - `Registry` — `src/vtuber/kernel/registry.py:8` — Имя → фабрика `A → T`; например, `Registry[TTSConfig, TTSPort]` для движков TTS.
 - `TelemetryConfig` — `src/vtuber/kernel/telemetry.py:23` — Секция `[telemetry]`; `traces_file` открывает bootstrap (относительно корня проекта).
 - `Telemetry` — `src/vtuber/kernel/telemetry.py:29` — Замеряет стадии хода и отдаёт метрики в шину фоновой задачей `run`.

@@ -8,6 +8,7 @@ from vtuber.domain import AttachedImage, Emotion, Gesture, Message, Persona, Rol
 
 EMOTIONS_PLACEHOLDER: Final = "{emotions}"
 GESTURES_PLACEHOLDER: Final = "{gestures}"
+IMAGE_NOTE: Final = "(показана картинка, сейчас её уже не видно)"
 # Справка после реплики: начало реплики остаётся общим с прогревом черновика (T-05) и историей.
 CONTEXT_TEMPLATE: Final = "{user_text}\n(Справка для тебя, пользователь её не видит: {context})"
 

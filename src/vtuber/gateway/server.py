@@ -17,6 +17,7 @@ from vtuber.domain import (
     CancelReason,
     Component,
     MetricRecorded,
+    PerformanceRequested,
     ProtocolError,
     SourcesFound,
     TurnCancelled,
@@ -89,6 +90,7 @@ class GatewayServer:
         bus.subscribe(ViewerBlocked, self._on_viewer_blocked)
         bus.subscribe(BackendNotice, self._on_notice)
         bus.subscribe(SourcesFound, self._on_sources)
+        bus.subscribe(PerformanceRequested, self._on_performance)
 
     def use_commands(self, commands: Mapping[str, Callable[[], Awaitable[None]]]) -> None:
         """Команды ведущего от плагинов: точная реплика выполняет команду вместо хода."""
@@ -217,6 +219,10 @@ class GatewayServer:
         # Без голосового ввода (не загружен, выключен) кадры просто не нужны.
         if self._mic is not None:
             await self._mic(frame.chunk)
+
+    async def _on_performance(self, event: PerformanceRequested) -> None:
+        sink = WsReplySink(self.send, self.send_bytes)
+        await self._service.perform(event.title, event.audio, sink)
 
     async def _on_sources(self, event: SourcesFound) -> None:
         await self.send(ChatSources.of([(s.title, s.url) for s in event.sources]))

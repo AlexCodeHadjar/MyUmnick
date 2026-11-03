@@ -2,15 +2,16 @@
 
 import asyncio
 import time
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import AsyncGenerator, Awaitable, Callable, Sequence
 from dataclasses import dataclass, field, replace
 from itertools import count
 from typing import Final
 
 from vtuber.application.conversation.first_output import FirstOutputSink
+from vtuber.application.conversation.performance import play_performance
 from vtuber.application.memory import ShortTermMemory, TurnHints
 from vtuber.application.pipeline import ReplyPipeline, StreamParser
-from vtuber.application.prompting import PromptBuilder
+from vtuber.application.prompting import IMAGE_NOTE, PromptBuilder
 from vtuber.domain import (
     AttachedImage,
     AudioChunk,
@@ -41,7 +42,6 @@ INTERNAL_ERROR_MESSAGE: Final = "Внутренняя ошибка при отв
 _log = get_logger(__name__)
 
 
-IMAGE_NOTE: Final = "(показана картинка, сейчас её уже не видно)"
 _HOST_REASONS = frozenset({CancelReason.USER_STOP, CancelReason.BARGE_IN})
 
 
@@ -55,6 +55,7 @@ class _ActiveTurn:
     external: bool = False
     private: bool = False
     images: tuple[AttachedImage, ...] = ()
+    performance: tuple[str, AsyncGenerator[AudioChunk]] | None = None
     task: asyncio.Task[None] | None = None
 
 
@@ -160,16 +161,25 @@ class ConversationService:
         if not external:
             self._has_draft = False
             self._on_input()
+        return await self._start(
+            _ActiveTurn(TurnId(0), user_text, sink, external=external, images=images)
+        )
+
+    async def perform(
+        self, title: str, audio: AsyncGenerator[AudioChunk], sink: ReplySink
+    ) -> TurnId:
+        """Ход без модели: готовый звук (S-18.5). Как зритель: в долговременную память не идёт."""
+        text = f"(Ведущий попросил спеть: {title}.)"
+        turn = _ActiveTurn(TurnId(0), text, sink, external=True, performance=(title, audio))
+        turn.parser.feed(f"(Ты спела: {title}.)")
+        return await self._start(turn)
+
+    async def _start(self, turn: _ActiveTurn) -> TurnId:
+        """Прервать прошлый ход и начать этот; номер и приватность — на момент начала."""
         await self.cancel(CancelReason.NEW_MESSAGE)
         self._stop_prefill()
-        turn = _ActiveTurn(
-            TurnId(next(self._ids)),
-            user_text,
-            sink,
-            external=external,
-            private=self._private,
-            images=images,
-        )
+        turn.id = TurnId(next(self._ids))
+        turn.private = self._private
         self._move(TurnState.THINKING)
         turn.task = asyncio.create_task(self._run(turn))
         self._current = turn
@@ -237,14 +247,7 @@ class ConversationService:
         with turn_context(turn.id):
             try:
                 await self._bus.publish(TurnStarted(turn.id))
-                hints = TurnHints() if turn.external else await self._turn_hints(turn)
-                prompt = self._prompts.build(
-                    self._memory.messages, turn.user_text, hints.context, turn.images
-                )
-                sink = FirstOutputSink(
-                    turn.sink, self._start_speaking, self._count_audio, self._publish_emotion(turn)
-                )
-                await self._pipeline.run(prompt.messages, sink, turn.parser, hints.temperature)
+                await self._produce(turn)
             except asyncio.CancelledError:
                 await self._stop(turn, TurnCancelled(turn.id, turn.reason), remember=True)
                 raise
@@ -255,6 +258,19 @@ class ConversationService:
                 await self._fail(turn, INTERNAL_ERROR_MESSAGE)
             else:
                 await self._finish(turn)
+
+    async def _produce(self, turn: _ActiveTurn) -> None:
+        sink = FirstOutputSink(
+            turn.sink, self._start_speaking, self._count_audio, self._publish_emotion(turn)
+        )
+        if turn.performance is not None:
+            await play_performance(*turn.performance, sink)
+            return
+        hints = TurnHints() if turn.external else await self._turn_hints(turn)
+        prompt = self._prompts.build(
+            self._memory.messages, turn.user_text, hints.context, turn.images
+        )
+        await self._pipeline.run(prompt.messages, sink, turn.parser, hints.temperature)
 
     async def _finish(self, turn: _ActiveTurn) -> None:
         reply = turn.parser.full_text
