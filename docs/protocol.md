@@ -93,6 +93,22 @@ UI → Ядро: удалить факт.
 |---|---|
 | `note` | `string` |
 
+### `branch.go` — `BranchGo`
+
+UI → Ядро: вернуться к реплике; следующая реплика начнёт новую ветку.
+
+| Поле `data` | Тип |
+|---|---|
+| `turn` | `string` |
+
+### `branch.checkpoint` — `BranchCheckpoint`
+
+UI → Ядро: запомнить текущее место под именем.
+
+| Поле `data` | Тип |
+|---|---|
+| `name` | `string` |
+
 ## Ядро → UI
 
 ### `turn.started` — `TurnStartedMessage`
@@ -257,6 +273,17 @@ UI → Ядро: удалить факт.
 | Поле `data` | Тип |
 |---|---|
 | `facts` | `FactData[]` |
+| `problem` | `string | null` |
+
+### `branch.state` — `BranchState`
+
+Ядро → UI: состояние диалога после перехода или при подключении.
+
+| Поле `data` | Тип |
+|---|---|
+| `messages` | `BranchMessageData[]` |
+| `branches` | `BranchData[]` |
+| `checkpoints` | `CheckpointData[]` |
 | `problem` | `string | null` |
 
 ### `error` — `ErrorMessage`

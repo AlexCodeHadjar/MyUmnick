@@ -10,6 +10,7 @@ import type {
   ErrorData,
   OutboundMessage,
   BlockedData,
+  BranchStateData,
   FactsData,
   FinishedData,
   ProgressData,
@@ -35,6 +36,8 @@ export interface ChatMessage {
 
 /** Сколько последних замеров стадии хранить: хватает на p95, память — копейки. */
 const BLOCKED_HISTORY = 20;
+
+export type BranchesView = Pick<BranchStateData, "branches" | "checkpoints" | "problem">;
 
 export interface PrivacyView {
   enabled: boolean;
@@ -92,6 +95,8 @@ export class AppStore {
   privacy = $state<PrivacyView>({ enabled: false, erasable: false, result: null });
   /** Факты для редактора памяти; приходят, только когда панель открыта (S-16.2). */
   memory = $state<FactsData>({ facts: [], problem: null });
+  /** Ветки диалога и контрольные точки (S-16.1). */
+  branches = $state<BranchesView>({ branches: [], checkpoints: [], problem: null });
 
   #nextId = 0;
   /** Индекс сообщения текущего хода в `messages`: массив только растёт, индекс не сдвигается. */
@@ -149,6 +154,9 @@ export class AppStore {
       case "resources.snapshot":
         this.resources = message.data;
         break;
+      case "branch.state":
+        this.#showBranch(message.data);
+        break;
       case "memory.facts":
         this.memory = message.data;
         break;
@@ -199,6 +207,16 @@ export class AppStore {
       default:
         message satisfies never;
     }
+  }
+
+  /** Другая ветка: история чата заменяется целиком, идущего ответа больше нет. */
+  #showBranch({ messages, branches, checkpoints, problem }: BranchStateData): void {
+    this.#streaming = null;
+    this.messages = [];
+    for (const { role, text, turn } of messages) {
+      this.#push(role, text, turn, "done");
+    }
+    this.branches = { branches, checkpoints, problem };
   }
 
   #push(role: Role, text: string, turn: string | null, status: MessageStatus): number {

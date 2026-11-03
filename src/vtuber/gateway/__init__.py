@@ -1,5 +1,6 @@
 """Шлюз: протокол UI ↔ Ядро, кодек, WebSocket-сервер и терминальный чат (M1)."""
 
+from vtuber.gateway.branch_bridge import BranchBridge
 from vtuber.gateway.codec import (
     AUDIO_FRAME_HEADER_SIZE,
     AUDIO_FRAME_TYPE,
@@ -16,6 +17,7 @@ from vtuber.gateway.codec import (
 )
 from vtuber.gateway.external_turns import ExternalTurns
 from vtuber.gateway.memory_bridge import MemoryBridge
+from vtuber.gateway.panels import Panels
 from vtuber.gateway.privacy_bridge import PrivacyBridge
 from vtuber.gateway.protocol import (
     AvatarEmotion,
@@ -66,6 +68,7 @@ __all__ = [
     "STOP_COMMAND",
     "AudioFrame",
     "AvatarEmotion",
+    "BranchBridge",
     "CancelledData",
     "ChatCancel",
     "ChatDelta",
@@ -89,6 +92,7 @@ __all__ = [
     "MicFrame",
     "MicSink",
     "OutboundMessage",
+    "Panels",
     "PrivacyBridge",
     "ResourcesFeed",
     "SendData",

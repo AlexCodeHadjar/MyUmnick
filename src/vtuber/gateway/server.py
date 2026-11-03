@@ -23,8 +23,7 @@ from vtuber.domain import (
     ViewerBlocked,
 )
 from vtuber.gateway.codec import decode_inbound, decode_mic_frame, encode_outbound
-from vtuber.gateway.memory_bridge import MemoryBridge
-from vtuber.gateway.privacy_bridge import PrivacyBridge
+from vtuber.gateway.panels import Panels
 from vtuber.gateway.protocol import (
     ChatCancel,
     ChatSend,
@@ -41,20 +40,8 @@ from vtuber.gateway.protocol import (
 )
 from vtuber.gateway.protocol_extras import (
     BackendNoticeMessage,
-    ResourcesWatch,
-    SetupCancel,
-    SetupInstall,
     ViewerBlockedMessage,
 )
-from vtuber.gateway.protocol_memory import (
-    MemoryErase,
-    MemoryFactDelete,
-    MemoryFactSave,
-    MemoryList,
-    PrivacySet,
-)
-from vtuber.gateway.resources_feed import ResourcesFeed
-from vtuber.gateway.setup_bridge import SetupBridge
 from vtuber.gateway.sink import WsReplySink
 from vtuber.kernel import ConfigSection, EventBus, get_logger
 
@@ -73,18 +60,6 @@ class GatewayConfig(ConfigSection):
     port: int
 
 
-type _PanelMessage = (
-    ResourcesWatch
-    | SetupInstall
-    | SetupCancel
-    | PrivacySet
-    | MemoryErase
-    | MemoryList
-    | MemoryFactSave
-    | MemoryFactDelete
-)
-
-
 class GatewayServer:
     """Шлюз для UI: `async with GatewayServer(...) as server: await server.serve_forever()`.
 
@@ -99,10 +74,7 @@ class GatewayServer:
         self._server: Server | None = None
         self._statuses: dict[Component, BackendState] = {}
         self._mic: MicSink | None = None
-        self._resources: ResourcesFeed | None = None
-        self._setup: SetupBridge | None = None
-        self._privacy: PrivacyBridge | None = None
-        self._memory: MemoryBridge | None = None
+        self.panels = Panels()
         self._commands: Mapping[str, Callable[[], Awaitable[None]]] = {}
         bus.subscribe(TurnStarted, self._on_started)
         bus.subscribe(TurnFinished, self._on_finished)
@@ -115,19 +87,6 @@ class GatewayServer:
     def use_commands(self, commands: Mapping[str, Callable[[], Awaitable[None]]]) -> None:
         """Команды ведущего от плагинов: точная реплика выполняет команду вместо хода."""
         self._commands = commands
-
-    def use_resources(self, feed: ResourcesFeed) -> None:
-        """Снимки менеджера ресурсов для панели UI."""
-        self._resources = feed
-
-    def use_setup(self, bridge: SetupBridge) -> None:
-        """Мастер первого запуска: UI получает его состояние при подключении."""
-        self._setup = bridge
-
-    def use_memory(self, privacy: PrivacyBridge, memory: MemoryBridge) -> None:
-        """Приватный режим, очистка и редактор памяти."""
-        self._privacy = privacy
-        self._memory = memory
 
     def on_mic(self, sink: MicSink) -> None:
         """Куда отдавать кадры микрофона; вызов — в цикле чтения сокета, должен быть быстрым."""
@@ -197,18 +156,14 @@ class GatewayServer:
         finally:
             if self._client is connection:
                 self._client = None
-                if self._resources is not None:
-                    self._resources.set_enabled(enabled=False)
+                self.panels.client_gone()
                 await self._service.cancel(CancelReason.USER_STOP)
 
     async def _greet(self) -> None:
         """Что новый клиент должен узнать сразу: окно могло перезапуститься посреди работы."""
         for component, state in self._statuses.items():
             await self.send(Status.of(component, state))
-        if self._setup is not None:
-            await self._setup.send_state()
-        if self._privacy is not None:
-            await self._privacy.send_state()
+        await self.panels.greet()
 
     async def _dispatch(self, raw: str | bytes) -> None:
         if isinstance(raw, bytes):
@@ -227,20 +182,7 @@ class GatewayServer:
             # Черновик — только прогрев кэша (T-05): ответа UI не ждёт, шлюз не блокируется.
             self._service.typing(message.data.text)
         else:
-            await self._on_panel(message)
-
-    async def _on_panel(self, message: _PanelMessage) -> None:
-        if isinstance(message, ResourcesWatch):
-            if self._resources is not None:
-                self._resources.set_enabled(enabled=message.data.enabled)
-        elif isinstance(message, PrivacySet | MemoryErase):
-            if self._privacy is not None:
-                await self._privacy.handle(message)
-        elif isinstance(message, MemoryList | MemoryFactSave | MemoryFactDelete):
-            if self._memory is not None:
-                await self._memory.handle(message)
-        elif self._setup is not None:
-            await self._setup.handle(message)
+            await self.panels.handle(message)
 
     async def _on_chat(self, text: str) -> None:
         command = self._commands.get(text.strip())

@@ -10,8 +10,11 @@
   const {
     messages,
     textOf = (message) => message.text,
+    onrewind,
   }: {
     messages: ChatMessage[];
+    /** Вернуться к этой реплике витюбера и продолжить от неё (S-16.1). */
+    onrewind?: (turn: string) => void;
     /** Что показать в пузыре: в режиме субтитров — часть текста, уже прозвучавшая. */
     textOf?: (message: ChatMessage) => string;
   } = $props();
@@ -63,6 +66,18 @@
           {textOf(item)}{#if item.status === "streaming"}<span class="caret" aria-hidden="true"
             ></span>{/if}{#if item.status === "cancelled"}<span class="mark">— прервано</span>{/if}
         </p>
+        {#if onrewind && item.turn !== null && item.status !== "streaming"}
+          {@const turn = item.turn}
+          <button
+            type="button"
+            class="rewind"
+            title="Вернуться сюда: следующая реплика начнёт новую ветку, эта останется"
+            aria-label="Продолжить отсюда"
+            onclick={() => {
+              onrewind(turn);
+            }}>↩</button
+          >
+        {/if}
       </div>
     {/each}
   </div>
@@ -90,6 +105,22 @@
 
   .row.user {
     justify-content: flex-end;
+  }
+
+  .rewind {
+    align-self: flex-end;
+    margin-left: 4px;
+    padding: 0 4px;
+    border: none;
+    background: none;
+    color: inherit;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .row:hover .rewind,
+  .rewind:focus-visible {
+    opacity: 0.7;
   }
 
   .bubble {

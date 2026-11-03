@@ -70,6 +70,7 @@ const OUTBOUND_TYPES = {
   "privacy.state": true,
   "memory.erased": true,
   "memory.facts": true,
+  "branch.state": true,
   error: true,
 } satisfies Record<OutboundMessage["type"], true>;
 

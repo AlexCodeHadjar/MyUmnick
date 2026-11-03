@@ -7,6 +7,7 @@ from pydantic import Field
 
 from vtuber.domain import BackendState, CancelReason, Component, Emotion, TurnId
 from vtuber.gateway.protocol_base import PROTOCOL_VERSION, EmptyData, ProtocolModel, Version
+from vtuber.gateway.protocol_branches import BranchCheckpoint, BranchGo, BranchState
 from vtuber.gateway.protocol_extras import (
     BackendNoticeMessage,
     ResourcesMessage,
@@ -132,7 +133,9 @@ type InboundMessage = Annotated[
     | MemoryErase
     | MemoryList
     | MemoryFactSave
-    | MemoryFactDelete,
+    | MemoryFactDelete
+    | BranchGo
+    | BranchCheckpoint,
     Field(discriminator="type"),
 ]
 
@@ -307,6 +310,7 @@ type OutboundMessage = Annotated[
     | PrivacyState
     | MemoryErased
     | MemoryFacts
+    | BranchState
     | ErrorMessage,
     Field(discriminator="type"),
 ]

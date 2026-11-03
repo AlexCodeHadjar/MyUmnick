@@ -26,6 +26,60 @@ export interface BlockedData {
   text: string;
 }
 
+/** UI → Ядро: запомнить текущее место под именем. */
+export interface BranchCheckpoint {
+  v: Version;
+  type: "branch.checkpoint";
+  data: BranchCheckpointData;
+}
+
+/** Имя контрольной точки. */
+export interface BranchCheckpointData {
+  name: string;
+}
+
+/** Ветка: её последняя реплика и длина; `active` — текущий путь идёт через неё. */
+export interface BranchData {
+  leaf: string;
+  title: string;
+  length: number;
+  active: boolean;
+}
+
+/** UI → Ядро: вернуться к реплике; следующая реплика начнёт новую ветку. */
+export interface BranchGo {
+  v: Version;
+  type: "branch.go";
+  data: BranchGoData;
+}
+
+/** К какой реплике вернуться. */
+export interface BranchGoData {
+  turn: string;
+}
+
+/** Реплика активной ветки; у реплик пользователя `turn` — None. */
+export interface BranchMessageData {
+  role: "user" | "assistant";
+  text: string;
+  turn: string | null;
+}
+
+/** Ядро → UI: состояние диалога после перехода или при подключении. */
+export interface BranchState {
+  v: Version;
+  type: "branch.state";
+  data: BranchStateData;
+}
+
+/** Активный путь, все ветки и контрольные точки. */
+export interface BranchStateData {
+  messages: BranchMessageData[];
+  branches: BranchData[];
+  checkpoints: CheckpointData[];
+  problem: string | null;
+}
+
 /** Почему ход прерван. */
 export type CancelReason = "user_stop" | "new_message" | "barge_in" | "error";
 
@@ -55,6 +109,12 @@ export interface ChatSend {
   v: Version;
   type: "chat.send";
   data: SendData;
+}
+
+/** Контрольная точка. */
+export interface CheckpointData {
+  name: string;
+  turn: string;
 }
 
 /** Бэкенд, о состоянии которого сообщается в UI. */
@@ -418,6 +478,6 @@ export interface WatchData {
   enabled: boolean;
 }
 
-export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryFactSave | MemoryFactDelete;
+export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint;
 
-export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryFacts | ErrorMessage;
+export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryFacts | BranchState | ErrorMessage;

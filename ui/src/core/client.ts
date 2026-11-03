@@ -190,6 +190,16 @@ export class CoreClient {
     this.#transport.send({ v: PROTOCOL_VERSION, type: "memory.fact_delete", data: { note } });
   }
 
+  /** Вернуться к реплике; следующая реплика начнёт новую ветку. Звук старого ответа не нужен. */
+  goToTurn(turn: string): void {
+    this.#cancel(null);
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "branch.go", data: { turn } });
+  }
+
+  saveCheckpoint(name: string): void {
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "branch.checkpoint", data: { name } });
+  }
+
   stop(): void {
     // Звук глушится сразу, не дожидаясь `turn.cancelled`: ход мог уже закончиться в ядре, а
     // голос ещё звучит (синтез быстрее реального времени).

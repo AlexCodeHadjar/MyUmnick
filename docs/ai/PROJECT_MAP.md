@@ -84,7 +84,10 @@
 ## src/vtuber/application/conversation
 Сценарий «ход диалога»: реплика → промпт → конвейер → история и события.
 
-- `ConversationService` — `src/vtuber/application/conversation/service.py:52` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
+- `Branch` — `src/vtuber/application/conversation/branches.py:11` — Ветка — путь до листа: `title` — последняя реплика; `active` — текущий путь через неё.
+- `Checkpoint` — `src/vtuber/application/conversation/branches.py:21` — Названное место в диалоге.
+- `DialogueTree` — `src/vtuber/application/conversation/branches.py:28` — Хранит все ходы; история промпта — только путь до активного.
+- `ConversationService` — `src/vtuber/application/conversation/service.py:54` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
 
 ## src/vtuber/application/memory
 Память витюбера: история разговора, её резюме и долговременные факты (Этап 10).
@@ -105,7 +108,7 @@
 - `RetrievalConfig` — `src/vtuber/application/memory/retrieval_gate.py:61` — Секция `[memory.retrieval]`.
 - `TurnHints` — `src/vtuber/application/memory/retrieval_gate.py:76` — Что память добавляет ходу: справка в реплику и температура (None — обычная).
 - `MemoryRecall` — `src/vtuber/application/memory/retrieval_gate.py:83` — Подсказки хода: факты из памяти, если гейт открыт; сбой памяти ход не задерживает.
-- `ShortTermMemory` — `src/vtuber/application/memory/short_term.py:26` — История ходов для промпта (T-04).
+- `ShortTermMemory` — `src/vtuber/application/memory/short_term.py:27` — История ходов для промпта (T-04).
 - `Summarizer` — `src/vtuber/application/memory/summarizer.py:23` — Прежнее резюме + отрезанные сообщения → новое резюме одним запросом к LLM.
 - `VaultedFacts` — `src/vtuber/application/memory/vault_sync.py:31` — `MemoryStorePort`: сначала заметка, потом индекс; сбой записи не оставит факт без файла.
 - `reconcile` — `src/vtuber/application/memory/vault_sync.py:56` — Приводит индекс к заметкам: правка главнее индекса, а заметка без разбора его не трогает.
@@ -218,10 +221,10 @@
 - `tts_backends` — `src/vtuber/bootstrap/container.py:51` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
 - `Conversation` — `src/vtuber/bootstrap/container.py:61` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
 - `build_conversation` — `src/vtuber/bootstrap/container.py:69` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
-- `LineSource` — `src/vtuber/bootstrap/main.py:69` — Откуда читать строки: `sys.stdin` или его тестовая замена.
-- `Console` — `src/vtuber/bootstrap/main.py:76` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
-- `main` — `src/vtuber/bootstrap/main.py:89` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
-- `run` — `src/vtuber/bootstrap/main.py:314` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
+- `LineSource` — `src/vtuber/bootstrap/main.py:67` — Откуда читать строки: `sys.stdin` или его тестовая замена.
+- `Console` — `src/vtuber/bootstrap/main.py:74` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
+- `main` — `src/vtuber/bootstrap/main.py:87` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
+- `run` — `src/vtuber/bootstrap/main.py:298` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
 - `background_memory` — `src/vtuber/bootstrap/memory.py:48` — Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
@@ -239,8 +242,11 @@
 - `build_voice` — `src/vtuber/bootstrap/supervision.py:97` — Голос из конфига; `none` — без голоса.
 - `with_voice` — `src/vtuber/bootstrap/supervision.py:107` — Движки хода: конвейер получает обёртку, чтобы сбой голоса был замечен.
 - `voice_input` — `src/vtuber/bootstrap/voice_input.py:91` — Подключает микрофон к шлюзу на время контекста; выключено в конфиге — кадры не нужны.
-- `connect_memory` — `src/vtuber/bootstrap/wiring.py:11` — Приватный режим работает и без памяти; редактор и очистка честно скажут, что её нет.
-- `connect_setup` — `src/vtuber/bootstrap/wiring.py:22` — Мастер есть только в поставке: при разработке модели кладут сами.
+- `AppParts` — `src/vtuber/bootstrap/wiring.py:24` — Что шлюзу нужно от приложения, кроме сервиса хода.
+- `connect_memory` — `src/vtuber/bootstrap/wiring.py:35` — Приватный режим работает и без памяти; редактор и очистка честно скажут, что её нет.
+- `connect_branches` — `src/vtuber/bootstrap/wiring.py:45` — Дерево начинается с восстановленного разговора: его ветки тоже можно продолжить.
+- `connect_panels` — `src/vtuber/bootstrap/wiring.py:55` — Всё, что UI может сделать помимо реплики.
+- `connect_setup` — `src/vtuber/bootstrap/wiring.py:64` — Мастер есть только в поставке: при разработке модели кладут сами.
 
 ## src/vtuber/domain
 Доменный слой: неизменяемые сущности и значения диалога, речи и эмоций.
@@ -294,6 +300,8 @@
 ## src/vtuber/gateway
 Шлюз: протокол UI ↔ Ядро, кодек, WebSocket-сервер и терминальный чат (M1).
 
+- `shown_text` — `src/vtuber/gateway/branch_bridge.py:19` — Ответ в истории хранится с тегами эмоций; в чате их быть не должно.
+- `BranchBridge` — `src/vtuber/gateway/branch_bridge.py:44` — Переход отменяет идущий ответ и заменяет историю промпта: модель видит только новую ветку.
 - `AudioFrame` — `src/vtuber/gateway/codec.py:24` — Разобранный аудиокадр.
 - `MicFrame` — `src/vtuber/gateway/codec.py:33` — Разобранный кадр микрофона: PCM s16le моно от UI (Этап 11).
 - `encode_mic_frame` — `src/vtuber/gateway/codec.py:40` — Кадр микрофона: 8 байт заголовка + PCM; так его собирает UI (`core/frames.ts`).
@@ -304,33 +312,43 @@
 - `decode_audio_frame` — `src/vtuber/gateway/codec.py:99` — Разбирает аудиокадр (тесты; кадры микрофона — Этап 11).
 - `ExternalTurns` — `src/vtuber/gateway/external_turns.py:17` — Отвечает на реплики по одной и только в тишине: зритель не обрывает речь витюбера.
 - `MemoryBridge` — `src/vtuber/gateway/memory_bridge.py:16` — Список запрашивается только при открытой панели: чтение заметок не должно идти просто так.
+- `Panels` — `src/vtuber/gateway/panels.py:30` — Панель не подключена — её сообщения просто не нужны.
 - `PrivacyBridge` — `src/vtuber/gateway/privacy_bridge.py:17` — Режим держит сервис хода, а UI получает его состояние при каждом подключении.
-- `turn_ref` — `src/vtuber/gateway/protocol.py:33` — Номер хода в JSON-сообщениях: `t-000042` (в аудиокадре — uint64).
-- `ErrorCode` — `src/vtuber/gateway/protocol.py:38` — Что пошло не так — UI выбирает реакцию по коду, текст показывает пользователю.
-- `SendData` — `src/vtuber/gateway/protocol.py:47` — Реплика пользователя.
-- `TypingData` — `src/vtuber/gateway/protocol.py:53` — Черновик реплики, пока пользователь печатает; пустой — поле очищено.
-- `DeltaData` — `src/vtuber/gateway/protocol.py:59` — Порция текста ответа.
-- `EmotionData` — `src/vtuber/gateway/protocol.py:65` — Эмоция аватара; `intensity` 0…1 (затухание — Этап 8).
-- `CancelledData` — `src/vtuber/gateway/protocol.py:72` — Почему ход прерван; `message` — текст ошибки при `reason == "error"`.
-- `SpanData` — `src/vtuber/gateway/protocol.py:79` — Замер стадии хода для панели метрик (FR-15).
-- `StatusData` — `src/vtuber/gateway/protocol.py:86` — Состояние бэкенда для статус-бара.
-- `ErrorData` — `src/vtuber/gateway/protocol.py:93` — Ошибка для пользователя.
-- `ChatSend` — `src/vtuber/gateway/protocol.py:100` — UI → Ядро: новая реплика; прерывает текущий ход.
-- `ChatCancel` — `src/vtuber/gateway/protocol.py:108` — UI → Ядро: остановить ответ.
-- `InputTyping` — `src/vtuber/gateway/protocol.py:116` — UI → Ядро: черновик реплики (с дебаунсом ~300 мс) — прогрев кэша LLM, T-05.
-- `TurnStartedMessage` — `src/vtuber/gateway/protocol.py:140` — Ядро → UI: ход начат — аватар «думает» (T-17).
-- `ChatDelta` — `src/vtuber/gateway/protocol.py:154` — Ядро → UI: порция текста ответа.
-- `AvatarEmotion` — `src/vtuber/gateway/protocol.py:168` — Ядро → UI: сменить выражение аватара.
-- `TurnFinishedMessage` — `src/vtuber/gateway/protocol.py:182` — Ядро → UI: ответ закончен полностью.
-- `TurnCancelledMessage` — `src/vtuber/gateway/protocol.py:196` — Ядро → UI: ход прерван — UI сбрасывает аудиобуфер.
-- `MetricsSpan` — `src/vtuber/gateway/protocol.py:210` — Ядро → UI: замер стадии; `turn` — None вне хода (прогрев).
-- `Status` — `src/vtuber/gateway/protocol.py:224` — Ядро → UI: состояние бэкенда (вне хода).
-- `InputBargeIn` — `src/vtuber/gateway/protocol.py:237` — Ядро → UI: пользователь заговорил — оборвать голос витюбера сразу (Этап 11).
-- `InputHypothesis` — `src/vtuber/gateway/protocol.py:250` — Ядро → UI: промежуточный текст фразы пользователя.
-- `InputFinal` — `src/vtuber/gateway/protocol.py:263` — Ядро → UI: распознанная фраза — реплика пользователя в чате; за ней начнётся ход.
-- `ErrorMessage` — `src/vtuber/gateway/protocol.py:276` — Ядро → UI: ошибка; `turn` — None, если не относится к ходу (битое сообщение).
+- `turn_ref` — `src/vtuber/gateway/protocol.py:34` — Номер хода в JSON-сообщениях: `t-000042` (в аудиокадре — uint64).
+- `ErrorCode` — `src/vtuber/gateway/protocol.py:39` — Что пошло не так — UI выбирает реакцию по коду, текст показывает пользователю.
+- `SendData` — `src/vtuber/gateway/protocol.py:48` — Реплика пользователя.
+- `TypingData` — `src/vtuber/gateway/protocol.py:54` — Черновик реплики, пока пользователь печатает; пустой — поле очищено.
+- `DeltaData` — `src/vtuber/gateway/protocol.py:60` — Порция текста ответа.
+- `EmotionData` — `src/vtuber/gateway/protocol.py:66` — Эмоция аватара; `intensity` 0…1 (затухание — Этап 8).
+- `CancelledData` — `src/vtuber/gateway/protocol.py:73` — Почему ход прерван; `message` — текст ошибки при `reason == "error"`.
+- `SpanData` — `src/vtuber/gateway/protocol.py:80` — Замер стадии хода для панели метрик (FR-15).
+- `StatusData` — `src/vtuber/gateway/protocol.py:87` — Состояние бэкенда для статус-бара.
+- `ErrorData` — `src/vtuber/gateway/protocol.py:94` — Ошибка для пользователя.
+- `ChatSend` — `src/vtuber/gateway/protocol.py:101` — UI → Ядро: новая реплика; прерывает текущий ход.
+- `ChatCancel` — `src/vtuber/gateway/protocol.py:109` — UI → Ядро: остановить ответ.
+- `InputTyping` — `src/vtuber/gateway/protocol.py:117` — UI → Ядро: черновик реплики (с дебаунсом ~300 мс) — прогрев кэша LLM, T-05.
+- `TurnStartedMessage` — `src/vtuber/gateway/protocol.py:143` — Ядро → UI: ход начат — аватар «думает» (T-17).
+- `ChatDelta` — `src/vtuber/gateway/protocol.py:157` — Ядро → UI: порция текста ответа.
+- `AvatarEmotion` — `src/vtuber/gateway/protocol.py:171` — Ядро → UI: сменить выражение аватара.
+- `TurnFinishedMessage` — `src/vtuber/gateway/protocol.py:185` — Ядро → UI: ответ закончен полностью.
+- `TurnCancelledMessage` — `src/vtuber/gateway/protocol.py:199` — Ядро → UI: ход прерван — UI сбрасывает аудиобуфер.
+- `MetricsSpan` — `src/vtuber/gateway/protocol.py:213` — Ядро → UI: замер стадии; `turn` — None вне хода (прогрев).
+- `Status` — `src/vtuber/gateway/protocol.py:227` — Ядро → UI: состояние бэкенда (вне хода).
+- `InputBargeIn` — `src/vtuber/gateway/protocol.py:240` — Ядро → UI: пользователь заговорил — оборвать голос витюбера сразу (Этап 11).
+- `InputHypothesis` — `src/vtuber/gateway/protocol.py:253` — Ядро → UI: промежуточный текст фразы пользователя.
+- `InputFinal` — `src/vtuber/gateway/protocol.py:266` — Ядро → UI: распознанная фраза — реплика пользователя в чате; за ней начнётся ход.
+- `ErrorMessage` — `src/vtuber/gateway/protocol.py:279` — Ядро → UI: ошибка; `turn` — None, если не относится к ходу (битое сообщение).
 - `ProtocolModel` — `src/vtuber/gateway/protocol_base.py:13` — База сообщений: неизменяемы, лишнее поле — ошибка протокола.
 - `EmptyData` — `src/vtuber/gateway/protocol_base.py:19` — Сообщение без полезной нагрузки.
+- `BranchGoData` — `src/vtuber/gateway/protocol_branches.py:8` — К какой реплике вернуться.
+- `BranchGo` — `src/vtuber/gateway/protocol_branches.py:14` — UI → Ядро: вернуться к реплике; следующая реплика начнёт новую ветку.
+- `BranchCheckpointData` — `src/vtuber/gateway/protocol_branches.py:22` — Имя контрольной точки.
+- `BranchCheckpoint` — `src/vtuber/gateway/protocol_branches.py:28` — UI → Ядро: запомнить текущее место под именем.
+- `BranchMessageData` — `src/vtuber/gateway/protocol_branches.py:36` — Реплика активной ветки; у реплик пользователя `turn` — None.
+- `BranchData` — `src/vtuber/gateway/protocol_branches.py:44` — Ветка: её последняя реплика и длина; `active` — текущий путь идёт через неё.
+- `CheckpointData` — `src/vtuber/gateway/protocol_branches.py:53` — Контрольная точка.
+- `BranchStateData` — `src/vtuber/gateway/protocol_branches.py:60` — Активный путь, все ветки и контрольные точки.
+- `BranchState` — `src/vtuber/gateway/protocol_branches.py:69` — Ядро → UI: состояние диалога после перехода или при подключении.
 - `WatchData` — `src/vtuber/gateway/protocol_extras.py:10` — Открыта ли панель ресурсов.
 - `ResourcesWatch` — `src/vtuber/gateway/protocol_extras.py:16` — UI → Ядро: панель ресурсов открыли или закрыли; закрытая ничего не считает.
 - `InstallData` — `src/vtuber/gateway/protocol_extras.py:24` — Что выбрал пользователь в мастере.
@@ -368,8 +386,8 @@
 - `FactsData` — `src/vtuber/gateway/protocol_memory.py:124` — Список фактов; `problem` — что не удалось сделать.
 - `MemoryFacts` — `src/vtuber/gateway/protocol_memory.py:131` — Ядро → UI: факты памяти (S-16.2).
 - `ResourcesFeed` — `src/vtuber/gateway/resources_feed.py:15` — Закрытая панель ничего не считает: задачи нет, пока UI не попросит.
-- `GatewayConfig` — `src/vtuber/gateway/server.py:69` — Секция `[gateway]`: где слушать UI (только localhost, ADR-0002).
-- `GatewayServer` — `src/vtuber/gateway/server.py:88` — Шлюз для UI: `async with GatewayServer(...) as server: await server.serve_forever()`.
+- `GatewayConfig` — `src/vtuber/gateway/server.py:56` — Секция `[gateway]`: где слушать UI (только localhost, ADR-0002).
+- `GatewayServer` — `src/vtuber/gateway/server.py:63` — Шлюз для UI: `async with GatewayServer(...) as server: await server.serve_forever()`.
 - `SetupBridge` — `src/vtuber/gateway/setup_bridge.py:22` — Переводит сообщения UI в вызовы мастера; ход установки шлёт реже, чем приходят данные.
 - `WsReplySink` — `src/vtuber/gateway/sink.py:14` — ReplySink для WebSocket: текст → `chat.delta`, эмоция → `avatar.emotion`, звук → кадр.
 - `TerminalSink` — `src/vtuber/gateway/terminal.py:21` — ReplySink для консоли: печатает ответ по мере генерации и помнит время первой порции.
@@ -451,9 +469,9 @@
 - `encodeMicFrame` — `ui/src/core/frames.ts:20` — Кадр микрофона для ядра: заголовок + PCM s16le моно.
 - `AudioFrame` — `ui/src/core/frames.ts:37` — Аудиокадр ядра. `turn` — в том же виде, что в JSON-сообщениях, чтобы их сопоставлять.
 - `FrameError` — `ui/src/core/frames.ts:45` — Кадр не соответствует протоколу: ядро другой версии или повреждённые данные.
-- `turnRef` — `ui/src/core/frames.ts:77` — Номер хода из аудиокадра в виде JSON-сообщений.
-- `parseMessage` — `ui/src/core/frames.ts:101` — Текстовый кадр → сообщение ядра; `FrameError`, если это не сообщение протокола.
-- `decodeAudioFrame` — `ui/src/core/frames.ts:118` — Бинарный кадр → аудиокадр. PCM не копируется: `Int16Array` смотрит в тот же буфер
+- `turnRef` — `ui/src/core/frames.ts:78` — Номер хода из аудиокадра в виде JSON-сообщений.
+- `parseMessage` — `ui/src/core/frames.ts:102` — Текстовый кадр → сообщение ядра; `FrameError`, если это не сообщение протокола.
+- `decodeAudioFrame` — `ui/src/core/frames.ts:119` — Бинарный кадр → аудиокадр. PCM не копируется: `Int16Array` смотрит в тот же буфер
 - `FIRST_CHAR_SPAN` — `ui/src/core/probe.ts:8` — —
 - `FirstCharProbe` — `ui/src/core/probe.ts:10` — —
 - `FIRST_AUDIO_SPAN` — `ui/src/core/probe.ts:57` — —
@@ -461,15 +479,16 @@
 - `protocol.gen.ts` — `ui/src/core/protocol.gen.ts:1` — Автогенерация: `uv run python tools/gen_protocol.py`. Не редактировать.
 - `int16ToFloat` — `ui/src/core/resample.ts:11` — Сэмплы s16 → float [-1, 1).
 - `StreamResampler` — `ui/src/core/resample.ts:19` — —
-- `Role` — `ui/src/core/store.svelte.ts:22` — —
-- `MessageStatus` — `ui/src/core/store.svelte.ts:23` — —
-- `TurnPhase` — `ui/src/core/store.svelte.ts:25` — Фаза хода для аватара и кнопки «Стоп»: ждём первый токен / идёт ответ / ничего.
-- `ChatMessage` — `ui/src/core/store.svelte.ts:27` — —
-- `PrivacyView` — `ui/src/core/store.svelte.ts:39` — —
-- `SPAN_HISTORY` — `ui/src/core/store.svelte.ts:45` — —
-- `SpeechProgress` — `ui/src/core/store.svelte.ts:48` — Что звучит в плеере (сообщает фича звука): ход, идёт ли звук, сыграно и получено, секунд.
-- `VoiceState` — `ui/src/core/store.svelte.ts:59` — Голос в UI. Ход ядра заканчивается, когда синтез готов, а звучит голос дольше (синтез
-- `AppStore` — `ui/src/core/store.svelte.ts:64` — —
+- `Role` — `ui/src/core/store.svelte.ts:23` — —
+- `MessageStatus` — `ui/src/core/store.svelte.ts:24` — —
+- `TurnPhase` — `ui/src/core/store.svelte.ts:26` — Фаза хода для аватара и кнопки «Стоп»: ждём первый токен / идёт ответ / ничего.
+- `ChatMessage` — `ui/src/core/store.svelte.ts:28` — —
+- `BranchesView` — `ui/src/core/store.svelte.ts:40` — —
+- `PrivacyView` — `ui/src/core/store.svelte.ts:42` — —
+- `SPAN_HISTORY` — `ui/src/core/store.svelte.ts:48` — —
+- `SpeechProgress` — `ui/src/core/store.svelte.ts:51` — Что звучит в плеере (сообщает фича звука): ход, идёт ли звук, сыграно и получено, секунд.
+- `VoiceState` — `ui/src/core/store.svelte.ts:62` — Голос в UI. Ход ядра заканчивается, когда синтез готов, а звучит голос дольше (синтез
+- `AppStore` — `ui/src/core/store.svelte.ts:67` — —
 - `CLOSE_REPLACED` — `ui/src/core/transport.ts:10` — Код закрытия «вытеснен новым клиентом» — `gateway/server.py` (ADR-0008).
 - `SocketLike` — `ui/src/core/transport.ts:14` — Часть WebSocket, нужная транспорту: в тестах подменяется фейком.
 - `SocketFactory` — `ui/src/core/transport.ts:24` — —
@@ -568,6 +587,7 @@
 ## ui/src/features/chat
 Публичный API фичи чата: приложение монтирует только панель (R-63).
 
+- `BranchBar.svelte` — `ui/src/features/chat/BranchBar.svelte:1` — Ветки диалога (S-16.1): показывается, когда есть что выбирать или куда вернуться.
 - `Chat.svelte` — `ui/src/features/chat/Chat.svelte:1` — Панель чата: история, индикатор «печатает», ошибка ядра, поле ввода, режим субтитров.
 - `Composer.svelte` — `ui/src/features/chat/Composer.svelte:1` — Поле ввода: Enter — отправить, Shift+Enter — перенос, Esc или «Стоп» — прервать ответ.
 - `isSendKey` — `ui/src/features/chat/keys.ts:6` — Enter во время набора через IME (выбор иероглифа и т. п.) подтверждает ввод, а не отправляет.

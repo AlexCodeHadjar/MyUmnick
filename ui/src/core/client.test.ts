@@ -288,6 +288,35 @@ describe("CoreClient", () => {
     expect(client.store.memory.facts).toEqual([fact]);
   });
 
+  it("другая ветка заменяет историю и глушит голос", () => {
+    const { client, socket, frames } = connected();
+    const cancelled: (string | null)[] = [];
+    client.onCancel((turn) => cancelled.push(turn));
+    client.say("старая");
+    cancelled.length = 0;
+    socket.sent.length = 0;
+    client.goToTurn("t-000001");
+    expect(cancelled).toEqual([null]);
+    expect(socket.sent).toEqual([{ v: 1, type: "branch.go", data: { turn: "t-000001" } }]);
+    const branch = { leaf: "t-000002", title: "старая", length: 2, active: false };
+    const data = {
+      messages: [
+        { role: "user", text: "первая", turn: null },
+        { role: "assistant", text: "ответ", turn: "t-000001" },
+      ],
+      branches: [branch],
+      checkpoints: [],
+      problem: null,
+    };
+    socket.receive(JSON.stringify({ v: 1, type: "branch.state", data }));
+    frames.next();
+    expect(client.store.messages.map((m) => [m.role, m.text, m.turn, m.status])).toEqual([
+      ["user", "первая", null, "done"],
+      ["assistant", "ответ", "t-000001", "done"],
+    ]);
+    expect(client.store.branches.branches).toEqual([branch]);
+  });
+
   it("dispose() закрывает связь", () => {
     const { client, frames } = connected();
     client.dispose();

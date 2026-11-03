@@ -2,6 +2,7 @@
   // Панель чата: история, индикатор «печатает», ошибка ядра, поле ввода, режим субтитров.
   // Состояние — только из store, действия — через CoreClient (R-63); своей логики диалога нет.
   import type { ChatMessage, CoreClient } from "../../core";
+  import BranchBar from "./BranchBar.svelte";
   import Composer from "./Composer.svelte";
   import MessageList from "./MessageList.svelte";
   import { readSubtitles, Subtitles, writeSubtitles, type SettingStorage } from "./subtitles";
@@ -34,8 +35,12 @@
 </script>
 
 <section class="chat" aria-label="Чат">
+  <BranchBar {client} />
   <MessageList
     messages={store.messages}
+    onrewind={(turn: string) => {
+      client.goToTurn(turn);
+    }}
     textOf={(message: ChatMessage) => subtitler.text(message, subtitleView)}
   />
   <div class="status">

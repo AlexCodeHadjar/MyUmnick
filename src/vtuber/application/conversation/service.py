@@ -32,6 +32,8 @@ from vtuber.ports import ReplySink
 type HintSource = Callable[[str], Awaitable[TurnHints]]
 """Что долговременная память добавляет ходу по реплике (`MemoryRecall.hints`)."""
 
+REWIND_WARMUP: Final = "Продолжим."
+"""Шаблону чата нужна реплика пользователя; общий префикс от неё не зависит."""
 INTERNAL_ERROR_MESSAGE: Final = "Внутренняя ошибка при ответе — подробности в logs/app.jsonl"
 
 _log = get_logger(__name__)
@@ -94,6 +96,17 @@ class ConversationService:
         self._private = enabled
         if not enabled:
             self._memory.forget_private()
+
+    async def stop_current(self) -> None:
+        """Прервать идущий ответ: он дописывается в ту ветку, где начат."""
+        await self.cancel(CancelReason.USER_STOP)
+
+    async def rewind(self, turns: Sequence[Turn]) -> None:
+        """Перейти к другой ветке: история другая, кэш промпта прогревается заранее (T-05, T-03)."""
+        self._stop_prefill()
+        self._memory.replace(turns)
+        messages = self._prompts.build(self._memory.messages, REWIND_WARMUP).messages
+        self._prefill = asyncio.create_task(self._warm(messages))
 
     def use_tools(self, hints: HintSource) -> None:
         """Подключить инструменты плагинов: их результат — в справке этого же хода (S-12.4)."""

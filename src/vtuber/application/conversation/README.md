@@ -9,6 +9,7 @@
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
+| `DialogueTree`, `Branch`, `Checkpoint` | Дерево ходов: `go`, `path`, `branches`, `checkpoint`; `follow(bus)`; приватные ходы не хранит; разметка веток на диск не пишется |
 | `ConversationService(pipeline, prompts, memory, bus)` | `handle(text, sink) → TurnId` — запуск хода, не ждёт ответа |
 | `wait_silent()` | Конец хода и конец его звука (по длительности кадров): реплики не от ведущего ждут тишины |
 | | `cancel(reason) → bool` — прервать текущий ход и дождаться; `wait_idle()`; `state` |

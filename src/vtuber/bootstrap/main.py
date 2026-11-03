@@ -13,7 +13,6 @@ from typing import Final, Protocol, TextIO
 from vtuber.adapters.gpu import NvidiaSmiProbe
 from vtuber.adapters.llm import LlamaServerProcess
 from vtuber.application.conversation import ConversationService
-from vtuber.application.memory import MemoryControls
 from vtuber.application.scheduler import ResourceManager
 from vtuber.application.supervision import Supervised, Supervisor
 from vtuber.application.tools import ToolContext
@@ -30,7 +29,7 @@ from vtuber.bootstrap.supervision import (
     with_voice,
 )
 from vtuber.bootstrap.voice_input import voice_input
-from vtuber.bootstrap.wiring import connect_memory, connect_setup
+from vtuber.bootstrap.wiring import AppParts, connect_panels
 from vtuber.domain import (
     BackendState,
     BackendStatusChanged,
@@ -47,7 +46,6 @@ from vtuber.domain import (
 from vtuber.gateway import (
     ExternalTurns,
     GatewayServer,
-    ResourcesFeed,
     TerminalChat,
 )
 from vtuber.kernel import EventBus, Telemetry, TraceWriter, get_logger, logging_to
@@ -140,7 +138,7 @@ async def _run(
             _connect_tools(cfg, conversation.service, plugins)
             if mode == SERVE_MODE:
                 code = await _serve(
-                    _App(cfg, core, plugins, resources, controls),
+                    AppParts(cfg, core, plugins, resources, controls, conversation.history),
                     conversation.service,
                     warmup,
                     console,
@@ -176,18 +174,15 @@ async def _chat(
 
 
 async def _serve(
-    app: "_App",
+    app: AppParts,
     service: ConversationService,
     warmup: "_Warmup",
     console: Console,
 ) -> int:
     """Шлюз живёт, пока открыт stdin: Tauri-родитель умер — pipe закрыт — ядро выходит."""
-    cfg, core, plugins, resources = app.cfg, app.core, app.plugins, app.resources
+    cfg, core, plugins = app.cfg, app.core, app.plugins
     async with GatewayServer(service, warmup.bus, cfg.gateway) as server:
-        server.use_commands(plugins.commands)
-        server.use_resources(ResourcesFeed(resources.snapshot, server.send))
-        connect_setup(cfg, server)
-        connect_memory(app.memory, server, service)
+        connect_panels(app, server, service)
         print(f"Шлюз для UI: ws://{cfg.gateway.host}:{server.port}", file=console.out)
         if (problem := await warmup.run()) is not None:
             _log.warning("llm.unavailable_at_start", problem=problem)
@@ -216,17 +211,6 @@ def _supervisor(cfg: AppConfig, warmup: "_Warmup", hearing: Supervised | None) -
     """Наблюдаем за тем, что можем поднять: внешний llama-server ядру не подчиняется."""
     items = [*warmup.supervised(), *([hearing] if hearing is not None else [])]
     return Supervisor(items if cfg.supervisor.enabled else (), cfg.supervisor, warmup.bus)
-
-
-@dataclass(frozen=True, slots=True)
-class _App:
-    """Что шлюзу нужно от приложения, кроме сервиса хода."""
-
-    cfg: AppConfig
-    core: Core
-    plugins: PluginServices
-    resources: ResourceManager
-    memory: MemoryControls | None
 
 
 @dataclass(frozen=True, slots=True)

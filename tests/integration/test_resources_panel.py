@@ -75,7 +75,7 @@ async def _panel(manager: ResourceManager) -> AsyncIterator[tuple[ClientConnecti
     cfg = GatewayConfig(host="127.0.0.1", port=0)
     async with GatewayServer(service, bus, cfg) as server:
         feed = ResourcesFeed(manager.snapshot, server.send, PERIOD_S)
-        server.use_resources(feed)
+        server.panels.resources = feed
         async with connect(f"ws://127.0.0.1:{server.port}") as ws:
             yield ws, feed
 

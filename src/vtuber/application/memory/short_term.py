@@ -21,6 +21,7 @@ class _StoredTurn:
     messages: tuple[Message, Message]
     tokens: int
     private: bool = False
+    turn: Turn | None = None
 
 
 class ShortTermMemory:
@@ -62,6 +63,17 @@ class ShortTermMemory:
         """Оценка токенов всей истории."""
         return self._tokens
 
+    @property
+    def turns(self) -> tuple[Turn, ...]:
+        """Ходы истории: из них дерево диалога начинается после перезапуска (S-16.1)."""
+        return tuple(stored.turn for stored in self._turns if stored.turn is not None)
+
+    def replace(self, turns: Sequence[Turn]) -> None:
+        """Другая ветка диалога; резюме описывало прежнюю, поэтому оно забывается."""
+        self.clear()
+        for turn in turns:
+            self.append(turn)
+
     def forget_private(self) -> None:
         """Приватный режим кончился: его ходы не должны остаться даже в памяти процесса."""
         kept = [turn for turn in self._turns if not turn.private]
@@ -89,7 +101,7 @@ class ShortTermMemory:
         """
         messages = _as_messages(turn)
         self._turns.append(
-            _StoredTurn(messages, self._budget.tokens(messages), private=turn.is_private)
+            _StoredTurn(messages, self._budget.tokens(messages), private=turn.is_private, turn=turn)
         )
         self._tokens += self._turns[-1].tokens
         if self._tokens <= self._budget.max_history_tokens:
