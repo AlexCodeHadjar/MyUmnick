@@ -25,6 +25,9 @@
 - `OpenAICompatLLM` — `src/vtuber/adapters/llm/openai_compat.py:21` — Стрим ответа по HTTP/SSE; один httpx-клиент на всё время жизни (R-40, ADR-0007).
 - `wire_messages` — `src/vtuber/adapters/llm/openai_compat.py:99` — Сообщения в формате OpenAI Chat API.
 - `check_status` — `src/vtuber/adapters/llm/openai_compat.py:104` — Переводит HTTP-код ошибки в доменную: 503 (модель грузится) — недоступность, иное — сбой.
+- `LlamaServerConfig` — `src/vtuber/adapters/llm/server_process.py:30` — Секция `[llama_server]`: пути от корня проекта; `extra_args` — перед остальными флагами.
+- `server_arguments` — `src/vtuber/adapters/llm/server_process.py:54` — Аргументы запуска; адрес берётся из `[llm].base_url`, чтобы они не разошлись.
+- `LlamaServerProcess` — `src/vtuber/adapters/llm/server_process.py:81` — Живёт столько же, сколько контекст; выключен в конфиге — ничего не делает.
 - `data_of` — `src/vtuber/adapters/llm/sse.py:12` — Полезная нагрузка строки `data: …` или None для пустых строк, комментариев и прочих полей.
 - `delta_text` — `src/vtuber/adapters/llm/sse.py:19` — Текст дельты первого варианта ответа; пустая строка, если в порции текста нет.
 
@@ -160,17 +163,17 @@
 - `MemoryConfig` — `src/vtuber/bootstrap/config.py:30` — Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
 - `SttConfig` — `src/vtuber/bootstrap/config.py:55` — Секция `[stt]`: голосовой ввод в `serve` (Этап 11, ADR-0016); модели — при первом кадре.
 - `AppConfig` — `src/vtuber/bootstrap/config.py:75` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:94` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:95` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
 - `Core` — `src/vtuber/bootstrap/container.py:21` — Общие механизмы, которые получают все: шина событий и телеметрия.
 - `Backends` — `src/vtuber/bootstrap/container.py:29` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
 - `llm_backends` — `src/vtuber/bootstrap/container.py:40` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
 - `tts_backends` — `src/vtuber/bootstrap/container.py:51` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
 - `Conversation` — `src/vtuber/bootstrap/container.py:61` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
 - `build_conversation` — `src/vtuber/bootstrap/container.py:69` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
-- `LineSource` — `src/vtuber/bootstrap/main.py:61` — Откуда читать строки: `sys.stdin` или его тестовая замена.
-- `Console` — `src/vtuber/bootstrap/main.py:68` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
-- `main` — `src/vtuber/bootstrap/main.py:81` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
-- `run` — `src/vtuber/bootstrap/main.py:268` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
+- `LineSource` — `src/vtuber/bootstrap/main.py:62` — Откуда читать строки: `sys.stdin` или его тестовая замена.
+- `Console` — `src/vtuber/bootstrap/main.py:69` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
+- `main` — `src/vtuber/bootstrap/main.py:82` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
+- `run` — `src/vtuber/bootstrap/main.py:283` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
 - `background_memory` — `src/vtuber/bootstrap/memory.py:39` — Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.

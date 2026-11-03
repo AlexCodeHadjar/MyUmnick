@@ -144,3 +144,14 @@ stt = 1700                     # Whisper turbo и VAD: около 1,6 ГБ (ADR-
 
 [gpu_probe]
 timeout_s = 3.0                # nvidia-smi не ответил — считаем, что опрос не удался
+
+[llama_server]                 # llama-server как дочерний процесс ядра (ADR-0019); адрес — из [llm].base_url
+autostart = false              # при разработке сервер запускают сами: scripts/start_llm.ps1
+executable = "llama/llama-server.exe"
+model = "models/llm/model.gguf"
+log_file = "logs/llama-server.log"
+context_size = 16384           # на все слоты; больше нужного — лишняя VRAM и медленный prefill (T-10)
+slots = 2                      # 0 — диалог, 1 — фон (Этап 10)
+ready_timeout_s = 180.0        # загрузка модели с медленного диска
+stop_timeout_s = 5.0
+extra_args = []

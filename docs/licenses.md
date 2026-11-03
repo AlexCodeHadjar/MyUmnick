@@ -66,6 +66,8 @@
 | multilingual-e5-small, bge-m3 | эмбеддинги | MIT | — | по памяти |
 | sqlite-vec | векторное хранилище | MIT / Apache 2.0 | — | по памяти |
 | llama.cpp | LLM-рантайм | MIT | — | по памяти |
+| NVIDIA CUDA Runtime (cudart из релиза llama.cpp, ADR-0019) | библиотеки GPU рядом с llama-server | NVIDIA EULA | перед публичной раздачей сверить условия распространения | не проверено |
+| PyInstaller (ADR-0019) | сборка ядра в программу | GPL-2.0 с исключением для собранных программ | на лицензию приложения не влияет | по памяти |
 | Tauri 2 | UI-оболочка | MIT / Apache 2.0 | — | по памяти |
 | Svelte 5, Vite | UI | MIT | — | по памяти |
 | Gemma 4 12B Uncensored HauhauCS Balanced (ADR-0004) | мозг | Gemma Terms (карточка модели `license: gemma`) | перед публикацией сверить Gemma Terms и Prohibited Use Policy | проверено (API HF) |

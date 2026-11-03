@@ -1,6 +1,7 @@
 """Снимок менеджера доходит до панели по WebSocket; закрытая панель ничего не получает."""
 
 import asyncio
+import contextlib
 import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -51,6 +52,12 @@ async def _next_snapshot(ws: ClientConnection) -> dict[str, object]:
             return data
 
 
+async def _drain(ws: ClientConnection) -> None:
+    with contextlib.suppress(TimeoutError):
+        while True:
+            await asyncio.wait_for(ws.recv(), PERIOD_S * 5)
+
+
 async def _quiet(ws: ClientConnection) -> bool:
     try:
         while True:
@@ -90,7 +97,8 @@ async def test_panel_gets_snapshots_only_while_open() -> None:
         assert first["free_mb"] == 4000
         await ws.send(_watch(enabled=False))
         assert await _stopped(feed)
-        await asyncio.sleep(PERIOD_S * 2)
+        # Снимок, отправленный до остановки, мог быть ещё в пути: он не считается.
+        await _drain(ws)
         assert await _quiet(ws)
 
 

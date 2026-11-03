@@ -1,0 +1,7 @@
+{
+  "bundle": {
+    "resources": {
+      "../../packaging/dist/vtuber-core/": "core/"
+    }
+  }
+}

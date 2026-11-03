@@ -53,3 +53,6 @@ Thumbs.db
 
 # Локальные переопределения Vite (ui/.env.local)
 ui/.env*.local
+
+packaging/build/
+packaging/dist/

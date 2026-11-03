@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Final, Protocol, TextIO
 
 from vtuber.adapters.gpu import NvidiaSmiProbe
+from vtuber.adapters.llm import LlamaServerProcess
 from vtuber.application.conversation import ConversationService
 from vtuber.application.pipeline import FillerBank
 from vtuber.application.scheduler import ResourceManager
@@ -90,6 +91,7 @@ def main(argv: Sequence[str], env: Mapping[str, str], console: Console) -> int:
             "tts": cfg.tts.resolved(args.root),
             "memory": cfg.memory.resolved(args.root),
             "stt": cfg.stt.resolved(args.root),
+            "llama_server": cfg.llama_server.resolved(args.root),
         }
         cfg = cfg.model_copy(update=resolved)
         persona = load_persona(args.root / cfg.persona.file)
@@ -115,11 +117,15 @@ async def _run(
     tts = tts_backends().create(cfg.tts.backend, cfg.tts) if mode == SERVE_MODE else None
     voice = None if tts is None else _Voice(tts, FillerBank(cfg.pipeline.filler))
     fillers = None if voice is None else voice.fillers
-    async with llm_backends().create(cfg.llm.backend, cfg.llm) as llm, asyncio.TaskGroup() as tg:
+    async with (
+        LlamaServerProcess(cfg.llama_server, cfg.llm.base_url) as server,
+        llm_backends().create(cfg.llm.backend, cfg.llm) as llm,
+        asyncio.TaskGroup() as tg,
+    ):
         metrics = tg.create_task(core.telemetry.run())
         trimming = tg.create_task(resources.run(NvidiaSmiProbe(cfg.gpu_probe)))
         conversation = build_conversation(cfg, persona, Backends(llm, tts, fillers), core)
-        warmup = _Warmup(llm, conversation.prompts.prefix, bus, voice)
+        warmup = _Warmup(_Llm(llm, server), conversation.prompts.prefix, bus, voice)
         # Память (Этап 10): факты и резюме — в простое, LLM фонового слота; поиск — в ходе (T-12).
         async with (
             background_memory(cfg, conversation, core),
@@ -194,6 +200,14 @@ async def _serve(
 
 
 @dataclass(frozen=True, slots=True)
+class _Llm:
+    """Модель и её сервер: прогрев сначала ждёт, пока сервер, запущенный ядром, поднимется."""
+
+    port: LLMPort
+    server: LlamaServerProcess
+
+
+@dataclass(frozen=True, slots=True)
 class _Voice:
     """Голос шлюза: движок (грузится при старте) и его междометия (синтез после загрузки)."""
 
@@ -209,7 +223,7 @@ class _Warmup:
     """
 
     def __init__(
-        self, llm: LLMPort, prefix: Sequence[Message], bus: EventBus, voice: _Voice | None
+        self, llm: _Llm, prefix: Sequence[Message], bus: EventBus, voice: _Voice | None
     ) -> None:
         self._llm = llm
         self._prefix = prefix
@@ -220,7 +234,8 @@ class _Warmup:
         """None — LLM готова; иначе — текст проблемы."""
         await self.bus.publish(BackendStatusChanged(Component.LLM, BackendState.LOADING))
         try:
-            await self._llm.prefill((*self._prefix, Message(Role.USER, WARMUP_USER)))
+            await self._llm.server.wait_ready()
+            await self._llm.port.prefill((*self._prefix, Message(Role.USER, WARMUP_USER)))
         except LLMUnavailable as exc:
             await self.bus.publish(BackendStatusChanged(Component.LLM, BackendState.FAILED))
             return str(exc)

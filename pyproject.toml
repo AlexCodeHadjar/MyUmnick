@@ -31,6 +31,9 @@ dev = [
   "pytest-cov>=6.0",
   "ruff>=0.8",
 ]
+packaging = [
+    "pyinstaller>=6.10",
+]
 
 [build-system]
 requires = ["uv_build>=0.13.6,<0.14.0"]
@@ -56,6 +59,8 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # FBT001 — bool в parametrize; ARG — фейки повторяют сигнатуры портов; S311 — random для данных.
 "tests/**" = ["S101", "D", "PLR2004", "ANN", "EM", "FBT001", "ARG", "S311"]
+# Каталог без __init__.py: имя совпадает с пакетом `packaging` из PyPI.
+"packaging/**" = ["T201", "INP001"]
 "tools/**" = ["T201"]          # CLI-скрипты пишут результат в консоль
 "src/vtuber/domain/errors.py" = ["N818"]  # имена ошибок закреплены в docs/architecture.md
 
@@ -73,7 +78,7 @@ plugins = ["pydantic.mypy"]
 strict = true
 warn_unreachable = true
 disallow_any_explicit = true   # R-18
-files = ["src", "tests", "tools", "plugins/example/src", "plugins/stream_chat/src", "plugins/obs/src", "plugins/tools/src", "plugins/stream_director/src"]
+files = ["src", "tests", "tools", "plugins/example/src", "plugins/stream_chat/src", "plugins/obs/src", "plugins/tools/src", "plugins/stream_director/src", "packaging/build_sidecar.py", "packaging/fetch_llama.py", "packaging/smoke_sidecar.py"]
 mypy_path = "src:plugins/stream_chat/src:plugins/obs/src:plugins/tools/src:plugins/stream_director/src"
 
 [tool.pytest.ini_options]

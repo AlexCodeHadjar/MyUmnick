@@ -8,6 +8,7 @@
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
+| `LlamaServerProcess(cfg, base_url)`, `LlamaServerConfig`, `server_arguments` | llama-server как дочерний процесс (ADR-0019): `async with`, `wait_ready()`; выключен — ничего не делает |
 | `LLMConfig` | Секция `[llm]`: `backend`, `base_url`, `model`, тайм-ауты, `llamacpp`, `generation` |
 | `GenerationConfig` | `[llm.generation]`: `max_tokens`, `temperature` (T-07) |
 | `LlamaCppOptions` | `[llm.llamacpp]`: `slot_id` (слот диалога), `enable_thinking` |

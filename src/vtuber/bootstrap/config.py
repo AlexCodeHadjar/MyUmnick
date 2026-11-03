@@ -6,7 +6,7 @@ from pathlib import Path
 from pydantic import Field
 
 from vtuber.adapters.gpu import NvidiaSmiConfig
-from vtuber.adapters.llm import GenerationConfig, LLMConfig
+from vtuber.adapters.llm import GenerationConfig, LlamaServerConfig, LLMConfig
 from vtuber.adapters.memory import E5Config
 from vtuber.adapters.stt import VadConfig, WhisperConfig
 from vtuber.adapters.tts import TTSConfig
@@ -78,6 +78,7 @@ class AppConfig(ConfigSection):
     logging: LoggingConfig
     telemetry: TelemetryConfig
     llm: LLMConfig
+    llama_server: LlamaServerConfig
     persona: PersonaConfig
     context: ContextConfig
     gateway: GatewayConfig
