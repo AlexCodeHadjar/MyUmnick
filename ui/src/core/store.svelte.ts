@@ -271,6 +271,12 @@ export class AppStore {
     if (message.turn !== this.turn) {
       return;
     }
+    // Иначе сбой выглядит как «прервано» без причины, например картинка без проектора (ADR-0024).
+    const current = this.#current();
+    const problem = message.data.reason === "error" ? message.data.message : "";
+    if (current !== undefined && problem !== "") {
+      current.text = current.text === "" ? problem : `${current.text}\n${problem}`;
+    }
     this.#endTurn("cancelled");
   }
 

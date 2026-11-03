@@ -13,6 +13,9 @@
 | `load_voice(path)`, `PiperVoiceLike` | Загрузка голоса; узкий протокол вместо API пакета |
 | `SileroConfig` | Подсекция `[tts.silero]`: `model_path`, `speaker`, `sample_rate` (8/24/48 кГц), `threads`, `chunk_ms` |
 | `SileroTTS(cfg, loader=)` | Silero v5.6 (ADR-0012); `async with` грузит модель один раз (R-40) |
+| `VoiceServerConfig` | Подсекция `[tts.voice_server]`: `base_url`, тайм-ауты, `sample_rate`, `chunk_ms` |
+| `VoiceServerTTS(cfg, transport=, check_pause_s=)` | Голос на отдельном сервере по HTTP (`scripts/voice_server.py`, ADR-0031); `problem` — почему не готов |
+| `FallbackTTS(primary, fallback)` | Выбор движка при старте: основной не готов — говорит запасной, который до этого не загружается |
 | `load_package(path)` | Модель из `.pt`-пакета Silero через `torch.package` |
 | `to_pcm(tensor)` | float [-1, 1] → s16le с обрезкой за шкалой |
 | `SileroModel` | Протокол модели: `apply_tts(text=, speaker=, sample_rate=)` |
@@ -21,6 +24,10 @@
 - Порт `TTSPort`; domain: `AudioChunk`, `AudioFormat`, `TTSUnavailable`, `GenerationFailed`.
 - Внешние: `torch` (CPU) и `numpy` — группа `silero`; `piper-tts` (+ `onnxruntime`) — группа
   `piper` (`uv sync --all-extras`). Пакеты движков импортируются только при загрузке модели.
+
+Сервер голоса (ADR-0031): движок OmniVoice живёт в своём процессе на Linux, ядро знает только адрес.
+Проверка при старте повторяется 3 раза: миг обрыва туннеля не меняет голос. Посреди работы движок не
+меняется, обрыв — `TTSUnavailable` на фразу, следующая звучит снова. Отмена прерывает ожидание ответа сразу.
 
 ## События
 - Публикует: —

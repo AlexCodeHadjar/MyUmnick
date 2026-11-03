@@ -101,6 +101,13 @@ ssh -i ~/.ssh/gpunz_ed25519 -p PORT USER@HOST 'tar -C /workspace/vruber/bench/re
 Фраза `1_korotko` без потокового режима показывает задержку первой фразы; бюджет TTFA — ≤ 800 мс вместе
 с TTFT. VRAM считается без LLM: выбранный движок перепроверить рядом с запущенной моделью.
 
+## Сервер голоса
+
+Окружение с FlashInfer (torch cu128, `omnivoice` из git, `flashinfer-python`), образец скопирован на сервер, запуск в tmux:
+`python scripts/voice_server.py --ref data/voice_refs/silv/prepared/maomao_04.wav --ref-text data/voice_refs/silv/prepared/refs.json`.
+На ПК туннель `-L 8080:127.0.0.1:8080 -L 8090:127.0.0.1:8090` и `[tts] backend = "voice_server"` в `config/user.toml`.
+LLM для картинок запускать с `EXTRA_ARGS="--mmproj <файл>"`, иначе чат отвечает ошибкой. Подробности — ADR-0031.
+
 ## Если что-то пошло не так
 
 - **Обрыв SSH** — задачи в `tmux` продолжают работать; переподключиться, `tmux ls`,

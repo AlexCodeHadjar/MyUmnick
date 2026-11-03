@@ -71,7 +71,10 @@
 ## src/vtuber/adapters/tts
 Адаптеры синтеза речи (TTSPort).
 
-- `TTSConfig` — `src/vtuber/adapters/tts/config.py:12` — Секция `[tts]`.
+- `TTSConfig` — `src/vtuber/adapters/tts/config.py:13` — Секция `[tts]`.
+- `CheckedTTS` — `src/vtuber/adapters/tts/fallback.py:16` — Основной движок: контекстный менеджер, который умеет сказать, почему он не готов.
+- `ManagedTTS` — `src/vtuber/adapters/tts/fallback.py:34` — Запасной движок: загружается только тогда, когда он понадобился.
+- `FallbackTTS` — `src/vtuber/adapters/tts/fallback.py:47` — Реализует TTSPort: движок выбирается один раз при старте.
 - `PiperConfig` — `src/vtuber/adapters/tts/piper.py:28` — Подсекция `[tts.piper]`.
 - `PiperChunk` — `src/vtuber/adapters/tts/piper.py:42` — Фрагмент `piper.AudioChunk`: PCM s16le моно.
 - `PiperVoiceLike` — `src/vtuber/adapters/tts/piper.py:51` — То, что нужно от `piper.PiperVoice`: частота голоса и синтез по предложениям.
@@ -82,6 +85,8 @@
 - `load_package` — `src/vtuber/adapters/tts/silero.py:63` — Модель из `.pt`-пакета Silero (официальный способ загрузки без torch.hub).
 - `to_pcm` — `src/vtuber/adapters/tts/silero.py:71` — Тензор float [-1, 1] → PCM s16le; выход за шкалу обрезается, а не переворачивается.
 - `SileroTTS` — `src/vtuber/adapters/tts/silero.py:79` — Реализует TTSPort; модель грузится один раз в `async with` (R-40).
+- `VoiceServerConfig` — `src/vtuber/adapters/tts/voice_server.py:32` — Подсекция `[tts.voice_server]`.
+- `VoiceServerTTS` — `src/vtuber/adapters/tts/voice_server.py:46` — Реализует TTSPort поверх `scripts/voice_server.py`.
 
 ## src/vtuber/application
 Прикладной слой: сценарии диалога и конвейер ответа поверх портов.
@@ -243,8 +248,8 @@
 - `Backends` — `src/vtuber/bootstrap/container.py:29` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
 - `llm_backends` — `src/vtuber/bootstrap/container.py:40` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
 - `tts_backends` — `src/vtuber/bootstrap/container.py:51` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
-- `Conversation` — `src/vtuber/bootstrap/container.py:61` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
-- `build_conversation` — `src/vtuber/bootstrap/container.py:69` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
+- `Conversation` — `src/vtuber/bootstrap/container.py:65` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
+- `build_conversation` — `src/vtuber/bootstrap/container.py:73` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
 - `LineSource` — `src/vtuber/bootstrap/main.py:67` — Откуда читать строки: `sys.stdin` или его тестовая замена.
 - `Console` — `src/vtuber/bootstrap/main.py:74` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
 - `main` — `src/vtuber/bootstrap/main.py:87` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).

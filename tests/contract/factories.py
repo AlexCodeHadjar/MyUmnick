@@ -6,6 +6,7 @@ from contextlib import AbstractAsyncContextManager, asynccontextmanager, nullcon
 from dataclasses import dataclass
 from pathlib import Path
 
+import httpx
 import pytest
 
 from tests.fakes import FakeLLM, FakeTTS
@@ -17,6 +18,7 @@ from vtuber.adapters.llm import (
     LLMConfig,
     OpenAICompatLLM,
 )
+from vtuber.adapters.tts.voice_server import VoiceServerConfig, VoiceServerTTS
 from vtuber.ports import LLMPort, TTSPort
 
 LONG_REPLY = (
@@ -148,9 +150,41 @@ def _piper(model_path: Path) -> TTSFactory:
     return factory
 
 
+def _voice_server(*, reachable: bool) -> TTSFactory:
+    """Настоящий адаптер и подменённый транспорт: движку нужен отдельный процесс (ADR-0031)."""
+
+    def reply(request: httpx.Request) -> httpx.Response:
+        if not reachable:
+            raise httpx.ConnectError("no route", request=request)
+        if request.url.path == "/health":
+            return httpx.Response(200, json={"status": "ok", "sample_rate": 24000})
+        return httpx.Response(200, content=b"\x01\x00" * 24000)
+
+    @asynccontextmanager
+    async def factory() -> AsyncIterator[TTSPort]:
+        cfg = VoiceServerConfig(
+            base_url="http://voice.test",
+            connect_timeout_s=0.2,
+            read_timeout_s=1,
+            sample_rate=24000,
+            chunk_ms=200,
+        )
+        async with VoiceServerTTS(
+            cfg, transport=httpx.MockTransport(reply), check_pause_s=0
+        ) as tts:
+            yield tts
+
+    return factory
+
+
 def tts_cases() -> list[TTSCase]:
-    """Фейк в темпе целевого движка (RTF 0.3), Silero (ADR-0012) и Piper (ADR-0013)."""
+    """Фейк (RTF 0.3), Silero (ADR-0012), Piper (ADR-0013) и сервер голоса (ADR-0031)."""
     return [
+        TTSCase(
+            name="voice_server",
+            available=_voice_server(reachable=True),
+            unavailable=_voice_server(reachable=False),
+        ),
         TTSCase(
             name="fake",
             available=lambda: nullcontext(FakeTTS(rtf=0.3, chunk_ms=200)),

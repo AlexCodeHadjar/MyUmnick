@@ -48,6 +48,8 @@
 | Silero TTS (ru v3/v4/v5, выбрана v5_6_ru — ADR-0012; голос по умолчанию `xenia` — ADR-0014) | TTS | CC BY-NC 4.0 | некоммерческая; модель не в git | проверено |
 | PyTorch (CPU), NumPy | движок Silero | BSD-3-Clause | — | по памяти |
 | Silero TTS `cis-tts` base | TTS | MIT | — | проверено |
+| OmniVoice, голос по образцу (ADR-0031) | TTS, отдельный процесс | код Apache-2.0, веса CC BY-NC | только некоммерческое использование; клонирование только с разрешения | по странице модели, 2026-11-03 |
+| FlashInfer (ADR-0031) | ускорение OmniVoice, отдельный процесс | Apache-2.0 | только Linux | по PyPI, 2026-11-03 |
 | Silero VAD | VAD | MIT | — | по памяти |
 | Piper `ru_RU-denis`, `ru_RU-dmitri` (выбран denis-medium — ADR-0013; запасной — ADR-0014) | TTS | CC0 | голос не в git; мужские голоса | проверено |
 | Piper `ru_RU-ruslan` | TTS | CC BY-NC-SA 4.0 | некоммерческая, share-alike | проверено |

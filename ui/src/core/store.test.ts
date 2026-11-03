@@ -51,6 +51,28 @@ describe("ход", () => {
     expect(new Set(store.messages.map((m) => m.id)).size).toBe(2);
   });
 
+  it("сбой показывает причину рядом с пометкой, обычная отмена — нет", () => {
+    store.apply(started(T1));
+    store.apply({
+      v: 1,
+      type: "turn.cancelled",
+      turn: T1,
+      data: { reason: "error", message: "Картинки не поддерживаются" },
+    });
+    expect(store.messages.at(-1)?.text).toBe("Картинки не поддерживаются");
+    expect(store.messages.at(-1)?.status).toBe("cancelled");
+
+    store.apply(started(T2));
+    store.apply(delta(T2, "Нач"));
+    store.apply({
+      v: 1,
+      type: "turn.cancelled",
+      turn: T2,
+      data: { reason: "new_message", message: "" },
+    });
+    expect(store.messages.at(-1)?.text).toBe("Нач");
+  });
+
   it("отмена помечает ответ, поздние дельты отменённого хода отбрасываются", () => {
     store.apply(started(T1));
     store.apply(delta(T1, "Начало"));

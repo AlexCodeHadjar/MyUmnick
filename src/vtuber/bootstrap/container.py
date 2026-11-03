@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from vtuber.adapters.llm import LlamaCppLLM, LLMConfig, OpenAICompatLLM
-from vtuber.adapters.tts import PiperTTS, SileroTTS, TTSConfig
+from vtuber.adapters.tts import FallbackTTS, PiperTTS, SileroTTS, TTSConfig, VoiceServerTTS
 from vtuber.application.conversation import ConversationService
 from vtuber.application.memory import ShortTermMemory
 from vtuber.application.pipeline import FillerBank, ReplyPipeline, Voice
@@ -13,7 +13,7 @@ from vtuber.domain import Persona
 from vtuber.kernel import EventBus, Registry, Telemetry
 from vtuber.ports import GenerationParams, LLMPort, TTSPort
 
-type TTSAdapter = SileroTTS | PiperTTS
+type TTSAdapter = SileroTTS | PiperTTS | FallbackTTS
 """Движок TTS: порт и асинхронный контекстный менеджер (модель грузится в `async with`)."""
 
 
@@ -53,6 +53,10 @@ def tts_backends() -> Registry[TTSConfig, TTSAdapter | None]:
     backends = Registry[TTSConfig, TTSAdapter | None]("tts-движок")
     backends.add("silero", lambda cfg: SileroTTS(cfg.silero))
     backends.add("piper", lambda cfg: PiperTTS(cfg.piper))
+    backends.add(
+        "voice_server",
+        lambda cfg: FallbackTTS(VoiceServerTTS(cfg.voice_server), SileroTTS(cfg.silero)),
+    )
     backends.add("none", lambda _: None)
     return backends
 
