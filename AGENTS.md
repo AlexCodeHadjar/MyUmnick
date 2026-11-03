@@ -37,6 +37,7 @@
 - Тесты, фейки, eval, риски — `docs/testing.md`; лицензии — `docs/licenses.md`
 - Замеры на арендованной 5070 Ti: итоги — `docs/perf/gpu-run-2026-11-02.md`, решения — ADR-0004 (LLM),
   ADR-0014 (голос); сырые файлы `bench/results/remote/` — только если нужной цифры там нет
+- Плагины — `docs/plugins.md`, образец `plugins/example/`
 - Решения — `docs/adr/`; шаблоны — `docs/templates/`; обзор документации — `docs/README.md`
 
 ## Команды

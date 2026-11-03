@@ -73,7 +73,7 @@ plugins = ["pydantic.mypy"]
 strict = true
 warn_unreachable = true
 disallow_any_explicit = true   # R-18
-files = ["src", "tests", "tools"]
+files = ["src", "tests", "tools", "plugins/example/src"]
 mypy_path = "src"
 
 [tool.pytest.ini_options]

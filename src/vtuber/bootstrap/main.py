@@ -23,6 +23,7 @@ from vtuber.bootstrap.container import (
 )
 from vtuber.bootstrap.memory import background_memory
 from vtuber.bootstrap.persona import load_persona
+from vtuber.bootstrap.plugins import running_plugins
 from vtuber.bootstrap.voice_input import voice_input
 from vtuber.domain import (
     BackendState,
@@ -114,7 +115,7 @@ async def _run(
         conversation = build_conversation(cfg, persona, Backends(llm, tts, fillers), core)
         warmup = _Warmup(llm, conversation.prompts.prefix, bus, voice)
         # Память (Этап 10): факты и резюме — в простое, LLM фонового слота; поиск — в ходе (T-12).
-        async with background_memory(cfg, conversation, core):
+        async with background_memory(cfg, conversation, core), running_plugins(cfg.plugins, bus):
             if mode == SERVE_MODE:
                 code = await _serve((cfg, core), conversation.service, warmup, console)
             else:

@@ -119,3 +119,10 @@ device = "auto"                # auto: GPU, если есть CUDA с cuBLAS; и
 compute_type = "default"       # default: как квантована модель; int8 на CPU, int8_float16 на GPU
 threads = 4
 final_beam = 3                 # поиск финальной гипотезы; промежуточные — жадные
+
+[plugins]
+enabled = []                   # имена entry points группы vtuber.plugins; остальные не импортируются (docs/plugins.md)
+setup_timeout_s = 10.0         # зависший setup не должен останавливать запуск
+shutdown_timeout_s = 5.0
+
+[plugins.settings]             # настройки плагина: [plugins.settings.<имя>]

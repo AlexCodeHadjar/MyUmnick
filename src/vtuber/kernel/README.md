@@ -17,6 +17,7 @@ ports/application/adapters/gateway/bootstrap.
 | `Telemetry`, `Span`, `MAX_PENDING_METRICS` | `span(name)` / `record(name, ns)` → очередь → `run()` → шина |
 | `TraceWriter` | Подписчик `MetricRecorded`: JSON-строка `{name, ns, turn_id}` в поток |
 | `TelemetryConfig` | `[telemetry]`: `traces_file` |
+| `Plugin`, `PluginContext`, `PluginsConfig`, `MAX_PENDING_PLUGIN_EVENTS` | Контракт плагина (`docs/plugins.md`): подписка через очередь плагина, своя секция конфига, логгер; `run()` запускает владелец |
 
 ## Зависимости
 - domain: `ConfigError`, `TurnId`, `MetricRecorded` (ADR-0005)
@@ -33,6 +34,8 @@ ports/application/adapters/gateway/bootstrap.
 - `Span` пишет метрику только при нормальном выходе; прерванный исключением/отменой — нет.
 - Очередь метрик ограничена `MAX_PENDING_METRICS`; при переполнении метрика теряется, ход — нет.
 - `Telemetry` — только из потока event loop (asyncio.Queue не потокобезопасна).
+- Обработчик плагина не выполняется внутри `publish`: издатель не ждёт плагин. Переполнение
+  очереди и ошибка обработчика — только запись в лог.
 
 - Логгеры не кэшируются: иначе логгеры модулей навсегда привязались бы к первому (потом
   закрытому) потоку; `logging_to` сбрасывает настройку раньше, чем владелец закроет файл.

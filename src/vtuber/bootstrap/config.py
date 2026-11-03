@@ -16,7 +16,14 @@ from vtuber.application.scheduler import SchedulerConfig
 from vtuber.application.voice import VoiceConfig
 from vtuber.bootstrap.persona import PersonaConfig
 from vtuber.gateway import GatewayConfig
-from vtuber.kernel import ConfigFiles, ConfigSection, LoggingConfig, TelemetryConfig, load_config
+from vtuber.kernel import (
+    ConfigFiles,
+    ConfigSection,
+    LoggingConfig,
+    PluginsConfig,
+    TelemetryConfig,
+    load_config,
+)
 
 
 class MemoryConfig(ConfigSection):
@@ -78,6 +85,7 @@ class AppConfig(ConfigSection):
     scheduler: SchedulerConfig
     memory: MemoryConfig
     stt: SttConfig
+    plugins: PluginsConfig
 
 
 def load_app_config(root: Path, env: Mapping[str, str]) -> AppConfig:
