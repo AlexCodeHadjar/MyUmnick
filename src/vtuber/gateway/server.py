@@ -77,6 +77,11 @@ class GatewayServer:
         self._mic = sink
 
     @property
+    def has_client(self) -> bool:
+        """Подключён ли UI: без него ответ некому показать и озвучить."""
+        return self._client is not None
+
+    @property
     def port(self) -> int:
         """Фактический порт (при `port = 0` — выбранный системой)."""
         if self._server is None:

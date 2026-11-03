@@ -8,6 +8,7 @@
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
+| `ExternalTurns(service, send, send_bytes, has_client)` | `run(stream)`: реплики источников плагинов → ходы, по одной и только в тишине; без UI теряются |
 | `TerminalChat(service, bus, read_line, out)` | `run()` — цикл чата до `/exit` или конца ввода |
 | `TerminalSink(out, started_ns)` | `ReplySink` для консоли: печать по мере генерации, время первой порции |
 | `EXIT_COMMAND`, `STOP_COMMAND` | `/exit` — выход, `/stop` — прервать ответ |

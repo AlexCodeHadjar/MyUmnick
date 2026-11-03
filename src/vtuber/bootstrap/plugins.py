@@ -12,7 +12,7 @@ from importlib.metadata import EntryPoint, entry_points
 from typing import Final
 
 from vtuber.domain import ConfigError
-from vtuber.kernel import EventBus, Plugin, PluginContext, PluginsConfig, get_logger
+from vtuber.kernel import EventBus, MessageStream, Plugin, PluginContext, PluginsConfig, get_logger
 
 ENTRY_POINT_GROUP: Final = "vtuber.plugins"
 
@@ -34,17 +34,20 @@ def _installed() -> Iterable[EntryPoint]:
 @asynccontextmanager
 async def running_plugins(
     cfg: PluginsConfig, bus: EventBus, discover: Discover = _installed
-) -> AsyncIterator[None]:
-    """Включённые плагины работают на время контекста; остановка — в обратном порядке."""
+) -> AsyncIterator[tuple[MessageStream, ...]]:
+    """Включённые плагины работают на время контекста; остановка — в обратном порядке.
+
+    Отдаёт источники реплик, которые плагины зарегистрировали в `setup`.
+    """
     if not cfg.enabled:
-        yield
+        yield ()
         return
     found = {point.name: point for point in discover()}
     attempts = [await _start(name, found.get(name), cfg, bus) for name in cfg.enabled]
     started = [one for one in attempts if one is not None]
     pumps = [asyncio.create_task(one.ctx.run()) for one in started]
     try:
-        yield
+        yield tuple(stream for one in started for stream in one.ctx.sources)
     finally:
         for pump in pumps:
             pump.cancel()

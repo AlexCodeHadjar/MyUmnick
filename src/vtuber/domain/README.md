@@ -10,6 +10,7 @@ websockets, torch и о kernel (контракт `domain-pure`). Ошибка �
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
+| `IncomingMessage(source, author, text)` | Реплика извне: сообщение зрителя |
 | `Role`, `Message` | Роль (`system`/`user`/`assistant`) и сообщение контекста LLM |
 | `TurnId`, `Turn` | Номер хода (uint64 в аудиокадре) и завершённый ход; `is_interrupted` — ответ прерван |
 | `Persona` | Характер витюбера из `personas/*.toml`; в `rules` возможен `{emotions}` |

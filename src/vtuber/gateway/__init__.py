@@ -14,6 +14,7 @@ from vtuber.gateway.codec import (
     encode_mic_frame,
     encode_outbound,
 )
+from vtuber.gateway.external_turns import ExternalTurns
 from vtuber.gateway.protocol import (
     PROTOCOL_VERSION,
     AvatarEmotion,
@@ -71,6 +72,7 @@ __all__ = [
     "ErrorCode",
     "ErrorData",
     "ErrorMessage",
+    "ExternalTurns",
     "GatewayConfig",
     "GatewayServer",
     "InboundMessage",

@@ -58,7 +58,7 @@
 ## src/vtuber/application/conversation
 Сценарий «ход диалога»: реплика → промпт → конвейер → история и события.
 
-- `ConversationService` — `src/vtuber/application/conversation/service.py:48` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
+- `ConversationService` — `src/vtuber/application/conversation/service.py:49` — Точка входа сценария «ход диалога» (docs/architecture.md, жизненный цикл хода).
 
 ## src/vtuber/application/memory
 Память витюбера: история разговора, её резюме и долговременные факты (Этап 10).
@@ -151,7 +151,7 @@
 - `LineSource` — `src/vtuber/bootstrap/main.py:58` — Откуда читать строки: `sys.stdin` или его тестовая замена.
 - `Console` — `src/vtuber/bootstrap/main.py:65` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
 - `main` — `src/vtuber/bootstrap/main.py:78` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
-- `run` — `src/vtuber/bootstrap/main.py:231` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
+- `run` — `src/vtuber/bootstrap/main.py:243` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
 - `background_memory` — `src/vtuber/bootstrap/memory.py:39` — Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:33` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
@@ -187,6 +187,7 @@
 - `EmotionChanged` — `src/vtuber/domain/events.py:70` — В ответе встретился тег эмоции.
 - `MetricRecorded` — `src/vtuber/domain/events.py:78` — Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев).
 - `BackendStatusChanged` — `src/vtuber/domain/events.py:87` — Бэкенд загрузился, упал или восстановился.
+- `IncomingMessage` — `src/vtuber/domain/incoming.py:7` — Реплика из источника `source` (например, `twitch`) от автора `author`.
 - `EmbedKind` — `src/vtuber/domain/memory.py:14` — Что кодируется: у e5 запрос и запоминаемый текст кодируются по-разному.
 - `FactSource` — `src/vtuber/domain/memory.py:21` — Откуда факт: от этого зависит доверие к нему при ответе.
 - `Fact` — `src/vtuber/domain/memory.py:33` — Одна запоминаемая мысль; `importance` 0…1 — что вспоминать в первую очередь.
@@ -207,6 +208,7 @@
 - `encode_outbound` — `src/vtuber/gateway/codec.py:85` — JSON-строка сообщения для UI (сериализация pydantic-core, без лишних пробелов).
 - `encode_audio_frame` — `src/vtuber/gateway/codec.py:90` — Бинарный кадр: 16 байт заголовка + PCM s16le моно; `seq` по модулю 2^16.
 - `decode_audio_frame` — `src/vtuber/gateway/codec.py:98` — Разбирает аудиокадр (тесты; кадры микрофона — Этап 11).
+- `ExternalTurns` — `src/vtuber/gateway/external_turns.py:16` — Отвечает на реплики по одной и только в тишине: зритель не обрывает речь витюбера.
 - `turn_ref` — `src/vtuber/gateway/protocol.py:15` — Номер хода в JSON-сообщениях: `t-000042` (в аудиокадре — uint64).
 - `ErrorCode` — `src/vtuber/gateway/protocol.py:20` — Что пошло не так — UI выбирает реакцию по коду, текст показывает пользователю.
 - `EmptyData` — `src/vtuber/gateway/protocol.py:33` — Сообщение без полезной нагрузки.
@@ -252,9 +254,9 @@
 - `configure_logging` — `src/vtuber/kernel/logging.py:23` — Настраивает structlog: одна JSON-строка на событие в `stream`.
 - `logging_to` — `src/vtuber/kernel/logging.py:45` — Логи идут в `stream` на время блока; на выходе — настройка по умолчанию.
 - `get_logger` — `src/vtuber/kernel/logging.py:58` — Логгер модуля; имя попадает в поле `module` каждого события.
-- `PluginsConfig` — `src/vtuber/kernel/plugin.py:21` — Секция `[plugins]`: что включено и настройки каждого плагина в `settings.<имя>`.
-- `PluginContext` — `src/vtuber/kernel/plugin.py:33` — Доступ плагина к ядру: подписка на события, своя секция конфига, логгер.
-- `Plugin` — `src/vtuber/kernel/plugin.py:94` — Плагин: entry point группы `vtuber.plugins` указывает на его класс или фабрику.
+- `PluginsConfig` — `src/vtuber/kernel/plugin.py:24` — Секция `[plugins]`: что включено и настройки каждого плагина в `settings.<имя>`.
+- `PluginContext` — `src/vtuber/kernel/plugin.py:36` — Доступ плагина к ядру: подписка на события, своя секция конфига, логгер.
+- `Plugin` — `src/vtuber/kernel/plugin.py:107` — Плагин: entry point группы `vtuber.plugins` указывает на его класс или фабрику.
 - `Registry` — `src/vtuber/kernel/registry.py:8` — Имя → фабрика `A → T`; например, `Registry[TTSConfig, TTSPort]` для движков TTS.
 - `TelemetryConfig` — `src/vtuber/kernel/telemetry.py:23` — Секция `[telemetry]`; `traces_file` открывает bootstrap (относительно корня проекта).
 - `Telemetry` — `src/vtuber/kernel/telemetry.py:29` — Замеряет стадии хода и отдаёт метрики в шину фоновой задачей `run`.
@@ -264,6 +266,7 @@
 ## src/vtuber/ports
 Порты: Protocol-интерфейсы, через которые ядро обращается к внешнему миру.
 
+- `MessageSource` — `src/vtuber/ports/incoming.py:9` — Поток реплик: чат стрима, тестовый фейк. Сам восстанавливает соединение.
 - `GenerationParams` — `src/vtuber/ports/llm.py:11` — Параметры генерации; значения приходят из конфига (`[llm.generation]`, ADR-0006).
 - `LLMPort` — `src/vtuber/ports/llm.py:19` — Локальная LLM; адаптеры бросают только доменные ошибки (R-43).
 - `EmbedderPort` — `src/vtuber/ports/memory.py:13` — Тексты → векторы единичной длины.

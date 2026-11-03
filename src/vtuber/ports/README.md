@@ -8,6 +8,7 @@
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
+| `MessageSource` | `messages()` → `AsyncGenerator[IncomingMessage]`: реплики извне (чат стрима), сам восстанавливает соединение |
 | `LLMPort` | `stream(messages, params)` → `AsyncGenerator[str]` (закрывать через `aclosing`); `prefill(messages)` |
 | `GenerationParams` | `max_tokens`, `temperature`, `stop`; значения — из конфига |
 | `TTSPort` | `audio_format` (частота PCM движка); `synthesize(phrase)` → `AsyncGenerator[AudioChunk]` (закрывать через `aclosing`) |

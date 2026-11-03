@@ -1,6 +1,7 @@
 """Сервис хода диалога: жизненный цикл, отмена предыдущего хода, история и события."""
 
 import asyncio
+import time
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from itertools import count
@@ -71,6 +72,7 @@ class ConversationService:
         self._prefill: asyncio.Task[None] | None = None
         self._prefilled: str | None = None
         self._hints: HintSource | None = None
+        self._silent_at = 0.0
 
     @property
     def state(self) -> TurnState:
@@ -107,6 +109,7 @@ class ConversationService:
 
     async def cancel(self, reason: CancelReason) -> bool:
         """Прерывает текущий ход и ждёт его завершения; False — прерывать было нечего."""
+        self._silent_at = 0.0  # UI глушит звук сразу при отмене и новом ходе
         turn = self._current
         if turn is None or turn.task is None or turn.task.done():
             return False
@@ -119,6 +122,16 @@ class ConversationService:
         """Ждёт завершения текущего хода (тесты, завершение приложения)."""
         if self._current is not None and self._current.task is not None:
             await asyncio.wait({self._current.task})
+
+    async def wait_silent(self) -> None:
+        """Ждёт конца хода и конца его звука: синтез быстрее речи (RTF 0.02), ход кончается раньше.
+
+        Новый ход вытесняет звук прошлого в UI, поэтому реплика не от ведущего ждёт этой тишины.
+        """
+        await self.wait_idle()
+        while (left := self._silent_at - time.monotonic()) > 0:
+            await asyncio.sleep(left)
+            await self.wait_idle()
 
     async def _warm(self, messages: Sequence[Message]) -> None:
         try:
@@ -140,7 +153,7 @@ class ConversationService:
                 await self._bus.publish(TurnStarted(turn.id))
                 hints = TurnHints() if self._hints is None else await self._hints(turn.user_text)
                 prompt = self._prompts.build(self._memory.messages, turn.user_text, hints.context)
-                sink = _FirstOutputSink(turn.sink, self._start_speaking)
+                sink = _FirstOutputSink(turn.sink, self._start_speaking, self._count_audio)
                 await self._pipeline.run(prompt.messages, sink, turn.parser, hints.temperature)
             except asyncio.CancelledError:
                 await self._stop(turn, TurnCancelled(turn.id, turn.reason), remember=True)
@@ -173,6 +186,9 @@ class ConversationService:
         dropped = self._memory.append(turn)
         await self._bus.publish(TurnRemembered(turn, dropped))
 
+    def _count_audio(self, chunk: AudioChunk) -> None:
+        self._silent_at = max(self._silent_at, time.monotonic()) + chunk.duration_s
+
     def _start_speaking(self) -> None:
         self._move(TurnState.SPEAKING)
 
@@ -186,6 +202,7 @@ class _FirstOutputSink:
 
     inner: ReplySink
     on_first: Callable[[], None]
+    on_audio: Callable[[AudioChunk], None]
     started: bool = False
 
     async def text(self, delta: str) -> None:
@@ -198,6 +215,7 @@ class _FirstOutputSink:
 
     async def audio(self, chunk: AudioChunk) -> None:
         self._mark()
+        self.on_audio(chunk)
         await self.inner.audio(chunk)
 
     async def done(self) -> None:

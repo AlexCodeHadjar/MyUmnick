@@ -17,7 +17,7 @@ ports/application/adapters/gateway/bootstrap.
 | `Telemetry`, `Span`, `MAX_PENDING_METRICS` | `span(name)` / `record(name, ns)` → очередь → `run()` → шина |
 | `TraceWriter` | Подписчик `MetricRecorded`: JSON-строка `{name, ns, turn_id}` в поток |
 | `TelemetryConfig` | `[telemetry]`: `traces_file` |
-| `Plugin`, `PluginContext`, `PluginsConfig`, `MAX_PENDING_PLUGIN_EVENTS` | Контракт плагина (`docs/plugins.md`): подписка через очередь плагина, своя секция конфига, логгер; `run()` запускает владелец |
+| `Plugin`, `PluginContext`, `PluginsConfig`, `MessageStream`, `MAX_PENDING_PLUGIN_EVENTS` | Контракт плагина (`docs/plugins.md`): подписка через очередь плагина, источник реплик, своя секция конфига, логгер; `run()` запускает владелец |
 
 ## Зависимости
 - domain: `ConfigError`, `TurnId`, `MetricRecorded` (ADR-0005)

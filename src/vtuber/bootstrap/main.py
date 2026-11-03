@@ -38,8 +38,8 @@ from vtuber.domain import (
     Role,
     TTSUnavailable,
 )
-from vtuber.gateway import GatewayServer, TerminalChat
-from vtuber.kernel import EventBus, Telemetry, TraceWriter, get_logger, logging_to
+from vtuber.gateway import ExternalTurns, GatewayServer, TerminalChat
+from vtuber.kernel import EventBus, MessageStream, Telemetry, TraceWriter, get_logger, logging_to
 from vtuber.ports import LLMPort
 
 EXIT_CONFIG: Final = 1
@@ -115,9 +115,12 @@ async def _run(
         conversation = build_conversation(cfg, persona, Backends(llm, tts, fillers), core)
         warmup = _Warmup(llm, conversation.prompts.prefix, bus, voice)
         # Память (Этап 10): факты и резюме — в простое, LLM фонового слота; поиск — в ходе (T-12).
-        async with background_memory(cfg, conversation, core), running_plugins(cfg.plugins, bus):
+        async with (
+            background_memory(cfg, conversation, core),
+            running_plugins(cfg.plugins, bus) as sources,
+        ):
             if mode == SERVE_MODE:
-                code = await _serve((cfg, core), conversation.service, warmup, console)
+                code = await _serve((cfg, core, sources), conversation.service, warmup, console)
             else:
                 code = await _chat(conversation.service, warmup, console, bus)
         metrics.cancel()
@@ -135,10 +138,13 @@ async def _chat(
 
 
 async def _serve(
-    app: tuple[AppConfig, Core], service: ConversationService, warmup: "_Warmup", console: Console
+    app: tuple[AppConfig, Core, tuple[MessageStream, ...]],
+    service: ConversationService,
+    warmup: "_Warmup",
+    console: Console,
 ) -> int:
     """Шлюз живёт, пока открыт stdin: Tauri-родитель умер — pipe закрыт — ядро выходит."""
-    cfg, core = app
+    cfg, core, sources = app
     async with GatewayServer(service, warmup.bus, cfg.gateway) as server:
         print(f"Шлюз для UI: ws://{cfg.gateway.host}:{server.port}", file=console.out)
         if (problem := await warmup.run()) is not None:
@@ -150,9 +156,15 @@ async def _serve(
             asyncio.TaskGroup() as tg,
         ):
             serving = tg.create_task(server.serve_forever())
+            external = ExternalTurns(
+                service, server.send, server.send_bytes, lambda: server.has_client
+            )
+            readers = [tg.create_task(external.run(stream)) for stream in sources]
             while await console.read_line() is not None:
                 pass
             serving.cancel()
+            for reader in readers:
+                reader.cancel()
     return 0
 
 

@@ -1,19 +1,22 @@
 """Контракт плагина: всё, что сторонний код видит в ядре, — `PluginContext` (FR-14, Этап 12)."""
 
 import asyncio
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import AsyncGenerator, Awaitable, Callable, Mapping
 from functools import partial
 from typing import Final, Protocol, runtime_checkable
 
 from pydantic import Field, ValidationError
 
-from vtuber.domain import ConfigError
+from vtuber.domain import ConfigError, IncomingMessage
 from vtuber.kernel.bus import EventBus, Handler
 from vtuber.kernel.config import ConfigSection
 from vtuber.kernel.logging import get_logger
 
 MAX_PENDING_PLUGIN_EVENTS: Final = 256
 """Очередь одного плагина: зависший плагин теряет свои события, а не память процесса."""
+
+type MessageStream = Callable[[], AsyncGenerator[IncomingMessage]]
+"""Источник реплик: следующую реплику ядро запрашивает, когда готово на неё ответить."""
 
 _log = get_logger(__name__)
 
@@ -46,6 +49,7 @@ class PluginContext:
             MAX_PENDING_PLUGIN_EVENTS
         )
         self._closed = False
+        self._sources: list[MessageStream] = []
 
     def subscribe[E](self, event_type: type[E], handler: Handler[E]) -> None:
         """Подписывает `handler`; события одного плагина обрабатываются строго по очереди."""
@@ -54,6 +58,15 @@ class PluginContext:
             self._offer(partial(handler, event))
 
         self._bus.subscribe(event_type, enqueue)
+
+    def add_source(self, stream: MessageStream) -> None:
+        """Реплики из `stream` становятся ходами диалога (только в режиме `serve`)."""
+        self._sources.append(stream)
+
+    @property
+    def sources(self) -> tuple[MessageStream, ...]:
+        """Зарегистрированные источники реплик."""
+        return tuple(self._sources)
 
     def settings[T: ConfigSection](self, model: type[T]) -> T:
         """Настройки плагина из `[plugins.settings.<имя>]`, проверенные моделью `model`.

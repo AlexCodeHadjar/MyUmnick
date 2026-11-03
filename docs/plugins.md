@@ -20,7 +20,7 @@
    | `async setup(ctx)` | Подписаться на события, запустить своё |
    | `async shutdown()` | Остановить запущенное в `setup` |
 
-3. Плагин импортирует только `vtuber.kernel` и `vtuber.domain`. Остальные слои — внутренности
+3. Плагин импортирует только `vtuber.kernel`, `vtuber.domain` и `vtuber.ports`. Остальные слои — внутренности
    ядра, они меняются без предупреждения.
 
 ## Что даёт `PluginContext`
@@ -29,10 +29,18 @@
 |---|---|
 | `subscribe(EventType, handler)` | Подписка на событие из `vtuber.domain` |
 | `settings(Model)` | Секция `[plugins.settings.<имя>]`, проверенная наследником `ConfigSection` |
+| `add_source(stream)` | Источник реплик: асинхронный генератор `IncomingMessage` становится ходами диалога |
 | `log` | Логгер; события попадают в общий JSON-лог с полем `module = plugin.<имя>` |
 
 События: `TurnStarted`, `TurnFinished`, `TurnCancelled`, `TurnRemembered`, `EmotionChanged`,
 `MetricRecorded`, `BackendStatusChanged`.
+
+## Источник реплик
+
+Ядро запрашивает следующую реплику, только когда договорило ответ на прошлую, поэтому выбирать, на
+что ответить, лучше в момент запроса (образец — `plugins/stream_chat/`). Реплика из источника не
+перебивает речь, а реплика ведущего из чата UI перебивает её ответ. Реплики идут только в режиме
+`serve`; пока UI не подключён, они теряются.
 
 ## Как подключить
 
