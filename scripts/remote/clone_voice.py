@@ -8,7 +8,7 @@
 """
 
 # Разовый скрипт сервера: движки импортируются внутри функций, каждый есть только в своём окружении.
-# ruff: noqa: INP001, D103, PLC0415, PLR0915, T201, E501
+# ruff: noqa: INP001, D103, PLC0415, FBT001, PLR0915, T201, E501
 
 from __future__ import annotations
 
@@ -160,7 +160,7 @@ def synth(engine: str, prepared: Path, out: Path) -> None:
             print(row, flush=True)
 
 
-def tune(prepared: Path, out: Path, ref: str) -> None:
+def tune(prepared: Path, out: Path, ref: str, plan: list[int], flash: bool) -> None:
     """Скорость OmniVoice без других задач на GPU: образец разобран заранее, шагов синтеза меньше."""
     import soundfile as sf
     import torch
@@ -169,10 +169,15 @@ def tune(prepared: Path, out: Path, ref: str) -> None:
     out.mkdir(parents=True, exist_ok=True)
     refs: dict[str, str] = json.loads((prepared / REFS_FILE).read_text(encoding="utf-8"))
     model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cuda:0", dtype=torch.float16)
+    if flash:  # на сборке с PyPI модуля нет: нужна установка из git и torch под CUDA пакета
+        from omnivoice.models.omnivoice_flashinfer import apply_flashinfer
+
+        apply_flashinfer(model, enable_cuda_graph=True)
+    label = "omni-fi" if flash else "omni"
     started = time.perf_counter()
     prompt = model.create_voice_clone_prompt(ref_audio=str(prepared / ref), ref_text=refs[ref])
     print(f"разбор образца {time.perf_counter() - started:.2f} с", flush=True)
-    for steps in (32, 16, 8):
+    for steps in plan:
         for key, text in PHRASES.items():
             spent = []
             for _ in range(4):  # первый запуск после смены длины дольше: в медиану его не берём
@@ -181,12 +186,12 @@ def tune(prepared: Path, out: Path, ref: str) -> None:
                     text=text, language="Russian", voice_clone_prompt=prompt, num_step=steps
                 )[0]
                 spent.append(time.perf_counter() - begin)
-            name = f"omni-s{steps}__{Path(ref).stem}__{key}.wav"
+            name = f"{label}-s{steps}__{Path(ref).stem}__{key}.wav"
             sf.write(out / name, wav, 24000)
             synth_s = sorted(spent[1:])[1]
             row = {
                 "file": name,
-                "engine": f"omni-s{steps}",
+                "engine": f"{label}-s{steps}",
                 "ref": ref,
                 "phrase": key,
                 "first_s": round(spent[0], 3),
@@ -282,6 +287,8 @@ def main() -> None:
     step.add_argument("prepared", type=Path)
     step.add_argument("out", type=Path)
     step.add_argument("--ref", default="maomao_04.wav")
+    step.add_argument("--steps", type=int, nargs="+", default=[32, 16, 8])
+    step.add_argument("--flash", action="store_true")
     step = steps.add_parser("index")
     step.add_argument("out", type=Path)
     step.add_argument("--prepared", type=Path)
@@ -291,7 +298,7 @@ def main() -> None:
     elif args.step == "synth":
         synth(args.engine, args.prepared, args.out)
     elif args.step == "tune":
-        tune(args.prepared, args.out, args.ref)
+        tune(args.prepared, args.out, args.ref, args.steps, args.flash)
     else:
         index(args.out, args.prepared)
 
