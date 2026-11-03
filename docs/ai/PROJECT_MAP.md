@@ -113,11 +113,11 @@
 - `collect` — `src/vtuber/application/memory/llm_text.py:15` — Ответ LLM целиком (фоновым задачам стрим не нужен); поток закрывается при отмене.
 - `strip_tags` — `src/vtuber/application/memory/llm_text.py:21` — Текст ответа без тегов эмоций.
 - `MemoryEraser` — `src/vtuber/application/memory/privacy.py:12` — Сначала останавливает всё, что ещё может записать, и лишь потом удаляет.
-- `needs_memory` — `src/vtuber/application/memory/retrieval_gate.py:49` — Реплика о прошлом разговоре или вопрос о самом пользователе.
-- `is_factual_question` — `src/vtuber/application/memory/retrieval_gate.py:56` — Вопрос о мире, а не о пользователе: на нём цена выдумки выше, температура ниже.
-- `RetrievalConfig` — `src/vtuber/application/memory/retrieval_gate.py:61` — Секция `[memory.retrieval]`.
-- `TurnHints` — `src/vtuber/application/memory/retrieval_gate.py:76` — Что память добавляет ходу: справка в реплику и температура (None — обычная).
-- `MemoryRecall` — `src/vtuber/application/memory/retrieval_gate.py:83` — Подсказки хода: факты из памяти, если гейт открыт; сбой памяти ход не задерживает.
+- `needs_memory` — `src/vtuber/application/memory/retrieval_gate.py:51` — Реплика о прошлом разговоре или вопрос о самом пользователе.
+- `is_factual_question` — `src/vtuber/application/memory/retrieval_gate.py:58` — Вопрос о мире, а не о пользователе: на нём цена выдумки выше, температура ниже.
+- `RetrievalConfig` — `src/vtuber/application/memory/retrieval_gate.py:63` — Секция `[memory.retrieval]`.
+- `TurnHints` — `src/vtuber/application/memory/retrieval_gate.py:78` — Что память добавляет ходу: справка в реплику и температура (None — обычная).
+- `MemoryRecall` — `src/vtuber/application/memory/retrieval_gate.py:85` — Подсказки хода: факты из памяти, если гейт открыт; сбой памяти ход не задерживает.
 - `ShortTermMemory` — `src/vtuber/application/memory/short_term.py:27` — История ходов для промпта (T-04).
 - `Summarizer` — `src/vtuber/application/memory/summarizer.py:23` — Прежнее резюме + отрезанные сообщения → новое резюме одним запросом к LLM.
 - `VaultedFacts` — `src/vtuber/application/memory/vault_sync.py:31` — `MemoryStorePort`: сначала заметка, потом индекс; сбой записи не оставит факт без файла.

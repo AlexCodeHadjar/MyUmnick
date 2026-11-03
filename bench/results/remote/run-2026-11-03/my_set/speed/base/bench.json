@@ -1,0 +1,741 @@
+{
+  "summary": {
+    "TTFT, мс": {
+      "p50": 88.884864,
+      "p95": 208.833665,
+      "max": 233.626745
+    },
+    "Ответ целиком, мс": {
+      "p50": 544.457792,
+      "p95": 986.313752,
+      "max": 1055.529197
+    },
+    "TPS": {
+      "p50": 84.63778866588383,
+      "p95": 86.00500045389404,
+      "max": 86.30868355681496
+    }
+  },
+  "samples": [
+    {
+      "prompt_id": "short-01",
+      "ttft_ms": 70.597035,
+      "total_ms": 348.491746,
+      "deltas": 24
+    },
+    {
+      "prompt_id": "short-02",
+      "ttft_ms": 92.259319,
+      "total_ms": 256.258598,
+      "deltas": 14
+    },
+    {
+      "prompt_id": "short-03",
+      "ttft_ms": 84.771402,
+      "total_ms": 419.821975,
+      "deltas": 29
+    },
+    {
+      "prompt_id": "short-04",
+      "ttft_ms": 83.594539,
+      "total_ms": 520.561809,
+      "deltas": 38
+    },
+    {
+      "prompt_id": "short-05",
+      "ttft_ms": 84.637368,
+      "total_ms": 476.881309,
+      "deltas": 34
+    },
+    {
+      "prompt_id": "short-06",
+      "ttft_ms": 83.820073,
+      "total_ms": 361.347829,
+      "deltas": 24
+    },
+    {
+      "prompt_id": "short-07",
+      "ttft_ms": 86.119347,
+      "total_ms": 363.595849,
+      "deltas": 24
+    },
+    {
+      "prompt_id": "short-08",
+      "ttft_ms": 87.781049,
+      "total_ms": 434.473026,
+      "deltas": 30
+    },
+    {
+      "prompt_id": "short-09",
+      "ttft_ms": 91.543719,
+      "total_ms": 471.723054,
+      "deltas": 33
+    },
+    {
+      "prompt_id": "short-10",
+      "ttft_ms": 80.010562,
+      "total_ms": 312.474856,
+      "deltas": 20
+    },
+    {
+      "prompt_id": "medium-01",
+      "ttft_ms": 88.884864,
+      "total_ms": 503.331836,
+      "deltas": 36
+    },
+    {
+      "prompt_id": "medium-02",
+      "ttft_ms": 88.826588,
+      "total_ms": 616.77916,
+      "deltas": 46
+    },
+    {
+      "prompt_id": "medium-03",
+      "ttft_ms": 98.294396,
+      "total_ms": 534.95783,
+      "deltas": 38
+    },
+    {
+      "prompt_id": "medium-04",
+      "ttft_ms": 90.843389,
+      "total_ms": 676.340154,
+      "deltas": 51
+    },
+    {
+      "prompt_id": "medium-05",
+      "ttft_ms": 90.379796,
+      "total_ms": 892.873595,
+      "deltas": 70
+    },
+    {
+      "prompt_id": "medium-06",
+      "ttft_ms": 174.13747,
+      "total_ms": 554.768118,
+      "deltas": 33
+    },
+    {
+      "prompt_id": "medium-07",
+      "ttft_ms": 88.185503,
+      "total_ms": 673.72809,
+      "deltas": 51
+    },
+    {
+      "prompt_id": "medium-08",
+      "ttft_ms": 89.078765,
+      "total_ms": 492.687383,
+      "deltas": 35
+    },
+    {
+      "prompt_id": "medium-09",
+      "ttft_ms": 89.393564,
+      "total_ms": 559.98149,
+      "deltas": 41
+    },
+    {
+      "prompt_id": "medium-10",
+      "ttft_ms": 88.764878,
+      "total_ms": 617.128033,
+      "deltas": 46
+    },
+    {
+      "prompt_id": "medium-11",
+      "ttft_ms": 89.755844,
+      "total_ms": 425.023112,
+      "deltas": 29
+    },
+    {
+      "prompt_id": "medium-12",
+      "ttft_ms": 89.326784,
+      "total_ms": 629.569082,
+      "deltas": 47
+    },
+    {
+      "prompt_id": "medium-13",
+      "ttft_ms": 88.640019,
+      "total_ms": 492.183161,
+      "deltas": 35
+    },
+    {
+      "prompt_id": "medium-14",
+      "ttft_ms": 90.090639,
+      "total_ms": 231.311788,
+      "deltas": 12
+    },
+    {
+      "prompt_id": "medium-15",
+      "ttft_ms": 89.62318,
+      "total_ms": 698.200478,
+      "deltas": 53
+    },
+    {
+      "prompt_id": "long-01",
+      "ttft_ms": 107.784523,
+      "total_ms": 670.359278,
+      "deltas": 49
+    },
+    {
+      "prompt_id": "long-02",
+      "ttft_ms": 221.406048,
+      "total_ms": 763.105776,
+      "deltas": 47
+    },
+    {
+      "prompt_id": "long-03",
+      "ttft_ms": 227.680345,
+      "total_ms": 698.592408,
+      "deltas": 41
+    },
+    {
+      "prompt_id": "long-04",
+      "ttft_ms": 201.676341,
+      "total_ms": 924.474827,
+      "deltas": 63
+    },
+    {
+      "prompt_id": "long-05",
+      "ttft_ms": 207.9901,
+      "total_ms": 1046.03467,
+      "deltas": 73
+    },
+    {
+      "prompt_id": "long-06",
+      "ttft_ms": 209.754316,
+      "total_ms": 635.42264,
+      "deltas": 37
+    },
+    {
+      "prompt_id": "long-07",
+      "ttft_ms": 201.112869,
+      "total_ms": 936.855662,
+      "deltas": 64
+    },
+    {
+      "prompt_id": "long-08",
+      "ttft_ms": 201.850087,
+      "total_ms": 1005.163179,
+      "deltas": 70
+    },
+    {
+      "prompt_id": "long-09",
+      "ttft_ms": 197.785547,
+      "total_ms": 852.799918,
+      "deltas": 57
+    },
+    {
+      "prompt_id": "long-10",
+      "ttft_ms": 200.166339,
+      "total_ms": 817.695702,
+      "deltas": 53
+    },
+    {
+      "prompt_id": "memory-01",
+      "ttft_ms": 208.833665,
+      "total_ms": 665.033809,
+      "deltas": 39
+    },
+    {
+      "prompt_id": "memory-02",
+      "ttft_ms": 87.198286,
+      "total_ms": 376.198124,
+      "deltas": 25
+    },
+    {
+      "prompt_id": "memory-03",
+      "ttft_ms": 89.975088,
+      "total_ms": 495.209575,
+      "deltas": 35
+    },
+    {
+      "prompt_id": "memory-04",
+      "ttft_ms": 105.005697,
+      "total_ms": 680.903525,
+      "deltas": 50
+    },
+    {
+      "prompt_id": "memory-05",
+      "ttft_ms": 99.5455,
+      "total_ms": 481.323064,
+      "deltas": 33
+    },
+    {
+      "prompt_id": "short-01",
+      "ttft_ms": 83.223486,
+      "total_ms": 246.849513,
+      "deltas": 14
+    },
+    {
+      "prompt_id": "short-02",
+      "ttft_ms": 77.908394,
+      "total_ms": 447.007703,
+      "deltas": 32
+    },
+    {
+      "prompt_id": "short-03",
+      "ttft_ms": 85.180237,
+      "total_ms": 351.894868,
+      "deltas": 23
+    },
+    {
+      "prompt_id": "short-04",
+      "ttft_ms": 88.298867,
+      "total_ms": 422.523108,
+      "deltas": 29
+    },
+    {
+      "prompt_id": "short-05",
+      "ttft_ms": 79.278647,
+      "total_ms": 492.937975,
+      "deltas": 36
+    },
+    {
+      "prompt_id": "short-06",
+      "ttft_ms": 84.49864,
+      "total_ms": 327.293621,
+      "deltas": 21
+    },
+    {
+      "prompt_id": "short-07",
+      "ttft_ms": 88.125466,
+      "total_ms": 319.678696,
+      "deltas": 20
+    },
+    {
+      "prompt_id": "short-08",
+      "ttft_ms": 87.657456,
+      "total_ms": 421.536117,
+      "deltas": 29
+    },
+    {
+      "prompt_id": "short-09",
+      "ttft_ms": 86.756443,
+      "total_ms": 420.507576,
+      "deltas": 29
+    },
+    {
+      "prompt_id": "short-10",
+      "ttft_ms": 79.338247,
+      "total_ms": 391.360532,
+      "deltas": 27
+    },
+    {
+      "prompt_id": "medium-01",
+      "ttft_ms": 89.748632,
+      "total_ms": 652.371811,
+      "deltas": 49
+    },
+    {
+      "prompt_id": "medium-02",
+      "ttft_ms": 96.710716,
+      "total_ms": 762.027023,
+      "deltas": 58
+    },
+    {
+      "prompt_id": "medium-03",
+      "ttft_ms": 90.14749,
+      "total_ms": 595.782111,
+      "deltas": 44
+    },
+    {
+      "prompt_id": "medium-04",
+      "ttft_ms": 91.117809,
+      "total_ms": 596.758337,
+      "deltas": 44
+    },
+    {
+      "prompt_id": "medium-05",
+      "ttft_ms": 87.259596,
+      "total_ms": 1029.0653,
+      "deltas": 82
+    },
+    {
+      "prompt_id": "medium-06",
+      "ttft_ms": 174.334453,
+      "total_ms": 554.382068,
+      "deltas": 33
+    },
+    {
+      "prompt_id": "medium-07",
+      "ttft_ms": 88.77967,
+      "total_ms": 719.703569,
+      "deltas": 55
+    },
+    {
+      "prompt_id": "medium-08",
+      "ttft_ms": 88.762504,
+      "total_ms": 480.192376,
+      "deltas": 34
+    },
+    {
+      "prompt_id": "medium-09",
+      "ttft_ms": 89.919388,
+      "total_ms": 412.98535,
+      "deltas": 28
+    },
+    {
+      "prompt_id": "medium-10",
+      "ttft_ms": 89.000987,
+      "total_ms": 537.587942,
+      "deltas": 39
+    },
+    {
+      "prompt_id": "medium-11",
+      "ttft_ms": 95.072485,
+      "total_ms": 544.457792,
+      "deltas": 39
+    },
+    {
+      "prompt_id": "medium-12",
+      "ttft_ms": 89.864893,
+      "total_ms": 834.182138,
+      "deltas": 65
+    },
+    {
+      "prompt_id": "medium-13",
+      "ttft_ms": 88.152799,
+      "total_ms": 435.401064,
+      "deltas": 30
+    },
+    {
+      "prompt_id": "medium-14",
+      "ttft_ms": 92.362645,
+      "total_ms": 291.19598,
+      "deltas": 17
+    },
+    {
+      "prompt_id": "medium-15",
+      "ttft_ms": 92.199006,
+      "total_ms": 586.953888,
+      "deltas": 43
+    },
+    {
+      "prompt_id": "long-01",
+      "ttft_ms": 106.713565,
+      "total_ms": 520.240437,
+      "deltas": 36
+    },
+    {
+      "prompt_id": "long-02",
+      "ttft_ms": 232.767242,
+      "total_ms": 829.804695,
+      "deltas": 52
+    },
+    {
+      "prompt_id": "long-03",
+      "ttft_ms": 206.104961,
+      "total_ms": 676.673361,
+      "deltas": 41
+    },
+    {
+      "prompt_id": "long-04",
+      "ttft_ms": 209.554101,
+      "total_ms": 828.33175,
+      "deltas": 54
+    },
+    {
+      "prompt_id": "long-05",
+      "ttft_ms": 208.038062,
+      "total_ms": 1055.529197,
+      "deltas": 74
+    },
+    {
+      "prompt_id": "long-06",
+      "ttft_ms": 177.99801,
+      "total_ms": 637.060082,
+      "deltas": 40
+    },
+    {
+      "prompt_id": "long-07",
+      "ttft_ms": 188.294474,
+      "total_ms": 943.294573,
+      "deltas": 66
+    },
+    {
+      "prompt_id": "long-08",
+      "ttft_ms": 173.502379,
+      "total_ms": 986.313752,
+      "deltas": 71
+    },
+    {
+      "prompt_id": "long-09",
+      "ttft_ms": 168.382295,
+      "total_ms": 1037.356272,
+      "deltas": 76
+    },
+    {
+      "prompt_id": "long-10",
+      "ttft_ms": 175.797767,
+      "total_ms": 850.95398,
+      "deltas": 59
+    },
+    {
+      "prompt_id": "memory-01",
+      "ttft_ms": 180.231303,
+      "total_ms": 673.596498,
+      "deltas": 43
+    },
+    {
+      "prompt_id": "memory-02",
+      "ttft_ms": 78.963285,
+      "total_ms": 401.64869,
+      "deltas": 28
+    },
+    {
+      "prompt_id": "memory-03",
+      "ttft_ms": 81.113153,
+      "total_ms": 415.221999,
+      "deltas": 29
+    },
+    {
+      "prompt_id": "memory-04",
+      "ttft_ms": 79.024151,
+      "total_ms": 573.093205,
+      "deltas": 43
+    },
+    {
+      "prompt_id": "memory-05",
+      "ttft_ms": 79.671911,
+      "total_ms": 436.356742,
+      "deltas": 31
+    },
+    {
+      "prompt_id": "short-01",
+      "ttft_ms": 76.861357,
+      "total_ms": 240.044196,
+      "deltas": 14
+    },
+    {
+      "prompt_id": "short-02",
+      "ttft_ms": 75.826904,
+      "total_ms": 387.405246,
+      "deltas": 27
+    },
+    {
+      "prompt_id": "short-03",
+      "ttft_ms": 75.83217,
+      "total_ms": 341.709192,
+      "deltas": 23
+    },
+    {
+      "prompt_id": "short-04",
+      "ttft_ms": 79.086815,
+      "total_ms": 493.075138,
+      "deltas": 36
+    },
+    {
+      "prompt_id": "short-05",
+      "ttft_ms": 77.588729,
+      "total_ms": 480.703866,
+      "deltas": 35
+    },
+    {
+      "prompt_id": "short-06",
+      "ttft_ms": 77.641557,
+      "total_ms": 401.515211,
+      "deltas": 28
+    },
+    {
+      "prompt_id": "short-07",
+      "ttft_ms": 80.124351,
+      "total_ms": 266.895625,
+      "deltas": 16
+    },
+    {
+      "prompt_id": "short-08",
+      "ttft_ms": 77.61827,
+      "total_ms": 536.749807,
+      "deltas": 40
+    },
+    {
+      "prompt_id": "short-09",
+      "ttft_ms": 77.5413,
+      "total_ms": 400.57937,
+      "deltas": 28
+    },
+    {
+      "prompt_id": "short-10",
+      "ttft_ms": 77.392563,
+      "total_ms": 377.2202,
+      "deltas": 26
+    },
+    {
+      "prompt_id": "medium-01",
+      "ttft_ms": 81.11633,
+      "total_ms": 494.838894,
+      "deltas": 36
+    },
+    {
+      "prompt_id": "medium-02",
+      "ttft_ms": 80.171322,
+      "total_ms": 573.807966,
+      "deltas": 43
+    },
+    {
+      "prompt_id": "medium-03",
+      "ttft_ms": 79.770617,
+      "total_ms": 504.888872,
+      "deltas": 37
+    },
+    {
+      "prompt_id": "medium-04",
+      "ttft_ms": 77.72997,
+      "total_ms": 779.037444,
+      "deltas": 61
+    },
+    {
+      "prompt_id": "medium-05",
+      "ttft_ms": 79.316629,
+      "total_ms": 881.356249,
+      "deltas": 69
+    },
+    {
+      "prompt_id": "medium-06",
+      "ttft_ms": 164.472542,
+      "total_ms": 532.616594,
+      "deltas": 32
+    },
+    {
+      "prompt_id": "medium-07",
+      "ttft_ms": 78.788973,
+      "total_ms": 640.912596,
+      "deltas": 49
+    },
+    {
+      "prompt_id": "medium-08",
+      "ttft_ms": 77.399826,
+      "total_ms": 411.416919,
+      "deltas": 29
+    },
+    {
+      "prompt_id": "medium-09",
+      "ttft_ms": 78.972032,
+      "total_ms": 458.313745,
+      "deltas": 33
+    },
+    {
+      "prompt_id": "medium-10",
+      "ttft_ms": 78.178061,
+      "total_ms": 662.310806,
+      "deltas": 51
+    },
+    {
+      "prompt_id": "medium-11",
+      "ttft_ms": 80.187236,
+      "total_ms": 483.065274,
+      "deltas": 35
+    },
+    {
+      "prompt_id": "medium-12",
+      "ttft_ms": 79.084407,
+      "total_ms": 790.134572,
+      "deltas": 62
+    },
+    {
+      "prompt_id": "medium-13",
+      "ttft_ms": 78.580053,
+      "total_ms": 515.830099,
+      "deltas": 38
+    },
+    {
+      "prompt_id": "medium-14",
+      "ttft_ms": 79.455378,
+      "total_ms": 436.722386,
+      "deltas": 31
+    },
+    {
+      "prompt_id": "medium-15",
+      "ttft_ms": 79.032381,
+      "total_ms": 618.739172,
+      "deltas": 47
+    },
+    {
+      "prompt_id": "long-01",
+      "ttft_ms": 103.8803,
+      "total_ms": 632.694294,
+      "deltas": 46
+    },
+    {
+      "prompt_id": "long-02",
+      "ttft_ms": 202.757689,
+      "total_ms": 958.755654,
+      "deltas": 66
+    },
+    {
+      "prompt_id": "long-03",
+      "ttft_ms": 233.626745,
+      "total_ms": 692.540404,
+      "deltas": 40
+    },
+    {
+      "prompt_id": "long-04",
+      "ttft_ms": 178.197228,
+      "total_ms": 854.837837,
+      "deltas": 59
+    },
+    {
+      "prompt_id": "long-05",
+      "ttft_ms": 206.275688,
+      "total_ms": 1040.58484,
+      "deltas": 73
+    },
+    {
+      "prompt_id": "long-06",
+      "ttft_ms": 155.162444,
+      "total_ms": 614.579027,
+      "deltas": 40
+    },
+    {
+      "prompt_id": "long-07",
+      "ttft_ms": 187.636469,
+      "total_ms": 863.457529,
+      "deltas": 59
+    },
+    {
+      "prompt_id": "long-08",
+      "ttft_ms": 154.392623,
+      "total_ms": 909.272688,
+      "deltas": 66
+    },
+    {
+      "prompt_id": "long-09",
+      "ttft_ms": 158.67171,
+      "total_ms": 893.061949,
+      "deltas": 64
+    },
+    {
+      "prompt_id": "long-10",
+      "ttft_ms": 174.720184,
+      "total_ms": 896.744823,
+      "deltas": 63
+    },
+    {
+      "prompt_id": "memory-01",
+      "ttft_ms": 178.977696,
+      "total_ms": 684.161722,
+      "deltas": 44
+    },
+    {
+      "prompt_id": "memory-02",
+      "ttft_ms": 79.449835,
+      "total_ms": 368.427057,
+      "deltas": 25
+    },
+    {
+      "prompt_id": "memory-03",
+      "ttft_ms": 79.661768,
+      "total_ms": 471.093082,
+      "deltas": 34
+    },
+    {
+      "prompt_id": "memory-04",
+      "ttft_ms": 79.09295,
+      "total_ms": 550.038294,
+      "deltas": 41
+    },
+    {
+      "prompt_id": "memory-05",
+      "ttft_ms": 79.802277,
+      "total_ms": 425.99811,
+      "deltas": 30
+    }
+  ]
+}

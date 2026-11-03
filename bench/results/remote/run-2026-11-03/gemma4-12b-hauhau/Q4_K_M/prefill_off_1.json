@@ -1,0 +1,201 @@
+{
+  "summary": {
+    "TTFT, мс": {
+      "p50": 167.036616,
+      "p95": 218.635524,
+      "max": 219.768786
+    },
+    "Ответ целиком, мс": {
+      "p50": 862.56194,
+      "p95": 991.770874,
+      "max": 1036.009506
+    },
+    "TPS": {
+      "p50": 85.67764505739375,
+      "p95": 86.41589773473528,
+      "max": 86.6777113486732
+    }
+  },
+  "samples": [
+    {
+      "prompt_id": "long-01",
+      "ttft_ms": 96.189299,
+      "total_ms": 556.122847,
+      "deltas": 40
+    },
+    {
+      "prompt_id": "long-02",
+      "ttft_ms": 183.231359,
+      "total_ms": 745.845428,
+      "deltas": 49
+    },
+    {
+      "prompt_id": "long-03",
+      "ttft_ms": 214.282054,
+      "total_ms": 651.849605,
+      "deltas": 38
+    },
+    {
+      "prompt_id": "long-04",
+      "ttft_ms": 179.406287,
+      "total_ms": 650.733336,
+      "deltas": 41
+    },
+    {
+      "prompt_id": "long-05",
+      "ttft_ms": 178.049499,
+      "total_ms": 888.831472,
+      "deltas": 62
+    },
+    {
+      "prompt_id": "long-06",
+      "ttft_ms": 157.948457,
+      "total_ms": 892.570236,
+      "deltas": 64
+    },
+    {
+      "prompt_id": "long-07",
+      "ttft_ms": 164.021762,
+      "total_ms": 839.990774,
+      "deltas": 59
+    },
+    {
+      "prompt_id": "long-08",
+      "ttft_ms": 136.362587,
+      "total_ms": 917.657888,
+      "deltas": 68
+    },
+    {
+      "prompt_id": "long-09",
+      "ttft_ms": 167.139322,
+      "total_ms": 685.943505,
+      "deltas": 45
+    },
+    {
+      "prompt_id": "long-10",
+      "ttft_ms": 87.852724,
+      "total_ms": 764.24551,
+      "deltas": 59
+    },
+    {
+      "prompt_id": "long-01",
+      "ttft_ms": 200.288805,
+      "total_ms": 763.573136,
+      "deltas": 49
+    },
+    {
+      "prompt_id": "long-02",
+      "ttft_ms": 218.635524,
+      "total_ms": 907.263228,
+      "deltas": 60
+    },
+    {
+      "prompt_id": "long-03",
+      "ttft_ms": 203.634812,
+      "total_ms": 675.121066,
+      "deltas": 41
+    },
+    {
+      "prompt_id": "long-04",
+      "ttft_ms": 207.643545,
+      "total_ms": 872.823628,
+      "deltas": 58
+    },
+    {
+      "prompt_id": "long-05",
+      "ttft_ms": 167.036616,
+      "total_ms": 958.519838,
+      "deltas": 69
+    },
+    {
+      "prompt_id": "long-06",
+      "ttft_ms": 159.73612,
+      "total_ms": 585.615804,
+      "deltas": 37
+    },
+    {
+      "prompt_id": "long-07",
+      "ttft_ms": 161.091344,
+      "total_ms": 885.450775,
+      "deltas": 63
+    },
+    {
+      "prompt_id": "long-08",
+      "ttft_ms": 130.027928,
+      "total_ms": 991.770874,
+      "deltas": 75
+    },
+    {
+      "prompt_id": "long-09",
+      "ttft_ms": 166.57404,
+      "total_ms": 971.504377,
+      "deltas": 70
+    },
+    {
+      "prompt_id": "long-10",
+      "ttft_ms": 153.582101,
+      "total_ms": 773.652312,
+      "deltas": 54
+    },
+    {
+      "prompt_id": "long-01",
+      "ttft_ms": 188.143521,
+      "total_ms": 546.065649,
+      "deltas": 31
+    },
+    {
+      "prompt_id": "long-02",
+      "ttft_ms": 219.768786,
+      "total_ms": 976.398,
+      "deltas": 66
+    },
+    {
+      "prompt_id": "long-03",
+      "ttft_ms": 209.34519,
+      "total_ms": 670.312228,
+      "deltas": 40
+    },
+    {
+      "prompt_id": "long-04",
+      "ttft_ms": 183.792273,
+      "total_ms": 918.741365,
+      "deltas": 63
+    },
+    {
+      "prompt_id": "long-05",
+      "ttft_ms": 161.576038,
+      "total_ms": 953.978375,
+      "deltas": 69
+    },
+    {
+      "prompt_id": "long-06",
+      "ttft_ms": 168.775775,
+      "total_ms": 629.644714,
+      "deltas": 40
+    },
+    {
+      "prompt_id": "long-07",
+      "ttft_ms": 150.853681,
+      "total_ms": 862.56194,
+      "deltas": 62
+    },
+    {
+      "prompt_id": "long-08",
+      "ttft_ms": 129.946786,
+      "total_ms": 955.520752,
+      "deltas": 72
+    },
+    {
+      "prompt_id": "long-09",
+      "ttft_ms": 170.73516,
+      "total_ms": 1036.009506,
+      "deltas": 76
+    },
+    {
+      "prompt_id": "long-10",
+      "ttft_ms": 150.979981,
+      "total_ms": 914.728339,
+      "deltas": 67
+    }
+  ]
+}

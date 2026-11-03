@@ -1,0 +1,24 @@
+2026-11-03 20:30:46 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:30:49 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:30:51 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:30:54 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:30:56 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:30:59 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:31:01 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:31:04 [info     ] memory.facts_learned           extracted=2 module=vtuber.application.memory.facts stored=2 turn=1
+2026-11-03 20:31:06 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:31:09 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:31:11 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:31:13 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=2
+2026-11-03 20:31:16 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:31:20 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:31:23 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:31:25 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:31:28 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:31:30 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:31:33 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:31:35 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+2026-11-03 20:31:38 [info     ] memory.facts_learned           extracted=1 module=vtuber.application.memory.facts stored=1 turn=1
+Кейсов: 20; факт записан: 20; справка дошла: 18; ответ верный: 18 (90 %)
+x cross-08: записано 2, сбоев 0, справка (); '<thinking>Честно говоря, я пока не знаю, как зовут твою сестру. Расскажешь мне?'
+x cross-16: записано 1, сбоев 0, справка (); '<thinking>Честно говоря, я пока не знаю, как зовут твою собаку. Расскажешь мне?'

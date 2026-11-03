@@ -1,0 +1,10 @@
+py-spy> Sampling process 100 times a second. Press Control-C to exit.
+
+Метрика                    p50       p95       max
+TTFT, мс                  88.9     211.8     258.0
+Ответ целиком, мс        551.2     897.8    1138.6
+TPS                       84.4      85.7      86.2
+Замеров: 120
+
+py-spy> Stopped sampling because process exited
+py-spy> Wrote flamegraph data to '/workspace/vruber/bench/results/remote/my_set/profile/flame.svg'. Samples: 648 Errors: 1

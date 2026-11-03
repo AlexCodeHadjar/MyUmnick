@@ -1,0 +1,6 @@
+Resolved 1 package in 131ms
+Downloading py-spy (2.8MiB)
+ Downloaded py-spy
+Prepared 1 package in 76ms
+Installed 1 package in 9ms
+ + py-spy==0.4.3

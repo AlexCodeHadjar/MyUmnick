@@ -1,0 +1,35 @@
+[20:05:50] докачка
+[20:05:50] ок gemma4-12b-hauhau/mmproj-Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-BF16.gguf
+[20:05:50] ок gemma4-12b-hauhau/mtp-gemma-4-12B-it.gguf
+overlay         150G   46G  105G  31% /
+models/memory/e5-small:
+total 458532
+drwxr-xr-x 2 root root        65 Nov  3 19:44 .
+drwxr-xr-x 3 root root        22 Nov  3 19:44 ..
+-rw-r--r-- 1 root root       653 Nov  3 19:44 config.json
+-rw-r--r-- 1 root root 452448256 Nov  3 19:44 model.onnx
+-rw-r--r-- 1 root root  17082730 Nov  3 19:44 tokenizer.json
+
+models/tts/silero:
+total 144204
+drwxr-xr-x 2 root root        24 Nov  3 19:44 .
+drwxr-xr-x 3 root root        20 Nov  3 19:44 ..
+-rw-r--r-- 1 root root 147664410 Nov  3 19:44 v5_6_ru.pt
+[20:05:50] uv sync all-extras
+[20:05:50] жду S-19.1
+[20:11:50] run_my_set
+[20:11:50] шаг profile
+[20:13:17] шаг speed
+[20:16:56] шаг vision
+[20:18:24] итоги: /workspace/vruber/bench/results/remote/my_set
+[20:18:27] finish_chosen
+[20:18:31] pytest -m gpu
+[20:18:39] голос: TTFA с настоящей LLM
+[20:19:18] базовая задержка, все реплики
+10 длинных реплик
+[20:20:30] прогрев черновиком: без и с ним
+[20:22:18] память: цена в TTFT и сквозной сценарий (Этап 10)
+[20:22:23] качество: eval на 150 кейсах (S-10.6)
+[20:24:24] FINISH-DONE
+[20:24:24] gesture, emotion, viewer_attacks
+[20:25:22] QUEUE-DONE

@@ -133,3 +133,18 @@ async def test_turn_gets_facts_in_user_message_and_keeps_history_clean() -> None
     assert params.temperature == 0.7
     # В истории — реплика как есть: справка не копится и не ломает префикс следующего хода.
     assert history.messages[0].text == "Как меня зовут? Как зовут пользователя"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Как зовут мою сестру?",
+        "Как зовут мою собаку?",
+        "Где моя сумка?",
+        "О моём брате что скажешь?",
+    ],
+)
+def test_all_forms_of_my_open_the_gate(text: str) -> None:
+    # На замере 2026-11-03 без «мою» поиск не шёл вовсе, и модель отвечала «не знаю».
+    assert needs_memory(text)
+    assert not is_factual_question(text)

@@ -18,6 +18,7 @@ from contextlib import aclosing
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from statistics import median
 from typing import Final, TextIO
 
 from tools.bench_latency import EXIT_UNAVAILABLE, NS_PER_MS, Stats, percentile, render
@@ -79,6 +80,22 @@ def summarize(timings: Sequence[Timing]) -> dict[str, Stats]:
     }
 
 
+def memory_cost_ms(timings: Sequence[Timing]) -> float:
+    """Цена памяти p50: сравниваются запросы на одном месте в паре, иначе видно только порядок.
+
+    Второй запрос пары быстрее первого на ~100 мс, чей бы он ни был.
+    """
+    plain_first = [t for index, t in enumerate(timings) if index % 2 == 0]
+    memory_first = [t for index, t in enumerate(timings) if index % 2 == 1]
+    if not plain_first or not memory_first:
+        return 0.0
+    first = median(t.with_memory_ms for t in memory_first) - median(t.plain_ms for t in plain_first)
+    second = median(t.with_memory_ms for t in plain_first) - median(
+        t.plain_ms for t in memory_first
+    )
+    return (first + second) / 2
+
+
 def main(argv: Sequence[str], env: Mapping[str, str], out: TextIO) -> int:
     """Код возврата: 0 — готово, 2 — LLM недоступна."""
     args = _parse(argv)
@@ -90,6 +107,7 @@ def main(argv: Sequence[str], env: Mapping[str, str], out: TextIO) -> int:
         return EXIT_UNAVAILABLE
     summary = summarize(timings)
     print(render(summary, len(timings)), file=out)
+    print(f"Цена памяти p50 на одном месте в паре: {memory_cost_ms(timings):+.1f} мс", file=out)
     if args.out:
         report = {"summary": summary, "timings": timings}
         args.out.write_text(

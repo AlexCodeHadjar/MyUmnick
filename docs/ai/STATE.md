@@ -116,6 +116,7 @@ _Обновлено: 2026-11-03, подготовка к аренде_
 - [x] S-16.2 Редактор памяти: `MemoryEditor`, `gateway/memory_bridge.py`, `ui/src/features/memory/` (Ctrl+Shift+Y), `[memory].profile`
 - [x] S-16.1 Ветвление: `application/conversation/branches.py`, `gateway/branch_bridge.py`, `chat/BranchBar.svelte`
 - [ ] S-18.5 Пение: `plugins/singing` исполняет готовую запись, движок не выбран (ADR-0028)
+- [x] Аренда 2026-11-03: `docs/perf/report-2026-11-03.md`, ADR-0030 (черновик MTP выключен), `bench/baseline.json`; блокировок event loop нет. S-12.5 и S-12.6 без замеров: отменены пользователем
 - [x] Аренда, подготовка: `scripts/remote/run_my_set.sh`, `models_extra.tsv` (S-9.1, S-9.3, S-12.5, S-12.6, S-18.1); целиком не запускался
 - [x] S-12.6 Помощник-программист: `plugins/code_assistant`, `chat.attachment`, `ModelHost`; модель и замер ждут аренды. S-12.5: `eval/code_en.jsonl`, `tools/eval_code.py`
 - [x] S-9.4 Гейт регрессий: `tools/perf_gate.py`, `tools/bench_core.py`, `bench/baseline_core.json`; блокировок цикла на пути без GPU нет
@@ -278,7 +279,7 @@ _Обновлено: 2026-11-03, подготовка к аренде_
 - Файлы — всегда `encoding="utf-8"`; `.ps1` — UTF-8 **с BOM**.
 - Протокол меняется только в `gateway/protocol.py` и `protocol_extras.py`; сообщение добавляется вместе с кодом,
   который его использует. JSON — pydantic-core, orjson не нужен.
-- Новая зависимость — ADR. ADR-0004 — выбор LLM (S-2.5); следующий свободный — ADR-0030.
+- Новая зависимость — ADR. ADR-0004 — выбор LLM (S-2.5); следующий свободный — ADR-0031.
 
 ## Последний журнал
-docs/ai/sessions/2026-11-03_rental-prep.md
+docs/ai/sessions/2026-11-03_rental-results.md

@@ -26,7 +26,8 @@ _RECALL: Final = re.compile(
     re.IGNORECASE,
 )
 _ABOUT_USER: Final = re.compile(
-    r"\b(я|мне|меня|мной|мой|моя|моё|мое|мои|моего|моей|моих|моему|моим|у меня|обо мне)\b",
+    r"\b(я|мне|меня|мной|мой|моя|моё|мое|мою|мои|моего|моей|моих|моему|моим|моими|моём|моем"
+    r"|у меня|обо мне)\b",
     re.IGNORECASE,
 )
 _QUESTION: Final = re.compile(
@@ -40,7 +41,8 @@ _FACTUAL: Final = re.compile(
     re.IGNORECASE,
 )
 _ME_AS_SUBJECT: Final = re.compile(
-    r"\b(как|что|кто|где|когда|сколько|куда)\b.*\b(я|меня|мне|мой|моя|моё)\b", re.IGNORECASE
+    r"\b(как|что|кто|где|когда|сколько|куда)\b.*\b(я|меня|мне|мой|моя|моё|мою|мои|моего|моей)\b",
+    re.IGNORECASE,
 )
 
 _log = get_logger(__name__)
