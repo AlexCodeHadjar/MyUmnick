@@ -58,6 +58,9 @@
 ## src/vtuber/adapters/stt
 Адаптеры голосового ввода: распознавание и детектор речи (ADR-0016).
 
+- `SenseVoiceConfig` — `src/vtuber/adapters/stt/sensevoice.py:33` — Секция `[stt.sound_model]`: работает на CPU, GPU остаётся диалогу.
+- `sound_of` — `src/vtuber/adapters/stt/sensevoice.py:42` — Метка модели → звук; речь, дыхание и неизвестное — не звук для реакции.
+- `SenseVoiceSounds` — `src/vtuber/adapters/stt/sensevoice.py:59` — Реализует `SoundClassifierPort`; модель живёт столько же, сколько контекст.
 - `VadConfig` — `src/vtuber/adapters/stt/silero_vad.py:31` — Секция `[stt.vad]`: файл модели и потоки CPU (1 — окно короткое, больше не нужно).
 - `SileroVad` — `src/vtuber/adapters/stt/silero_vad.py:46` — Реализует VadPort. Модели нет — отвечает `STTUnavailable`, не падает при старте.
 - `WhisperConfig` — `src/vtuber/adapters/stt/whisper.py:34` — Секция `[stt.whisper]`.
@@ -227,8 +230,8 @@
 
 - `MemoryConfig` — `src/vtuber/bootstrap/config.py:38` — Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
 - `SttConfig` — `src/vtuber/bootstrap/config.py:71` — Секция `[stt]`: голосовой ввод в `serve` (Этап 11, ADR-0016); модели — при первом кадре.
-- `AppConfig` — `src/vtuber/bootstrap/config.py:92` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:115` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `AppConfig` — `src/vtuber/bootstrap/config.py:100` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:123` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
 - `Core` — `src/vtuber/bootstrap/container.py:21` — Общие механизмы, которые получают все: шина событий и телеметрия.
 - `Backends` — `src/vtuber/bootstrap/container.py:29` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
 - `llm_backends` — `src/vtuber/bootstrap/container.py:40` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
@@ -255,7 +258,7 @@
 - `VoiceParts` — `src/vtuber/bootstrap/supervision.py:88` — Голос шлюза: движок (грузится при старте), его междометия и обёртка для наблюдателя.
 - `build_voice` — `src/vtuber/bootstrap/supervision.py:97` — Голос из конфига; `none` — без голоса.
 - `with_voice` — `src/vtuber/bootstrap/supervision.py:107` — Движки хода: конвейер получает обёртку, чтобы сбой голоса был замечен.
-- `voice_input` — `src/vtuber/bootstrap/voice_input.py:91` — Подключает микрофон к шлюзу на время контекста; выключено в конфиге — кадры не нужны.
+- `voice_input` — `src/vtuber/bootstrap/voice_input.py:139` — Подключает микрофон к шлюзу на время контекста; выключено в конфиге — кадры не нужны.
 - `AppParts` — `src/vtuber/bootstrap/wiring.py:31` — Что шлюзу нужно от приложения, кроме сервиса хода.
 - `connect_memory` — `src/vtuber/bootstrap/wiring.py:43` — Приватный режим работает и без памяти; редактор и очистка честно скажут, что её нет.
 - `connect_branches` — `src/vtuber/bootstrap/wiring.py:53` — Дерево начинается с восстановленного разговора: его ветки тоже можно продолжить.

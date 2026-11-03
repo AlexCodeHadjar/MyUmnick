@@ -118,6 +118,19 @@ max_phrase_s = 20.0            # длинная фраза закрываетс�
 mode = "always"
 names = ["мика"]
 
+[stt.sounds]                   # S-14.4: смех, аплодисменты и т.п.; выключено, пока точность не замерена
+enabled = false
+window_s = 3.0                 # длина разбираемого окна микрофона
+gate_rms = 0.02                # тише — тишина, модель не тратится
+min_gap_s = 120.0              # реагировать вслух не чаще
+react_to = ["laughter", "applause"]
+
+[stt.sound_model]              # SenseVoice (ADR-0027): только на CPU, грузится при enabled = true
+model_path = "models/stt/sensevoice/model.int8.onnx"
+tokens_path = "models/stt/sensevoice/tokens.txt"
+threads = 2
+timeout_s = 5.0
+
 [stt.vad]
 model_path = "models/stt/vad/silero_vad.onnx"
 threads = 1                    # окно короткое: один поток с запасом

@@ -87,6 +87,11 @@ class VoiceListener:
         self._hold_timer: asyncio.Task[None] | None = None
         self.clock: Callable[[], int] = time.perf_counter_ns
 
+    @property
+    def in_phrase(self) -> bool:
+        """Идёт ли фраза: ведущего нельзя перебивать."""
+        return self._segmenter.in_phrase or self._held is not None
+
     def feed(self, chunk: AudioChunk) -> None:
         """Кадр микрофона; режется на окна детектора. Другая частота — ошибка UI, кадр лишний."""
         if chunk.format != self._format:

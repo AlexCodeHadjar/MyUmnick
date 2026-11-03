@@ -5,20 +5,36 @@ Whisper turbo занимает VRAM и секунды старта: пока п�
 """
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
-from vtuber.adapters.stt import SileroVad, WhisperSTT
+from vtuber.adapters.stt import SenseVoiceSounds, SileroVad, WhisperSTT
 from vtuber.application.conversation import ConversationService
 from vtuber.application.supervision import FailureFlag, Supervised, WatchedSTT
-from vtuber.application.voice import VoiceEvents, VoiceListener, addressed
+from vtuber.application.voice import (
+    SoundActions,
+    SoundWatcher,
+    VoiceEvents,
+    VoiceListener,
+    addressed,
+)
 from vtuber.bootstrap.config import AppConfig, SttConfig
 from vtuber.bootstrap.container import Core
-from vtuber.domain import AudioChunk, BackendState, BackendStatusChanged, Component
-from vtuber.gateway import GatewayServer, VoiceBridge
+from vtuber.domain import (
+    AudioChunk,
+    BackendState,
+    BackendStatusChanged,
+    Component,
+    STTUnavailable,
+)
+from vtuber.gateway import GatewayServer, VoiceBridge, WsReplySink
 from vtuber.kernel import get_logger
 
 _log = get_logger(__name__)
+
+
+async def _no_reaction(_: str) -> None:
+    """Пока реакцию не подключили, звуки только идут на шину."""
 
 
 class _LazyVoice:
@@ -35,10 +51,20 @@ class _LazyVoice:
         self._flag = FailureFlag()
         self._early: list[AudioChunk] = []
         self._listener: VoiceListener | None = None
+        self._watcher: SoundWatcher | None = None
+        self._react: Callable[[str], Awaitable[None]] = _no_reaction
+        self._busy: Callable[[], bool] = lambda: True
+
+    def use_sounds(self, react: Callable[[str], Awaitable[None]], busy: Callable[[], bool]) -> None:
+        """Чем отвечать на звуки вокруг и когда нельзя; нужно, только если они включены."""
+        self._react = react
+        self._busy = busy
 
     async def on_frame(self, chunk: AudioChunk) -> None:
         if self._listener is not None:
             self._listener.feed(chunk)
+            if self._watcher is not None:
+                self._watcher.feed(chunk)
             return
         self._early.append(chunk)
         if self._task is None:
@@ -84,7 +110,29 @@ class _LazyVoice:
             self._listener = listener
             await self._status(BackendState.READY)
             _log.info("voice.ready")
-            await listener.run()
+            sounds = (
+                asyncio.create_task(self.watch_sounds(listener))
+                if self._cfg.sounds.enabled
+                else None
+            )
+            try:
+                await listener.run()
+            finally:
+                if sounds is not None:
+                    sounds.cancel()
+
+    async def watch_sounds(self, listener: VoiceListener) -> None:
+        """Отдельной задачей: модель грузится секунды, а голосовой ввод её ждать не должен."""
+        busy = self._busy
+        actions = SoundActions(self._react, lambda: listener.in_phrase or busy())
+        try:
+            async with SenseVoiceSounds(self._cfg.sound_model) as sounds:
+                self._watcher = SoundWatcher(self._cfg.sounds, sounds, self._core.bus, actions)
+                await self._watcher.run()
+        except STTUnavailable as exc:
+            _log.warning("sounds.unavailable", problem=str(exc))
+        finally:
+            self._watcher = None
 
 
 @asynccontextmanager
@@ -98,6 +146,12 @@ async def voice_input(
     bridge = VoiceBridge(service, server.send, server.send_bytes, core.telemetry)
     events = addressed(cfg.stt.addressing, bridge)
     voice = _LazyVoice(cfg.stt, events, core, cfg.supervisor.stt_timeout_s)
+
+    async def react(text: str) -> None:
+        # Как зритель: ход внешний, инструменты и память о ведущем ему не положены.
+        await service.handle(text, WsReplySink(server.send, server.send_bytes), external=True)
+
+    voice.use_sounds(react, lambda: service.engaged or not server.has_client)
     server.on_mic(voice.on_frame)
     try:
         yield voice
