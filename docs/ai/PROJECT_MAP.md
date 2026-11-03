@@ -204,9 +204,14 @@
 ## src/vtuber/application/voice
 Голосовой ввод (Этап 11): нарезка речи на фразы, распознавание, перебивание.
 
-- `VoiceConfig` — `src/vtuber/application/voice/listener.py:41` — `interim_ms` — как часто считать промежуточную гипотезу; `min_phrase_ms` — короче не речь.
-- `VoiceEvents` — `src/vtuber/application/voice/listener.py:49` — Кто получает голосовой ввод: шлюз (шлёт в UI и начинает ход) или тест.
-- `VoiceListener` — `src/vtuber/application/voice/listener.py:65` — Очередь кадров и обработка окон; `feed` не ждёт моделей, `run` — задачей у владельца.
+- `AddressingConfig` — `src/vtuber/application/voice/addressing.py:20` — Подсекция `[stt.addressing]`: `always` — любая речь, `by_name` — только обращение.
+- `name_pattern` — `src/vtuber/application/voice/addressing.py:27` — Обращение: имя в начале, можно после «эй», или в самом конце («как дела, Мика?»).
+- `AddressedEvents` — `src/vtuber/application/voice/addressing.py:35` — Пропускает голосовые события, только если обратились по имени.
+- `addressed` — `src/vtuber/application/voice/addressing.py:71` — В режиме `always` обёртки нет: лишний шаг в горячем пути ни к чему.
+- `looks_unfinished` — `src/vtuber/application/voice/completeness.py:58` — Обрыв видно по многоточию или последним словам; вопрос и восклицание — конец точно.
+- `VoiceConfig` — `src/vtuber/application/voice/listener.py:42` — `interim_ms` — как часто считать промежуточную гипотезу; `min_phrase_ms` — короче не речь.
+- `VoiceEvents` — `src/vtuber/application/voice/listener.py:51` — Кто получает голосовой ввод: шлюз (шлёт в UI и начинает ход) или тест.
+- `VoiceListener` — `src/vtuber/application/voice/listener.py:67` — Очередь кадров и обработка окон; `feed` не ждёт моделей, `run` — задачей у владельца.
 - `SegmenterConfig` — `src/vtuber/application/voice/segmenter.py:15` — Подсекция `[stt.segmenter]`.
 - `SpeechStarted` — `src/vtuber/application/voice/segmenter.py:33` — Началась фраза.
 - `BargeIn` — `src/vtuber/application/voice/segmenter.py:38` — Речь длится достаточно, чтобы перебить витюбера; один раз на фразу.
@@ -218,8 +223,8 @@
 
 - `MemoryConfig` — `src/vtuber/bootstrap/config.py:38` — Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
 - `SttConfig` — `src/vtuber/bootstrap/config.py:71` — Секция `[stt]`: голосовой ввод в `serve` (Этап 11, ADR-0016); модели — при первом кадре.
-- `AppConfig` — `src/vtuber/bootstrap/config.py:91` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:114` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `AppConfig` — `src/vtuber/bootstrap/config.py:92` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:115` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
 - `Core` — `src/vtuber/bootstrap/container.py:21` — Общие механизмы, которые получают все: шина событий и телеметрия.
 - `Backends` — `src/vtuber/bootstrap/container.py:29` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
 - `llm_backends` — `src/vtuber/bootstrap/container.py:40` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).

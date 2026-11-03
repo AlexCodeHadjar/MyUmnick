@@ -16,7 +16,7 @@ from vtuber.application.pipeline import PipelineConfig
 from vtuber.application.prompting import ContextConfig
 from vtuber.application.scheduler import ResourcesConfig, SchedulerConfig
 from vtuber.application.supervision import SupervisorConfig
-from vtuber.application.voice import VoiceConfig
+from vtuber.application.voice import AddressingConfig, VoiceConfig
 from vtuber.bootstrap.persona import PersonaConfig
 from vtuber.bootstrap.setup import SetupConfig
 from vtuber.gateway import GatewayConfig
@@ -73,6 +73,7 @@ class SttConfig(ConfigSection):
 
     enabled: bool
     voice: VoiceConfig
+    addressing: AddressingConfig
     vad: VadConfig
     whisper: WhisperConfig
 

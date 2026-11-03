@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Final, NoReturn, Protocol
 
 from pydantic import Field
 
+from vtuber.application.voice.completeness import looks_unfinished
 from vtuber.application.voice.segmenter import (
     BargeIn,
     Segmenter,
@@ -44,6 +45,7 @@ class VoiceConfig(ConfigSection):
     interim_ms: int = Field(gt=0)
     min_phrase_ms: int = Field(gt=0)
     segmenter: SegmenterConfig
+    unfinished_hold_ms: int = Field(default=0, ge=0)  # S-14.2: 0 — ответ сразу после паузы
 
 
 class VoiceEvents(Protocol):
@@ -80,6 +82,9 @@ class VoiceListener:
         self._buffer = bytearray()
         self._interim: asyncio.Task[None] | None = None
         self._since_interim_ms = 0.0
+        self._held: str | None = None
+        self._held_ended_ns = 0
+        self._hold_timer: asyncio.Task[None] | None = None
         self.clock: Callable[[], int] = time.perf_counter_ns
 
     def feed(self, chunk: AudioChunk) -> None:
@@ -103,6 +108,7 @@ class VoiceListener:
                     await self._process(self._frames.popleft())
         finally:
             self._stop_interim()
+            self._stop_hold_timer()
 
     async def _process(self, window: bytes) -> None:
         probability = await self._vad.speech_probability(window)
@@ -114,6 +120,7 @@ class VoiceListener:
     async def _handle(self, event: SegmentEvent) -> None:
         if isinstance(event, SpeechStarted):
             self._since_interim_ms = 0.0
+            self._stop_hold_timer()
         elif isinstance(event, BargeIn):
             await self._events.barge_in()
         elif isinstance(event, SpeechEnded):
@@ -146,6 +153,7 @@ class VoiceListener:
         self._vad.reset()
         audio = AudioChunk(self._format, ended.pcm)
         if audio.duration_s * MS_PER_S < self._cfg.min_phrase_ms:
+            await self._release_held()
             return
         # Конец речи — раньше этого момента на паузу конца фразы: её пользователь тоже ждёт.
         pause_ns = self._cfg.segmenter.end_silence_ms * 1_000_000
@@ -154,6 +162,34 @@ class VoiceListener:
             text = await self._stt.transcribe(audio, final=True)
         except (STTUnavailable, GenerationFailed) as exc:
             _log.warning("voice.final_failed", problem=str(exc))
+            await self._release_held()
             return
-        if text:
-            await self._events.final(text, ended_ns)
+        if not text:
+            await self._release_held()
+            return
+        await self._deliver(text, ended_ns)
+
+    async def _deliver(self, text: str, ended_ns: int) -> None:
+        full = text if self._held is None else f"{self._held} {text}"
+        self._held = None
+        if self._cfg.unfinished_hold_ms > 0 and looks_unfinished(full):
+            # Таймер, а не счёт окон: при push-to-talk кадры после фразы могут не прийти совсем.
+            self._held = full
+            self._held_ended_ns = ended_ns
+            self._hold_timer = asyncio.create_task(self._hold_expires())
+            return
+        await self._events.final(full, ended_ns)
+
+    async def _hold_expires(self) -> None:
+        await asyncio.sleep(self._cfg.unfinished_hold_ms / MS_PER_S)
+        await self._release_held()
+
+    async def _release_held(self) -> None:
+        held, self._held = self._held, None
+        if held is not None:
+            await self._events.final(held, self._held_ended_ns)
+
+    def _stop_hold_timer(self) -> None:
+        # Без удержанной фразы таймер уже отдаёт её в ход: такую передачу не обрывать.
+        if self._held is not None and self._hold_timer is not None:
+            self._hold_timer.cancel()

@@ -1,5 +1,11 @@
 """Голосовой ввод (Этап 11): нарезка речи на фразы, распознавание, перебивание."""
 
+from vtuber.application.voice.addressing import (
+    AddressedEvents,
+    AddressingConfig,
+    addressed,
+)
+from vtuber.application.voice.completeness import looks_unfinished
 from vtuber.application.voice.listener import VoiceConfig, VoiceEvents, VoiceListener
 from vtuber.application.voice.segmenter import (
     BargeIn,
@@ -10,6 +16,8 @@ from vtuber.application.voice.segmenter import (
 )
 
 __all__ = [
+    "AddressedEvents",
+    "AddressingConfig",
     "BargeIn",
     "Segmenter",
     "SegmenterConfig",
@@ -18,4 +26,6 @@ __all__ = [
     "VoiceConfig",
     "VoiceEvents",
     "VoiceListener",
+    "addressed",
+    "looks_unfinished",
 ]

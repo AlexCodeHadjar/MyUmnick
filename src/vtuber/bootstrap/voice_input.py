@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from vtuber.adapters.stt import SileroVad, WhisperSTT
 from vtuber.application.conversation import ConversationService
 from vtuber.application.supervision import FailureFlag, Supervised, WatchedSTT
-from vtuber.application.voice import VoiceEvents, VoiceListener
+from vtuber.application.voice import VoiceEvents, VoiceListener, addressed
 from vtuber.bootstrap.config import AppConfig, SttConfig
 from vtuber.bootstrap.container import Core
 from vtuber.domain import AudioChunk, BackendState, BackendStatusChanged, Component
@@ -96,7 +96,8 @@ async def voice_input(
         yield None
         return
     bridge = VoiceBridge(service, server.send, server.send_bytes, core.telemetry)
-    voice = _LazyVoice(cfg.stt, bridge, core, cfg.supervisor.stt_timeout_s)
+    events = addressed(cfg.stt.addressing, bridge)
+    voice = _LazyVoice(cfg.stt, events, core, cfg.supervisor.stt_timeout_s)
     server.on_mic(voice.on_frame)
     try:
         yield voice
