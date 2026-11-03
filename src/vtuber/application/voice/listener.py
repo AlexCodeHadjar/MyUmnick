@@ -21,6 +21,7 @@ from vtuber.application.voice.segmenter import (
     SpeechEnded,
     SpeechStarted,
 )
+from vtuber.application.voice.speakers import SpeakerLabeler, labelled
 from vtuber.domain import (
     SAMPLE_WIDTH_BYTES,
     AudioChunk,
@@ -82,7 +83,9 @@ class VoiceListener:
         self._buffer = bytearray()
         self._interim: asyncio.Task[None] | None = None
         self._since_interim_ms = 0.0
+        self.speakers: SpeakerLabeler | None = None
         self._held: str | None = None
+        self._held_label: str | None = None
         self._held_ended_ns = 0
         self._hold_timer: asyncio.Task[None] | None = None
         self.clock: Callable[[], int] = time.perf_counter_ns
@@ -163,6 +166,10 @@ class VoiceListener:
         # Конец речи — раньше этого момента на паузу конца фразы: её пользователь тоже ждёт.
         pause_ns = self._cfg.segmenter.end_silence_ms * 1_000_000
         ended_ns = self.clock() - pause_ns
+        labeling = None
+        if self.speakers is not None:
+            # Рядом с Whisper и быстрее него: ответ на этом ничего не теряет (ADR-0029).
+            labeling = asyncio.create_task(self.speakers.label(audio))
         try:
             text = await self._stt.transcribe(audio, final=True)
         except (STTUnavailable, GenerationFailed) as exc:
@@ -172,18 +179,24 @@ class VoiceListener:
         if not text:
             await self._release_held()
             return
-        await self._deliver(text, ended_ns)
+        label = None
+        if self.speakers is not None and labeling is not None:
+            label = await self.speakers.label_in_time(labeling)
+        await self._deliver(text, ended_ns, label)
 
-    async def _deliver(self, text: str, ended_ns: int) -> None:
+    async def _deliver(self, text: str, ended_ns: int, label: str | None) -> None:
         full = text if self._held is None else f"{self._held} {text}"
+        # Продолжение оборванной фразы говорит тот же человек, что и её начало.
+        label = label if self._held is None else self._held_label
         self._held = None
         if self._cfg.unfinished_hold_ms > 0 and looks_unfinished(full):
             # Таймер, а не счёт окон: при push-to-talk кадры после фразы могут не прийти совсем.
             self._held = full
+            self._held_label = label
             self._held_ended_ns = ended_ns
             self._hold_timer = asyncio.create_task(self._hold_expires())
             return
-        await self._events.final(full, ended_ns)
+        await self._events.final(labelled(full, label), ended_ns)
 
     async def _hold_expires(self) -> None:
         await asyncio.sleep(self._cfg.unfinished_hold_ms / MS_PER_S)
@@ -192,7 +205,7 @@ class VoiceListener:
     async def _release_held(self) -> None:
         held, self._held = self._held, None
         if held is not None:
-            await self._events.final(held, self._held_ended_ns)
+            await self._events.final(labelled(held, self._held_label), self._held_ended_ns)
 
     def _stop_hold_timer(self) -> None:
         # Без удержанной фразы таймер уже отдаёт её в ход: такую передачу не обрывать.

@@ -19,7 +19,7 @@ piper = ["piper-tts>=1.8,<2"]
 memory = ["numpy>=2.0", "onnxruntime>=1.20", "sqlite-vec>=0.1.6", "tokenizers>=0.20"]
 # Голосовой ввод (ADR-0016): faster-whisper (CTranslate2) и Silero VAD в ONNX.
 stt = ["faster-whisper>=1.2,<2", "numpy>=2.0", "onnxruntime>=1.20"]
-# Звуки вокруг (ADR-0027): SenseVoice через sherpa-onnx, только метка звука.
+# Звуки вокруг и собеседники (ADR-0027, ADR-0029): sherpa-onnx, CPU.
 sounds = ["numpy>=2.0", "sherpa-onnx>=2.0,<3"]
 
 [dependency-groups]

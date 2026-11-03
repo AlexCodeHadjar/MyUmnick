@@ -63,6 +63,8 @@
 - `SenseVoiceSounds` — `src/vtuber/adapters/stt/sensevoice.py:59` — Реализует `SoundClassifierPort`; модель живёт столько же, сколько контекст.
 - `VadConfig` — `src/vtuber/adapters/stt/silero_vad.py:31` — Секция `[stt.vad]`: файл модели и потоки CPU (1 — окно короткое, больше не нужно).
 - `SileroVad` — `src/vtuber/adapters/stt/silero_vad.py:46` — Реализует VadPort. Модели нет — отвечает `STTUnavailable`, не падает при старте.
+- `SpeakerModelConfig` — `src/vtuber/adapters/stt/speaker_embedding.py:22` — Секция `[stt.speaker_model]`.
+- `SherpaSpeakerEmbedder` — `src/vtuber/adapters/stt/speaker_embedding.py:41` — Реализует `SpeakerEmbedderPort`; модель грузится при первой фразе, в своём потоке.
 - `WhisperConfig` — `src/vtuber/adapters/stt/whisper.py:34` — Секция `[stt.whisper]`.
 - `WhisperSTT` — `src/vtuber/adapters/stt/whisper.py:70` — Реализует STTPort. Модели нет — не падает при старте, отвечает `STTUnavailable`.
 
@@ -208,14 +210,14 @@
 ## src/vtuber/application/voice
 Голосовой ввод (Этап 11): нарезка речи на фразы, распознавание, перебивание.
 
-- `AddressingConfig` — `src/vtuber/application/voice/addressing.py:20` — Подсекция `[stt.addressing]`: `always` — любая речь, `by_name` — только обращение.
-- `name_pattern` — `src/vtuber/application/voice/addressing.py:27` — Обращение: имя в начале, можно после «эй», или в самом конце («как дела, Мика?»).
-- `AddressedEvents` — `src/vtuber/application/voice/addressing.py:35` — Пропускает голосовые события, только если обратились по имени.
-- `addressed` — `src/vtuber/application/voice/addressing.py:71` — В режиме `always` обёртки нет: лишний шаг в горячем пути ни к чему.
+- `AddressingConfig` — `src/vtuber/application/voice/addressing.py:22` — Подсекция `[stt.addressing]`: `always` — любая речь, `by_name` — только обращение.
+- `name_pattern` — `src/vtuber/application/voice/addressing.py:29` — Обращение: имя в начале, можно после «эй», или в самом конце («как дела, Мика?»).
+- `AddressedEvents` — `src/vtuber/application/voice/addressing.py:37` — Пропускает голосовые события, только если обратились по имени.
+- `addressed` — `src/vtuber/application/voice/addressing.py:73` — В режиме `always` обёртки нет: лишний шаг в горячем пути ни к чему.
 - `looks_unfinished` — `src/vtuber/application/voice/completeness.py:58` — Обрыв видно по многоточию или последним словам; вопрос и восклицание — конец точно.
-- `VoiceConfig` — `src/vtuber/application/voice/listener.py:42` — `interim_ms` — как часто считать промежуточную гипотезу; `min_phrase_ms` — короче не речь.
-- `VoiceEvents` — `src/vtuber/application/voice/listener.py:51` — Кто получает голосовой ввод: шлюз (шлёт в UI и начинает ход) или тест.
-- `VoiceListener` — `src/vtuber/application/voice/listener.py:67` — Очередь кадров и обработка окон; `feed` не ждёт моделей, `run` — задачей у владельца.
+- `VoiceConfig` — `src/vtuber/application/voice/listener.py:43` — `interim_ms` — как часто считать промежуточную гипотезу; `min_phrase_ms` — короче не речь.
+- `VoiceEvents` — `src/vtuber/application/voice/listener.py:52` — Кто получает голосовой ввод: шлюз (шлёт в UI и начинает ход) или тест.
+- `VoiceListener` — `src/vtuber/application/voice/listener.py:68` — Очередь кадров и обработка окон; `feed` не ждёт моделей, `run` — задачей у владельца.
 - `SegmenterConfig` — `src/vtuber/application/voice/segmenter.py:15` — Подсекция `[stt.segmenter]`.
 - `SpeechStarted` — `src/vtuber/application/voice/segmenter.py:33` — Началась фраза.
 - `BargeIn` — `src/vtuber/application/voice/segmenter.py:38` — Речь длится достаточно, чтобы перебить витюбера; один раз на фразу.
@@ -225,14 +227,18 @@
 - `SoundActions` — `src/vtuber/application/voice/sounds.py:55` — `busy` — идёт ход, речь или фраза ведущего; `react` — сказать реплику в тишине.
 - `loudness` — `src/vtuber/application/voice/sounds.py:62` — Громкость окна s16le, 0…1: на тишину модель не тратится.
 - `SoundWatcher` — `src/vtuber/application/voice/sounds.py:70` — Собирает окна и разбирает только последнее: отставшая разметка никому не нужна.
+- `SpeakersConfig` — `src/vtuber/application/voice/speakers.py:24` — Секция `[stt.speakers]`: порог сходства подобран на синтетике, на людях не проверен.
+- `SpeakerTracker` — `src/vtuber/application/voice/speakers.py:43` — Голоса разговора: близкий отпечаток уточняет знакомый голос, далёкий заводит новый.
+- `SpeakerLabeler` — `src/vtuber/application/voice/speakers.py:79` — Метка фразы или None: один голос, короткая фраза, сбой. Без метки реплика идёт как есть.
+- `labelled` — `src/vtuber/application/voice/speakers.py:108` — Реплика с меткой говорящего: так она попадает и к модели, и в историю.
 
 ## src/vtuber/bootstrap
 Корень композиции: конфиг, персона, сборка графа объектов и точка входа.
 
 - `MemoryConfig` — `src/vtuber/bootstrap/config.py:38` — Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
 - `SttConfig` — `src/vtuber/bootstrap/config.py:71` — Секция `[stt]`: голосовой ввод в `serve` (Этап 11, ADR-0016); модели — при первом кадре.
-- `AppConfig` — `src/vtuber/bootstrap/config.py:100` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:123` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `AppConfig` — `src/vtuber/bootstrap/config.py:105` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:128` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
 - `Core` — `src/vtuber/bootstrap/container.py:21` — Общие механизмы, которые получают все: шина событий и телеметрия.
 - `Backends` — `src/vtuber/bootstrap/container.py:29` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
 - `llm_backends` — `src/vtuber/bootstrap/container.py:40` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
@@ -259,7 +265,7 @@
 - `VoiceParts` — `src/vtuber/bootstrap/supervision.py:88` — Голос шлюза: движок (грузится при старте), его междометия и обёртка для наблюдателя.
 - `build_voice` — `src/vtuber/bootstrap/supervision.py:97` — Голос из конфига; `none` — без голоса.
 - `with_voice` — `src/vtuber/bootstrap/supervision.py:107` — Движки хода: конвейер получает обёртку, чтобы сбой голоса был замечен.
-- `voice_input` — `src/vtuber/bootstrap/voice_input.py:139` — Подключает микрофон к шлюзу на время контекста; выключено в конфиге — кадры не нужны.
+- `voice_input` — `src/vtuber/bootstrap/voice_input.py:148` — Подключает микрофон к шлюзу на время контекста; выключено в конфиге — кадры не нужны.
 - `AppParts` — `src/vtuber/bootstrap/wiring.py:31` — Что шлюзу нужно от приложения, кроме сервиса хода.
 - `connect_memory` — `src/vtuber/bootstrap/wiring.py:43` — Приватный режим работает и без памяти; редактор и очистка честно скажут, что её нет.
 - `connect_branches` — `src/vtuber/bootstrap/wiring.py:53` — Дерево начинается с восстановленного разговора: его ветки тоже можно продолжить.
@@ -469,8 +475,9 @@
 - `FileFetcher` — `src/vtuber/ports/setup.py:7` — Откуда мастер берёт файлы; сбой — `SetupFailed` с понятным текстом.
 - `ReplySink` — `src/vtuber/ports/sink.py:8` — Получатель результатов одного хода; конвейер не знает, что за ним.
 - `SoundClassifierPort` — `src/vtuber/ports/stt.py:12` — Какой звук в окне, кроме речи (S-14.4).
-- `VadPort` — `src/vtuber/ports/stt.py:26` — Детектор речи: окно PCM → вероятность, что это речь.
-- `STTPort` — `src/vtuber/ports/stt.py:58` — Распознавание отрезка речи.
+- `SpeakerEmbedderPort` — `src/vtuber/ports/stt.py:26` — Отпечаток голоса фразы (S-14.3): у одного человека отпечатки близки.
+- `VadPort` — `src/vtuber/ports/stt.py:40` — Детектор речи: окно PCM → вероятность, что это речь.
+- `STTPort` — `src/vtuber/ports/stt.py:72` — Распознавание отрезка речи.
 - `TTSPort` — `src/vtuber/ports/tts.py:9` — Движок TTS; адаптеры бросают только доменные ошибки (R-43).
 
 ## ui/src/app

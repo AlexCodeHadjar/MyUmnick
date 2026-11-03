@@ -23,6 +23,20 @@ class SoundClassifierPort(Protocol):
         ...
 
 
+class SpeakerEmbedderPort(Protocol):
+    """Отпечаток голоса фразы (S-14.3): у одного человека отпечатки близки."""
+
+    async def embed(self, audio: AudioChunk) -> tuple[float, ...]:
+        """Вектор фиксированной длины.
+
+        Raises:
+            STTUnavailable: модель не загружена.
+            GenerationFailed: фраза не подошла или разбор сорвался.
+
+        """
+        ...
+
+
 class VadPort(Protocol):
     """Детектор речи: окно PCM → вероятность, что это речь.
 

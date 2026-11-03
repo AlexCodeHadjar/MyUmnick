@@ -8,12 +8,18 @@ import asyncio
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
-from vtuber.adapters.stt import SenseVoiceSounds, SileroVad, WhisperSTT
+from vtuber.adapters.stt import (
+    SenseVoiceSounds,
+    SherpaSpeakerEmbedder,
+    SileroVad,
+    WhisperSTT,
+)
 from vtuber.application.conversation import ConversationService
 from vtuber.application.supervision import FailureFlag, Supervised, WatchedSTT
 from vtuber.application.voice import (
     SoundActions,
     SoundWatcher,
+    SpeakerLabeler,
     VoiceEvents,
     VoiceListener,
     addressed,
@@ -104,6 +110,9 @@ class _LazyVoice:
         async with SileroVad(self._cfg.vad) as vad, WhisperSTT(self._cfg.whisper) as whisper:
             stt = WatchedSTT(whisper, self._flag, self._stt_timeout_s)
             listener = VoiceListener(vad, stt, self._events, self._cfg.voice)
+            if self._cfg.speakers.enabled:
+                embedder = SherpaSpeakerEmbedder(self._cfg.speaker_model)
+                listener.speakers = SpeakerLabeler(self._cfg.speakers, embedder)
             for chunk in self._early:
                 listener.feed(chunk)
             self._early.clear()

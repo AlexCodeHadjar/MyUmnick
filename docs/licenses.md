@@ -57,6 +57,7 @@
 | XTTS-v2 | TTS (опция) | Coqui Public Model License | некоммерческая | по памяти |
 | F5-TTS | TTS (опция) | код MIT, веса CC BY-NC | некоммерческие веса | по памяти |
 | sherpa-onnx 2.0.1 (ADR-0027) | метки звуков | Apache-2.0 | группа `sounds` | по описанию PyPI |
+| веса ERes2Net base 3D-Speaker, сборка ONNX k2-fsa (ADR-0029) | отпечаток голоса | Apache-2.0 | модель не в git | проверено (API ModelScope) |
 | веса SenseVoiceSmall, сборка k2-fsa 2024-07-17 (ADR-0027) | метки звуков | FunASR Model License 1.1: указывать источник и название; перед публикацией перечитать | модель не в git | проверено (MODEL_LICENSE) |
 | faster-whisper 1.2, CTranslate2, веса Whisper large-v3-turbo (ADR-0016) | STT | MIT | модель не в git | проверено (PyPI, API HF) |
 | Silero VAD v5 (ADR-0016) | детектор речи | MIT | модель не в git | по памяти |

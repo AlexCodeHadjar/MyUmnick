@@ -131,6 +131,17 @@ tokens_path = "models/stt/sensevoice/tokens.txt"
 threads = 2
 timeout_s = 5.0
 
+[stt.speakers]                 # S-14.3: метка «Собеседник N» в реплике; выключено, пока ошибки не замерены
+enabled = false
+threshold = 0.55               # сходство отпечатков: ниже — новый голос; подобрано на синтетике
+min_phrase_s = 1.0             # короче отпечаток ненадёжен, фраза идёт без метки
+max_speakers = 4
+wait_s = 0.2                   # сколько ждать отпечаток после Whisper; дальше ответ идёт без метки
+
+[stt.speaker_model]            # ERes2Net (ADR-0029): на CPU, грузится при первой фразе
+model_path = "models/stt/speakers/eres2net_base_3dspeaker_16k.onnx"
+threads = 2
+
 [stt.vad]
 model_path = "models/stt/vad/silero_vad.onnx"
 threads = 1                    # окно короткое: один поток с запасом

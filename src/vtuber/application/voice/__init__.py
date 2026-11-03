@@ -21,6 +21,12 @@ from vtuber.application.voice.sounds import (
     SoundWatcher,
     loudness,
 )
+from vtuber.application.voice.speakers import (
+    SpeakerLabeler,
+    SpeakersConfig,
+    SpeakerTracker,
+    labelled,
+)
 
 __all__ = [
     "REACTIONS",
@@ -32,12 +38,16 @@ __all__ = [
     "SoundActions",
     "SoundWatcher",
     "SoundsConfig",
+    "SpeakerLabeler",
+    "SpeakerTracker",
+    "SpeakersConfig",
     "SpeechEnded",
     "SpeechStarted",
     "VoiceConfig",
     "VoiceEvents",
     "VoiceListener",
     "addressed",
+    "labelled",
     "looks_unfinished",
     "loudness",
 ]

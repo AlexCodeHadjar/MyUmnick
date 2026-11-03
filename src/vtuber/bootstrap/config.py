@@ -8,7 +8,7 @@ from pydantic import Field
 from vtuber.adapters.gpu import NvidiaSmiConfig
 from vtuber.adapters.llm import GenerationConfig, LlamaServerConfig, LLMConfig
 from vtuber.adapters.memory import E5Config
-from vtuber.adapters.stt import SenseVoiceConfig, VadConfig, WhisperConfig
+from vtuber.adapters.stt import SenseVoiceConfig, SpeakerModelConfig, VadConfig, WhisperConfig
 from vtuber.adapters.tts import TTSConfig
 from vtuber.application.conversation import InitiativeConfig
 from vtuber.application.memory import FactMemoryConfig, RetrievalConfig
@@ -16,7 +16,7 @@ from vtuber.application.pipeline import PipelineConfig
 from vtuber.application.prompting import ContextConfig
 from vtuber.application.scheduler import ResourcesConfig, SchedulerConfig
 from vtuber.application.supervision import SupervisorConfig
-from vtuber.application.voice import AddressingConfig, SoundsConfig, VoiceConfig
+from vtuber.application.voice import AddressingConfig, SoundsConfig, SpeakersConfig, VoiceConfig
 from vtuber.bootstrap.persona import PersonaConfig
 from vtuber.bootstrap.setup import SetupConfig
 from vtuber.gateway import GatewayConfig
@@ -76,6 +76,8 @@ class SttConfig(ConfigSection):
     addressing: AddressingConfig
     sounds: SoundsConfig
     sound_model: SenseVoiceConfig
+    speakers: SpeakersConfig
+    speaker_model: SpeakerModelConfig
     vad: VadConfig
     whisper: WhisperConfig
 
@@ -86,6 +88,9 @@ class SttConfig(ConfigSection):
                 "vad": self.vad.model_copy(update={"model_path": root / self.vad.model_path}),
                 "whisper": self.whisper.model_copy(
                     update={"model_dir": root / self.whisper.model_dir}
+                ),
+                "speaker_model": self.speaker_model.model_copy(
+                    update={"model_path": root / self.speaker_model.model_path}
                 ),
                 "sound_model": self.sound_model.model_copy(
                     update={

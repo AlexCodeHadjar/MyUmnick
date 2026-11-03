@@ -10,10 +10,12 @@ from typing import Literal
 from pydantic import Field
 
 from vtuber.application.voice.listener import VoiceEvents
+from vtuber.application.voice.speakers import SPEAKER_WORD
 from vtuber.kernel import ConfigSection, get_logger
 
 _log = get_logger(__name__)
 _CALL_WORDS = r"(?:(?:эй|хей|слушай|привет|ну|окей|так)[\s,!.:-]+)*"
+_SPEAKER_LABEL = rf"(?:{SPEAKER_WORD} \d+: )?"
 _NOT_IN_WORD = r"(?![а-яёa-z0-9])"
 
 
@@ -27,7 +29,7 @@ class AddressingConfig(ConfigSection):
 def name_pattern(names: tuple[str, ...]) -> re.Pattern[str]:
     """Обращение: имя в начале, можно после «эй», или в самом конце («как дела, Мика?»)."""
     any_name = "|".join(re.escape(name) for name in names)
-    start = rf"^[\s\"«]*{_CALL_WORDS}(?:{any_name}){_NOT_IN_WORD}"
+    start = rf"^{_SPEAKER_LABEL}[\s\"«]*{_CALL_WORDS}(?:{any_name}){_NOT_IN_WORD}"
     end = rf"[\s,](?:{any_name})[\s.!?…\"»]*$"
     return re.compile(f"{start}|{end}", re.IGNORECASE)
 
