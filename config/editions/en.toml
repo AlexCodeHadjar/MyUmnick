@@ -1,7 +1,7 @@
 # Английское издание без цензуры (Этап 20, ADR-0032). Поверх default.toml; выбор мастера —
 # config/setup.en.toml, личные правки — config/user.en.toml. Языковые ключи общего user.toml
 # (персона, голос, память…) здесь не действуют — список в bootstrap/edition.py.
-# Голос и модель — S-20.5, S-20.9; до тех пор — голос и модель по умолчанию.
+# Голос — Piper en_US-ljspeech (общественное достояние, S-20.5); модель — S-20.9, до тех пор общая.
 
 [edition]
 id = "en"
@@ -14,6 +14,13 @@ file = "personas/en/default.toml"
 
 [pipeline.filler]
 phrases = ["Hmm…", "So…", "Let me see…"]
+
+[tts]                          # базовый английский голос (S-20.5, ADR-0034); основной — Kokoro после выбора
+backend = "piper"
+
+[tts.piper]
+model_path = "models/tts/piper/en_US-ljspeech-high.onnx"   # датасет LJ Speech — общественное достояние
+sample_rate = 22050            # из en_US-ljspeech-high.onnx.json
 
 [llm.llamacpp]
 forbid_cyrillic = true         # ответ только по-английски: русские слова голос не прочтёт

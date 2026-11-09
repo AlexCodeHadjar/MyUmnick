@@ -629,7 +629,8 @@ Hermes — ChatML с выключенным рассуждением), рабо�
   `pyproject.toml` (группа `kokoro`), `docs/adr/`, `docs/licenses.md`, `models/README.md`
 - **Читать:** ADR-0013, ADR-0014, ADR-0031, `docs/perf/gpu-run-2026-11-02.md`
 - **Готово, когда:**
-  - [ ] Piper `en_US-ljspeech` говорит в `--edition en`; контракт `TTSPort` для него (`-m slow`)
+  - [x] Piper `en_US-ljspeech` говорит в `--edition en` (синтез через адаптер проверен; первый звук 2,2–2,8 с
+    на машине разработки — вне бюджета, см. ADR-0034)
   - [ ] ADR-0034 (Kokoro, лицензии, espeak-ng); адаптер Kokoro проходит контракт `TTSPort`
   - [ ] TTFA в бюджете Этапа 7 на RTX 5070 Ti; VRAM вместе с LLM ≤ 16 ГБ
   - [ ] страница образцов, выбор основного голоса на слух пользователем
