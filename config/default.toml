@@ -58,7 +58,7 @@ after_ms = 1000                # срок от начала хода: выше �
 phrases = ["Хм…", "Так…", "Сейчас…"]   # звучат по очереди; синтез — один раз при загрузке голоса
 
 [tts]
-backend = "silero"             # silero | piper | kokoro | voice_server | none (без голоса); ADR-0012, ADR-0013, ADR-0031
+backend = "silero"             # silero | piper | kokoro | kokoro_piper | voice_server | none (без голоса); ADR-0012, ADR-0013, ADR-0031
 
 [tts.silero]
 model_path = "models/tts/silero/v5_6_ru.pt"   # относительно корня; скачать — README

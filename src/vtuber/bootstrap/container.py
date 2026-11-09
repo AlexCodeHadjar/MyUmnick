@@ -62,6 +62,10 @@ def tts_backends() -> Registry[TTSConfig, TTSAdapter | None]:
     backends.add("silero", lambda cfg: SileroTTS(cfg.silero))
     backends.add("piper", lambda cfg: PiperTTS(cfg.piper))
     backends.add("kokoro", lambda cfg: KokoroTTS(cfg.kokoro))
+    # Английское издание (ADR-0034): нет файлов Kokoro или он не загрузился — говорит Piper.
+    backends.add(
+        "kokoro_piper", lambda cfg: FallbackTTS(KokoroTTS(cfg.kokoro), PiperTTS(cfg.piper))
+    )
     backends.add(
         "voice_server",
         lambda cfg: FallbackTTS(VoiceServerTTS(cfg.voice_server), SileroTTS(cfg.silero)),

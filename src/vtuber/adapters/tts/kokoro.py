@@ -107,6 +107,11 @@ class KokoroTTS:
         self._engine = None
 
     @property
+    def problem(self) -> str | None:
+        """Почему Kokoro не готов; `None` — готов (для `FallbackTTS`)."""
+        return None if self._engine is not None else self._unavailable
+
+    @property
     def audio_format(self) -> AudioFormat:
         """PCM s16le 24 кГц."""
         return AudioFormat(SAMPLE_RATE)

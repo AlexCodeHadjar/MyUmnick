@@ -273,8 +273,8 @@
 - `Backends` — `src/vtuber/bootstrap/container.py:37` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
 - `llm_backends` — `src/vtuber/bootstrap/container.py:48` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
 - `tts_backends` — `src/vtuber/bootstrap/container.py:59` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
-- `Conversation` — `src/vtuber/bootstrap/container.py:74` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
-- `build_conversation` — `src/vtuber/bootstrap/container.py:82` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
+- `Conversation` — `src/vtuber/bootstrap/container.py:78` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
+- `build_conversation` — `src/vtuber/bootstrap/container.py:86` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
 - `EditionConfig` — `src/vtuber/bootstrap/edition.py:36` — Секция `[edition]`: задаётся файлом `config/editions/<id>.toml`, а не пользователем.
 - `resolve_edition` — `src/vtuber/bootstrap/edition.py:45` — Издание из `--edition`, иначе из `VTUBER_EDITION__ID`, иначе `ru` (прежнее поведение).
 - `edition_files` — `src/vtuber/bootstrap/edition.py:62` — Файлы издания; у `ru` мастер пишет прежний `setup.toml` и действуют все ключи `user.toml`.

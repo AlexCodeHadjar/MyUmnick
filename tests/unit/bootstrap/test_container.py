@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from vtuber.adapters.tts import PiperTTS, SileroTTS
+from vtuber.adapters.tts import FallbackTTS, KokoroTTS, PiperTTS, SileroTTS
 from vtuber.bootstrap import load_app_config, tts_backends
 from vtuber.domain import ConfigError
 
@@ -10,7 +10,14 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 @pytest.mark.parametrize(
-    ("backend", "expected"), [("silero", SileroTTS), ("piper", PiperTTS), ("none", type(None))]
+    ("backend", "expected"),
+    [
+        ("silero", SileroTTS),
+        ("piper", PiperTTS),
+        ("kokoro", KokoroTTS),
+        ("kokoro_piper", FallbackTTS),
+        ("none", type(None)),
+    ],
 )
 def test_tts_backend_is_chosen_by_config_name(backend: str, expected: type) -> None:
     cfg = load_app_config(ROOT, {}).tts

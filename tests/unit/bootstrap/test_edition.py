@@ -49,7 +49,8 @@ def test_english_edition_has_its_own_data_and_language(root: Path) -> None:
     assert cfg.memory.vault_path == Path("data/en/vault")
     assert cfg.stt.whisper.language == "en"
     assert cfg.setup.choice_file == Path("config/setup.en.toml")
-    assert cfg.tts.backend == "piper"
+    assert cfg.tts.backend == "kokoro_piper"
+    assert cfg.tts.kokoro.voice == "af_heart"
     assert cfg.tts.piper.model_path == Path("models/tts/piper/en_US-ljspeech-medium.onnx")
 
 

@@ -1,7 +1,7 @@
 # Английское издание без цензуры (Этап 20, ADR-0032). Поверх default.toml; выбор мастера —
 # config/setup.en.toml, личные правки — config/user.en.toml. Языковые ключи общего user.toml
 # (персона, голос, память…) здесь не действуют — список в bootstrap/edition.py.
-# Голос — Piper en_US-ljspeech (общественное достояние, S-20.5); модель — S-20.9, до тех пор общая.
+# Голос — Kokoro af_heart, запасной Piper en_US-ljspeech (ADR-0034); модель — S-20.9, до тех пор общая.
 
 [edition]
 id = "en"
@@ -15,8 +15,8 @@ file = "personas/en/default.toml"
 [pipeline.filler]
 phrases = ["Hmm…", "So…", "Let me see…"]
 
-[tts]                          # базовый английский голос (S-20.5, ADR-0034); основной — Kokoro после выбора
-backend = "piper"
+[tts]                          # Kokoro af_heart (выбор пользователя на слух, 2026-11-10); запасной — Piper
+backend = "kokoro_piper"
 
 [tts.piper]
 model_path = "models/tts/piper/en_US-ljspeech-medium.onnx"   # датасет LJ Speech — общественное достояние
