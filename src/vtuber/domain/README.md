@@ -29,6 +29,7 @@ websockets, torch и о kernel (контракт `domain-pure`). Ошибка �
 | `CancelReason`, `Component`, `BackendState` | Значения событий |
 | `VtuberError` → `BackendUnavailable` (`LLMUnavailable`, `TTSUnavailable`, `MemoryUnavailable`), `GenerationFailed`, `ProtocolError`, `ConfigError`, `TurnStateError` | Доменные ошибки |
 | `ViewerStyle`, `RU_VIEWER`, `EN_VIEWER`, `VIEWER_PREFIX_EN`, `without_viewer_prefix` | Подпись реплики зрителя на языке издания; `viewer_line(author, text, style)`; `is_viewer_line` узнаёт подпись любого издания; двойники кириллицы в латинских атаках (Этап 20) |
+| `crosses_hard_floor(text)` | Жёсткий минимум: явная просьба сексуального содержания с несовершеннолетними (ADR-0033) |
 
 ## Зависимости
 - Только stdlib.

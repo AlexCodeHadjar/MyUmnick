@@ -8,10 +8,13 @@ from typing import Final
 from pydantic import Field
 
 from vtuber.application.language import EN_PACK, RU_PACK, LanguagePack
-from vtuber.domain import ConfigError, ContentProfile, EditionId
-from vtuber.kernel import ConfigFiles, ConfigSection
+from vtuber.application.prompting import with_profile
+from vtuber.bootstrap.persona import load_persona
+from vtuber.domain import ConfigError, ContentProfile, EditionId, Persona
+from vtuber.kernel import ConfigFiles, ConfigSection, get_logger
 
 EDITION_ENV: Final = "VTUBER_EDITION__ID"
+_log = get_logger(__name__)
 # Ключи, которые зависят от языка издания: в общем `user.toml` они действуют только для `ru`
 # (прежний файл пользователя), иначе русская персона и голос попали бы в английское издание.
 LANGUAGE_BOUND_KEYS: Final = frozenset(
@@ -120,3 +123,22 @@ def language_pack(language: str) -> LanguagePack:
             f"[edition].language = {language!r}: нет языкового пакета; доступны: {', '.join(packs)}"
         )
         raise ConfigError(msg) from exc
+
+
+def edition_persona(path: Path, edition: EditionConfig) -> Persona:
+    """Персона из файла с правилами профиля содержания издания (ADR-0033).
+
+    Raises:
+        ConfigError: файл персоны неверен; для языка нет пакета.
+
+    """
+    texts = language_pack(edition.language).prompt.profile
+    persona = load_persona(path)
+    return with_profile(persona, texts, edition.content_profile, stream_safe=edition.stream_safe)
+
+
+def warn_ignored_user_keys(config_dir: Path, edition: EditionId) -> None:
+    """Предупреждение: ключи общего `user.toml` (он для `ru`) здесь не действуют."""
+    keys = ignored_user_keys(edition_files(config_dir, edition))
+    if keys:
+        _log.warning("config.user_keys_ignored", keys=keys)

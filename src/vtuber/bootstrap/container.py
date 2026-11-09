@@ -7,7 +7,7 @@ from vtuber.adapters.tts import FallbackTTS, PiperTTS, SileroTTS, TTSConfig, Voi
 from vtuber.application.conversation import ConversationService
 from vtuber.application.memory import ShortTermMemory
 from vtuber.application.pipeline import FillerBank, ReplyPipeline, Voice
-from vtuber.application.prompting import ContextBudget, PromptBuilder
+from vtuber.application.prompting import ContextBudget, FloorGuard, PromptBuilder
 from vtuber.bootstrap.config import AppConfig
 from vtuber.bootstrap.edition import language_pack
 from vtuber.domain import Persona
@@ -86,8 +86,9 @@ def build_conversation(
         )
     )
     prompts = PromptBuilder(persona, pack.prompt)
+    guarded = FloorGuard(backends.llm, pack.prompt.profile.refusal)  # жёсткий минимум (ADR-0033)
     history = ShortTermMemory(ContextBudget(cfg.context), pack.memory.summary_template)
     service = ConversationService(
-        ReplyPipeline(backends.llm, params, core.telemetry, voice), prompts, history, core.bus
+        ReplyPipeline(guarded, params, core.telemetry, voice), prompts, history, core.bus
     )
     return Conversation(service, prompts, history)

@@ -15,6 +15,7 @@ S-3.2), не читает файлы (персону загружает bootstra
 | `ContextConfig` | Секция `[context]`: `max_history_tokens`, `trim_ratio`, `chars_per_token`, `message_overhead_tokens` |
 | `ContextBudget(cfg)` | `tokens(messages)` — оценка без сервера; `max_history_tokens`, `trim_target` |
 | `PromptTexts`, `RU_PROMPT`, `EN_PROMPT` (`texts.py`) | Рамка системного промпта, справка, заметка о картинке, прогрев, проба голоса, подпись зрителя по языку (Этап 20); `PromptBuilder(persona, texts)`, `render_system_prompt(persona, texts)`, `PromptBuilder.texts` |
+| `ProfileTexts`, `RU_PROFILE`, `EN_PROFILE`, `with_profile`, `FloorGuard` (`profile.py`) | Профиль содержания: правила рамки к персоне; обёртка `LLMPort`, отказ без модели при пересечении минимума (ADR-0033) |
 
 ## Зависимости
 - domain: `Persona`, `Message`, `Role`, `Emotion`; kernel: `ConfigSection`

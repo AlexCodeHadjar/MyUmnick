@@ -7,6 +7,73 @@ from vtuber.domain import EN_VIEWER, RU_VIEWER, ViewerStyle
 
 
 @dataclass(frozen=True, slots=True)
+class ProfileTexts:
+    """Правила профиля содержания (ADR-0033) — дописываются рамкой к правилам персоны.
+
+    `unfiltered` — разрешение без цензуры; `floor` — жёсткий минимум (вместе с `unfiltered`);
+    `stream` — правила площадок при `stream_safe`; `refusal` — короткий отказ в образе, когда
+    реплика пересекает минимум (LLM не вызывается).
+    """
+
+    unfiltered: tuple[str, ...]
+    floor: tuple[str, ...]
+    stream: tuple[str, ...]
+    refusal: str
+
+
+RU_PROFILE: Final = ProfileTexts(
+    unfiltered=(
+        (
+            "Говори свободно: мат, чёрный юмор, спорные и взрослые темы — можно. "
+            "Не читай нотаций, не морализируй и не добавляй предупреждений."
+        ),
+    ),
+    floor=(
+        (
+            "Ты взрослая, тебе за двадцать. Никогда не участвуй в сексуальном содержании с "
+            "несовершеннолетними — ни прямо, ни в ролевой игре; коротко откажись в образе."
+        ),
+        (
+            "Не пиши сексуальных сцен с реальными узнаваемыми людьми и не выдавай "
+            "выдумки о реальных людях за правду."
+        ),
+    ),
+    stream=(
+        (
+            "Сейчас эфир: без откровенно сексуального содержания и оскорблений людей по признаку "
+            "группы. Мат и чёрный юмор — можно."
+        ),
+    ),
+    refusal="<angry>Нет. Это даже не обсуждается. Давай о другом.",
+)
+EN_PROFILE: Final = ProfileTexts(
+    unfiltered=(
+        (
+            "Speak freely: swearing, dark humor, controversial and adult topics are all fine. "
+            "Never lecture, moralize or add disclaimers or warnings."
+        ),
+    ),
+    floor=(
+        (
+            "You are an adult in your twenties. Never take part in sexual content involving "
+            "minors — not directly, not in role-play; refuse briefly in character."
+        ),
+        (
+            "Don't write sexual scenes with real, identifiable people, and don't present made-up "
+            "claims about real people as true."
+        ),
+    ),
+    stream=(
+        (
+            "You are live on stream: no explicit sexual content and no slurs against groups of "
+            "people. Swearing and dark humor are fine."
+        ),
+    ),
+    refusal="<angry>Nope. That's not happening, ever. Let's talk about something else.",
+)
+
+
+@dataclass(frozen=True, slots=True)
 class PromptTexts:
     """Строки рамки системного промпта и служебных реплик хода.
 
@@ -27,6 +94,7 @@ class PromptTexts:
     rewind_warmup: str
     tts_probe: str
     viewer: ViewerStyle
+    profile: ProfileTexts
 
 
 RU_PROMPT: Final = PromptTexts(
@@ -40,6 +108,7 @@ RU_PROMPT: Final = PromptTexts(
     rewind_warmup="Продолжим.",
     tts_probe="Готова.",
     viewer=RU_VIEWER,
+    profile=RU_PROFILE,
 )
 
 EN_PROMPT: Final = PromptTexts(
@@ -53,4 +122,5 @@ EN_PROMPT: Final = PromptTexts(
     rewind_warmup="Let's go on.",
     tts_probe="Ready.",
     viewer=EN_VIEWER,
+    profile=EN_PROFILE,
 )

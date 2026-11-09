@@ -162,10 +162,13 @@
 
 - `ContextConfig` — `src/vtuber/application/prompting/context_budget.py:12` — Секция `[context]`.
 - `ContextBudget` — `src/vtuber/application/prompting/context_budget.py:26` — Приближённый счёт токенов — без запроса к серверу, чтобы не тормозить горячий путь.
+- `with_profile` — `src/vtuber/application/prompting/profile.py:21` — Персона с правилами профиля: без цензуры — разрешение и минимум; эфир — правила площадок.
+- `FloorGuard` — `src/vtuber/application/prompting/profile.py:31` — `LLMPort`: реплика пересекает жёсткий минимум — отказ в образе без вызова модели.
 - `Prompt` — `src/vtuber/application/prompting/prompt_builder.py:16` — Сообщения для LLM; первые `prefix_length` — неизменный префикс (персона и примеры).
 - `PromptBuilder` — `src/vtuber/application/prompting/prompt_builder.py:23` — Строит промпт: [персона + примеры] → [история] → [справка + реплика] (T-03).
 - `render_system_prompt` — `src/vtuber/application/prompting/prompt_builder.py:58` — Системный промпт персоны; `{emotions}` в правилах → теги всех эмоций из `Emotion`.
-- `PromptTexts` — `src/vtuber/application/prompting/texts.py:10` — Строки рамки системного промпта и служебных реплик хода.
+- `ProfileTexts` — `src/vtuber/application/prompting/texts.py:10` — Правила профиля содержания (ADR-0033) — дописываются рамкой к правилам персоны.
+- `PromptTexts` — `src/vtuber/application/prompting/texts.py:77` — Строки рамки системного промпта и служебных реплик хода.
 
 ## src/vtuber/application/scheduler
 Фоновые задачи в простое (T-13) и учёт видеопамяти моделей под управлением (ADR-0017).
@@ -267,16 +270,18 @@
 - `tts_backends` — `src/vtuber/bootstrap/container.py:52` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
 - `Conversation` — `src/vtuber/bootstrap/container.py:66` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
 - `build_conversation` — `src/vtuber/bootstrap/container.py:74` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
-- `EditionConfig` — `src/vtuber/bootstrap/edition.py:33` — Секция `[edition]`: задаётся файлом `config/editions/<id>.toml`, а не пользователем.
-- `resolve_edition` — `src/vtuber/bootstrap/edition.py:42` — Издание из `--edition`, иначе из `VTUBER_EDITION__ID`, иначе `ru` (прежнее поведение).
-- `edition_files` — `src/vtuber/bootstrap/edition.py:59` — Файлы издания; у `ru` мастер пишет прежний `setup.toml` и действуют все ключи `user.toml`.
-- `check_edition` — `src/vtuber/bootstrap/edition.py:72` — Файл издания или переменная окружения не должны подменить выбранное издание.
-- `ignored_user_keys` — `src/vtuber/bootstrap/edition.py:87` — Языковые ключи общего `user.toml`, которые в этом издании не действуют (предупреждение).
-- `language_pack` — `src/vtuber/bootstrap/edition.py:108` — Языковой пакет по `[edition].language`.
-- `LineSource` — `src/vtuber/bootstrap/main.py:68` — Откуда читать строки: `sys.stdin` или его тестовая замена.
-- `Console` — `src/vtuber/bootstrap/main.py:75` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
-- `main` — `src/vtuber/bootstrap/main.py:88` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
-- `run` — `src/vtuber/bootstrap/main.py:318` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
+- `EditionConfig` — `src/vtuber/bootstrap/edition.py:36` — Секция `[edition]`: задаётся файлом `config/editions/<id>.toml`, а не пользователем.
+- `resolve_edition` — `src/vtuber/bootstrap/edition.py:45` — Издание из `--edition`, иначе из `VTUBER_EDITION__ID`, иначе `ru` (прежнее поведение).
+- `edition_files` — `src/vtuber/bootstrap/edition.py:62` — Файлы издания; у `ru` мастер пишет прежний `setup.toml` и действуют все ключи `user.toml`.
+- `check_edition` — `src/vtuber/bootstrap/edition.py:75` — Файл издания или переменная окружения не должны подменить выбранное издание.
+- `ignored_user_keys` — `src/vtuber/bootstrap/edition.py:90` — Языковые ключи общего `user.toml`, которые в этом издании не действуют (предупреждение).
+- `language_pack` — `src/vtuber/bootstrap/edition.py:111` — Языковой пакет по `[edition].language`.
+- `edition_persona` — `src/vtuber/bootstrap/edition.py:128` — Персона из файла с правилами профиля содержания издания (ADR-0033).
+- `warn_ignored_user_keys` — `src/vtuber/bootstrap/edition.py:140` — Предупреждение: ключи общего `user.toml` (он для `ru`) здесь не действуют.
+- `LineSource` — `src/vtuber/bootstrap/main.py:67` — Откуда читать строки: `sys.stdin` или его тестовая замена.
+- `Console` — `src/vtuber/bootstrap/main.py:74` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
+- `main` — `src/vtuber/bootstrap/main.py:87` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
+- `run` — `src/vtuber/bootstrap/main.py:312` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
 - `background_memory` — `src/vtuber/bootstrap/memory.py:50` — Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:40` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
@@ -348,6 +353,7 @@
 - `ViewerBlocked` — `src/vtuber/domain/events.py:150` — Реплика зрителя похожа на атаку и не дошла до модели; ведущий видит это в UI (FR-31).
 - `MetricRecorded` — `src/vtuber/domain/events.py:158` — Замер стадии хода; `turn_id` — None, если замер вне хода (например, прогрев).
 - `BackendStatusChanged` — `src/vtuber/domain/events.py:167` — Бэкенд загрузился, упал или восстановился.
+- `crosses_hard_floor` — `src/vtuber/domain/floor.py:30` — Реплика явно просит сексуальное содержание с участием несовершеннолетних.
 - `GpuMemory` — `src/vtuber/domain/gpu.py:7` — Сколько видеопамяти всего и сколько занято всеми программами.
 - `IncomingMessage` — `src/vtuber/domain/incoming.py:7` — Реплика из источника `source` (например, `twitch`) от автора `author`.
 - `EmbedKind` — `src/vtuber/domain/memory.py:14` — Что кодируется: у e5 запрос и запоминаемый текст кодируются по-разному.

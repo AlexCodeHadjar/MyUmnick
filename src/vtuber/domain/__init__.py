@@ -47,6 +47,7 @@ from vtuber.domain.events import (
     TurnStarted,
     ViewerBlocked,
 )
+from vtuber.domain.floor import crosses_hard_floor
 from vtuber.domain.gpu import GpuMemory
 from vtuber.domain.incoming import IncomingMessage
 from vtuber.domain.memory import EmbedKind, Fact, FactHit, FactId, FactSource, VaultScan, Vector
@@ -128,6 +129,7 @@ __all__ = [
     "ViewerStyle",
     "VisionUnavailable",
     "VtuberError",
+    "crosses_hard_floor",
     "is_viewer_line",
     "looks_like_attack",
     "next_state",
