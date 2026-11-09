@@ -73,7 +73,8 @@ class ExternalTurns:
             await self._service.wait_silent()
             plain = f"{message.author}: {message.text}"
             await self._send(InputFinal.of(plain))
-            text = viewer_line(message.author, message.text) if message.is_viewer else plain
+            style = self._service.texts.viewer
+            text = viewer_line(message.author, message.text, style) if message.is_viewer else plain
             sink = WsReplySink(self._send, self._send_bytes)
             await self._service.handle(text, sink, external=True)
             await self._service.wait_silent()

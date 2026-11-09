@@ -13,6 +13,7 @@ from typing import Final, Protocol, TextIO
 from vtuber.adapters.gpu import NvidiaSmiProbe
 from vtuber.adapters.llm import LlamaServerProcess
 from vtuber.application.conversation import ConversationService, Initiative
+from vtuber.application.prompting import RU_PROMPT, PromptBuilder
 from vtuber.application.scheduler import ResourceManager
 from vtuber.application.supervision import Supervised, Supervisor
 from vtuber.application.tools import ToolContext
@@ -56,11 +57,10 @@ EXIT_CONFIG: Final = 1
 EXIT_UNAVAILABLE: Final = 2
 CHAT_MODE: Final = "chat"
 SERVE_MODE: Final = "serve"
-# Реплика в прогреве кэша: шаблоны чата (Qwen3.5) отвергают промпт без реплики пользователя, а
-# общий префикс с настоящим ходом от неё не меняется (T-06).
-WARMUP_USER: Final = "Привет!"
-# Проба голоса после загрузки: модель отвечает — TTS готов (статус для UI).
-TTS_PROBE: Final = "Готова."
+# Реплика прогрева кэша и проба голоса — в тексте издания (`PromptTexts`): шаблоны чата (Qwen3.5)
+# отвергают промпт без реплики пользователя, а общий префикс от неё не меняется (T-06).
+WARMUP_USER: Final = RU_PROMPT.warmup_user  # прежнее имя: русское издание
+TTS_PROBE: Final = RU_PROMPT.tts_probe
 
 _log = get_logger(__name__)
 
@@ -132,7 +132,7 @@ async def _run(
         metrics = tg.create_task(core.telemetry.run())
         trimming = tg.create_task(resources.run(NvidiaSmiProbe(cfg.gpu_probe)))
         conversation = build_conversation(cfg, persona, with_voice(llm, voice), core)
-        warmup = _Warmup(_Llm(llm, server), conversation.prompts.prefix, bus, voice)
+        warmup = _Warmup(_Llm(llm, server), conversation.prompts, bus, voice)
         # Память (Этап 10): факты и резюме — в простое, LLM фонового слота; поиск — в ходе (T-12).
         async with (
             background_memory(cfg, conversation, core) as controls,
@@ -241,10 +241,11 @@ class _Warmup:
     """
 
     def __init__(
-        self, llm: _Llm, prefix: Sequence[Message], bus: EventBus, voice: VoiceParts | None
+        self, llm: _Llm, prompts: PromptBuilder, bus: EventBus, voice: VoiceParts | None
     ) -> None:
         self._llm = llm
-        self._prefix = prefix
+        self._prefix = prompts.prefix
+        self._texts = prompts.texts
         self.bus = bus
         self._voice = voice
 
@@ -262,7 +263,8 @@ class _Warmup:
         await self.bus.publish(BackendStatusChanged(Component.LLM, BackendState.LOADING))
         try:
             await self._llm.server.wait_ready()
-            await self._llm.port.prefill((*self._prefix, Message(Role.USER, WARMUP_USER)))
+            warmup = Message(Role.USER, self._texts.warmup_user)
+            await self._llm.port.prefill((*self._prefix, warmup))
         except LLMUnavailable as exc:
             await self.bus.publish(BackendStatusChanged(Component.LLM, BackendState.FAILED))
             return str(exc)
@@ -279,7 +281,7 @@ class _Warmup:
         await self._tts_status(BackendState.LOADING)
         async with self._voice.tts as tts:
             try:
-                async with aclosing(tts.synthesize(TTS_PROBE)) as audio:
+                async with aclosing(tts.synthesize(self._texts.tts_probe)) as audio:
                     async for _ in audio:
                         pass
                 await self._voice.fillers.prepare(tts)

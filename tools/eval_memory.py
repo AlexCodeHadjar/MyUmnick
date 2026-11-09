@@ -25,7 +25,7 @@ from tools.eval_checks import Expect, evaluate
 from tools.jsonl import read_jsonl
 from tools.llm_client import ROOT, collect, open_llm
 from vtuber.adapters.memory import SqliteVecStore
-from vtuber.application.memory import FactExtractor, FactMemory, MemoryRecall
+from vtuber.application.memory import FactExtractor, FactMemory, MemoryRecall, RecallSearch
 from vtuber.application.prompting import PromptBuilder
 from vtuber.bootstrap import load_app_config, load_persona
 from vtuber.domain import GenerationFailed, LLMUnavailable, Turn, TurnId, VtuberError
@@ -90,7 +90,9 @@ async def run_case(engines: Engines, case: MemoryCase, store: MemoryStorePort) -
         except GenerationFailed:
             failures += 1
     telemetry = Telemetry(EventBus())
-    hints = await MemoryRecall(engines.embedder, store, cfg.retrieval, telemetry).hints(case.ask)
+    hints = await MemoryRecall(
+        RecallSearch(engines.embedder, store), cfg.retrieval, telemetry
+    ).hints(case.ask)
     prompt = engines.prompts.build((), case.ask, hints.context)
     answer = await collect(engines.llm, prompt.messages, engines.reply_params)
     problems = tuple(evaluate(case.expect, answer))

@@ -17,6 +17,7 @@
 
 Внутренние модули: `sse.py` (разбор строк SSE); в `openai_compat.py` — `wire_messages`,
 `check_status`, `UNREACHABLE` для наследников.
+| `NO_FOREIGN_OR_CYRILLIC_GRAMMAR`, `[llm.llamacpp].forbid_cyrillic` | Английское издание: ответ без кириллицы (Этап 20) |
 
 ## Зависимости
 - Порты: `LLMPort`, `GenerationParams`; domain: `Message`, `LLMUnavailable`, `GenerationFailed`

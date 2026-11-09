@@ -53,18 +53,26 @@ from vtuber.domain.memory import EmbedKind, Fact, FactHit, FactId, FactSource, V
 from vtuber.domain.speech import SAMPLE_WIDTH_BYTES, AudioChunk, AudioFormat
 from vtuber.domain.turn_state import TurnState, next_state
 from vtuber.domain.viewer import (
+    EN_VIEWER,
+    RU_VIEWER,
     VIEWER_PREFIX,
+    VIEWER_PREFIX_EN,
+    ViewerStyle,
     is_viewer_line,
     looks_like_attack,
     viewer_line,
+    without_viewer_prefix,
 )
 
 __all__ = [
+    "EN_VIEWER",
     "MAX_TAG_LENGTH",
+    "RU_VIEWER",
     "SAMPLE_WIDTH_BYTES",
     "TAG_CLOSE",
     "TAG_OPEN",
     "VIEWER_PREFIX",
+    "VIEWER_PREFIX_EN",
     "AttachedImage",
     "AudioChunk",
     "AudioFormat",
@@ -117,6 +125,7 @@ __all__ = [
     "VaultScan",
     "Vector",
     "ViewerBlocked",
+    "ViewerStyle",
     "VisionUnavailable",
     "VtuberError",
     "is_viewer_line",
@@ -125,4 +134,5 @@ __all__ = [
     "parse_gesture",
     "parse_tag",
     "viewer_line",
+    "without_viewer_prefix",
 ]

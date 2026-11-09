@@ -7,6 +7,7 @@ from typing import Final
 
 from pydantic import Field
 
+from vtuber.application.language import EN_PACK, RU_PACK, LanguagePack
 from vtuber.domain import ConfigError, ContentProfile, EditionId
 from vtuber.kernel import ConfigFiles, ConfigSection
 
@@ -102,3 +103,20 @@ def _has(tree: object, path: list[str]) -> bool:
             return False
         node = node[key]
     return True
+
+
+def language_pack(language: str) -> LanguagePack:
+    """Языковой пакет по `[edition].language`.
+
+    Raises:
+        ConfigError: для языка нет пакета — со списком доступных.
+
+    """
+    packs = {pack.language: pack for pack in (RU_PACK, EN_PACK)}
+    try:
+        return packs[language]
+    except KeyError as exc:
+        msg = (
+            f"[edition].language = {language!r}: нет языкового пакета; доступны: {', '.join(packs)}"
+        )
+        raise ConfigError(msg) from exc

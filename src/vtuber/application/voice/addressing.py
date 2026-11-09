@@ -14,7 +14,10 @@ from vtuber.application.voice.speakers import SPEAKER_WORD
 from vtuber.kernel import ConfigSection, get_logger
 
 _log = get_logger(__name__)
-_CALL_WORDS = r"(?:(?:эй|хей|слушай|привет|ну|окей|так)[\s,!.:-]+)*"
+_CALL_WORDS = (
+    r"(?:(?:эй|хей|слушай|привет|ну|окей|так|hey|hi|hello|ok|okay|so|listen|yo)"
+    r"[\s,!.:-]+)*"
+)
 _SPEAKER_LABEL = rf"(?:{SPEAKER_WORD} \d+: )?"
 _NOT_IN_WORD = r"(?![а-яёa-z0-9])"
 

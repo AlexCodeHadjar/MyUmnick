@@ -11,6 +11,7 @@ from vtuber.application.pipeline import FillerBank
 from vtuber.application.supervision import FailureFlag, WatchedTTS
 from vtuber.bootstrap.config import AppConfig
 from vtuber.bootstrap.container import Backends, TTSAdapter, tts_backends
+from vtuber.bootstrap.edition import language_pack
 from vtuber.domain import Component, LLMUnavailable
 from vtuber.ports import LLMPort, TTSPort
 
@@ -101,7 +102,8 @@ def build_voice(cfg: AppConfig) -> VoiceParts | None:
         return None
     flag = FailureFlag()
     watched = WatchedTTS(tts, flag, cfg.supervisor.voice_timeout_s)
-    return VoiceParts(tts, FillerBank(cfg.pipeline.filler), watched, flag)
+    normalize = language_pack(cfg.edition.language).diction.normalize
+    return VoiceParts(tts, FillerBank(cfg.pipeline.filler, normalize), watched, flag)
 
 
 def with_voice(llm: LLMPort, voice: VoiceParts | None) -> Backends:

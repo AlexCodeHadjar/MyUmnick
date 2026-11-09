@@ -26,7 +26,7 @@ from tools.eval_memory import DEFAULT_CASES, MemoryCase
 from tools.jsonl import read_jsonl
 from tools.llm_client import ROOT, open_llm
 from vtuber.adapters.memory import E5Embedder, SqliteVecStore
-from vtuber.application.memory import MemoryRecall
+from vtuber.application.memory import MemoryRecall, RecallSearch
 from vtuber.application.prompting import PromptBuilder
 from vtuber.bootstrap import load_app_config, load_persona
 from vtuber.domain import EmbedKind, Fact, FactSource, LLMUnavailable
@@ -131,7 +131,9 @@ async def _bench(
             SqliteVecStore(Path(tmp) / "memory.sqlite", memory.e5.dimensions) as store,
         ):
             await seed(store, embedder, args.facts)
-            recall = MemoryRecall(embedder, store, memory.retrieval, Telemetry(EventBus()))
+            recall = MemoryRecall(
+                RecallSearch(embedder, store), memory.retrieval, Telemetry(EventBus())
+            )
             for index, ask in enumerate([*asks] * args.runs):
                 timings.append(await _pair(llm, prompts, ask, recall, memory_first=index % 2 == 1))
     return timings

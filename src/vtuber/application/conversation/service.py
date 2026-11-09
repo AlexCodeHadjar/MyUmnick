@@ -11,7 +11,7 @@ from vtuber.application.conversation.first_output import FirstOutputSink
 from vtuber.application.conversation.performance import play_performance
 from vtuber.application.memory import ShortTermMemory, TurnHints
 from vtuber.application.pipeline import ReplyPipeline, StreamParser
-from vtuber.application.prompting import IMAGE_NOTE, PromptBuilder
+from vtuber.application.prompting import PromptBuilder, PromptTexts
 from vtuber.domain import (
     AttachedImage,
     AudioChunk,
@@ -32,11 +32,9 @@ from vtuber.domain import (
 from vtuber.kernel import EventBus, get_logger, turn_context
 from vtuber.ports import ReplySink
 
+# Что долговременная память добавляет ходу по реплике (`MemoryRecall.hints`).
 type HintSource = Callable[[str], Awaitable[TurnHints]]
-"""Что долговременная память добавляет ходу по реплике (`MemoryRecall.hints`)."""
 
-REWIND_WARMUP: Final = "Продолжим."
-"""Шаблону чата нужна реплика пользователя; общий префикс от неё не зависит."""
 INTERNAL_ERROR_MESSAGE: Final = "Внутренняя ошибка при ответе — подробности в logs/app.jsonl"
 
 _log = get_logger(__name__)
@@ -110,6 +108,11 @@ class ConversationService:
         return True
 
     @property
+    def texts(self) -> PromptTexts:
+        """Тексты издания: подпись зрителя, заметка о картинке (Этап 20)."""
+        return self._prompts.texts
+
+    @property
     def state(self) -> TurnState:
         """Состояние текущего хода."""
         return self._state
@@ -133,7 +136,7 @@ class ConversationService:
         """Перейти к другой ветке: история другая, кэш промпта прогревается заранее (T-05, T-03)."""
         self._stop_prefill()
         self._memory.replace(turns)
-        messages = self._prompts.build(self._memory.messages, REWIND_WARMUP).messages
+        messages = self._prompts.build(self._memory.messages, self.texts.rewind_warmup).messages
         self._prefill = asyncio.create_task(self._warm(messages))
 
     def use_tools(self, hints: HintSource) -> None:
@@ -309,7 +312,7 @@ class ConversationService:
         record = Turn(
             turn.id,
             # Картинка живёт один ход (ADR-0024); модель должна помнить, что она была.
-            f"{turn.user_text} {IMAGE_NOTE}" if turn.images else turn.user_text,
+            f"{turn.user_text} {self.texts.image_note}" if turn.images else turn.user_text,
             reply,
             is_interrupted=is_interrupted,
             is_external=turn.external,

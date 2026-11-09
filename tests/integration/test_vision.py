@@ -36,7 +36,12 @@ def _cfg(base_url: str = "http://llm.test") -> LLMConfig:
             "connect_timeout_s": 1.0,
             "read_timeout_s": 1.0,
             "generation": {"max_tokens": 16, "temperature": 0.5},
-            "llamacpp": {"slot_id": 0, "enable_thinking": False, "forbid_foreign_scripts": False},
+            "llamacpp": {
+                "slot_id": 0,
+                "enable_thinking": False,
+                "forbid_foreign_scripts": False,
+                "forbid_cyrillic": False,
+            },
         }
     )
 

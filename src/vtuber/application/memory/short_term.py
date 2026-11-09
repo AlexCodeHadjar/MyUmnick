@@ -6,12 +6,13 @@ from dataclasses import dataclass
 from itertools import chain
 from typing import Final
 
+from vtuber.application.memory.texts import RU_MEMORY
 from vtuber.application.prompting import ContextBudget
 from vtuber.domain import Message, Role, Turn
 
 INTERRUPTED_MARK: Final = "…"
 """Конец прерванного ответа. Нейтральный знак, а не «[прервано]»: модель повторяет пометки."""
-SUMMARY_TEMPLATE: Final = "(Кратко о начале разговора: {summary})\n{text}"
+SUMMARY_TEMPLATE: Final = RU_MEMORY.summary_template  # прежнее имя: русское издание
 """Резюме — в первой реплике истории, а не отдельным системным сообщением: не все шаблоны чата
 допускают system не в начале, а чередование user/assistant так не ломается."""
 
@@ -34,8 +35,9 @@ class ShortTermMemory:
     память (`Summarizer`); резюме идёт в начало истории и меняется так же редко.
     """
 
-    def __init__(self, budget: ContextBudget) -> None:
+    def __init__(self, budget: ContextBudget, summary_template: str = SUMMARY_TEMPLATE) -> None:
         self._budget = budget
+        self._template = summary_template
         self._turns: deque[_StoredTurn] = deque()
         self._tokens = 0
         self._summary: str | None = None
@@ -46,7 +48,7 @@ class ShortTermMemory:
         messages = tuple(chain.from_iterable(turn.messages for turn in self._turns))
         if self._summary is None or not messages:
             return messages
-        first = SUMMARY_TEMPLATE.format(summary=self._summary, text=messages[0].text)
+        first = self._template.format(summary=self._summary, text=messages[0].text)
         return (Message(Role.USER, first), *messages[1:])
 
     @property

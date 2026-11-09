@@ -14,7 +14,9 @@ CFG = LLMConfig(
     model="local",
     connect_timeout_s=1,
     read_timeout_s=5,
-    llamacpp=LlamaCppOptions(slot_id=0, enable_thinking=False, forbid_foreign_scripts=True),
+    llamacpp=LlamaCppOptions(
+        slot_id=0, enable_thinking=False, forbid_foreign_scripts=True, forbid_cyrillic=False
+    ),
     backend="llamacpp",
     generation=GenerationConfig(max_tokens=64, temperature=0.5),
 )
@@ -64,6 +66,18 @@ async def test_chat_request_forbids_foreign_scripts_only_when_configured() -> No
     assert body["grammar"] == NO_FOREIGN_SCRIPTS_GRAMMAR
     assert "grammar" not in LlamaCppLLM(allowed)._request_body(MESSAGES, PARAMS)  # noqa: SLF001
     assert chr(0x3400) in NO_FOREIGN_SCRIPTS_GRAMMAR
+
+
+async def test_english_edition_also_forbids_cyrillic() -> None:
+    english = CFG.model_copy(
+        update={"llamacpp": CFG.llamacpp.model_copy(update={"forbid_cyrillic": True})}
+    )
+
+    grammar = LlamaCppLLM(english)._request_body(MESSAGES, PARAMS)["grammar"]  # noqa: SLF001
+
+    assert isinstance(grammar, str)
+    assert "Ѐ-ԯ" in grammar
+    assert "Ѐ" not in NO_FOREIGN_SCRIPTS_GRAMMAR
 
 
 async def test_prefill_renders_template_then_evaluates_prompt_without_generation() -> None:

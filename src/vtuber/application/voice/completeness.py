@@ -47,10 +47,16 @@ _ENDINGS: Final = [
     "например",
     "значит",
     "короче",
-]
-_OPENINGS: Final = ("я хотел", "я хотела", "я думаю", "мне кажется", "то есть", "так как")
+    # Английское издание (Этап 20): союзы, предлоги, артикли — в русском таких слов нет.
+    "and", "but", "or", "so", "because", "if", "when", "that", "the", "an", "to", "of", "in",
+    "on", "with", "for", "my", "your", "like", "um", "uh",
+]  # fmt: skip
+_OPENINGS: Final = (
+    "я хотел", "я хотела", "я думаю", "мне кажется", "то есть", "так как",
+    "i wanted", "i think", "i mean", "it seems",
+)  # fmt: skip
 MIN_WORDS: Final = 2
-_WORDS: Final = re.compile(r"[а-яё]+", re.IGNORECASE)
+_WORDS: Final = re.compile(r"[а-яёa-z']+", re.IGNORECASE)
 _TRAILING_DOTS: Final = re.compile(r"(?:\.\.\.|…)\s*$")
 _FINISHED_MARK: Final = re.compile(r"[?!]\s*$")
 

@@ -15,6 +15,8 @@
 | `digits_to_words(digits)` | По цифрам: «007» → «ноль ноль семь» |
 | `plural(n, forms)` | Форма слова после числа: тысяча / тысячи / тысяч |
 | `latin_word_to_russian(word)`, `transliterate_latin(text)`, `spell(word)` | Латиница: словарь, аббревиатуры по буквам, транслит |
+| `Diction`, `Normalizer`, `RU_DICTION`, `EN_DICTION`, `RU_ABBREVIATIONS`, `EN_ABBREVIATIONS` (`diction.py`) | Дикция издания (Этап 20) |
+| `normalize_english`, `english_integer`, `english_ordinal`, `english_year` | Английская речь без зависимостей: числа, годы, время, валюта, единицы, сокращения, кириллица → латиница (S-20.3) |
 
 ## Зависимости
 - Только стандартная библиотека (`re`, `unicodedata`).

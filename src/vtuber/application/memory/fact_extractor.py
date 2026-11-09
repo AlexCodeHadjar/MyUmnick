@@ -11,22 +11,12 @@ from typing import Final
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from vtuber.application.memory.llm_text import collect, strip_tags
+from vtuber.application.memory.texts import RU_MEMORY, MemoryTexts
 from vtuber.domain import GenerationFailed, Message, Role, Turn
 from vtuber.ports import GenerationParams, LLMPort
 
 MAX_FACT_CHARS: Final = 200
-EXTRACT_PROMPT: Final = """\
-Ты ведёшь долговременную память ассистента о пользователе. Прочитай фрагмент диалога и выпиши \
-новые факты о пользователе.
-Факт — короткое утверждение от третьего лица: «Пользователя зовут Алексей», «Пользователь живёт \
-в Казани», «Пользователь не любит хоррор-игры», «У пользователя в мае отпуск».
-Записывай: имя, место, работу и учёбу, увлечения, что нравится и не нравится, планы, важные \
-события, близких людей и питомцев.
-Не записывай: что ассистент говорит о себе, приветствия, вопросы, догадки, сиюминутное \
-(«пользователь поздоровался»).
-importance: 1 — имя и главное о жизни, 0.5 — предпочтения и планы, 0.2 — мелочи.
-Ответь только JSON без пояснений и без markdown: \
-{"facts": [{"text": "…", "importance": 0.5}]}. Нет фактов — {"facts": []}."""
+EXTRACT_PROMPT: Final = RU_MEMORY.extract_prompt  # прежнее имя: русское издание
 
 
 class ExtractedFact(BaseModel):
@@ -66,9 +56,12 @@ def parse_facts(raw: str) -> list[ExtractedFact]:
 class FactExtractor:
     """Ход → факты о пользователе одним запросом к LLM (низкая temperature — в `params`)."""
 
-    def __init__(self, llm: LLMPort, params: GenerationParams) -> None:
+    def __init__(
+        self, llm: LLMPort, params: GenerationParams, texts: MemoryTexts = RU_MEMORY
+    ) -> None:
         self._llm = llm
         self._params = params
+        self._texts = texts
 
     async def extract(self, turn: Turn) -> list[ExtractedFact]:
         """Факты из реплики пользователя (и ответа — как контекста).
@@ -78,9 +71,11 @@ class FactExtractor:
             GenerationFailed: генерация сорвалась или ответ — не JSON по схеме.
 
         """
-        dialogue = f"Пользователь: {turn.user_text}\nАссистент: {strip_tags(turn.reply_text)}"
+        texts = self._texts
+        reply = strip_tags(turn.reply_text)
+        dialogue = f"{texts.user_label}: {turn.user_text}\n{texts.assistant_label}: {reply}"
         messages = (
-            Message(Role.SYSTEM, EXTRACT_PROMPT),
+            Message(Role.SYSTEM, texts.extract_prompt),
             Message(Role.USER, dialogue),
         )
         return parse_facts(await collect(self._llm, messages, self._params))

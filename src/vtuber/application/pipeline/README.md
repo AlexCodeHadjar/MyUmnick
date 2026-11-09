@@ -28,6 +28,7 @@ WebSocket.
 | `SentenceChunker(cfg)` | `feed(text) → Iterator[фраза]`, `flush() → хвост \| None`; один на ход (T-02) |
 | `ChunkerConfig` | `[pipeline.chunker]`: `first_min_words`, `next_min_words`, `max_words` |
 | `HOLD_LIMIT` | Максимум символов незакрытого «<», которые придерживаются (32) |
+| `Delivery(fillers, on_phrase, normalize)`, `Voice.diction` | Что кроме движка нужно речи хода; дикция издания — нормализатор и сокращения нарезки (Этап 20); `SentenceChunker(cfg, abbreviations)`, `FillerBank(cfg, normalize)` |
 
 ## Зависимости
 - Порты: `LLMPort`, `GenerationParams`, `ReplySink`, `TTSPort`; `application/speech` (нормализация)

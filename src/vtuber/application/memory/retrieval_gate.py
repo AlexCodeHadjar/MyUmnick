@@ -6,58 +6,33 @@
 """
 
 import asyncio
-import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Final
 
 from pydantic import Field
 
+from vtuber.application.memory.texts import RU_MEMORY, GatePatterns, MemoryTexts
 from vtuber.domain import EmbedKind, MemoryUnavailable
 from vtuber.kernel import ConfigSection, Telemetry, get_logger
 from vtuber.ports import EmbedderPort, MemoryStorePort
 
 MS_PER_S: Final = 1000
-FACTS_PREFIX: Final = "Ты помнишь о пользователе:"
-
-_RECALL: Final = re.compile(
-    r"\b(помни\w*|вспомни\w*|забыл\w*|напомни\w*|говорил\w*|рассказывал\w*|упоминал\w*"
-    r"|обсуждали|в прошлый раз|в прошлом разговоре|раньше)\b",
-    re.IGNORECASE,
-)
-_ABOUT_USER: Final = re.compile(
-    r"\b(я|мне|меня|мной|мой|моя|моё|мое|мою|мои|моего|моей|моих|моему|моим|моими|моём|моем"
-    r"|у меня|обо мне)\b",
-    re.IGNORECASE,
-)
-_QUESTION: Final = re.compile(
-    r"\?|\b(кто|что|чем|чего|где|куда|откуда|когда|как|какой|какая|какое|какие|сколько|почему"
-    r"|зачем|знаешь|угадай|скажи|расскажи)\b",
-    re.IGNORECASE,
-)
-_FACTUAL: Final = re.compile(
-    r"^\s*(кто|что такое|что значит|где|когда|сколько|какой|какая|какое|какие|почему|зачем"
-    r"|в каком|в какой|на каком|на какой|чем отличается|как называется)\b",
-    re.IGNORECASE,
-)
-_ME_AS_SUBJECT: Final = re.compile(
-    r"\b(как|что|кто|где|когда|сколько|куда)\b.*\b(я|меня|мне|мой|моя|моё|мою|мои|моего|моей)\b",
-    re.IGNORECASE,
-)
+FACTS_PREFIX: Final = RU_MEMORY.facts_prefix  # прежнее имя: русское издание
 
 _log = get_logger(__name__)
 
 
-def needs_memory(text: str) -> bool:
+def needs_memory(text: str, gate: GatePatterns = RU_MEMORY.gate) -> bool:
     """Реплика о прошлом разговоре или вопрос о самом пользователе."""
-    if _RECALL.search(text):
+    if gate.recall.search(text):
         return True
-    return bool(_ABOUT_USER.search(text) and _QUESTION.search(text))
+    return bool(gate.about_user.search(text) and gate.question.search(text))
 
 
-def is_factual_question(text: str) -> bool:
+def is_factual_question(text: str, gate: GatePatterns = RU_MEMORY.gate) -> bool:
     """Вопрос о мире, а не о пользователе: на нём цена выдумки выше, температура ниже."""
-    return bool(_FACTUAL.search(text)) and not _ME_AS_SUBJECT.search(text)
+    return bool(gate.factual.search(text)) and not gate.me_as_subject.search(text)
 
 
 class RetrievalConfig(ConfigSection):
@@ -82,27 +57,37 @@ class TurnHints:
     temperature: float | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class RecallSearch:
+    """Чем искать факты: эмбеддер запроса и хранилище."""
+
+    embedder: EmbedderPort
+    store: MemoryStorePort
+
+
 class MemoryRecall:
     """Подсказки хода: факты из памяти, если гейт открыт; сбой памяти ход не задерживает."""
 
     def __init__(
         self,
-        embedder: EmbedderPort,
-        store: MemoryStorePort,
+        search: RecallSearch,
         cfg: RetrievalConfig,
         telemetry: Telemetry,
+        texts: MemoryTexts = RU_MEMORY,
     ) -> None:
-        self._embedder = embedder
-        self._store = store
+        self._embedder = search.embedder
+        self._store = search.store
         self._cfg = cfg
         self._telemetry = telemetry
+        self._texts = texts
 
     async def hints(self, text: str) -> TurnHints:
         """Подсказки для реплики `text`; гейт закрыт — без единого await дольше шага цикла."""
-        factual = is_factual_question(text)
-        facts = await self._search(text) if needs_memory(text) else ()
+        gate = self._texts.gate
+        factual = is_factual_question(text, gate)
+        facts = await self._search(text) if needs_memory(text, gate) else ()
         return TurnHints(
-            context=(f"{FACTS_PREFIX} {' '.join(facts)}",) if facts else (),
+            context=(f"{self._texts.facts_prefix} {' '.join(facts)}",) if facts else (),
             temperature=self._cfg.factual_temperature if factual and not facts else None,
         )
 

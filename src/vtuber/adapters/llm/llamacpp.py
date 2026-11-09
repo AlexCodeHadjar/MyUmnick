@@ -25,9 +25,15 @@ FOREIGN_SCRIPTS: Final = (
     (0xAC00, 0xD7AF),
     (0xF900, 0xFAFF),
 )
-NO_FOREIGN_SCRIPTS_GRAMMAR: Final = (
-    "root ::= [^" + "".join(f"{chr(low)}-{chr(high)}" for low, high in FOREIGN_SCRIPTS) + "]*"
-)
+CYRILLIC: Final = ((0x0400, 0x052F),)
+
+
+def _forbidding(scripts: tuple[tuple[int, int], ...]) -> str:
+    return "root ::= [^" + "".join(f"{chr(low)}-{chr(high)}" for low, high in scripts) + "]*"
+
+
+NO_FOREIGN_SCRIPTS_GRAMMAR: Final = _forbidding(FOREIGN_SCRIPTS)
+NO_FOREIGN_OR_CYRILLIC_GRAMMAR: Final = _forbidding(CYRILLIC + FOREIGN_SCRIPTS)
 APPLY_TEMPLATE_PATH: Final = "/apply-template"
 COMPLETION_PATH: Final = "/completion"
 
@@ -78,8 +84,11 @@ class LlamaCppLLM(OpenAICompatLLM):
         }
 
     def _grammar(self) -> dict[str, object]:
-        if not self._cfg.llamacpp.forbid_foreign_scripts:
+        options = self._cfg.llamacpp
+        if not options.forbid_foreign_scripts:
             return {}
+        if options.forbid_cyrillic:
+            return {"grammar": NO_FOREIGN_OR_CYRILLIC_GRAMMAR}
         return {"grammar": NO_FOREIGN_SCRIPTS_GRAMMAR}
 
     def _template_kwargs(self) -> dict[str, object]:

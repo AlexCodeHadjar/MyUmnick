@@ -139,7 +139,12 @@ async def _bench(url: str, cases: Sequence[CodeCase]) -> list[CodeResult]:
             "connect_timeout_s": 5.0,
             "read_timeout_s": 300.0,
             "generation": {"max_tokens": 1024, "temperature": 0.0},
-            "llamacpp": {"slot_id": 0, "enable_thinking": False, "forbid_foreign_scripts": False},
+            "llamacpp": {
+                "slot_id": 0,
+                "enable_thinking": False,
+                "forbid_foreign_scripts": False,
+                "forbid_cyrillic": False,
+            },
         }
     )
     async with OpenAICompatLLM(cfg) as llm:

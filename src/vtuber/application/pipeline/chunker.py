@@ -8,20 +8,14 @@ from collections.abc import Iterator
 
 from pydantic import Field
 
+from vtuber.application.speech import RU_ABBREVIATIONS
 from vtuber.kernel import ConfigSection
 
 HARD_STOPS = frozenset(".!?…")
 SOFT_STOPS = frozenset(",;:—")
 # Закрывающие кавычки и скобки остаются во фразе: «Привет!» режется после «»», а не после «!».
 CLOSERS = frozenset("»\"')]’”")
-# Точка после них — не конец фразы. В нижнем регистре, с точкой.
-ABBREVIATIONS = frozenset(
-    {
-        "т.е.", "т.д.", "т.п.", "т.к.", "т.н.", "и.о.", "др.", "пр.", "см.", "ср.", "напр.",
-        "г.", "гг.", "в.", "вв.", "ул.", "д.", "кв.", "стр.", "рис.", "табл.", "руб.", "коп.",
-        "тыс.", "млн.", "млрд.", "мин.", "сек.", "ч.", "им.", "проф.", "доц.", "акад.", "англ.",
-    }
-)  # fmt: skip
+ABBREVIATIONS = RU_ABBREVIATIONS  # прежнее имя: русское издание
 # Инициал — заглавная буква с точкой: «А.».
 INITIAL_LENGTH = 2
 
@@ -47,18 +41,21 @@ def _token_before(text: str, end: int) -> str:
     return text[start : end + 1].lower()
 
 
-def _is_abbreviation(text: str, dot: int) -> bool:
+def _is_abbreviation(text: str, dot: int, abbreviations: frozenset[str]) -> bool:
     """Точка — часть сокращения («т.е.») или инициала («А. С. Пушкин»), а не конец фразы."""
     token = _token_before(text, dot)
     initial = len(token) == INITIAL_LENGTH and text[dot - 1].isupper()
-    return token in ABBREVIATIONS or initial
+    return token in abbreviations or initial
 
 
 class SentenceChunker:
     """Один экземпляр на ход: `feed(дельта)` отдаёт готовые фразы, `flush()` — хвост."""
 
-    def __init__(self, cfg: ChunkerConfig) -> None:
+    def __init__(
+        self, cfg: ChunkerConfig, abbreviations: frozenset[str] = RU_ABBREVIATIONS
+    ) -> None:
         self._cfg = cfg
+        self._abbreviations = abbreviations
         self._buf = ""
         self._emitted = 0
 
@@ -101,6 +98,8 @@ class SentenceChunker:
             end += 1
         if end + 1 >= len(buf) or not buf[end + 1].isspace():
             return None
-        hard = char in HARD_STOPS and not (char == "." and _is_abbreviation(buf, i))
+        hard = char in HARD_STOPS and not (
+            char == "." and _is_abbreviation(buf, i, self._abbreviations)
+        )
         soft = char in SOFT_STOPS and words >= min_words
         return end + 1 if hard or soft else None

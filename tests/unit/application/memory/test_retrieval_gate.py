@@ -9,6 +9,7 @@ from vtuber.application.conversation import ConversationService
 from vtuber.application.memory import (
     FACTS_PREFIX,
     MemoryRecall,
+    RecallSearch,
     RetrievalConfig,
     ShortTermMemory,
     is_factual_question,
@@ -75,7 +76,9 @@ async def _recall(*facts: str) -> tuple[MemoryRecall, FakeEmbedder]:
         (vector,) = await embedder.embed([text], EmbedKind.PASSAGE)
         await store.add(Fact(text, FactSource.EXTRACTED, 0.5, WHEN), vector)
     embedder.calls.clear()
-    return MemoryRecall(embedder, store, CFG, Telemetry(EventBus(), FakeClock())), embedder
+    return MemoryRecall(
+        RecallSearch(embedder, store), CFG, Telemetry(EventBus(), FakeClock())
+    ), embedder
 
 
 async def test_closed_gate_does_not_touch_the_embedder() -> None:
@@ -107,7 +110,7 @@ async def test_factual_question_lowers_temperature() -> None:
 
 async def test_memory_failure_does_not_stop_the_turn() -> None:
     embedder, store = FakeEmbedder(available=False), FakeMemoryStore()
-    recall = MemoryRecall(embedder, store, CFG, Telemetry(EventBus(), FakeClock()))
+    recall = MemoryRecall(RecallSearch(embedder, store), CFG, Telemetry(EventBus(), FakeClock()))
 
     assert (await recall.hints("Как меня зовут?")).context == ()
 

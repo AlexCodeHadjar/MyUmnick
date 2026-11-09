@@ -12,7 +12,7 @@ from contextlib import aclosing
 
 from pydantic import Field
 
-from vtuber.application.speech import normalize_for_speech
+from vtuber.application.speech import Normalizer, normalize_for_speech
 from vtuber.domain import AudioChunk
 from vtuber.kernel import ConfigSection
 from vtuber.ports import ReplySink, TTSPort
@@ -38,8 +38,9 @@ class FillerConfig(ConfigSection):
 class FillerBank:
     """Готовые к отдаче междометия; пустой банк (голос не загружен, выключено) — молчит."""
 
-    def __init__(self, cfg: FillerConfig) -> None:
+    def __init__(self, cfg: FillerConfig, normalize: Normalizer = normalize_for_speech) -> None:
         self._cfg = cfg
+        self._normalize = normalize
         self._clips: list[Clip] = []
         self._next = 0
 
@@ -63,7 +64,7 @@ class FillerBank:
         """
         if not self._cfg.enabled:
             return
-        clips = [await _synthesize(tts, phrase) for phrase in self._cfg.phrases]
+        clips = [await _synthesize(tts, self._normalize(phrase)) for phrase in self._cfg.phrases]
         self._clips = [clip for clip in clips if clip]
 
     def next_clip(self) -> Clip:
@@ -98,5 +99,5 @@ class AudioOut:
 
 
 async def _synthesize(tts: TTSPort, phrase: str) -> Clip:
-    async with aclosing(tts.synthesize(normalize_for_speech(phrase))) as audio:
+    async with aclosing(tts.synthesize(phrase)) as audio:
         return tuple([chunk async for chunk in audio])

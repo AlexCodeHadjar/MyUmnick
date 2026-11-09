@@ -8,24 +8,23 @@ from collections.abc import Sequence
 from typing import Final
 
 from vtuber.application.memory.llm_text import collect, strip_tags
+from vtuber.application.memory.texts import RU_MEMORY, MemoryTexts
 from vtuber.domain import GenerationFailed, Message, Role
 from vtuber.ports import GenerationParams, LLMPort
 
 MAX_SUMMARY_CHARS: Final = 1200
-SUMMARY_PROMPT: Final = """\
-Ты сжимаешь начало разговора пользователя с ассистентом, чтобы ассистент помнил его суть.
-Напиши связный пересказ от третьего лица, 2–6 предложений: о чём говорили, что пользователь \
-рассказал о себе, о чём договорились, что осталось недосказанным. Если дано прежнее резюме — \
-включи его суть в новое. Без вступлений, списков и markdown — только текст пересказа."""
-_SPEAKERS: Final = {Role.USER: "Пользователь", Role.ASSISTANT: "Ассистент"}
+SUMMARY_PROMPT: Final = RU_MEMORY.summary_prompt  # прежнее имя: русское издание
 
 
 class Summarizer:
     """Прежнее резюме + отрезанные сообщения → новое резюме одним запросом к LLM."""
 
-    def __init__(self, llm: LLMPort, params: GenerationParams) -> None:
+    def __init__(
+        self, llm: LLMPort, params: GenerationParams, texts: MemoryTexts = RU_MEMORY
+    ) -> None:
         self._llm = llm
         self._params = params
+        self._texts = texts
 
     async def summarize(self, previous: str | None, dropped: Sequence[Message]) -> str:
         """Новое резюме, не длиннее `MAX_SUMMARY_CHARS` (обрезается по предложению).
@@ -35,10 +34,12 @@ class Summarizer:
             GenerationFailed: генерация сорвалась или ответ пуст.
 
         """
-        lines = [f"{_SPEAKERS.get(m.role, m.role)}: {strip_tags(m.text)}" for m in dropped]
-        parts = [f"Прежнее резюме: {previous}" if previous else "", "Фрагмент:", *lines]
-        request = "\n".join(part for part in parts if part)
-        messages = (Message(Role.SYSTEM, SUMMARY_PROMPT), Message(Role.USER, request))
+        texts = self._texts
+        speakers = {Role.USER: texts.user_label, Role.ASSISTANT: texts.assistant_label}
+        lines = [f"{speakers.get(m.role, m.role)}: {strip_tags(m.text)}" for m in dropped]
+        intro = texts.previous_summary.format(summary=previous) if previous else ""
+        request = "\n".join(part for part in (intro, texts.fragment, *lines) if part)
+        messages = (Message(Role.SYSTEM, texts.summary_prompt), Message(Role.USER, request))
         summary = " ".join((await collect(self._llm, messages, self._params)).split())
         if not summary:
             msg = "LLM вернула пустое резюме истории"

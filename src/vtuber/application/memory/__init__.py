@@ -8,6 +8,7 @@ from vtuber.application.memory.privacy import MemoryEraser
 from vtuber.application.memory.retrieval_gate import (
     FACTS_PREFIX,
     MemoryRecall,
+    RecallSearch,
     RetrievalConfig,
     TurnHints,
     is_factual_question,
@@ -15,6 +16,7 @@ from vtuber.application.memory.retrieval_gate import (
 )
 from vtuber.application.memory.short_term import INTERRUPTED_MARK, SUMMARY_TEMPLATE, ShortTermMemory
 from vtuber.application.memory.summarizer import MAX_SUMMARY_CHARS, Summarizer
+from vtuber.application.memory.texts import EN_MEMORY, RU_MEMORY, GatePatterns, MemoryTexts
 from vtuber.application.memory.vault_sync import (
     ChatRecorder,
     VaultedFacts,
@@ -24,20 +26,25 @@ from vtuber.application.memory.vault_sync import (
 from vtuber.application.memory.viewer_filter import without_viewer_turns
 
 __all__ = [
+    "EN_MEMORY",
     "FACTS_PREFIX",
     "INTERRUPTED_MARK",
     "MAX_SUMMARY_CHARS",
+    "RU_MEMORY",
     "SUMMARY_TEMPLATE",
     "ChatRecorder",
     "ExtractedFact",
     "FactExtractor",
     "FactMemory",
     "FactMemoryConfig",
+    "GatePatterns",
     "MemoryControls",
     "MemoryEditor",
     "MemoryEraser",
     "MemoryKeeper",
     "MemoryRecall",
+    "MemoryTexts",
+    "RecallSearch",
     "RetrievalConfig",
     "ShortTermMemory",
     "Summarizer",

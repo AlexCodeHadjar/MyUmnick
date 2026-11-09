@@ -75,6 +75,7 @@ def _llm_config(url: str, model: str, slot: int, timeout_s: float) -> LLMConfig:
                 "slot_id": slot,
                 "enable_thinking": False,
                 "forbid_foreign_scripts": False,
+                "forbid_cyrillic": False,
             },
         }
     )

@@ -7,12 +7,16 @@ from vtuber.application.prompting.prompt_builder import (
     PromptBuilder,
     render_system_prompt,
 )
+from vtuber.application.prompting.texts import EN_PROMPT, RU_PROMPT, PromptTexts
 
 __all__ = [
+    "EN_PROMPT",
     "IMAGE_NOTE",
+    "RU_PROMPT",
     "ContextBudget",
     "ContextConfig",
     "Prompt",
     "PromptBuilder",
+    "PromptTexts",
     "render_system_prompt",
 ]

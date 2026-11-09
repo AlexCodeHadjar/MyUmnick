@@ -2,7 +2,7 @@ from pathlib import Path
 
 from tests.fakes import FakeClock, FakeEmbedder, FakeLLM, FakeMemoryStore
 from tools.bench_memory import Timing, first_token_ms, seed, summarize
-from vtuber.application.memory import MemoryRecall, RetrievalConfig
+from vtuber.application.memory import MemoryRecall, RecallSearch, RetrievalConfig
 from vtuber.application.prompting import PromptBuilder
 from vtuber.bootstrap import load_persona
 from vtuber.kernel import EventBus, Telemetry
@@ -15,7 +15,7 @@ async def test_with_memory_prompt_carries_found_facts() -> None:
     llm, embedder, store = FakeLLM("Ок."), FakeEmbedder(), FakeMemoryStore()
     await seed(store, embedder, 8)
     prompts = PromptBuilder(load_persona(ROOT / "personas" / "default.toml"))
-    recall = MemoryRecall(embedder, store, CFG, Telemetry(EventBus(), FakeClock()))
+    recall = MemoryRecall(RecallSearch(embedder, store), CFG, Telemetry(EventBus(), FakeClock()))
 
     assert await first_token_ms(llm, prompts, "Как меня зовут?", None) >= 0
     assert await first_token_ms(llm, prompts, "Как меня зовут?", recall) >= 0

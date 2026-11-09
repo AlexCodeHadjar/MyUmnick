@@ -9,6 +9,7 @@ from vtuber.application.memory import ShortTermMemory
 from vtuber.application.pipeline import FillerBank, ReplyPipeline, Voice
 from vtuber.application.prompting import ContextBudget, PromptBuilder
 from vtuber.bootstrap.config import AppConfig
+from vtuber.bootstrap.edition import language_pack
 from vtuber.domain import Persona
 from vtuber.kernel import EventBus, Registry, Telemetry
 from vtuber.ports import GenerationParams, LLMPort, TTSPort
@@ -76,13 +77,16 @@ def build_conversation(
     """Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти."""
     generation = cfg.llm.generation
     params = GenerationParams(max_tokens=generation.max_tokens, temperature=generation.temperature)
+    pack = language_pack(cfg.edition.language)
     voice = (
         None
         if backends.tts is None
-        else Voice(backends.tts, cfg.pipeline.chunker, backends.fillers, core.bus.publish)
+        else Voice(
+            backends.tts, cfg.pipeline.chunker, backends.fillers, core.bus.publish, pack.diction
+        )
     )
-    prompts = PromptBuilder(persona)
-    history = ShortTermMemory(ContextBudget(cfg.context))
+    prompts = PromptBuilder(persona, pack.prompt)
+    history = ShortTermMemory(ContextBudget(cfg.context), pack.memory.summary_template)
     service = ConversationService(
         ReplyPipeline(backends.llm, params, core.telemetry, voice), prompts, history, core.bus
     )

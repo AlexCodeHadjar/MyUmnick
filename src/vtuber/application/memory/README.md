@@ -22,6 +22,7 @@
 | `needs_memory(text)`, `is_factual_question(text)` | Гейт поиска (T-12): эвристики без модели |
 | `MemoryRecall(embedder, store, cfg, telemetry)`, `RetrievalConfig`, `TurnHints` | `hints(text)` — справка из фактов и температура на ход; сбой или тайм-аут памяти ход не задерживают |
 | `MemoryKeeper(scheduler, history, summarizer, facts)` | `follow(bus)`: по `TurnRemembered` — задачи простоя «резюме» (если отрезано) и «факты» |
+| `MemoryTexts`, `GatePatterns`, `RU_MEMORY`, `EN_MEMORY` (`texts.py`), `RecallSearch` | Промпты резюме и фактов, подписи, справка, эвристики гейта по языку (Этап 20); `Summarizer`, `FactExtractor`, `MemoryRecall(search, cfg, telemetry, texts)`, `ShortTermMemory(budget, summary_template)` |
 
 ## Зависимости
 - application: `prompting.ContextBudget`, `scheduler.IdleScheduler`/`IdleJob`

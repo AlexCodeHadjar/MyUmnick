@@ -1,13 +1,22 @@
 # Английское издание без цензуры (Этап 20, ADR-0032). Поверх default.toml; выбор мастера —
 # config/setup.en.toml, личные правки — config/user.en.toml. Языковые ключи общего user.toml
 # (персона, голос, память…) здесь не действуют — список в bootstrap/edition.py.
-# Персона, голос и модель появятся в S-20.3, S-20.5, S-20.9; до тех пор — русские умолчания.
+# Голос и модель — S-20.5, S-20.9; до тех пор — голос и модель по умолчанию.
 
 [edition]
 id = "en"
 language = "en"
 content_profile = "unfiltered"
 stream_safe = false            # в эфир пока не идёт (решение пользователя, 2026-11-09)
+
+[persona]
+file = "personas/en/default.toml"
+
+[pipeline.filler]
+phrases = ["Hmm…", "So…", "Let me see…"]
+
+[llm.llamacpp]
+forbid_cyrillic = true         # ответ только по-английски: русские слова голос не прочтёт
 
 [context]
 chars_per_token = 4.0          # оценка для английского; калибровать по /tokenize (S-20.3)

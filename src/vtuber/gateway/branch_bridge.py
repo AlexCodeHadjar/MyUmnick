@@ -4,7 +4,7 @@ from collections.abc import Awaitable, Callable
 
 from vtuber.application.conversation import ConversationService, DialogueTree
 from vtuber.application.pipeline import StreamParser, TextDelta
-from vtuber.domain import VIEWER_PREFIX, Turn, TurnId
+from vtuber.domain import Turn, TurnId, without_viewer_prefix
 from vtuber.gateway.protocol import OutboundMessage, turn_ref
 from vtuber.gateway.protocol_branches import (
     BranchCheckpoint,
@@ -34,7 +34,7 @@ def _parse_turn(ref: str) -> TurnId:
 
 def _messages(turn: Turn) -> list[BranchMessageData]:
     ref = turn_ref(turn.id)
-    user = turn.user_text.removeprefix(VIEWER_PREFIX).strip()
+    user = without_viewer_prefix(turn.user_text)
     return [
         BranchMessageData(role="user", text=user, turn=None),
         BranchMessageData(role="assistant", text=shown_text(turn.reply_text), turn=ref),
@@ -81,7 +81,7 @@ class BranchBridge:
         branches = [
             BranchData(
                 leaf=turn_ref(branch.leaf),
-                title=branch.title.removeprefix(VIEWER_PREFIX).strip(),
+                title=without_viewer_prefix(branch.title),
                 length=branch.length,
                 active=branch.active,
             )

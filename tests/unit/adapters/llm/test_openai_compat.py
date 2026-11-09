@@ -13,7 +13,9 @@ CFG = LLMConfig(
     model="local",
     connect_timeout_s=1,
     read_timeout_s=5,
-    llamacpp=LlamaCppOptions(slot_id=0, enable_thinking=False, forbid_foreign_scripts=True),
+    llamacpp=LlamaCppOptions(
+        slot_id=0, enable_thinking=False, forbid_foreign_scripts=True, forbid_cyrillic=False
+    ),
     backend="llamacpp",
     generation=GenerationConfig(max_tokens=64, temperature=0.5),
 )

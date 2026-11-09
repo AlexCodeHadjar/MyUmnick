@@ -68,7 +68,7 @@ def test_russian_user_file_does_not_leak_into_english(root: Path) -> None:
     en = load_app_config(root, {}, EditionId.EN)
 
     assert ru.persona.file == Path("personas/mika_long.toml")
-    assert en.persona.file == Path("personas/default.toml")
+    assert en.persona.file == Path("personas/en/default.toml")
     assert en.tts.backend != "none"
 
 

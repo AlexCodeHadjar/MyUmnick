@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator
 import pytest
 
 from tests.fakes import FakeClock, RecordingSink
-from vtuber.application.pipeline import PhraseQueue, Speaker
+from vtuber.application.pipeline import Delivery, PhraseQueue, Speaker
 from vtuber.domain import AudioChunk, AudioFormat, PhraseVoiced, TTSUnavailable
 from vtuber.kernel import EventBus, Telemetry
 
@@ -44,7 +44,7 @@ async def _voiced(tts: _TTS, *phrases: str) -> list[PhraseVoiced]:
     queue: PhraseQueue = asyncio.Queue()
     for phrase in (*phrases, None):
         queue.put_nowait(phrase)
-    speaker = Speaker(tts, Telemetry(EventBus(), FakeClock()), None, on_phrase)
+    speaker = Speaker(tts, Telemetry(EventBus(), FakeClock()), Delivery(on_phrase=on_phrase))
     await speaker.run(queue, RecordingSink())
     return heard
 

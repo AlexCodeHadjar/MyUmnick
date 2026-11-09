@@ -7,8 +7,9 @@ from dataclasses import dataclass, replace
 
 from vtuber.application.pipeline.chunker import ChunkerConfig, SentenceChunker
 from vtuber.application.pipeline.filler import FillerBank
-from vtuber.application.pipeline.speaker import PhraseListener, PhraseQueue, Speaker
+from vtuber.application.pipeline.speaker import Delivery, PhraseListener, PhraseQueue, Speaker
 from vtuber.application.pipeline.stream_parser import ParseEvent, StreamParser
+from vtuber.application.speech import RU_DICTION, Diction
 from vtuber.domain import Message
 from vtuber.kernel import Telemetry, get_logger
 from vtuber.ports import GenerationParams, LLMPort, ReplySink, TTSPort
@@ -24,6 +25,7 @@ class Voice:
     chunker: ChunkerConfig
     fillers: FillerBank | None = None
     on_phrase: PhraseListener | None = None
+    diction: Diction = RU_DICTION
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,10 +111,12 @@ class ReplyPipeline:
             await sink.done()
             return
         phrases: PhraseQueue = asyncio.Queue()
-        speaker = Speaker(voice.tts, self._telemetry, voice.fillers, voice.on_phrase)
+        delivery = Delivery(voice.fillers, voice.on_phrase, voice.diction.normalize)
+        speaker = Speaker(voice.tts, self._telemetry, delivery)
         speaking = asyncio.create_task(speaker.run(phrases, sink))
         try:
-            feed = _PhraseFeed(SentenceChunker(voice.chunker), phrases)
+            chunker = SentenceChunker(voice.chunker, voice.diction.abbreviations)
+            feed = _PhraseFeed(chunker, phrases)
             await self._write(request, sink, parser, feed)
             await speaking
         finally:

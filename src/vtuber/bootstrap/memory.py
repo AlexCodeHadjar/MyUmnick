@@ -21,6 +21,7 @@ from vtuber.application.memory import (
     MemoryEraser,
     MemoryKeeper,
     MemoryRecall,
+    RecallSearch,
     Summarizer,
     VaultedFacts,
     VaultWatcher,
@@ -29,6 +30,7 @@ from vtuber.application.memory import (
 from vtuber.application.scheduler import IdleJob, IdleScheduler
 from vtuber.bootstrap.config import AppConfig, MemoryConfig
 from vtuber.bootstrap.container import Conversation, Core, llm_backends
+from vtuber.bootstrap.edition import language_pack
 from vtuber.domain import MemoryUnavailable
 from vtuber.kernel import get_logger
 from vtuber.ports import EmbedderPort, GenerationParams, LLMPort, MemoryStorePort, MemoryVaultPort
@@ -134,16 +136,19 @@ def _wire(
     )
     scheduler = IdleScheduler(cfg.scheduler)
     scheduler.follow(core.bus)
-    extractor = FactExtractor(engines.llm, params)
+    texts = language_pack(cfg.edition.language).memory
+    extractor = FactExtractor(engines.llm, params, texts)
     vaulted = VaultedFacts(engines.store, engines.vault)
     facts = FactMemory(extractor, engines.embedder, vaulted, memory.facts)
-    summarizer = Summarizer(engines.llm, params)
+    summarizer = Summarizer(engines.llm, params, texts)
     keeper = MemoryKeeper(scheduler, conversation.history, summarizer, facts)
     keeper.on_summary = engines.vault.save_summary
     keeper.follow(core.bus)
     # В простое: e5 на CPU и другая работа по файлам не должны задерживать первую реплику.
     scheduler.submit(IdleJob("vault:reconcile", lambda: _reconcile(engines)))
-    recall = MemoryRecall(engines.embedder, engines.store, memory.retrieval, core.telemetry)
+    recall = MemoryRecall(
+        RecallSearch(engines.embedder, engines.store), memory.retrieval, core.telemetry, texts
+    )
     conversation.service.use_memory(recall.hints)
     return scheduler, keeper
 

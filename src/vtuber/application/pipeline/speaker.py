@@ -9,9 +9,11 @@ import asyncio
 import time
 from collections.abc import Awaitable, Callable
 from contextlib import ExitStack, aclosing
+from dataclasses import dataclass
+from typing import Final
 
 from vtuber.application.pipeline.filler import AudioOut, FillerBank
-from vtuber.application.speech import normalize_for_speech
+from vtuber.application.speech import Normalizer, normalize_for_speech
 from vtuber.domain import GenerationFailed, PhraseVoiced, TTSUnavailable
 from vtuber.kernel import Telemetry, get_logger
 from vtuber.ports import ReplySink, TTSPort
@@ -26,6 +28,19 @@ type PhraseListener = Callable[[PhraseVoiced], Awaitable[None]]
 """Кому сообщать об озвученной фразе (шина: субтитры в плагинах)."""
 
 
+@dataclass(frozen=True, slots=True)
+class Delivery:
+    """Что кроме движка нужно речи хода: междометия, слушатель фраз, нормализатор издания."""
+
+    fillers: FillerBank | None = None
+    on_phrase: PhraseListener | None = None
+    normalize: Normalizer = normalize_for_speech
+
+
+NO_EXTRAS: Final = Delivery()
+"""Без междометий и слушателя, русский нормализатор."""
+
+
 class Speaker:
     """Озвучивает фразы одного хода.
 
@@ -37,13 +52,13 @@ class Speaker:
         self,
         tts: TTSPort,
         telemetry: Telemetry,
-        fillers: FillerBank | None = None,
-        on_phrase: PhraseListener | None = None,
+        delivery: Delivery = NO_EXTRAS,
     ) -> None:
         self._tts = tts
         self._telemetry = telemetry
-        self._fillers = fillers
-        self._on_phrase = on_phrase
+        self._fillers = delivery.fillers
+        self._on_phrase = delivery.on_phrase
+        self._normalize = delivery.normalize
         self._sound_ends_at = 0.0
 
     async def run(self, phrases: PhraseQueue, sink: ReplySink) -> None:
@@ -72,7 +87,7 @@ class Speaker:
 
     async def _speak_all(self, phrases: PhraseQueue, out: AudioOut, first: ExitStack) -> None:
         while (phrase := await phrases.get()) is not None:
-            text = normalize_for_speech(phrase)
+            text = self._normalize(phrase)
             if not text:
                 continue
             try:
