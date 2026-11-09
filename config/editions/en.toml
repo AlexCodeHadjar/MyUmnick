@@ -19,8 +19,8 @@ phrases = ["Hmm…", "So…", "Let me see…"]
 backend = "piper"
 
 [tts.piper]
-model_path = "models/tts/piper/en_US-ljspeech-high.onnx"   # датасет LJ Speech — общественное достояние
-sample_rate = 22050            # из en_US-ljspeech-high.onnx.json
+model_path = "models/tts/piper/en_US-ljspeech-medium.onnx"   # датасет LJ Speech — общественное достояние
+sample_rate = 22050            # из en_US-ljspeech-medium.onnx.json
 
 [llm.llamacpp]
 forbid_cyrillic = true         # ответ только по-английски: русские слова голос не прочтёт

@@ -19,6 +19,7 @@
 | `load_package(path)` | Модель из `.pt`-пакета Silero через `torch.package` |
 | `to_pcm(tensor)` | float [-1, 1] → s16le с обрезкой за шкалой |
 | `SileroModel` | Протокол модели: `apply_tts(text=, speaker=, sample_rate=)` |
+| `KokoroTTS`, `KokoroConfig`, `KokoroLike`, `load_kokoro`, `to_pcm16` | Kokoro-82M ONNX, 24 кГц, английский голос (ADR-0034); группа `kokoro` |
 
 ## Зависимости
 - Порт `TTSPort`; domain: `AudioChunk`, `AudioFormat`, `TTSUnavailable`, `GenerationFailed`.

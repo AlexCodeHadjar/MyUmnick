@@ -12,7 +12,6 @@ from vtuber.domain import SAMPLE_WIDTH_BYTES, TTSUnavailable
 # «Отмена → тишина ≤ 100 мс» (критерий Этапа 7): на синтез из этого бюджета — не больше половины.
 CANCEL_LIMIT_S = 0.05
 PHRASE = "Привет! Как дела?"
-LONG_PHRASE = "Длинная фраза, чтобы синтез шёл заметное время и его можно было прервать. " * 3
 
 
 @pytest.fixture(params=tts_params())
@@ -41,7 +40,7 @@ async def test_cancellation_stops_consumer_quickly_and_propagates(case: TTSCase)
     async with case.available() as tts:
 
         async def consume() -> None:
-            async for _ in tts.synthesize(LONG_PHRASE):
+            async for _ in tts.synthesize(case.long_phrase):
                 first_chunk.set()
 
         task = asyncio.create_task(consume())
@@ -56,7 +55,7 @@ async def test_cancellation_stops_consumer_quickly_and_propagates(case: TTSCase)
 
 async def test_closing_generator_early_is_clean(case: TTSCase) -> None:
     async with case.available() as tts:
-        async with aclosing(tts.synthesize(LONG_PHRASE)) as stream:
+        async with aclosing(tts.synthesize(case.long_phrase)) as stream:
             first = await anext(stream)
         assert first.pcm
         # После закрытия движок снова готов: незакрытый синтез не мешает следующему.

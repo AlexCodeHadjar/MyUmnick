@@ -50,7 +50,7 @@ def test_english_edition_has_its_own_data_and_language(root: Path) -> None:
     assert cfg.stt.whisper.language == "en"
     assert cfg.setup.choice_file == Path("config/setup.en.toml")
     assert cfg.tts.backend == "piper"
-    assert cfg.tts.piper.model_path == Path("models/tts/piper/en_US-ljspeech-high.onnx")
+    assert cfg.tts.piper.model_path == Path("models/tts/piper/en_US-ljspeech-medium.onnx")
 
 
 def test_wizard_file_of_edition_is_the_one_it_writes(root: Path) -> None:

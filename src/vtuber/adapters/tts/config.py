@@ -4,6 +4,7 @@ from pathlib import Path
 
 from pydantic import Field
 
+from vtuber.adapters.tts.kokoro import KokoroConfig
 from vtuber.adapters.tts.piper import PiperConfig
 from vtuber.adapters.tts.silero import SileroConfig
 from vtuber.adapters.tts.voice_server import VoiceServerConfig
@@ -13,13 +14,14 @@ from vtuber.kernel import ConfigSection
 class TTSConfig(ConfigSection):
     """Секция `[tts]`.
 
-    `backend` — имя движка из реестра bootstrap (`silero`, `piper`, `voice_server`) или `none` —
-    без голоса. Пути к моделям в конфиге — относительно корня проекта (`resolved`).
+    `backend` — имя движка из реестра bootstrap (`silero`, `piper`, `kokoro`, `voice_server`)
+    или `none` — без голоса. Пути к моделям в конфиге — относительно корня проекта (`resolved`).
     """
 
     backend: str = Field(min_length=1)
     silero: SileroConfig
     piper: PiperConfig
+    kokoro: KokoroConfig
     voice_server: VoiceServerConfig
 
     def resolved(self, root: Path) -> "TTSConfig":
@@ -30,5 +32,11 @@ class TTSConfig(ConfigSection):
                     update={"model_path": root / self.silero.model_path}
                 ),
                 "piper": self.piper.model_copy(update={"model_path": root / self.piper.model_path}),
+                "kokoro": self.kokoro.model_copy(
+                    update={
+                        "model_path": root / self.kokoro.model_path,
+                        "voices_path": root / self.kokoro.voices_path,
+                    }
+                ),
             }
         )

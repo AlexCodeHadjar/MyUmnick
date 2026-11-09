@@ -71,10 +71,15 @@
 ## src/vtuber/adapters/tts
 Адаптеры синтеза речи (TTSPort).
 
-- `TTSConfig` — `src/vtuber/adapters/tts/config.py:13` — Секция `[tts]`.
+- `TTSConfig` — `src/vtuber/adapters/tts/config.py:14` — Секция `[tts]`.
 - `CheckedTTS` — `src/vtuber/adapters/tts/fallback.py:16` — Основной движок: контекстный менеджер, который умеет сказать, почему он не готов.
 - `ManagedTTS` — `src/vtuber/adapters/tts/fallback.py:34` — Запасной движок: загружается только тогда, когда он понадобился.
 - `FallbackTTS` — `src/vtuber/adapters/tts/fallback.py:47` — Реализует TTSPort: движок выбирается один раз при старте.
+- `KokoroConfig` — `src/vtuber/adapters/tts/kokoro.py:33` — Подсекция `[tts.kokoro]`.
+- `KokoroLike` — `src/vtuber/adapters/tts/kokoro.py:48` — То, что нужно от `kokoro_onnx.Kokoro`: синтез фразы в float-сэмплы.
+- `load_kokoro` — `src/vtuber/adapters/tts/kokoro.py:59` — Модель Kokoro и банк голосов.
+- `to_pcm16` — `src/vtuber/adapters/tts/kokoro.py:70` — float32-сэмплы → PCM s16le.
+- `KokoroTTS` — `src/vtuber/adapters/tts/kokoro.py:78` — Реализует TTSPort; модель грузится и прогревается один раз в `async with` (R-40).
 - `PiperConfig` — `src/vtuber/adapters/tts/piper.py:28` — Подсекция `[tts.piper]`.
 - `PiperChunk` — `src/vtuber/adapters/tts/piper.py:42` — Фрагмент `piper.AudioChunk`: PCM s16le моно.
 - `PiperVoiceLike` — `src/vtuber/adapters/tts/piper.py:51` — То, что нужно от `piper.PiperVoice`: частота голоса и синтез по предложениям.
@@ -264,12 +269,12 @@
 - `SttConfig` — `src/vtuber/bootstrap/config.py:72` — Секция `[stt]`: голосовой ввод в `serve` (Этап 11, ADR-0016); модели — при первом кадре.
 - `AppConfig` — `src/vtuber/bootstrap/config.py:106` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
 - `load_app_config` — `src/vtuber/bootstrap/config.py:130` — Читает конфиг издания `edition` из `<root>/config` поверх `env` (порядок — `edition_files`).
-- `Core` — `src/vtuber/bootstrap/container.py:22` — Общие механизмы, которые получают все: шина событий и телеметрия.
-- `Backends` — `src/vtuber/bootstrap/container.py:30` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
-- `llm_backends` — `src/vtuber/bootstrap/container.py:41` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
-- `tts_backends` — `src/vtuber/bootstrap/container.py:52` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
-- `Conversation` — `src/vtuber/bootstrap/container.py:66` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
-- `build_conversation` — `src/vtuber/bootstrap/container.py:74` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
+- `Core` — `src/vtuber/bootstrap/container.py:29` — Общие механизмы, которые получают все: шина событий и телеметрия.
+- `Backends` — `src/vtuber/bootstrap/container.py:37` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
+- `llm_backends` — `src/vtuber/bootstrap/container.py:48` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
+- `tts_backends` — `src/vtuber/bootstrap/container.py:59` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
+- `Conversation` — `src/vtuber/bootstrap/container.py:74` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
+- `build_conversation` — `src/vtuber/bootstrap/container.py:82` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
 - `EditionConfig` — `src/vtuber/bootstrap/edition.py:36` — Секция `[edition]`: задаётся файлом `config/editions/<id>.toml`, а не пользователем.
 - `resolve_edition` — `src/vtuber/bootstrap/edition.py:45` — Издание из `--edition`, иначе из `VTUBER_EDITION__ID`, иначе `ru` (прежнее поведение).
 - `edition_files` — `src/vtuber/bootstrap/edition.py:62` — Файлы издания; у `ru` мастер пишет прежний `setup.toml` и действуют все ключи `user.toml`.

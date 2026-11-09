@@ -116,6 +116,9 @@ class TTSCase:
     name: str
     available: TTSFactory
     unavailable: TTSFactory
+    long_phrase: str = (
+        "Длинная фраза, чтобы синтез шёл заметное время и его можно было прервать. " * 3
+    )
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -138,6 +141,32 @@ def _silero(model_path: Path) -> TTSFactory:
 
 
 PIPER_VOICE = ROOT / "models" / "tts" / "piper" / "ru_RU-denis-medium.onnx"
+PIPER_VOICE_EN = ROOT / "models" / "tts" / "piper" / "en_US-ljspeech-medium.onnx"
+KOKORO_DIR = ROOT / "models" / "tts" / "kokoro"
+# Английским голосам — английская фраза: русскую их фонемизатор читает долго и по буквам.
+LONG_PHRASE_EN = (
+    "A long sentence, so that synthesis takes noticeable time and can be cut short. " * 3
+)
+KOKORO_MODEL = KOKORO_DIR / "kokoro-v1.0.onnx"
+
+
+def _kokoro(model_path: Path) -> TTSFactory:
+    @asynccontextmanager
+    async def factory() -> AsyncIterator[TTSPort]:
+        from vtuber.adapters.tts import KokoroConfig, KokoroTTS  # noqa: PLC0415
+
+        cfg = KokoroConfig(
+            model_path=model_path,
+            voices_path=KOKORO_DIR / "voices-v1.0.bin",
+            voice="af_heart",
+            lang="en-us",
+            speed=1.0,
+            chunk_ms=200,
+        )
+        async with KokoroTTS(cfg) as tts:
+            yield tts
+
+    return factory
 
 
 def _piper(model_path: Path) -> TTSFactory:
@@ -180,7 +209,7 @@ def _voice_server(*, reachable: bool) -> TTSFactory:
 
 
 def tts_cases() -> list[TTSCase]:
-    """Фейк (RTF 0.3), Silero (ADR-0012), Piper (ADR-0013) и сервер голоса (ADR-0031)."""
+    """Фейк, Silero (ADR-0012), Piper (ADR-0013, ADR-0034), Kokoro (ADR-0034), сервер (ADR-0031)."""
     return [
         TTSCase(
             name="voice_server",
@@ -202,6 +231,18 @@ def tts_cases() -> list[TTSCase]:
             available=_piper(PIPER_VOICE),
             unavailable=_piper(PIPER_VOICE.with_name("нет-такого-голоса.onnx")),
         ),
+        TTSCase(
+            name="piper_en",
+            available=_piper(PIPER_VOICE_EN),
+            unavailable=_piper(PIPER_VOICE_EN.with_name("no-such-voice.onnx")),
+            long_phrase=LONG_PHRASE_EN,
+        ),
+        TTSCase(
+            name="kokoro",
+            available=_kokoro(KOKORO_MODEL),
+            unavailable=_kokoro(KOKORO_MODEL.with_name("no-such-model.onnx")),
+            long_phrase=LONG_PHRASE_EN,
+        ),
     ]
 
 
@@ -213,7 +254,18 @@ def tts_params() -> list[object]:
     no_piper = pytest.mark.skipif(
         not PIPER_VOICE.is_file(), reason=f"нет голоса Piper {PIPER_VOICE} (ADR-0013)"
     )
-    marks = {"silero": [pytest.mark.slow, no_silero], "piper": [pytest.mark.slow, no_piper]}
+    no_piper_en = pytest.mark.skipif(
+        not PIPER_VOICE_EN.is_file(), reason=f"нет голоса Piper {PIPER_VOICE_EN} (ADR-0034)"
+    )
+    no_kokoro = pytest.mark.skipif(
+        not KOKORO_MODEL.is_file(), reason=f"нет модели Kokoro {KOKORO_MODEL} (ADR-0034)"
+    )
+    marks = {
+        "silero": [pytest.mark.slow, no_silero],
+        "piper": [pytest.mark.slow, no_piper],
+        "piper_en": [pytest.mark.slow, no_piper_en],
+        "kokoro": [pytest.mark.slow, no_kokoro],
+    }
     return [
         pytest.param(case, id=case.name, marks=marks.get(case.name, ())) for case in tts_cases()
     ]

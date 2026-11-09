@@ -15,6 +15,8 @@ dependencies = [
 silero = ["numpy>=2.0", "torch>=2.6"]
 # Движок TTS Piper (ADR-0013): ONNX без torch; GPL-3.0 — приложение не распространяется.
 piper = ["piper-tts>=1.8,<2"]
+# Английский голос Kokoro-82M (ADR-0034): ONNX, веса Apache-2.0; фонемизатор GPL-3.0 — как у Piper.
+kokoro = ["kokoro-onnx>=0.6,<0.7", "numpy>=2.0"]
 # Долговременная память (ADR-0015): e5 в ONNX на CPU, токенизатор HF, векторы в sqlite-vec.
 memory = ["numpy>=2.0", "onnxruntime>=1.20", "sqlite-vec>=0.1.6", "tokenizers>=0.20"]
 # Голосовой ввод (ADR-0016): faster-whisper (CTranslate2) и Silero VAD в ONNX.

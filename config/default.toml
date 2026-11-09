@@ -58,7 +58,7 @@ after_ms = 1000                # срок от начала хода: выше �
 phrases = ["Хм…", "Так…", "Сейчас…"]   # звучат по очереди; синтез — один раз при загрузке голоса
 
 [tts]
-backend = "silero"             # silero | piper | voice_server | none (без голоса); ADR-0012, ADR-0013, ADR-0031
+backend = "silero"             # silero | piper | kokoro | voice_server | none (без голоса); ADR-0012, ADR-0013, ADR-0031
 
 [tts.silero]
 model_path = "models/tts/silero/v5_6_ru.pt"   # относительно корня; скачать — README
@@ -71,6 +71,14 @@ chunk_ms = 100                 # размер аудиокадра в UI
 model_path = "models/tts/piper/ru_RU-denis-medium.onnx"   # рядом — .onnx.json
 sample_rate = 22050            # частота голоса из его .onnx.json (medium — 22050)
 length_scale = 1.0             # темп речи: больше — медленнее
+chunk_ms = 100
+
+[tts.kokoro]                   # английский голос (ADR-0034): веса Apache-2.0, espeak-ng GPL-3.0
+model_path = "models/tts/kokoro/kokoro-v1.0.onnx"   # скачать — models/README.md
+voices_path = "models/tts/kokoro/voices-v1.0.bin"
+voice = "af_heart"             # af_heart | af_bella | af_nicole | bf_emma | …
+lang = "en-us"                 # язык фонемизатора; для bf_* — en-gb
+speed = 1.0
 chunk_ms = 100
 
 [tts.voice_server]             # scripts/voice_server.py; не отвечает при старте — говорит Silero (ADR-0031)
