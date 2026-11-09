@@ -18,6 +18,7 @@ from vtuber.application.supervision import Supervised, Supervisor
 from vtuber.application.tools import ToolContext
 from vtuber.bootstrap.config import AppConfig, load_app_config
 from vtuber.bootstrap.container import Core, build_conversation, llm_backends
+from vtuber.bootstrap.edition import edition_files, ignored_user_keys, resolve_edition
 from vtuber.bootstrap.memory import background_memory
 from vtuber.bootstrap.persona import load_persona
 from vtuber.bootstrap.plugins import PluginServices, ResourceModels, running_plugins
@@ -91,7 +92,8 @@ def main(argv: Sequence[str], env: Mapping[str, str], console: Console) -> int:
     """
     args = _parse(argv)
     try:
-        cfg = load_app_config(args.root, env)
+        edition = resolve_edition(args.edition, env)
+        cfg = load_app_config(args.root, env, edition)
         resolved = {
             "tts": cfg.tts.resolved(args.root),
             "memory": cfg.memory.resolved(args.root),
@@ -104,6 +106,7 @@ def main(argv: Sequence[str], env: Mapping[str, str], console: Console) -> int:
         with ExitStack() as files:
             log_file = files.enter_context(_open(args.root / cfg.logging.file))
             files.enter_context(logging_to(cfg.logging, log_file))
+            _warn_ignored(ignored_user_keys(edition_files(args.root / "config", edition)))
             traces = files.enter_context(_open(args.root / cfg.telemetry.traces_file))
             return asyncio.run(_run(args.mode, cfg, persona, console, traces))
     except ConfigError as exc:  # в т.ч. неизвестный `[llm].backend` — выясняется при сборке
@@ -301,7 +304,13 @@ def _parse(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="vtuber", description=__doc__)
     parser.add_argument("mode", nargs="?", choices=(CHAT_MODE, SERVE_MODE), default=CHAT_MODE)
     parser.add_argument("--root", type=Path, default=Path.cwd(), help="корень проекта (config/)")
+    parser.add_argument("--edition", help="издание: ru | en (иначе VTUBER_EDITION__ID, иначе ru)")
     return parser.parse_args(argv)
+
+
+def _warn_ignored(keys: list[str]) -> None:
+    if keys:  # общий user.toml писался для русского издания: эти ключи — в user.<издание>.toml
+        _log.warning("config.user_keys_ignored", keys=keys)
 
 
 def run() -> int:

@@ -1,6 +1,7 @@
 """Доменный слой: неизменяемые сущности и значения диалога, речи и эмоций."""
 
 from vtuber.domain.dialogue import AttachedImage, Message, Persona, Role, Turn, TurnId
+from vtuber.domain.edition import ContentProfile, EditionId
 from vtuber.domain.emotion import (
     MAX_TAG_LENGTH,
     TAG_CLOSE,
@@ -74,6 +75,8 @@ __all__ = [
     "CancelReason",
     "Component",
     "ConfigError",
+    "ContentProfile",
+    "EditionId",
     "EmbedKind",
     "Emotion",
     "EmotionChanged",

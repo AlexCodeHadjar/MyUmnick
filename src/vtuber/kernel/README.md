@@ -9,7 +9,7 @@ ports/application/adapters/gateway/bootstrap.
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
-| `ConfigSection`, `ConfigFiles`, `load_config` | default < user < `VTUBER_<СЕКЦИЯ>__<ПОЛЕ>`; бросает `ConfigError` |
+| `ConfigSection`, `ConfigFiles`, `load_config` | default < edition < generated < user (без `user_ignored`) < edition_user < `VTUBER_<СЕКЦИЯ>__<ПОЛЕ>` (ADR-0032); бросает `ConfigError` |
 | `LoggingConfig`, `configure_logging`, `logging_to`, `get_logger` | `[logging]`; JSON-строка на событие; `logging_to(cfg, stream)` — на время блока, затем сброс; логгер можно брать при импорте |
 | `turn_context`, `current_turn` | Текущий ход для логов (`turn_id`) и метрик; наследуется задачами |
 | `EventBus`, `Handler` | Шина управляющих событий: точный тип, параллельно, ошибки изолированы |
@@ -53,4 +53,4 @@ ports/application/adapters/gateway/bootstrap.
 - Тесты: `tests/unit/kernel/`; фейковые часы — `tests/fakes.FakeClock`.
 
 ## Связанные документы
-ADR-0005, ADR-0006, `docs/architecture.md` (Шина, Реестр, Телеметрия, Конфигурация), T-15, R-08
+ADR-0005, ADR-0006, ADR-0032, `docs/architecture.md` (Шина, Реестр, Телеметрия, Конфигурация), T-15, R-08

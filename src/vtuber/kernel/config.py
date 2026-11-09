@@ -1,4 +1,4 @@
-"""Загрузка конфигурации: default.toml < user.toml < переменные VTUBER_*, проверка pydantic."""
+"""Загрузка конфигурации: default < издание < мастер < user < user издания < VTUBER_*."""
 
 import tomllib
 from collections.abc import Iterable, Mapping, Sequence
@@ -30,14 +30,20 @@ class ConfigSection(BaseModel):
 
 @dataclass(frozen=True, slots=True)
 class ConfigFiles:
-    """Файлы конфигурации: `default` обязателен, остальные — если есть.
+    """Файлы конфигурации: `default` и `edition` (если задан) обязательны, остальные — если есть.
 
     `generated` пишет мастер первого запуска: он не должен трогать правки пользователя в `user`.
+    `edition` — отличия издания (Этап 20, ADR-0032); `edition_user` — личные правки издания.
+    `user_ignored` — ключи (`секция.поле` или `секция`), которые в общем `user` не действуют:
+    так русская персона из общего файла не попадает в другое издание.
     """
 
     default: Path
     user: Path
     generated: Path | None = None
+    edition: Path | None = None
+    edition_user: Path | None = None
+    user_ignored: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,7 +55,8 @@ class _Source:
 def load_config[T: ConfigSection](model: type[T], files: ConfigFiles, env: Mapping[str, str]) -> T:
     """Собирает конфиг из файлов и окружения и проверяет его моделью `model`.
 
-    Приоритет: env > user > generated > default. `VTUBER_<СЕКЦИЯ>__<ПОЛЕ>` задаёт поле секции.
+    Приоритет: env > edition_user > user > generated > edition > default.
+    `VTUBER_<СЕКЦИЯ>__<ПОЛЕ>` задаёт поле секции.
 
     Raises:
         ConfigError: файл не найден или не разбирается как TOML; значение не проходит проверку —
@@ -57,10 +64,14 @@ def load_config[T: ConfigSection](model: type[T], files: ConfigFiles, env: Mappi
 
     """
     sources = [_read(files.default)]
+    if files.edition is not None:
+        sources.append(_read(files.edition))
     if files.generated is not None and files.generated.is_file():
         sources.append(_read(files.generated))
     if files.user.is_file():
-        sources.append(_read(files.user))
+        sources.append(_without(_read(files.user), files.user_ignored))
+    if files.edition_user is not None and files.edition_user.is_file():
+        sources.append(_read(files.edition_user))
     sources.append(_Source(ENV_SOURCE, _env_tree(env)))
     merged = _merge_all(source.tree for source in sources)
     try:
@@ -80,6 +91,26 @@ def _read(path: Path) -> _Source:
     except tomllib.TOMLDecodeError as exc:
         msg = f"Ошибка синтаксиса TOML в {name}: {exc} — исправьте файл"
         raise ConfigError(msg) from exc
+
+
+def _without(source: _Source, ignored: frozenset[str]) -> _Source:
+    tree = source.tree
+    for key in sorted(ignored):
+        tree = _drop(tree, key.split("."))
+    return _Source(source.name, tree)
+
+
+def _drop(tree: ConfigTree, path: Sequence[str]) -> ConfigTree:
+    head, rest = path[0], path[1:]
+    if head not in tree:
+        return tree
+    pruned = dict(tree)
+    child = tree[head]
+    if not rest:
+        del pruned[head]
+    elif isinstance(child, dict):
+        pruned[head] = _drop(child, rest)
+    return pruned
 
 
 def _env_tree(env: Mapping[str, str]) -> ConfigTree:

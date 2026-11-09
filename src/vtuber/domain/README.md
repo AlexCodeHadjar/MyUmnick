@@ -11,6 +11,7 @@ websockets, torch и о kernel (контракт `domain-pure`). Ошибка �
 | Символ | Назначение |
 |---|---|
 | `viewer_line`, `is_viewer_line`, `looks_like_attack`, `VIEWER_PREFIX`, `ViewerBlocked` | Реплика зрителя как данные и признаки явных атак (FR-31); правила обходятся, граница — отсутствие инструментов и памяти у зрителя |
+| `EditionId`, `ContentProfile` | Издание (`ru`, `en`) и профиль содержания (`standard`, `unfiltered`) — Этап 20, ADR-0032 |
 | `GpuMemory(total_mb, used_mb)` | Видеопамять: всего и занято всеми программами (ADR-0018) |
 | `PhraseVoiced(text, starts_in_s, duration_s)` | Событие: фраза озвучена; время — оценка по отданному звуку |
 | `IncomingMessage(source, author, text)` | Реплика извне: сообщение зрителя |

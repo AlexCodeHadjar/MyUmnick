@@ -1,0 +1,8 @@
+# Русское издание (Этап 20, ADR-0032): умолчания default.toml и есть русское издание,
+# поэтому здесь только его имя. Выбор мастера — config/setup.toml, личные правки — user.toml
+# или user.ru.toml. Без цензуры по правилам персоны: content_profile = "unfiltered".
+
+[edition]
+id = "ru"
+language = "ru"
+content_profile = "standard"

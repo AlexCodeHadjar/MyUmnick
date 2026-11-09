@@ -47,7 +47,8 @@
 - Все проверки: `uv run pre-commit run --all-files`
 - Карта проекта: `uv run python -m tools.gen_map`
 - Терминальный чат (веха M1, нужен llama-server): `uv run python -m vtuber`
-- Шлюз для UI: `uv run python -m vtuber serve` (ws://127.0.0.1:8765, выход — конец stdin)
+- Шлюз для UI: `uv run python -m vtuber serve` (ws://127.0.0.1:8765, выход — конец stdin);
+  английское издание — `--edition en` (ADR-0032)
 - Сборка ядра (ADR-0019): `uv run --group packaging python packaging/fetch_llama.py`, затем
   `uv run --group packaging python packaging/build_sidecar.py`; проверка — `packaging/smoke_sidecar.py`
 - Бенчмарк (с Этапа 2): `uv run python -m tools.bench_latency`

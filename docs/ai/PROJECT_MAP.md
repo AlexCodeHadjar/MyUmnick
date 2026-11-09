@@ -240,20 +240,25 @@
 ## src/vtuber/bootstrap
 Корень композиции: конфиг, персона, сборка графа объектов и точка входа.
 
-- `MemoryConfig` — `src/vtuber/bootstrap/config.py:38` — Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
-- `SttConfig` — `src/vtuber/bootstrap/config.py:71` — Секция `[stt]`: голосовой ввод в `serve` (Этап 11, ADR-0016); модели — при первом кадре.
-- `AppConfig` — `src/vtuber/bootstrap/config.py:105` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:128` — Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+- `MemoryConfig` — `src/vtuber/bootstrap/config.py:39` — Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
+- `SttConfig` — `src/vtuber/bootstrap/config.py:72` — Секция `[stt]`: голосовой ввод в `serve` (Этап 11, ADR-0016); модели — при первом кадре.
+- `AppConfig` — `src/vtuber/bootstrap/config.py:106` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
+- `load_app_config` — `src/vtuber/bootstrap/config.py:130` — Читает конфиг издания `edition` из `<root>/config` поверх `env` (порядок — `edition_files`).
 - `Core` — `src/vtuber/bootstrap/container.py:21` — Общие механизмы, которые получают все: шина событий и телеметрия.
 - `Backends` — `src/vtuber/bootstrap/container.py:29` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
 - `llm_backends` — `src/vtuber/bootstrap/container.py:40` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).
 - `tts_backends` — `src/vtuber/bootstrap/container.py:51` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
 - `Conversation` — `src/vtuber/bootstrap/container.py:65` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
 - `build_conversation` — `src/vtuber/bootstrap/container.py:73` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
-- `LineSource` — `src/vtuber/bootstrap/main.py:67` — Откуда читать строки: `sys.stdin` или его тестовая замена.
-- `Console` — `src/vtuber/bootstrap/main.py:74` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
-- `main` — `src/vtuber/bootstrap/main.py:87` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
-- `run` — `src/vtuber/bootstrap/main.py:307` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
+- `EditionConfig` — `src/vtuber/bootstrap/edition.py:32` — Секция `[edition]`: задаётся файлом `config/editions/<id>.toml`, а не пользователем.
+- `resolve_edition` — `src/vtuber/bootstrap/edition.py:41` — Издание из `--edition`, иначе из `VTUBER_EDITION__ID`, иначе `ru` (прежнее поведение).
+- `edition_files` — `src/vtuber/bootstrap/edition.py:58` — Файлы издания; у `ru` мастер пишет прежний `setup.toml` и действуют все ключи `user.toml`.
+- `check_edition` — `src/vtuber/bootstrap/edition.py:71` — Файл издания или переменная окружения не должны подменить выбранное издание.
+- `ignored_user_keys` — `src/vtuber/bootstrap/edition.py:86` — Языковые ключи общего `user.toml`, которые в этом издании не действуют (предупреждение).
+- `LineSource` — `src/vtuber/bootstrap/main.py:68` — Откуда читать строки: `sys.stdin` или его тестовая замена.
+- `Console` — `src/vtuber/bootstrap/main.py:75` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
+- `main` — `src/vtuber/bootstrap/main.py:88` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
+- `run` — `src/vtuber/bootstrap/main.py:316` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
 - `background_memory` — `src/vtuber/bootstrap/memory.py:48` — Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:40` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
@@ -287,6 +292,8 @@
 - `Message` — `src/vtuber/domain/dialogue.py:28` — Одно сообщение контекста LLM.
 - `Turn` — `src/vtuber/domain/dialogue.py:37` — Завершённый ход: реплика пользователя и ответ витюбера.
 - `Persona` — `src/vtuber/domain/dialogue.py:55` — Характер витюбера, задаётся файлом `personas/*.toml` без правки кода (FR-11).
+- `EditionId` — `src/vtuber/domain/edition.py:6` — Издание выбирается до старта ядра: от него зависят файлы конфига и папка данных.
+- `ContentProfile` — `src/vtuber/domain/edition.py:13` — Насколько персоне разрешено «всё» (ADR-0033); жёсткий минимум не зависит от профиля.
 - `Emotion` — `src/vtuber/domain/emotion.py:10` — Единственный источник списка эмоций: из него строятся промпт персоны и разбор ответа.
 - `Gesture` — `src/vtuber/domain/emotion.py:31` — Жест по смыслу фразы (S-18.4): тег как у эмоций, вид — в `mapping.json` модели.
 - `parse_gesture` — `src/vtuber/domain/emotion.py:45` — Жест по тегу вида `<nod>` или None; регистр и пробелы — как у `parse_tag`.
@@ -452,8 +459,8 @@
 
 - `EventBus` — `src/vtuber/kernel/bus.py:15` — Доставляет событие подписчикам его точного типа (не подклассов), параллельно.
 - `ConfigSection` — `src/vtuber/kernel/config.py:21` — База секции конфига: неизменяема, лишний ключ — ошибка (опечатка не пройдёт молча).
-- `ConfigFiles` — `src/vtuber/kernel/config.py:32` — Файлы конфигурации: `default` обязателен, остальные — если есть.
-- `load_config` — `src/vtuber/kernel/config.py:49` — Собирает конфиг из файлов и окружения и проверяет его моделью `model`.
+- `ConfigFiles` — `src/vtuber/kernel/config.py:32` — Файлы конфигурации: `default` и `edition` (если задан) обязательны, остальные — если есть.
+- `load_config` — `src/vtuber/kernel/config.py:55` — Собирает конфиг из файлов и окружения и проверяет его моделью `model`.
 - `current_turn` — `src/vtuber/kernel/context.py:14` — Номер текущего хода или None вне хода; чтение — десятки наносекунд (горячий путь).
 - `turn_context` — `src/vtuber/kernel/context.py:20` — Внутри блока ход `turn_id` — текущий для метрик, а логи несут поле `turn_id`.
 - `LoggingConfig` — `src/vtuber/kernel/logging.py:16` — Секция `[logging]`; `file` открывает bootstrap (относительно корня проекта).

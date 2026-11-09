@@ -9,8 +9,9 @@ LLM-адаптеров и движков TTS и сервис хода, прог�
 ## Публичный API (`__init__.py`)
 | Символ | Назначение |
 |---|---|
-| `AppConfig` | Корень конфига: `logging`, `telemetry`, `llm`, `persona`, `context`, `gateway`, `pipeline`, `tts`, `scheduler`, `memory`, `stt`, `plugins`, `resources`, `llama_server`, `setup`, `supervisor` |
-| `load_app_config(root, env)` | Читает `<root>/config/default.toml` и `user.toml` поверх `env` |
+| `AppConfig` | Корень конфига: `edition`, `logging`, `telemetry`, `llm`, `persona`, `context`, `gateway`, `pipeline`, `tts`, `scheduler`, `memory`, `stt`, `plugins`, `resources`, `llama_server`, `setup`, `supervisor` |
+| `load_app_config(root, env, edition=ru)` | Конфиг издания из `<root>/config` поверх `env`; `[edition].id` сверяется с `edition` |
+| `EditionConfig`, `resolve_edition`, `edition_files`, `ignored_user_keys`, `LANGUAGE_BOUND_KEYS` (`bootstrap/edition.py`) | Издание (ADR-0032): `--edition` / `VTUBER_EDITION__ID` / `ru`; файлы слоёв; языковые ключи общего `user.toml`, которые вне `ru` не действуют |
 | `PersonaConfig`, `load_persona(path)` | `[persona].file` → доменная `Persona`; ошибки — `ConfigError` |
 | `llm_backends()` | Реестр LLM-адаптеров: `llamacpp`, `openai_compat` (одна строка на адаптер) |
 | `tts_backends()` | Реестр движков TTS: `silero`, `piper`, `voice_server` (откат на Silero, ADR-0031), `none` (без голоса) |
@@ -19,7 +20,7 @@ LLM-адаптеров и движков TTS и сервис хода, прог�
 | `background_memory(cfg, history, bus)` (`bootstrap/memory.py`) | Фоновая память на время работы: LLM слота `background_slot_id`, e5, sqlite-vec, `IdleScheduler`, `MemoryKeeper` |
 | `running_plugins(cfg, bus, discover)` (`bootstrap/plugins.py`) | Включённые плагины на время работы: entry points `vtuber.plugins`, сбой плагина — только лог (`docs/plugins.md`) |
 | `LlmSupervised`, `TtsSupervised`, `build_voice`, `with_voice` (`bootstrap/supervision.py`) | Что поднимает наблюдатель и голос с обёрткой (ADR-0021) |
-| `main(argv, env, console)`, `run()`, `Console`, `LineSource` | `python -m vtuber [chat или serve] [--root]`; коды 0 / 1 (конфиг) / 2 (LLM недоступна в чате) |
+| `main(argv, env, console)`, `run()`, `Console`, `LineSource` | `python -m vtuber [chat или serve] [--root] [--edition]`; коды 0 / 1 (конфиг) / 2 (LLM недоступна в чате) |
 
 ## Зависимости
 - Всё (верхний слой): kernel, domain, application, adapters/llm, adapters/tts, gateway.
@@ -48,4 +49,4 @@ LLM-адаптеров и движков TTS и сервис хода, прог�
 - Новый режим запуска — значение `mode` в `_parse` и ветка в `_run`.
 
 ## Связанные документы
-ADR-0001, ADR-0005, ADR-0006, ADR-0007
+ADR-0001, ADR-0005, ADR-0006, ADR-0007, ADR-0032

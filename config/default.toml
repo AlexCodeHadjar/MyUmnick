@@ -1,7 +1,14 @@
 # Настройки по умолчанию — единственный источник умолчаний (в коде их нет).
+# Порядок: default.toml < editions/<издание>.toml < setup[.<издание>].toml < user.toml < user.<издание>.toml < env.
 # Локальные переопределения: config/user.toml (не в git, пример — user.example.toml).
 # Переменные окружения сильнее файлов: VTUBER_<СЕКЦИЯ>__<ПОЛЕ>, например VTUBER_LOGGING__LEVEL=DEBUG.
 # Новая секция появляется вместе с модулем, который её описывает: лишний ключ — ошибка старта.
+
+[edition]                      # издание (Этап 20, ADR-0032); задаёт config/editions/<id>.toml, а не user.toml
+id = "ru"                      # ru | en; выбирается до старта: --edition или VTUBER_EDITION__ID
+language = "ru"                # язык пакета ядра (BCP-47)
+content_profile = "standard"   # standard | unfiltered (ADR-0033)
+stream_safe = false            # правила площадок поверх unfiltered; пока только поле (STAGE_20, 4.4)
 
 [logging]
 level = "INFO"                 # DEBUG | INFO | WARNING | ERROR; DEBUG — потоковые детали (T-15)

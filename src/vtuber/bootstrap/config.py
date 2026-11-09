@@ -17,11 +17,12 @@ from vtuber.application.prompting import ContextConfig
 from vtuber.application.scheduler import ResourcesConfig, SchedulerConfig
 from vtuber.application.supervision import SupervisorConfig
 from vtuber.application.voice import AddressingConfig, SoundsConfig, SpeakersConfig, VoiceConfig
+from vtuber.bootstrap.edition import EditionConfig, check_edition, edition_files
 from vtuber.bootstrap.persona import PersonaConfig
 from vtuber.bootstrap.setup import SetupConfig
+from vtuber.domain import EditionId
 from vtuber.gateway import GatewayConfig
 from vtuber.kernel import (
-    ConfigFiles,
     ConfigSection,
     LoggingConfig,
     PluginsConfig,
@@ -105,6 +106,7 @@ class SttConfig(ConfigSection):
 class AppConfig(ConfigSection):
     """Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна."""
 
+    edition: EditionConfig
     logging: LoggingConfig
     telemetry: TelemetryConfig
     llm: LLMConfig
@@ -125,17 +127,15 @@ class AppConfig(ConfigSection):
     initiative: InitiativeConfig
 
 
-def load_app_config(root: Path, env: Mapping[str, str]) -> AppConfig:
-    """Читает `config/default.toml` и `config/user.toml` из корня проекта `root` поверх `env`.
+def load_app_config(
+    root: Path, env: Mapping[str, str], edition: EditionId = EditionId.RU
+) -> AppConfig:
+    """Читает конфиг издания `edition` из `<root>/config` поверх `env` (порядок — `edition_files`).
 
     Raises:
-        ConfigError: см. `vtuber.kernel.load_config`.
+        ConfigError: см. `vtuber.kernel.load_config`; `[edition].id` не совпал с `edition`.
 
     """
-    config_dir = root / "config"
-    files = ConfigFiles(
-        default=config_dir / "default.toml",
-        user=config_dir / "user.toml",
-        generated=config_dir / "setup.toml",
-    )
-    return load_config(AppConfig, files, env)
+    cfg = load_config(AppConfig, edition_files(root / "config", edition), env)
+    check_edition(cfg.edition, edition)
+    return cfg

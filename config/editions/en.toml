@@ -1,0 +1,26 @@
+# Английское издание без цензуры (Этап 20, ADR-0032). Поверх default.toml; выбор мастера —
+# config/setup.en.toml, личные правки — config/user.en.toml. Языковые ключи общего user.toml
+# (персона, голос, память…) здесь не действуют — список в bootstrap/edition.py.
+# Персона, голос и модель появятся в S-20.3, S-20.5, S-20.9; до тех пор — русские умолчания.
+
+[edition]
+id = "en"
+language = "en"
+content_profile = "unfiltered"
+stream_safe = false            # в эфир пока не идёт (решение пользователя, 2026-11-09)
+
+[context]
+chars_per_token = 4.0          # оценка для английского; калибровать по /tokenize (S-20.3)
+
+[stt.whisper]
+language = "en"
+
+[stt.addressing]
+names = ["mika", "meeka", "mica"]
+
+[memory]                       # своя память: факты и заметки изданий не смешиваются
+store_path = "data/en/memory.sqlite"
+vault_path = "data/en/vault"
+
+[setup]
+choice_file = "config/setup.en.toml"
