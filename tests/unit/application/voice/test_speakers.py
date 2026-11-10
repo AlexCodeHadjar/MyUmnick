@@ -149,7 +149,7 @@ async def test_name_is_found_after_the_label() -> None:
     bridge = AddressedEvents(events, ("мика",))
     await bridge.final("Собеседник 2: Мика, привет", 0)
     await bridge.final("Собеседник 2: передай соль", 0)
-    assert events.finals == ["Собеседник 2: Мика, привет"]
+    assert events.finals == ["Собеседник 2: привет"]  # имя из запроса вырезается
 
 
 async def test_missing_model_is_unavailable(tmp_path: Path) -> None:

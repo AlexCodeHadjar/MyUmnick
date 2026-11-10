@@ -4,6 +4,8 @@ from vtuber.application.voice.addressing import (
     AddressedEvents,
     AddressingConfig,
     addressed,
+    name_pattern,
+    without_call,
 )
 from vtuber.application.voice.completeness import looks_unfinished
 from vtuber.application.voice.listener import VoiceConfig, VoiceEvents, VoiceListener
@@ -50,4 +52,6 @@ __all__ = [
     "labelled",
     "looks_unfinished",
     "loudness",
+    "name_pattern",
+    "without_call",
 ]

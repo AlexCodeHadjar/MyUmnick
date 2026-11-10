@@ -18,11 +18,11 @@ export interface Edition {
 
 /** Порядок плиток; новое издание — строка здесь и файл `config/editions/<id>.toml`. */
 export const EDITIONS: readonly Edition[] = [
-  { id: "ru", lang: "ru", name: "Мика", caption: "Русский", badge: null, adult: false },
+  { id: "ru", lang: "ru", name: "Умник", caption: "Русский", badge: null, adult: false },
   {
     id: "en",
     lang: "en",
-    name: "Mika",
+    name: "Umnik",
     caption: "English · Uncensored",
     badge: "18+",
     adult: true,
@@ -46,7 +46,7 @@ export function isEditionId(value: unknown): value is EditionId {
 const RU_EDITION: Edition = {
   id: "ru",
   lang: "ru",
-  name: "Мика",
+  name: "Умник",
   caption: "Русский",
   badge: null,
   adult: false,

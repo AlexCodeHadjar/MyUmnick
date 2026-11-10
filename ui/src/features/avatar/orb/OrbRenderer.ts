@@ -40,6 +40,8 @@ export class OrbRenderer implements AvatarRenderer {
   #reaction: AvatarReaction = "idle";
   #speaking = false;
   #ambient = { bass: 0, mid: 0, high: 0 };
+  /** Внимание после обращения по имени: 1 → 0 за пару секунд. */
+  #attention = 0;
 
   private constructor(host: HTMLElement, size: StageSize) {
     this.#canvas = document.createElement("canvas");
@@ -83,6 +85,11 @@ export class OrbRenderer implements AvatarRenderer {
 
   setMouthForm(): void {
     // Форма рта у сферы не видна: только громкость.
+  }
+
+  attend(): void {
+    this.#attention = 1;
+    this.#pulse = Math.max(this.#pulse, 1);
   }
 
   setAmbient(bands: { bass: number; mid: number; high: number }): void {
@@ -135,6 +142,7 @@ export class OrbRenderer implements AvatarRenderer {
       this.#mouth * 0.09 + music + (this.#speaking ? 0.015 : 0) + (thinking ? 0.025 : 0.006);
     this.#energy = approach(this.#energy, target, this.#mouth > this.#energy ? 30 : 6, dt);
     this.#pulse = approach(this.#pulse, 0, 3, dt);
+    this.#attention = approach(this.#attention, 0, 0.8, dt);
     this.#hue = mixHue(this.#hue, this.#targetHue, dt * 2);
     this.#tilt.x = approach(this.#tilt.x, this.#look.y * 0.35, 3, dt);
     this.#tilt.y = approach(this.#tilt.y, this.#look.x * 0.5, 3, dt);
@@ -193,7 +201,8 @@ export class OrbRenderer implements AvatarRenderer {
     // Ореол сдержанный: поверх рабочего стола он не должен закрывать всё вокруг сферы.
     const radius = this.#radius() * (1.25 + this.#energy + this.#ambient.bass * 0.3);
     const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-    const alpha = Math.min(0.3, 0.08 + this.#energy * 1.2 + this.#ambient.bass * 0.12);
+    const attention = this.#attention * 0.25; // «услышала своё имя» — сфера вспыхивает
+    const alpha = Math.min(0.45, 0.08 + this.#energy * 1.2 + this.#ambient.bass * 0.12 + attention);
     glow.addColorStop(0, `hsla(${String(hue)}, 90%, 60%, ${String(alpha)})`);
     glow.addColorStop(1, `hsla(${String(hue)}, 90%, 40%, 0)`);
     ctx.fillStyle = glow;
@@ -229,7 +238,7 @@ export class OrbRenderer implements AvatarRenderer {
     const screen = this.#screen;
     for (let i = 0; i < POINTS; i += 1) {
       const depth = screen[i * 3 + 2] ?? 0;
-      const light = 55 + 25 * sparkle(i, this.#time) * depth;
+      const light = Math.min(95, 55 + 25 * sparkle(i, this.#time) * depth + this.#attention * 25);
       const size = 1 + depth * (2 + this.#energy * 10);
       ctx.fillStyle = `hsla(${String((hue + i * 0.15) % 360)}, 90%, ${String(light)}%, ${String(0.25 + depth * 0.75)})`;
       ctx.fillRect(

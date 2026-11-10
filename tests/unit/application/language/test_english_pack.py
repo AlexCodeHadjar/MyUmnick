@@ -72,7 +72,7 @@ def test_english_system_prompt_frame() -> None:
 
     prompt = render_system_prompt(persona, EN_PACK.prompt)
 
-    assert prompt.startswith("You are Mika.")
+    assert prompt.startswith("You are Umnik.")
     assert "Always answer in English only." in prompt
     assert "<happy>" in prompt
     assert not any("Ѐ" <= char <= "ӿ" for char in prompt)

@@ -15,6 +15,8 @@ from vtuber.application.voice import (
     VoiceListener,
     addressed,
     looks_unfinished,
+    name_pattern,
+    without_call,
 )
 from vtuber.domain import AudioChunk, AudioFormat
 
@@ -46,19 +48,42 @@ class _Events:
 
 
 @pytest.mark.parametrize(
-    "text",
+    ("text", "asked"),
     [
-        "Мика, как дела?",
-        "Эй, Мика, ты тут?",
-        "слушай, мика, что нового",
-        "Как дела, Мика?",
-        "Мика!",
+        ("Мика, как дела?", "как дела"),
+        ("Эй, Мика, ты тут?", "ты тут"),
+        ("слушай, мика, что нового", "что нового"),
+        ("Как дела, Мика?", "Как дела"),
+        ("Умник, какая сегодня погода в Москве?", "какая сегодня погода в Москве"),
     ],
 )
-async def test_address_by_name_starts_a_turn(text: str) -> None:
+async def test_address_by_name_starts_a_turn_without_the_name(text: str, asked: str) -> None:
     events = _Events()
-    await AddressedEvents(events, ("мика",)).final(text, 0)
-    assert events.log == ["перебить", f"фраза: {text}"]
+    await AddressedEvents(events, ("мика", "умник")).final(text, 0)
+    assert events.log == ["перебить", f"фраза: {asked}"]
+
+
+async def test_name_alone_waits_for_the_request() -> None:
+    now = [100.0]
+    events = _Events()
+    bridge = AddressedEvents(events, ("умник",), follow_up_s=8.0, clock=lambda: now[0])
+
+    await bridge.final("Умник!", 0)
+    assert events.log == ["перебить"]
+    now[0] += 3
+    await bridge.final("Какая погода в Казани?", 0)
+    assert events.log[-1] == "фраза: Какая погода в Казани?"
+
+    await bridge.final("Умник.", 0)
+    now[0] += 9
+    await bridge.final("Это я не тебе", 0)
+    assert events.log[-1] != "фраза: Это я не тебе"
+
+
+def test_speaker_label_stays_with_the_request() -> None:
+    pattern = name_pattern(("умник",))
+    assert without_call("Собеседник 2: Умник, привет", pattern) == "Собеседник 2: привет"
+    assert without_call("Умник", pattern) == ""
 
 
 @pytest.mark.parametrize(
@@ -87,9 +112,9 @@ async def test_barge_in_comes_once_when_the_name_is_heard() -> None:
 
 def test_always_mode_has_no_wrapper() -> None:
     events = _Events()
-    always = AddressingConfig(mode="always", names=("мика",))
+    always = AddressingConfig(mode="always", names=("мика",), follow_up_s=8)
     assert addressed(always, events) is events
-    by_name = AddressingConfig(mode="by_name", names=("мика",))
+    by_name = AddressingConfig(mode="by_name", names=("мика",), follow_up_s=8)
     assert isinstance(addressed(by_name, events), AddressedEvents)
 
 

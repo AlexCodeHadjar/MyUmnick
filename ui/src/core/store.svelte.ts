@@ -122,6 +122,8 @@ export class AppStore {
   edition = $state<EditionData | null>(null);
   /** Список чатов слева (Этап 21); null — ядро ещё не прислало. */
   chats = $state<ChatsData | null>(null);
+  /** Сколько раз к витюберу обратились голосом (Этап 22): каждый новый номер — вспышка внимания. */
+  called = $state(0);
   /** Издание, выбранное на экране выбора; `null` — экрана не было (язык берётся из ядра). */
   expectedEdition = $state<string | null>(null);
 
@@ -267,6 +269,8 @@ export class AppStore {
         break;
       case "input.barge_in":
         // Голос глушит клиент сразу, мимо пачки; состояние хода изменит `turn.cancelled`.
+        // В режиме «по имени» это и есть «услышала своё имя»: аватар показывает внимание.
+        this.called += 1;
         break;
       default:
         message satisfies never;

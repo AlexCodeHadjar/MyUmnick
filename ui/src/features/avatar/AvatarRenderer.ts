@@ -68,6 +68,8 @@ export interface AvatarRenderer {
    * модель Live2D его не показывает, сфера — пульсирует и искрится.
    */
   setAmbient?(bands: { bass: number; mid: number; high: number }): void;
+  /** К витюберу обратились по имени (Этап 22): короткая вспышка внимания. Необязательно. */
+  attend?(): void;
   /** Шаг анимации и отрисовка; `deltaMs` — время с прошлого кадра. */
   update(deltaMs: number): void;
 

@@ -32,7 +32,7 @@ chars_per_token = 4.0          # оценка для английского; к�
 language = "en"
 
 [stt.addressing]
-names = ["mika", "meeka", "mica"]
+names = ["umnik", "oomnik", "umnick"]
 
 [memory]                       # своя память: факты и заметки изданий не смешиваются
 store_path = "data/en/memory.sqlite"

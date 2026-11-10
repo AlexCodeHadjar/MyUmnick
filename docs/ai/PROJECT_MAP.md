@@ -254,10 +254,11 @@
 ## src/vtuber/application/voice
 Голосовой ввод (Этап 11): нарезка речи на фразы, распознавание, перебивание.
 
-- `AddressingConfig` — `src/vtuber/application/voice/addressing.py:25` — Подсекция `[stt.addressing]`: `always` — любая речь, `by_name` — только обращение.
-- `name_pattern` — `src/vtuber/application/voice/addressing.py:32` — Обращение: имя в начале, можно после «эй», или в самом конце («как дела, Мика?»).
-- `AddressedEvents` — `src/vtuber/application/voice/addressing.py:40` — Пропускает голосовые события, только если обратились по имени.
-- `addressed` — `src/vtuber/application/voice/addressing.py:76` — В режиме `always` обёртки нет: лишний шаг в горячем пути ни к чему.
+- `AddressingConfig` — `src/vtuber/application/voice/addressing.py:27` — Подсекция `[stt.addressing]`: `always` — любая речь, `by_name` — только обращение.
+- `name_pattern` — `src/vtuber/application/voice/addressing.py:38` — Обращение: имя в начале, можно после «эй», или в самом конце («как дела, Мика?»).
+- `without_call` — `src/vtuber/application/voice/addressing.py:46` — Запрос без обращения: «Эй, Умник, какая погода?» → «какая погода?»; метка остаётся.
+- `AddressedEvents` — `src/vtuber/application/voice/addressing.py:56` — Пропускает голосовые события, только если обратились по имени; имя из запроса вырезается.
+- `addressed` — `src/vtuber/application/voice/addressing.py:112` — В режиме `always` обёртки нет: лишний шаг в горячем пути ни к чему.
 - `looks_unfinished` — `src/vtuber/application/voice/completeness.py:64` — Обрыв видно по многоточию или последним словам; вопрос и восклицание — конец точно.
 - `VoiceConfig` — `src/vtuber/application/voice/listener.py:43` — `interim_ms` — как часто считать промежуточную гипотезу; `min_phrase_ms` — короче не речь.
 - `VoiceEvents` — `src/vtuber/application/voice/listener.py:52` — Кто получает голосовой ввод: шлюз (шлёт в UI и начинает ход) или тест.

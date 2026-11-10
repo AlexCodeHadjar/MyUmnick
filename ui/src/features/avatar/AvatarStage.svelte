@@ -79,6 +79,16 @@
     }
   });
 
+  // Обращение по имени («Умник…»): внимание сразу, ещё до того, как фраза договорена.
+  let seenCalls = 0;
+  $effect(() => {
+    const calls = store.called;
+    if (status.state === "ready" && calls !== seenCalls) {
+      seenCalls = calls;
+      session?.renderer?.attend?.();
+    }
+  });
+
   $effect(() => {
     const turn = store.turn;
     if (status.state === "ready" && turn !== null && turn !== noddedTurn) {

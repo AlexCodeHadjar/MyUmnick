@@ -179,3 +179,12 @@ describe("издание", () => {
     locale.set("ru");
   });
 });
+
+describe("обращение по имени", () => {
+  it("каждый input.barge_in — новое обращение", () => {
+    store.apply({ v: 1, type: "input.barge_in", data: {} });
+    store.apply({ v: 1, type: "input.barge_in", data: {} });
+
+    expect(store.called).toBe(2);
+  });
+});
