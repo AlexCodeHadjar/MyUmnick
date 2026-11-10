@@ -3,7 +3,7 @@
     Запуск витюбера одним кликом (ярлык на рабочем столе): ядро, LLM-сервер и окно.
 
 .DESCRIPTION
-    Пока нет собранной поставки (S-13.3 — только по команде), окно идёт из `pnpm tauri dev`, а ядро — из
+    Пока нет собранной поставки (S-13.3 — только по команде), окно идёт из Tauri CLI через node, а ядро — из
     `.venv`. Окно в режиме разработки само ядро не запускает, поэтому это делает скрипт: издание берётся из
     `launcher.json` окна (последний выбор на экране выбора), а когда выбор меняется — ядро перезапускается
     в новом издании, и окно переподключается само (ADR-0032).
@@ -18,15 +18,34 @@ $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $PSScriptRoot
 $Log = if ($env:VTUBER_LAUNCHER_LOG) { $env:VTUBER_LAUNCHER_LOG } else { Join-Path $Root "logs\launcher.log" }
-$LauncherFile = Join-Path $env:APPDATA "local.vtuber.ui\launcher.json"
+$LauncherFile = Join-Path ([Environment]::GetFolderPath("ApplicationData")) "local.vtuber.ui\launcher.json"
 $Python = Join-Path $Root ".venv\Scripts\python.exe"
-$env:PATH = "C:\Program Files\nodejs;$env:APPDATA\npm;$env:USERPROFILE\.cargo\bin;$env:PATH"
+# PATH — из реестра, а не от Проводника: он мог запуститься до установки Node.js и не знать новых путей.
+$registryPath = @(
+    [Environment]::GetEnvironmentVariable("PATH", "Machine"),
+    [Environment]::GetEnvironmentVariable("PATH", "User")
+) -join ";"
+$UserData = [Environment]::GetFolderPath("ApplicationData")
+$env:PATH = "C:\Program Files\nodejs;$UserData\npm;$env:USERPROFILE\.cargo\bin;$registryPath;$env:PATH"
+
+# Окно запускается без pnpm: CLI Tauri и Vite — из ui/node_modules через node. pnpm, поставленный из
+# изолированного приложения, обычный Проводник не видит (проверено), а node — системный.
+$Node = @("C:\Program Files\nodejs\node.exe") + @((Get-Command node.exe -ErrorAction SilentlyContinue).Source) |
+    Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+$TauriCli = Join-Path $Root "ui\node_modules\@tauri-apps\cli\tauri.js"
+$TauriConfig = Join-Path $PSScriptRoot "tauri.launch.json"
 
 New-Item -ItemType Directory -Force (Split-Path $Log) | Out-Null
 
 function Write-Log([string] $Text) {
-    "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $Text" | Out-File -FilePath $Log -Append -Encoding utf8
+    # Запись журнала не должна ронять запуск: файл может быть занят (антивирус, просмотр).
+    try {
+        "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $Text" | Out-File -FilePath $Log -Append -Encoding utf8
+    } catch { }
 }
+
+# Вывод окна (Vite, cargo) — в свой файл: cmd держит его открытым, пока окно живо.
+$WindowLog = [System.IO.Path]::ChangeExtension($Log, ".window.log")
 
 function Show-Error([string] $Text) {
     Write-Log "ОШИБКА: $Text"
@@ -101,11 +120,11 @@ function Stop-Core($Core) {
 function Start-Window {
     $info = New-Object System.Diagnostics.ProcessStartInfo
     $info.FileName = "cmd.exe"
-    $info.Arguments = "/c pnpm tauri dev >> `"$Log`" 2>&1"
+    $info.Arguments = "/c `"`"$Node`" `"$TauriCli`" dev --config `"$TauriConfig`" > `"$WindowLog`" 2>&1`""
     $info.WorkingDirectory = Join-Path $Root "ui"
     $info.UseShellExecute = $false
     $info.CreateNoWindow = $true
-    Write-Log "окно: pnpm tauri dev"
+    Write-Log "окно: tauri dev через node"
     return [System.Diagnostics.Process]::Start($info)
 }
 
@@ -121,11 +140,15 @@ try {
         Show-Error "Нет окружения Python (.venv). Выполните в папке проекта: uv sync --all-extras"
         exit 1
     }
-    if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
-        Show-Error "Не найден pnpm (Node.js). Установите Node.js и pnpm, затем: cd ui; pnpm install"
+    if ($null -eq $Node) {
+        Show-Error "Не найден Node.js. Установите его с nodejs.org."
         exit 1
     }
-    Write-Log "запуск из $Root"
+    if (-not (Test-Path -LiteralPath $TauriCli)) {
+        Show-Error "Нет зависимостей окна (ui\node_modules). В папке ui выполните: npm install"
+        exit 1
+    }
+    Write-Log "запуск из $Root; node: $Node"
     Set-LlmAutostart
     $edition = Get-Edition
     $core = Start-Core $edition

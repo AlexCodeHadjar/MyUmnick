@@ -116,6 +116,13 @@
     }
   }
 
+  /** Двойной щелчок по персонажу — поверх стола и обратно (то же, что Ctrl+Shift+O). */
+  function ondblclick(event: MouseEvent): void {
+    if (desktopPort !== null && overModel(event.clientX, event.clientY)) {
+      changeDesktop({ ...desktop, overlay: !desktop.overlay });
+    }
+  }
+
   /** localStorage недоступен (политика WebView, приватный режим) — ширина просто не запомнится. */
   function layoutStorage(): Storage | undefined {
     try {
@@ -126,21 +133,11 @@
   }
 </script>
 
-<svelte:window {onkeydown} onpointerdown={unlockAudio} />
+<svelte:window {onkeydown} {ondblclick} onpointerdown={unlockAudio} />
 
 <main class="app">
   {#if overlay && desktopPort !== null}
-    <DesktopOverlay
-      port={desktopPort}
-      pinned={desktop.pinned}
-      overModel={(point: Point) => overModel(point.x, point.y)}
-      onpin={() => {
-        changeDesktop({ ...desktop, pinned: !desktop.pinned });
-      }}
-      onleave={() => {
-        changeDesktop({ ...desktop, overlay: false });
-      }}
-    />
+    <DesktopOverlay port={desktopPort} overModel={(point: Point) => overModel(point.x, point.y)} />
   {/if}
   <div class="workspace">
     {#if !overlay}

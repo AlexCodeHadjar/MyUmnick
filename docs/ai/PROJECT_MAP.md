@@ -828,7 +828,7 @@
 
 - `POLL_MS` — `ui/src/features/desktop/clickThrough.ts:9` — 10 раз в секунду: реакция незаметна глазу, а обращения к оболочке не мешают рендеру (NFR-05).
 - `ClickThrough` — `ui/src/features/desktop/clickThrough.ts:13` — —
-- `DesktopOverlay.svelte` — `ui/src/features/desktop/DesktopOverlay.svelte:1` — —
+- `DesktopOverlay.svelte` — `ui/src/features/desktop/DesktopOverlay.svelte:1` — Поверх стола видно только персонажа: кнопок нет. Обратно — двойной щелчок по персонажу или
 - `OVERLAY_SIZE` — `ui/src/features/desktop/mode.ts:11` — Размер небольшого окна с моделью, CSS-пиксели: модель видна целиком и не занимает экран.
 - `DesktopState` — `ui/src/features/desktop/mode.ts:13` — —
 - `Point` — `ui/src/features/desktop/mode.ts:18` — —
