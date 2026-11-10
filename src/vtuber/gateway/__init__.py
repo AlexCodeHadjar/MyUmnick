@@ -1,6 +1,7 @@
 """Шлюз: протокол UI ↔ Ядро, кодек, WebSocket-сервер и терминальный чат (M1)."""
 
 from vtuber.gateway.branch_bridge import BranchBridge
+from vtuber.gateway.chats_bridge import ChatsBridge
 from vtuber.gateway.codec import (
     AUDIO_FRAME_HEADER_SIZE,
     AUDIO_FRAME_TYPE,
@@ -75,6 +76,7 @@ __all__ = [
     "ChatCancel",
     "ChatDelta",
     "ChatSend",
+    "ChatsBridge",
     "DeltaData",
     "EmotionData",
     "EmptyData",

@@ -4,9 +4,11 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from vtuber.gateway.branch_bridge import BranchBridge
+from vtuber.gateway.chats_bridge import ChatsBridge
 from vtuber.gateway.memory_bridge import MemoryBridge
 from vtuber.gateway.privacy_bridge import PrivacyBridge
 from vtuber.gateway.protocol_branches import BranchCheckpoint, BranchGo
+from vtuber.gateway.protocol_chats import ChatAction
 from vtuber.gateway.protocol_extras import ResourcesWatch, SetupCancel, SetupInstall
 from vtuber.gateway.protocol_memory import (
     MemoryErase,
@@ -31,6 +33,7 @@ type PanelMessage = (
     | _PrivacyMessage
     | _MemoryMessage
     | _BranchMessage
+    | ChatAction
 )
 
 
@@ -45,6 +48,7 @@ class Panels:
     branches: BranchBridge | None = None
     window: Callable[[bool], None] | None = None
     edition: AppEdition | None = None
+    chats: ChatsBridge | None = None
     send: Callable[[AppEdition], Awaitable[None]] | None = None
 
     async def greet(self) -> None:
@@ -57,6 +61,8 @@ class Panels:
             await self.privacy.send_state()
         if self.branches is not None:
             await self.branches.send_state()
+        if self.chats is not None:
+            await self.chats.send_state()
 
     def client_gone(self) -> None:
         """Некому показывать снимки ресурсов."""
@@ -81,9 +87,12 @@ class Panels:
             await self._handle_dialogue(message)
 
     async def _handle_dialogue(
-        self, message: _PrivacyMessage | _MemoryMessage | _BranchMessage
+        self, message: _PrivacyMessage | _MemoryMessage | _BranchMessage | ChatAction
     ) -> None:
-        if isinstance(message, PrivacySet | MemoryErase):
+        if isinstance(message, ChatAction):
+            if self.chats is not None:
+                await self.chats.handle(message)
+        elif isinstance(message, PrivacySet | MemoryErase):
             if self.privacy is not None:
                 await self.privacy.handle(message)
         elif isinstance(message, BranchGo | BranchCheckpoint):

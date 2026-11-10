@@ -110,6 +110,27 @@ export interface CancelledData {
   message: string;
 }
 
+/** Категория. */
+export interface CategoryData {
+  id: string;
+  name: string;
+}
+
+/** UI → Ядро: действие со списком чатов. */
+export interface ChatAction {
+  v: Version;
+  type: "chats.action";
+  data: ChatActionData;
+}
+
+/** Что сделать: `id` — чат или категория, `name` — название, `category` — куда положить. */
+export interface ChatActionData {
+  action: ChatVerb;
+  id: string | null;
+  name: string | null;
+  category: string | null;
+}
+
 /** Ядро → UI: показать текст отдельным сообщением; озвучки у него нет. */
 export interface ChatAttachment {
   v: Version;
@@ -132,6 +153,14 @@ export interface ChatDelta {
   data: DeltaData;
 }
 
+/** Чат в списке; пустое `title` — «Новый чат» на языке интерфейса. */
+export interface ChatItemData {
+  id: string;
+  title: string;
+  category: string | null;
+  updated: string;
+}
+
 /** UI → Ядро: новая реплика; прерывает текущий ход. */
 export interface ChatSend {
   v: Version;
@@ -151,6 +180,24 @@ export interface ChatSources {
   v: Version;
   type: "chat.sources";
   data: SourcesData;
+}
+
+export type ChatVerb = "list" | "create" | "open" | "rename" | "move" | "delete" | "category_create" | "category_rename" | "category_delete";
+
+/** Весь список; `switching` — память переключается, ввод лучше подождать. */
+export interface ChatsData {
+  chats: ChatItemData[];
+  categories: CategoryData[];
+  active: string;
+  switching: boolean;
+  problem: string | null;
+}
+
+/** Ядро → UI: список чатов после любого изменения и при подключении. */
+export interface ChatsState {
+  v: Version;
+  type: "chats.state";
+  data: ChatsData;
 }
 
 /** Контрольная точка. */
@@ -591,6 +638,6 @@ export interface WindowVisibility {
   data: VisibilityData;
 }
 
-export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryTransfer | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint | WindowVisibility | ChatSendImage;
+export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryTransfer | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint | WindowVisibility | ChatAction | ChatSendImage;
 
-export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | AvatarGesture | ChatAttachment | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryTransferred | MemoryFacts | BranchState | ChatSources | AppEdition | ErrorMessage;
+export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | AvatarGesture | ChatAttachment | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryTransferred | MemoryFacts | BranchState | ChatSources | AppEdition | ChatsState | ErrorMessage;

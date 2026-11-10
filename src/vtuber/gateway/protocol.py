@@ -10,6 +10,7 @@ from vtuber.gateway.protocol_attachment import ChatAttachment
 from vtuber.gateway.protocol_avatar import AvatarGesture
 from vtuber.gateway.protocol_base import PROTOCOL_VERSION, EmptyData, ProtocolModel, Version
 from vtuber.gateway.protocol_branches import BranchCheckpoint, BranchGo, BranchState
+from vtuber.gateway.protocol_chats import ChatAction, ChatsState
 from vtuber.gateway.protocol_extras import (
     BackendNoticeMessage,
     ChatSources,
@@ -145,6 +146,7 @@ type InboundMessage = Annotated[
     | BranchGo
     | BranchCheckpoint
     | WindowVisibility
+    | ChatAction
     | ChatSendImage,
     Field(discriminator="type"),
 ]
@@ -326,6 +328,7 @@ type OutboundMessage = Annotated[
     | BranchState
     | ChatSources
     | AppEdition
+    | ChatsState
     | ErrorMessage,
     Field(discriminator="type"),
 ]

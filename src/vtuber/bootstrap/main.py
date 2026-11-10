@@ -17,10 +17,10 @@ from vtuber.application.prompting import RU_PROMPT, PromptBuilder
 from vtuber.application.scheduler import ResourceManager
 from vtuber.application.supervision import Supervised, Supervisor
 from vtuber.application.tools import ToolContext
+from vtuber.bootstrap.chat_wiring import app_memory
 from vtuber.bootstrap.config import AppConfig, load_app_config
 from vtuber.bootstrap.container import Core, build_conversation, llm_backends
 from vtuber.bootstrap.edition import edition_persona, resolve_edition, warn_ignored_user_keys
-from vtuber.bootstrap.memory import background_memory
 from vtuber.bootstrap.plugins import PluginServices, ResourceModels, running_plugins
 from vtuber.bootstrap.supervision import (
     LlmSupervised,
@@ -134,7 +134,7 @@ async def _run(
         warmup = _Warmup(_Llm(llm, server), conversation.prompts, bus, voice)
         # Память (Этап 10): факты и резюме — в простое, LLM фонового слота; поиск — в ходе (T-12).
         async with (
-            background_memory(cfg, conversation, core) as controls,
+            app_memory(cfg, conversation, core, chats=mode == SERVE_MODE) as memory,
             running_plugins(
                 cfg.plugins, bus, models=ResourceModels(resources), language=cfg.edition.language
             ) as plugins,
@@ -142,9 +142,7 @@ async def _run(
             _connect_tools(cfg, conversation.service, plugins)
             if mode == SERVE_MODE:
                 code = await _serve(
-                    AppParts(
-                        cfg, core, plugins, resources, controls, conversation.history, persona
-                    ),
+                    AppParts(cfg, core, plugins, resources, memory, conversation.history, persona),
                     conversation.service,
                     warmup,
                     console,

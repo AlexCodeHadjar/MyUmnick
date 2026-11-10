@@ -1,5 +1,14 @@
 """Доменный слой: неизменяемые сущности и значения диалога, речи и эмоций."""
 
+from vtuber.domain.chat import (
+    MAIN_CHAT,
+    MAX_TITLE,
+    ChatCategory,
+    ChatInfo,
+    ChatList,
+    chat_title,
+    is_chat_id,
+)
 from vtuber.domain.dialogue import AttachedImage, Message, Persona, Role, Turn, TurnId
 from vtuber.domain.edition import ContentProfile, EditionId
 from vtuber.domain.emotion import (
@@ -67,7 +76,9 @@ from vtuber.domain.viewer import (
 
 __all__ = [
     "EN_VIEWER",
+    "MAIN_CHAT",
     "MAX_TAG_LENGTH",
+    "MAX_TITLE",
     "RU_VIEWER",
     "SAMPLE_WIDTH_BYTES",
     "TAG_CLOSE",
@@ -82,6 +93,9 @@ __all__ = [
     "BackendStatusChanged",
     "BackendUnavailable",
     "CancelReason",
+    "ChatCategory",
+    "ChatInfo",
+    "ChatList",
     "Component",
     "ConfigError",
     "ContentProfile",
@@ -129,7 +143,9 @@ __all__ = [
     "ViewerStyle",
     "VisionUnavailable",
     "VtuberError",
+    "chat_title",
     "crosses_hard_floor",
+    "is_chat_id",
     "is_viewer_line",
     "looks_like_attack",
     "next_state",

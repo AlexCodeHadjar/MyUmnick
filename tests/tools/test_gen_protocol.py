@@ -34,7 +34,7 @@ def test_ts_has_every_message_and_both_unions() -> None:
         "ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel"
         " | PrivacySet | MemoryErase | MemoryList | MemoryTransfer"
         " | MemoryFactSave | MemoryFactDelete"
-        " | BranchGo | BranchCheckpoint | WindowVisibility | ChatSendImage"
+        " | BranchGo | BranchCheckpoint | WindowVisibility | ChatAction | ChatSendImage"
     )
     assert f"export type InboundMessage = {inbound};" in ts
     assert "export type OutboundMessage = TurnStartedMessage | ChatDelta" in ts

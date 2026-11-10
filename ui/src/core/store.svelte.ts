@@ -5,6 +5,7 @@
  */
 import { isLang, locale } from "./i18n";
 import type {
+  ChatsData,
   EditionData,
   BackendState,
   Component,
@@ -119,6 +120,8 @@ export class AppStore {
   sources = $state<SourceData[]>([]);
   /** Издание ядра (Этап 20): язык интерфейса берётся из него, пока экран выбора не задал свой. */
   edition = $state<EditionData | null>(null);
+  /** Список чатов слева (Этап 21); null — ядро ещё не прислало. */
+  chats = $state<ChatsData | null>(null);
   /** Издание, выбранное на экране выбора; `null` — экрана не было (язык берётся из ядра). */
   expectedEdition = $state<string | null>(null);
 
@@ -241,6 +244,9 @@ export class AppStore {
         break;
       case "status":
         this.backends[message.data.component] = message.data.state;
+        break;
+      case "chats.state":
+        this.chats = message.data;
         break;
       case "app.edition":
         this.edition = message.data;

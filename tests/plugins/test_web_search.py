@@ -43,7 +43,9 @@ class _World:
 
 
 @asynccontextmanager
-async def _world(searx: _Searx, timeout_s: float = 1.0) -> AsyncIterator[_World]:
+async def _world(
+    searx: _Searx, timeout_s: float = 1.0, *, auto: bool = True
+) -> AsyncIterator[_World]:
     server = await asyncio.start_server(searx.handle, "127.0.0.1", 0)
     port = server.sockets[0].getsockname()[1]
     bus = EventBus()
@@ -53,7 +55,7 @@ async def _world(searx: _Searx, timeout_s: float = 1.0) -> AsyncIterator[_World]
         sources.append(event.sources)
 
     bus.subscribe(SourcesFound, on_sources)
-    settings = {"searxng_url": f"http://127.0.0.1:{port}", "timeout_s": timeout_s}
+    settings = {"searxng_url": f"http://127.0.0.1:{port}", "timeout_s": timeout_s, "auto": auto}
     ctx = PluginContext("web_search", bus, settings)
     plugin = WebSearchPlugin()
     await plugin.setup(ctx)
@@ -96,7 +98,7 @@ def test_ordinary_reply_is_not_a_search(text: str) -> None:
 
 
 async def test_no_request_without_explicit_ask() -> None:
-    async with _world(_Searx()) as world:
+    async with _world(_Searx(), auto=False) as world:
         assert await world.plugin.context("Какой сегодня курс евро?") is None
     assert world.searx.paths == []
 
@@ -170,7 +172,8 @@ async def test_failure_or_timeout_does_not_break_the_reply(searx: _Searx) -> Non
 async def test_tool_has_its_own_longer_deadline() -> None:
     async with _world(_Searx(), timeout_s=5.0) as world:
         (tool,) = world.tools
-    assert tool.timeout_s == 6.0
+    # Новости: поиск и чтение статьи — два запроса подряд (ADR-0036).
+    assert tool.timeout_s == 11.0
 
 
 @pytest.mark.parametrize("url", ["https://searx.example", "http://192.168.1.5:8888"])

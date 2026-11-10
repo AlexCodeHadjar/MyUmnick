@@ -123,6 +123,17 @@ UI → Ядро: окно свернули или вернули; свёрнут
 |---|---|
 | `visible` | `boolean` |
 
+### `chats.action` — `ChatAction`
+
+UI → Ядро: действие со списком чатов.
+
+| Поле `data` | Тип |
+|---|---|
+| `action` | `ChatVerb` |
+| `id` | `string | null` |
+| `name` | `string | null` |
+| `category` | `string | null` |
+
 ### `chat.send_image` — `ChatSendImage`
 
 UI → Ядро: новая реплика с картинкой; прерывает текущий ход, как `chat.send`.
@@ -353,6 +364,18 @@ UI → Ядро: новая реплика с картинкой; прерыва
 | `language` | `string` |
 | `content_profile` | `string` |
 | `stream_safe` | `boolean` |
+
+### `chats.state` — `ChatsState`
+
+Ядро → UI: список чатов после любого изменения и при подключении.
+
+| Поле `data` | Тип |
+|---|---|
+| `chats` | `ChatItemData[]` |
+| `categories` | `CategoryData[]` |
+| `active` | `string` |
+| `switching` | `boolean` |
+| `problem` | `string | null` |
 
 ### `error` — `ErrorMessage`
 

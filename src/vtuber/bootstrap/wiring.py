@@ -11,6 +11,7 @@ from vtuber.application.conversation import (
 )
 from vtuber.application.memory import MemoryControls, ShortTermMemory
 from vtuber.application.scheduler import ResourceManager
+from vtuber.bootstrap.chat_wiring import MemoryAccess
 from vtuber.bootstrap.config import AppConfig
 from vtuber.bootstrap.container import Core
 from vtuber.bootstrap.plugins import PluginServices
@@ -19,6 +20,7 @@ from vtuber.domain import Persona
 from vtuber.gateway import (
     AppEdition,
     BranchBridge,
+    ChatsBridge,
     ExternalTurns,
     GatewayServer,
     MemoryBridge,
@@ -36,7 +38,7 @@ class AppParts:
     core: Core
     plugins: PluginServices
     resources: ResourceManager
-    memory: MemoryControls | None
+    memory: MemoryAccess
     history: ShortTermMemory
     persona: Persona
 
@@ -75,8 +77,23 @@ def connect_panels(app: AppParts, server: GatewayServer, service: ConversationSe
     server.panels.send = server.send
     server.panels.resources = ResourcesFeed(app.resources.snapshot, server.send)
     connect_setup(app.cfg, server)
-    connect_memory(app.memory, server, service)
-    connect_branches(app.history, app.core, server, service)
+    connect_chat(app, server, service)
+    memory = app.memory
+    if memory.directory is not None and memory.switcher is not None:
+        server.panels.chats = ChatsBridge(memory.directory, memory.switcher.switch, server.send)
+
+        async def switched() -> None:
+            # Новый чат: панели — к его памяти, UI — его история, приватность и список фактов.
+            connect_chat(app, server, service)
+            await server.panels.greet()
+
+        memory.on_switched = switched
+
+
+def connect_chat(app: AppParts, server: GatewayServer, service: ConversationService) -> None:
+    """Панели памяти и веток — к открытому чату: его факты, его история и шина его ходов."""
+    connect_memory(app.memory.controls, server, service)
+    connect_branches(app.history, app.memory.chat_core, server, service)
 
 
 def connect_initiative(
@@ -91,7 +108,7 @@ def connect_initiative(
         await external.initiate(app.persona.initiative)
 
     def blocked() -> bool:
-        working = memory is not None and memory.is_working()
+        working = memory.is_working()
         return service.engaged or working or not server.has_client
 
     actions = InitiativeActions(speak, external.stop_initiative, blocked)

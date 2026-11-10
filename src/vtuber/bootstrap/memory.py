@@ -51,29 +51,46 @@ class _Engines:
     vault: MemoryVaultPort
 
 
-@asynccontextmanager
-async def background_memory(
-    cfg: AppConfig, conversation: Conversation, core: Core
-) -> AsyncIterator[MemoryControls | None]:
-    """Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
+@dataclass(frozen=True, slots=True)
+class SharedMemory:
+    """Что общее у всех чатов (Этап 21): LLM фонового слота и e5 — грузятся один раз."""
 
-    `cfg.memory` — с путями от корня (`MemoryConfig.resolved`). Отдаёт управление памятью для UI.
-    """
-    memory = cfg.memory
-    if not memory.enabled:
+    llm: LLMPort
+    embedder: EmbedderPort
+
+
+@asynccontextmanager
+async def shared_memory(cfg: AppConfig) -> AsyncIterator[SharedMemory | None]:
+    """Модели памяти на время работы приложения; память выключена — None."""
+    if not cfg.memory.enabled:
         yield None
         return
     llm_cfg = _background_llm(cfg)
-    memory.store_path.parent.mkdir(parents=True, exist_ok=True)
     async with (
         llm_backends().create(llm_cfg.backend, llm_cfg) as llm,
-        E5Embedder(memory.e5) as embedder,
+        E5Embedder(cfg.memory.e5) as embedder,
+    ):
+        yield SharedMemory(llm, embedder)
+
+
+@asynccontextmanager
+async def chat_memory(
+    cfg: AppConfig, shared: SharedMemory, conversation: Conversation, core: Core
+) -> AsyncIterator[MemoryControls]:
+    """Память одного чата: своя база фактов, заметки, планировщик; история чата — в разговор.
+
+    `cfg.memory` — с путями этого чата (`MemoryConfig.resolved`). Подписки — на `core.bus` чата:
+    после переключения старые части событий не получают (ADR-0037).
+    """
+    memory = cfg.memory
+    memory.store_path.parent.mkdir(parents=True, exist_ok=True)
+    async with (
         SqliteVecStore(memory.store_path, memory.e5.dimensions) as store,
         asyncio.TaskGroup() as tg,
     ):
         vault = ObsidianVault(memory.vault_path)
         await _restore(vault, conversation, memory.restore_turns)
-        engines = _Engines(llm, embedder, store, vault)
+        engines = _Engines(shared.llm, shared.embedder, store, vault)
         scheduler, keeper = _wire(cfg, conversation, core, engines)
         loop = tg.create_task(scheduler.run())
         _log.info("memory.background_ready", store=str(memory.store_path))
@@ -83,13 +100,26 @@ async def background_memory(
                 _watching_notes(memory, engines, scheduler, core),
             ):
                 yield MemoryControls(
-                    MemoryEditor(vault, store, embedder),
+                    MemoryEditor(vault, store, shared.embedder),
                     _eraser(engines, conversation, keeper, recorder),
                     lambda: scheduler.working,
                     _transfer(cfg, engines, scheduler),
                 )
         finally:
             loop.cancel()
+
+
+@asynccontextmanager
+async def background_memory(
+    cfg: AppConfig, conversation: Conversation, core: Core
+) -> AsyncIterator[MemoryControls | None]:
+    """Память одного чата вместе с моделями; выключена — пустой контекст (как до Этапа 21)."""
+    async with shared_memory(cfg) as shared:
+        if shared is None:
+            yield None
+            return
+        async with chat_memory(cfg, shared, conversation, core) as controls:
+            yield controls
 
 
 @asynccontextmanager

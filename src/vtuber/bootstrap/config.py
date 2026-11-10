@@ -3,7 +3,7 @@
 from collections.abc import Mapping
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 
 from vtuber.adapters.gpu import NvidiaSmiConfig
 from vtuber.adapters.llm import GenerationConfig, LlamaServerConfig, LLMConfig
@@ -56,13 +56,16 @@ class MemoryConfig(ConfigSection):
     facts: FactMemoryConfig
     retrieval: RetrievalConfig
     e5: E5Config
+    # Исходная секция и корень: из них память любого чата получает свои пути (Этап 21).
+    _source: "MemoryConfig | None" = PrivateAttr(default=None)
+    _root: Path | None = PrivateAttr(default=None)
 
     def resolved(self, root: Path) -> "MemoryConfig":
         """Копия с путями базы и модели от корня проекта."""
         if self.profile in {".", ".."} or "/" in self.profile or "\\" in self.profile:
             msg = f"Имя профиля памяти — не путь: {self.profile}"
             raise ValueError(msg)
-        return self.model_copy(
+        copy = self.model_copy(
             update={
                 "store_path": root / _for_profile(self.store_path, self.profile),
                 "vault_path": root / (self.vault_path / self.profile),
@@ -71,6 +74,21 @@ class MemoryConfig(ConfigSection):
                 "e5": self.e5.model_copy(update={"model_dir": root / self.e5.model_dir}),
             }
         )
+        copy._source = self  # noqa: SLF001 — свой класс
+        copy._root = root  # noqa: SLF001
+        return copy
+
+    def with_profile(self, profile: str) -> "MemoryConfig":
+        """Та же память с другим профилем (своя база и заметки), пути — от того же корня.
+
+        Raises:
+            ValueError: секция ещё не прошла `resolved`.
+
+        """
+        if self._source is None or self._root is None:
+            msg = "with_profile — только после resolved()"
+            raise ValueError(msg)
+        return self._source.model_copy(update={"profile": profile}).resolved(self._root)
 
 
 class SttConfig(ConfigSection):
