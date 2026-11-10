@@ -48,7 +48,8 @@ def connect_memory(
     eraser = None if memory is None else memory.eraser
     editor = None if memory is None else memory.editor
     server.panels.privacy = PrivacyBridge(service, eraser, server.send)
-    server.panels.memory = MemoryBridge(editor, server.send)
+    transfer = None if memory is None else memory.transfer
+    server.panels.memory = MemoryBridge(editor, server.send, transfer)
 
 
 def connect_branches(

@@ -203,6 +203,12 @@ export class CoreClient {
   }
 
   /** Панель памяти открыта: нужен список фактов. */
+  /** Перенести факты в другое издание (S-20.10); итог — `store.transfer`. */
+  transferMemory(): void {
+    this.store.transfer = { state: "running", count: null, problem: null };
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "memory.transfer", data: {} });
+  }
+
   listMemory(): void {
     this.#transport.send({ v: PROTOCOL_VERSION, type: "memory.list", data: {} });
   }

@@ -345,6 +345,20 @@ export interface MemoryList {
   data: EmptyData;
 }
 
+/** UI → Ядро: перенести факты о пользователе в другое издание (S-20.10). */
+export interface MemoryTransfer {
+  v: Version;
+  type: "memory.transfer";
+  data: EmptyData;
+}
+
+/** Ядро → UI: перенос закончен (идёт в простое, поэтому — отдельным сообщением). */
+export interface MemoryTransferred {
+  v: Version;
+  type: "memory.transferred";
+  data: TransferredData;
+}
+
 /** Ядро → UI: замер стадии; `turn` — None вне хода (прогрев). */
 export interface MetricsSpan {
   v: Version;
@@ -516,6 +530,12 @@ export interface StatusData {
   state: BackendState;
 }
 
+/** Итог переноса: сколько фактов выгружено, или текст ошибки. */
+export interface TransferredData {
+  count: number | null;
+  problem: string | null;
+}
+
 /** Ядро → UI: ход прерван — UI сбрасывает аудиобуфер. */
 export interface TurnCancelledMessage {
   v: Version;
@@ -571,6 +591,6 @@ export interface WindowVisibility {
   data: VisibilityData;
 }
 
-export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint | WindowVisibility | ChatSendImage;
+export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryTransfer | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint | WindowVisibility | ChatSendImage;
 
-export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | AvatarGesture | ChatAttachment | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryFacts | BranchState | ChatSources | AppEdition | ErrorMessage;
+export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | AvatarGesture | ChatAttachment | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryTransferred | MemoryFacts | BranchState | ChatSources | AppEdition | ErrorMessage;

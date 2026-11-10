@@ -28,6 +28,24 @@
   {/if}
   {#if store.memory.facts.length === 0}
     <p class="note">{locale.t.memory.empty}</p>
+  {:else}
+    <p class="transfer">
+      <button
+        type="button"
+        title={locale.t.memory.transferHint}
+        disabled={store.transfer.state === "running"}
+        onclick={() => {
+          client.transferMemory();
+        }}>{locale.t.memory.transfer}</button
+      >
+      {#if store.transfer.state === "running"}
+        <span class="note">{locale.t.memory.transferring}</span>
+      {:else if store.transfer.state === "done"}
+        <span class="note" role="status"
+          >{store.transfer.problem ?? locale.t.memory.transferred(store.transfer.count ?? 0)}</span
+        >
+      {/if}
+    </p>
   {/if}
   <ul>
     {#each store.memory.facts as fact (fact.note)}

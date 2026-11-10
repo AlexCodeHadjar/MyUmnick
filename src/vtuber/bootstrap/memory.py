@@ -9,6 +9,7 @@ import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from vtuber.adapters.llm import LLMConfig
 from vtuber.adapters.memory import E5Embedder, ObsidianVault, SqliteVecStore
@@ -16,13 +17,17 @@ from vtuber.application.memory import (
     ChatRecorder,
     FactExtractor,
     FactMemory,
+    FactTransfer,
     MemoryControls,
     MemoryEditor,
     MemoryEraser,
     MemoryKeeper,
+    MemoryParts,
     MemoryRecall,
     RecallSearch,
     Summarizer,
+    TransferPaths,
+    TransferRequests,
     VaultedFacts,
     VaultWatcher,
     reconcile,
@@ -81,6 +86,7 @@ async def background_memory(
                     MemoryEditor(vault, store, embedder),
                     _eraser(engines, conversation, keeper, recorder),
                     lambda: scheduler.working,
+                    _transfer(cfg, engines, scheduler),
                 )
         finally:
             loop.cancel()
@@ -161,6 +167,20 @@ def _eraser(
         await recorder.drain()
 
     return MemoryEraser(engines.vault, engines.store, conversation.history, quiet)
+
+
+def _transfer(cfg: AppConfig, engines: _Engines, scheduler: IdleScheduler) -> TransferRequests:
+    """Перенос фактов (S-20.10): переводит только русское ядро — его модель знает оба языка."""
+    edition = cfg.edition
+    own, other = edition.language, "ru" if edition.language == "en" else "en"
+    paths = TransferPaths(cfg.memory.inbox, cfg.memory.transfer_to, own, other)
+    generation = cfg.memory.generation
+    params = GenerationParams(max_tokens=generation.max_tokens, temperature=generation.temperature)
+    translator = (engines.llm, params) if own == "ru" else None
+    memory = MemoryParts(engines.vault, engines.store, engines.embedder)
+    requests = TransferRequests(FactTransfer(paths, memory, translator), scheduler)
+    requests.import_on_start(datetime.now(UTC))
+    return requests
 
 
 async def _reconcile(engines: _Engines) -> None:

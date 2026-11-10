@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from vtuber.application.memory.privacy import MemoryEraser
+from vtuber.application.memory.transfer import TransferRequests
 from vtuber.application.memory.vault_sync import reconcile
 from vtuber.domain import Fact
 from vtuber.ports import EmbedderPort, MemoryStorePort, MemoryVaultPort
@@ -57,3 +58,4 @@ class MemoryControls:
     editor: MemoryEditor
     eraser: MemoryEraser
     is_working: Callable[[], bool]
+    transfer: TransferRequests | None = None

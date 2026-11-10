@@ -37,6 +37,8 @@ names = ["mika", "meeka", "mica"]
 [memory]                       # своя память: факты и заметки изданий не смешиваются
 store_path = "data/en/memory.sqlite"
 vault_path = "data/en/vault"
+inbox = "data/en/inbox/facts.jsonl"
+transfer_to = "data/inbox/facts.jsonl"   # русское издание переведёт при приёме
 
 [setup]
 choice_file = "config/setup.en.toml"

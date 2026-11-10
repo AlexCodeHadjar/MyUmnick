@@ -46,6 +46,8 @@ class MemoryConfig(ConfigSection):
     enabled: bool
     store_path: Path
     vault_path: Path
+    inbox: Path
+    transfer_to: Path
     profile: str
     restore_turns: int = Field(ge=0)
     vault_poll_s: float = Field(gt=0)
@@ -64,6 +66,8 @@ class MemoryConfig(ConfigSection):
             update={
                 "store_path": root / _for_profile(self.store_path, self.profile),
                 "vault_path": root / (self.vault_path / self.profile),
+                "inbox": root / self.inbox,
+                "transfer_to": root / self.transfer_to,
                 "e5": self.e5.model_copy(update={"model_dir": root / self.e5.model_dir}),
             }
         )

@@ -76,6 +76,12 @@ UI → Ядро: открыта панель памяти, нужен списо
 
 `data`: `{}`
 
+### `memory.transfer` — `MemoryTransfer`
+
+UI → Ядро: перенести факты о пользователе в другое издание (S-20.10).
+
+`data`: `{}`
+
 ### `memory.fact_save` — `MemoryFactSave`
 
 UI → Ядро: исправить факт.
@@ -298,6 +304,15 @@ UI → Ядро: новая реплика с картинкой; прерыва
 
 | Поле `data` | Тип |
 |---|---|
+| `problem` | `string | null` |
+
+### `memory.transferred` — `MemoryTransferred`
+
+Ядро → UI: перенос закончен (идёт в простое, поэтому — отдельным сообщением).
+
+| Поле `data` | Тип |
+|---|---|
+| `count` | `number | null` |
 | `problem` | `string | null` |
 
 ### `memory.facts` — `MemoryFacts`

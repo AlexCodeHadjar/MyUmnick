@@ -113,6 +113,10 @@ export const ru = {
     delete: "Удалить",
     edit: "Исправить",
     hotkey: "Ctrl+Shift+Y — память",
+    transfer: "Перенести в английское издание",
+    transferHint: "Факты переведутся и появятся в английском издании при его запуске",
+    transferring: "Переношу… (в простое)",
+    transferred: (n: number) => `Перенесено фактов: ${String(n)}`,
     sources: MEMORY_SOURCES,
   },
   metrics: {

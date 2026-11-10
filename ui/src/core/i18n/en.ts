@@ -96,6 +96,10 @@ export const en: Messages = {
     delete: "Delete",
     edit: "Edit",
     hotkey: "Ctrl+Shift+Y — memory",
+    transfer: "Copy to the Russian edition",
+    transferHint: "Facts appear in the Russian edition (translated) the next time it starts",
+    transferring: "Copying… (when idle)",
+    transferred: (n: number) => `Facts copied: ${String(n)}`,
     sources: { user: "said directly", extracted: "from conversation", summary: "from summary" },
   },
   metrics: {

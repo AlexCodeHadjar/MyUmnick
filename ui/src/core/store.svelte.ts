@@ -103,6 +103,16 @@ export class AppStore {
   privacy = $state<PrivacyView>({ enabled: false, erasable: false, result: null });
   /** Факты для редактора памяти; приходят, только когда панель открыта (S-16.2). */
   memory = $state<FactsData>({ facts: [], problem: null });
+  /** Перенос фактов в другое издание: идёт в простое ядра, итог приходит позже. */
+  transfer = $state<{
+    state: "idle" | "running" | "done";
+    count: number | null;
+    problem: string | null;
+  }>({
+    state: "idle",
+    count: null,
+    problem: null,
+  });
   /** Ветки диалога и контрольные точки (S-16.1). */
   branches = $state<BranchesView>({ branches: [], checkpoints: [], problem: null });
   /** Откуда взят текущий ответ; новая реплика их убирает (FR-25). */
@@ -197,6 +207,9 @@ export class AppStore {
         break;
       case "memory.facts":
         this.memory = message.data;
+        break;
+      case "memory.transferred":
+        this.transfer = { state: "done", ...message.data };
         break;
       case "privacy.state":
         this.privacy.enabled = message.data.enabled;

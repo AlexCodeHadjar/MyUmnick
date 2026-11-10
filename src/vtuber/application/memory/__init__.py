@@ -17,6 +17,13 @@ from vtuber.application.memory.retrieval_gate import (
 from vtuber.application.memory.short_term import INTERRUPTED_MARK, SUMMARY_TEMPLATE, ShortTermMemory
 from vtuber.application.memory.summarizer import MAX_SUMMARY_CHARS, Summarizer
 from vtuber.application.memory.texts import EN_MEMORY, RU_MEMORY, GatePatterns, MemoryTexts
+from vtuber.application.memory.transfer import (
+    FactTransfer,
+    MemoryParts,
+    TransferDone,
+    TransferPaths,
+    TransferRequests,
+)
 from vtuber.application.memory.vault_sync import (
     ChatRecorder,
     VaultedFacts,
@@ -37,17 +44,22 @@ __all__ = [
     "FactExtractor",
     "FactMemory",
     "FactMemoryConfig",
+    "FactTransfer",
     "GatePatterns",
     "MemoryControls",
     "MemoryEditor",
     "MemoryEraser",
     "MemoryKeeper",
+    "MemoryParts",
     "MemoryRecall",
     "MemoryTexts",
     "RecallSearch",
     "RetrievalConfig",
     "ShortTermMemory",
     "Summarizer",
+    "TransferDone",
+    "TransferPaths",
+    "TransferRequests",
     "TurnHints",
     "VaultWatcher",
     "VaultedFacts",

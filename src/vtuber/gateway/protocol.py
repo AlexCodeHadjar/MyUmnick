@@ -29,6 +29,8 @@ from vtuber.gateway.protocol_memory import (
     MemoryFacts,
     MemoryFactSave,
     MemoryList,
+    MemoryTransfer,
+    MemoryTransferred,
     PrivacySet,
     PrivacyState,
 )
@@ -137,6 +139,7 @@ type InboundMessage = Annotated[
     | PrivacySet
     | MemoryErase
     | MemoryList
+    | MemoryTransfer
     | MemoryFactSave
     | MemoryFactDelete
     | BranchGo
@@ -318,6 +321,7 @@ type OutboundMessage = Annotated[
     | BackendNoticeMessage
     | PrivacyState
     | MemoryErased
+    | MemoryTransferred
     | MemoryFacts
     | BranchState
     | ChatSources

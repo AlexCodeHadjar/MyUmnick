@@ -13,6 +13,7 @@ from vtuber.gateway.protocol_memory import (
     MemoryFactDelete,
     MemoryFactSave,
     MemoryList,
+    MemoryTransfer,
     PrivacySet,
 )
 from vtuber.gateway.protocol_presence import AppEdition, WindowVisibility
@@ -21,7 +22,7 @@ from vtuber.gateway.setup_bridge import SetupBridge
 
 type _SetupMessage = SetupInstall | SetupCancel
 type _PrivacyMessage = PrivacySet | MemoryErase
-type _MemoryMessage = MemoryList | MemoryFactSave | MemoryFactDelete
+type _MemoryMessage = MemoryList | MemoryFactSave | MemoryFactDelete | MemoryTransfer
 type _BranchMessage = BranchGo | BranchCheckpoint
 type PanelMessage = (
     ResourcesWatch

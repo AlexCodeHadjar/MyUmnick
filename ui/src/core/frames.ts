@@ -71,6 +71,7 @@ const OUTBOUND_TYPES = {
   "privacy.state": true,
   "memory.erased": true,
   "memory.facts": true,
+  "memory.transferred": true,
   "branch.state": true,
   "chat.sources": true,
   "chat.attachment": true,

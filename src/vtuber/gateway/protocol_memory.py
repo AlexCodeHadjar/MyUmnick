@@ -149,3 +149,31 @@ class MemoryFacts(ProtocolModel):
             for fact in facts
         ]
         return cls(data=FactsData(facts=items, problem=problem))
+
+
+class MemoryTransfer(ProtocolModel):
+    """UI → Ядро: перенести факты о пользователе в другое издание (S-20.10)."""
+
+    v: Version
+    type: Literal["memory.transfer"]
+    data: EmptyData
+
+
+class TransferredData(ProtocolModel):
+    """Итог переноса: сколько фактов выгружено, или текст ошибки."""
+
+    count: int | None
+    problem: str | None
+
+
+class MemoryTransferred(ProtocolModel):
+    """Ядро → UI: перенос закончен (идёт в простое, поэтому — отдельным сообщением)."""
+
+    v: Version = PROTOCOL_VERSION
+    type: Literal["memory.transferred"] = "memory.transferred"
+    data: TransferredData
+
+    @classmethod
+    def of(cls, count: int | None, problem: str | None) -> Self:
+        """Итог переноса."""
+        return cls(data=TransferredData(count=count, problem=problem))
