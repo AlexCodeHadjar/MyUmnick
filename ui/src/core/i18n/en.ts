@@ -40,6 +40,11 @@ export const en: Messages = {
     expand: "Show chats",
     actions: "Chat actions",
   },
+  ambient: {
+    on: "🔊 PC sound",
+    off: "🔈 PC sound",
+    hint: "The sphere listens to your computer's sound (music, video) and reacts to bass and rhythm; the sound goes nowhere",
+  },
   app: {
     stage: "Stage",
     chatWidth: "Chat width",

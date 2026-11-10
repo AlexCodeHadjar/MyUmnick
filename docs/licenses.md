@@ -77,6 +77,7 @@
 | NVIDIA CUDA Runtime (cudart из релиза llama.cpp, ADR-0019) | библиотеки GPU рядом с llama-server | NVIDIA EULA | перед публичной раздачей сверить условия распространения | не проверено |
 | PyInstaller (ADR-0019) | сборка ядра в программу | GPL-2.0 с исключением для собранных программ | на лицензию приложения не влияет | по памяти |
 | Tauri 2 | UI-оболочка | MIT / Apache 2.0 | — | по памяти |
+| cpal 0.16 | звук компьютера для сферы (WASAPI loopback, ADR-0039) | Apache 2.0 | — | crates.io, 2026-11-10 |
 | Svelte 5, Vite | UI | MIT | — | по памяти |
 | Gemma 4 12B Uncensored HauhauCS Balanced (ADR-0004) | мозг | Gemma Terms (карточка модели `license: gemma`) | перед публикацией сверить Gemma Terms и Prohibited Use Policy | проверено (API HF) |
 

@@ -63,6 +63,11 @@ export interface AvatarRenderer {
   /** Реакция на событие хода. */
   react(reaction: AvatarReaction): void;
 
+  /**
+   * Звук компьютера (Этап 22, ADR-0039): громкость басов, середины и верхов 0…1. Необязательно:
+   * модель Live2D его не показывает, сфера — пульсирует и искрится.
+   */
+  setAmbient?(bands: { bass: number; mid: number; high: number }): void;
   /** Шаг анимации и отрисовка; `deltaMs` — время с прошлого кадра. */
   update(deltaMs: number): void;
 

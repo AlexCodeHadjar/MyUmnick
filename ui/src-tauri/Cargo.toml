@@ -16,6 +16,9 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+# Звук компьютера для сферы (ADR-0039): WASAPI loopback. serde — числа полос в событие окна.
+cpal = "0.16"
+serde = { version = "1", features = ["derive"] }
 
 [profile.release]
 # Окно — тонкая оболочка; размер и время старта важнее скорости кода Rust.

@@ -39,6 +39,7 @@ export class OrbRenderer implements AvatarRenderer {
   #tilt = { x: 0, y: 0 };
   #reaction: AvatarReaction = "idle";
   #speaking = false;
+  #ambient = { bass: 0, mid: 0, high: 0 };
 
   private constructor(host: HTMLElement, size: StageSize) {
     this.#canvas = document.createElement("canvas");
@@ -84,6 +85,10 @@ export class OrbRenderer implements AvatarRenderer {
     // Форма рта у сферы не видна: только громкость.
   }
 
+  setAmbient(bands: { bass: number; mid: number; high: number }): void {
+    this.#ambient = bands;
+  }
+
   lookAt(x: number, y: number): void {
     this.#look = { x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) };
   }
@@ -124,7 +129,10 @@ export class OrbRenderer implements AvatarRenderer {
     this.#time += dt;
     const thinking = this.#reaction === "thinking";
     this.#angle += (thinking ? THINK_SPIN : IDLE_SPIN + this.#energy * 0.8) * dt;
-    const target = this.#mouth * 0.09 + (this.#speaking ? 0.015 : 0) + (thinking ? 0.025 : 0.006);
+    // Голос важнее музыки: звук компьютера добавляет волны, но не перекрывает речь.
+    const music = this.#ambient.mid * 0.05 + this.#ambient.high * 0.02;
+    const target =
+      this.#mouth * 0.09 + music + (this.#speaking ? 0.015 : 0) + (thinking ? 0.025 : 0.006);
     this.#energy = approach(this.#energy, target, this.#mouth > this.#energy ? 30 : 6, dt);
     this.#pulse = approach(this.#pulse, 0, 3, dt);
     this.#hue = mixHue(this.#hue, this.#targetHue, dt * 2);
@@ -136,7 +144,9 @@ export class OrbRenderer implements AvatarRenderer {
     const { points } = this.#sphere;
     const cx = this.#size.width / 2;
     const cy = this.#size.height / 2;
-    const breathe = 1 + 0.015 * Math.sin(this.#time * 1.3) + this.#pulse * 0.06;
+    // Бас — удар: сфера «вздрагивает» целиком.
+    const breathe =
+      1 + 0.015 * Math.sin(this.#time * 1.3) + this.#pulse * 0.06 + this.#ambient.bass * 0.12;
     const radius = this.#radius() * breathe * (this.#reaction === "listening" ? 1.03 : 1);
     const yaw = this.#angle + this.#tilt.y;
     const [cosY, sinY, cosX, sinX] = [
@@ -166,7 +176,9 @@ export class OrbRenderer implements AvatarRenderer {
     const ctx = this.#ctx;
     const { width, height } = this.#size;
     ctx.clearRect(0, 0, width, height);
-    const hue = shimmerHue(this.#hue, this.#time);
+    // Верха сдвигают оттенок и ускоряют переливание.
+    const hue =
+      shimmerHue(this.#hue, this.#time * (1 + this.#ambient.high * 3)) + this.#ambient.high * 30;
     this.#halo(hue);
     ctx.globalCompositeOperation = "lighter";
     this.#edges(hue);
@@ -178,7 +190,7 @@ export class OrbRenderer implements AvatarRenderer {
     const ctx = this.#ctx;
     const cx = this.#size.width / 2;
     const cy = this.#size.height / 2;
-    const radius = this.#radius() * (1.5 + this.#energy * 2);
+    const radius = this.#radius() * (1.5 + this.#energy * 2 + this.#ambient.bass * 0.8);
     const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
     glow.addColorStop(0, `hsla(${String(hue)}, 90%, 60%, ${String(0.16 + this.#energy * 2.4)})`);
     glow.addColorStop(1, `hsla(${String(hue)}, 90%, 40%, 0)`);

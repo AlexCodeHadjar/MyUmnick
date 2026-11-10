@@ -3,6 +3,7 @@
 //! в разработке ядро запускают сами (`python -m vtuber serve --edition <id>`).
 
 mod launcher;
+mod system_audio;
 
 #[cfg(not(debug_assertions))]
 mod core_process {
@@ -109,12 +110,15 @@ fn restart_app(app: tauri::AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(system_audio::SystemAudio::default())
         .invoke_handler(tauri::generate_handler![
             restart_app,
             core_start,
             core_stop,
             launcher::launcher_load,
-            launcher::launcher_save
+            launcher::launcher_save,
+            system_audio::system_audio_start,
+            system_audio::system_audio_stop
         ])
         .setup(|_app| {
             #[cfg(not(debug_assertions))]

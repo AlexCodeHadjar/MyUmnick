@@ -644,7 +644,18 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:206` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:211` — —
+
+## ui/src/features/ambient
+Публичный API звука компьютера для сферы (Этап 22, R-63).
+
+- `AmbientControl.svelte` — `ui/src/features/ambient/AmbientControl.svelte:1` — Включатель «сфера слышит звук компьютера» в строке статуса (Этап 22, ADR-0039).
+- `AmbientBands` — `ui/src/features/ambient/systemAudio.ts:8` — —
+- `SILENCE` — `ui/src/features/ambient/systemAudio.ts:14` — —
+- `shape` — `ui/src/features/ambient/systemAudio.ts:22` — —
+- `SystemAudio` — `ui/src/features/ambient/systemAudio.ts:38` — Слушатель звука компьютера; вне Tauri (Vite в браузере) недоступен.
+- `readAmbientEnabled` — `ui/src/features/ambient/systemAudio.ts:76` — —
+- `writeAmbientEnabled` — `ui/src/features/ambient/systemAudio.ts:84` — —
 
 ## ui/src/features/audio
 Публичный API фичи звука: плеер голоса и его подключение к ядру (ADR-0003).
@@ -703,12 +714,13 @@
 - `THINKING_AFTER_MS` — `ui/src/features/avatar/reactions.ts:9` — Порог «думаю», мс: бюджет TTFA (NFR-02) — ответ медленнее нормы виден по лицу.
 - `ConversationView` — `ui/src/features/avatar/reactions.ts:11` — —
 - `isWaiting` — `ui/src/features/avatar/reactions.ts:23` — Реплика ушла, а ответа ещё не слышно (без голоса — не видно).
-- `avatarSource` — `ui/src/features/avatar/session.ts:13` — Файлы модели `<имя>` в `ui/public/avatars/<имя>/` (ADR-0011).
-- `MouthSource` — `ui/src/features/avatar/session.ts:22` — Открытие рта 0…1 за прошедшие `deltaMs`; без звука — всегда 0.
-- `ActivitySource` — `ui/src/features/avatar/session.ts:24` — Идёт ли разговор (ход или голос): пока да — эмоция не угасает.
-- `AvatarStatus` — `ui/src/features/avatar/session.ts:26` — —
-- `RendererFactory` — `ui/src/features/avatar/session.ts:30` — Создатель рендера: Live2D в окне, фейк в тестах.
-- `AvatarSession` — `ui/src/features/avatar/session.ts:36` — —
+- `AmbientSource` — `ui/src/features/avatar/session.ts:14` — Файлы модели `<имя>` в `ui/public/avatars/<имя>/` (ADR-0011).
+- `avatarSource` — `ui/src/features/avatar/session.ts:17` — —
+- `MouthSource` — `ui/src/features/avatar/session.ts:26` — Открытие рта 0…1 за прошедшие `deltaMs`; без звука — всегда 0.
+- `ActivitySource` — `ui/src/features/avatar/session.ts:28` — Идёт ли разговор (ход или голос): пока да — эмоция не угасает.
+- `AvatarStatus` — `ui/src/features/avatar/session.ts:30` — —
+- `RendererFactory` — `ui/src/features/avatar/session.ts:34` — Создатель рендера: Live2D в окне, фейк в тестах.
+- `AvatarSession` — `ui/src/features/avatar/session.ts:40` — —
 
 ## ui/src/features/avatar/live2d
 —

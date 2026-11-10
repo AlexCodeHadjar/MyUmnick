@@ -6,6 +6,7 @@
 
   import type { CoreClient } from "../core";
   import { connectVoice, type VoicePlayer } from "../features/audio";
+  import { AmbientControl, SystemAudio } from "../features/ambient";
   import { AvatarStage, ORB_AVATAR } from "../features/avatar";
   import { Chat } from "../features/chat";
   import { ChatSidebar } from "../features/chats";
@@ -35,6 +36,8 @@
   let showResources = $state(false);
   let showMemory = $state(false);
   let setupClosed = $state(false);
+  // Звук компьютера для сферы: один на окно, читается циклом аватара каждый кадр (ADR-0039).
+  const systemAudio = new SystemAudio();
 
   /** Сфера, если она выбрана в `.env` (Этап 22): выбор модели в мастере её не перекрывает. */
   function avatarName(): string {
@@ -157,6 +160,7 @@
             store={client.store}
             mouth={(deltaMs: number) => player?.mouth(deltaMs) ?? 0}
             mouthForm={() => player?.mouthForm() ?? 0}
+            ambient={() => systemAudio.bands}
           />
           {#if showMetrics}
             <MetricsPanel
@@ -193,6 +197,7 @@
       hint={`${locale.t.metrics.hotkey}, ${locale.t.resources.hotkey}, ${locale.t.memory.hotkey}${desktopPort === null ? "" : `, ${locale.t.desktop.hotkey}`}`}
     >
       <EditionBadge store={client.store} />
+      <AmbientControl audio={systemAudio} storage={layoutStorage()} />
       <MicControl {client} storage={layoutStorage()} />
       <PrivacyControl {client} />
     </StatusBar>

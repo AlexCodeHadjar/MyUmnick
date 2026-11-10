@@ -10,6 +10,10 @@ import { AvatarLoop } from "./loop";
 import { Mood } from "./mood";
 
 /** Файлы модели `<имя>` в `ui/public/avatars/<имя>/` (ADR-0011). */
+/** Полосы звука компьютера 0…1 (Этап 22). */
+export type AmbientSource = () => { bass: number; mid: number; high: number };
+const QUIET = { bass: 0, mid: 0, high: 0 };
+
 export function avatarSource(name: string): AvatarSource {
   const base = `/avatars/${encodeURIComponent(name)}`;
   return {
@@ -41,6 +45,7 @@ export class AvatarSession {
   #observer: ResizeObserver | null = null;
   #disposed = false;
   #mouthSource: MouthSource = () => 0;
+  #ambientSource: AmbientSource = () => QUIET;
   #formSource: () => number = () => 0;
   #activity: ActivitySource = () => false;
   /** Эмоция ответа во времени; `set()` — из store, затухание — в цикле кадров. */
@@ -95,6 +100,11 @@ export class AvatarSession {
     this.#formSource = source;
   }
 
+  /** Звук компьютера (Этап 22): опрашивается каждый кадр; рендер без поддержки его не видит. */
+  set ambient(source: AmbientSource) {
+    this.#ambientSource = source;
+  }
+
   /** Источник «разговор идёт»: опрашивается каждый кадр (затухание эмоции). */
   set activity(source: ActivitySource) {
     this.#activity = source;
@@ -117,6 +127,7 @@ export class AvatarSession {
       renderer.setEmotion(emotion, intensity);
       renderer.setMouth(this.#mouthSource(deltaMs));
       renderer.setMouthForm(this.#formSource());
+      renderer.setAmbient?.(this.#ambientSource());
       renderer.update(deltaMs);
     });
     this.#loop.start();

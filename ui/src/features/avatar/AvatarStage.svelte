@@ -8,13 +8,19 @@
   import { ORB_AVATAR } from "./orb/name";
   import type { AvatarReaction } from "./AvatarRenderer";
   import { isWaiting, THINKING_AFTER_MS } from "./reactions";
-  import { AvatarSession, type AvatarStatus, type MouthSource } from "./session";
+  import {
+    AvatarSession,
+    type AmbientSource,
+    type AvatarStatus,
+    type MouthSource,
+  } from "./session";
 
   const {
     name,
     store,
     mouth = () => 0,
     mouthForm = () => 0,
+    ambient = () => ({ bass: 0, mid: 0, high: 0 }),
     onhittest,
   }: {
     name: string;
@@ -22,6 +28,8 @@
     mouth?: MouthSource;
     /** Форма рта, -1…1 (ADR-0023). */
     mouthForm?: () => number;
+    /** Звук компьютера (Этап 22): басы, середина, верха 0…1. */
+    ambient?: AmbientSource;
     /** Получить проверку «над моделью ли точка сцены»: окну поверх стола (S-15.2). */
     onhittest?: (contains: (x: number, y: number) => boolean) => void;
   } = $props();
@@ -112,6 +120,7 @@
     // Источник рта читается при каждом кадре через замыкание: смена пропса подхватывается.
     current.mouth = (deltaMs) => mouth(deltaMs);
     current.mouthForm = () => mouthForm();
+    current.ambient = () => ambient();
     // Разговор идёт, пока идёт ход или звучит голос: эмоция угасает только после речи.
     current.activity = () => store.phase !== "idle" || (store.voice.speech?.speaking ?? false);
     void current.start(name, async (element, size) => {
