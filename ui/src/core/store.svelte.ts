@@ -109,6 +109,8 @@ export class AppStore {
   sources = $state<SourceData[]>([]);
   /** Издание ядра (Этап 20): язык интерфейса берётся из него, пока экран выбора не задал свой. */
   edition = $state<EditionData | null>(null);
+  /** Издание, выбранное на экране выбора; `null` — экрана не было (язык берётся из ядра). */
+  expectedEdition = $state<string | null>(null);
 
   #nextId = 0;
   /** Индекс сообщения текущего хода в `messages`: массив только растёт, индекс не сдвигается. */
@@ -149,6 +151,13 @@ export class AppStore {
     if (state !== "open" && state !== "connecting") {
       this.#endTurn("cancelled");
     }
+  }
+
+  /** Ядро запущено не в том издании, что выбрано (ядро в разработке запускают руками). */
+  get editionMismatch(): { core: string; chosen: string } | null {
+    const core = this.edition?.id;
+    const chosen = this.expectedEdition;
+    return core !== undefined && chosen !== null && core !== chosen ? { core, chosen } : null;
   }
 
   apply(message: OutboundMessage): void {
@@ -222,7 +231,10 @@ export class AppStore {
         break;
       case "app.edition":
         this.edition = message.data;
-        if (isLang(message.data.language)) locale.set(message.data.language);
+        // Экрана выбора не было — язык из ядра; был — язык выбора, а расхождение видно в строке статуса.
+        if (this.expectedEdition === null && isLang(message.data.language)) {
+          locale.set(message.data.language);
+        }
         break;
       case "error":
         this.error = message.data;

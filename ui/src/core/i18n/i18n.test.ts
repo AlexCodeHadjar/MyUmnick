@@ -14,6 +14,8 @@ const ALLOWED = new Set([
   "core/transport.ts",
   "app/main.ts",
   "features/chat/screen.ts",
+  // Имя и подпись плитки — на языке своего издания: язык ещё не выбран.
+  "features/edition/editions.ts",
   "features/chat/image.ts",
   "features/avatar/mapping.ts",
   "features/avatar/live2d/core-loader.ts",

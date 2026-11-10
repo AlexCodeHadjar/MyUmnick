@@ -605,7 +605,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:164` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:183` — —
 
 ## ui/src/features/audio
 Публичный API фичи звука: плеер голоса и его подключение к ядру (ADR-0003).
@@ -762,6 +762,30 @@
 - `isDesktopHotkey` — `ui/src/features/desktop/mode.ts:66` — Хоткей: окно без рамки, а кнопка может оказаться за краем экрана.
 - `DESKTOP_HOTKEY_LABEL` — `ui/src/features/desktop/mode.ts:75` — —
 - `tauriWindow` — `ui/src/features/desktop/tauriWindow.ts:9` — —
+
+## ui/src/features/edition
+Публичный API экрана выбора издания (Этап 20, R-63).
+
+- `EditionBadge.svelte` — `ui/src/features/edition/EditionBadge.svelte:1` — Значок издания в строке статуса (STAGE_20, 3.5): клик — подтверждение и перезапуск на экран выбора.
+- `EditionPicker.svelte` — `ui/src/features/edition/EditionPicker.svelte:1` — Экран выбора издания в духе выбора аккаунта Steam (Этап 20, STAGE_20 раздел 3): плитки по центру,
+- `EditionId` — `ui/src/features/edition/editions.ts:7` — —
+- `Edition` — `ui/src/features/edition/editions.ts:9` — —
+- `EDITIONS` — `ui/src/features/edition/editions.ts:20` — Порядок плиток; новое издание — строка здесь и файл `config/editions/<id>.toml`.
+- `LauncherState` — `ui/src/features/edition/editions.ts:33` — Что окно помнит между запусками (`launcher.json` в папке настроек приложения).
+- `DEFAULT_LAUNCHER` — `ui/src/features/edition/editions.ts:40` — —
+- `isEditionId` — `ui/src/features/edition/editions.ts:42` — —
+- `editionById` — `ui/src/features/edition/editions.ts:55` — —
+- `editionAt` — `ui/src/features/edition/editions.ts:60` — Плитка по номеру; номер вне ряда — первая плитка.
+- `parseLauncher` — `ui/src/features/edition/editions.ts:69` — Разбор сохранённого состояния: битое или чужое — умолчания, а не сбой запуска.
+- `needsPicker` — `ui/src/features/edition/editions.ts:81` — Показывать ли экран: при «запоминать» — нет, если не попросили сменить издание явно.
+- `needsAgeGate` — `ui/src/features/edition/editions.ts:86` — Нужно ли подтверждение возраста для выбранного издания.
+- `PickerAction` — `ui/src/features/edition/editions.ts:90` — —
+- `keyAction` — `ui/src/features/edition/editions.ts:94` — Клавиши экрана: ←/→ — фокус по кругу, Enter/Пробел — запуск, 1…9 — сразу плитка.
+- `afterPick` — `ui/src/features/edition/editions.ts:106` — Состояние после выбора: издание запоминается как последнее, подтверждение — с датой.
+- `LauncherPort` — `ui/src/features/edition/launcher.ts:10` — —
+- `launcher` — `ui/src/features/edition/launcher.ts:71` — —
+- `PICK_PARAM` — `ui/src/features/edition/launcher.ts:76` — Запрос экрана выбора при перезагрузке окна (смена издания из строки статуса).
+- `pickRequested` — `ui/src/features/edition/launcher.ts:78` — —
 
 ## ui/src/features/memory
 Публичный API редактора памяти (R-63).

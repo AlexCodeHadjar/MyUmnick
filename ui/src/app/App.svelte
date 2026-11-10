@@ -16,6 +16,7 @@
     tauriWindow,
     type Point,
   } from "../features/desktop";
+  import { EditionBadge } from "../features/edition";
   import { MicControl } from "../features/mic";
   import { isMetricsHotkey, MetricsPanel } from "../features/metrics";
   import { isMemoryHotkey, MemoryPanel } from "../features/memory";
@@ -179,6 +180,7 @@
       store={client.store}
       hint={`${locale.t.metrics.hotkey}, ${locale.t.resources.hotkey}, ${locale.t.memory.hotkey}${desktopPort === null ? "" : `, ${locale.t.desktop.hotkey}`}`}
     >
+      <EditionBadge store={client.store} />
       <MicControl {client} storage={layoutStorage()} />
       <PrivacyControl {client} />
     </StatusBar>

@@ -19,6 +19,25 @@ const MODEL_STATES: Labels = {
 };
 
 export const ru = {
+  edition: {
+    title: "Кто сегодня в эфире?",
+    remember: "Запоминать выбор",
+    keys: "← → выбрать · Enter запустить",
+    starting: "Запуск…",
+    failed: (reason: string) => `Ядро не запустилось: ${reason}`,
+    tile: (name: string, caption: string) => `${name}, ${caption}`,
+    ageTitle: "Издание без цензуры (18+)",
+    ageText:
+      "Без фильтра содержания: мат, чёрный юмор, взрослые темы. Только для тех, кому есть 18. Текст пишет локальная модель — он может быть оскорбительным или неверным.",
+    ageConfirm: "Мне есть 18, продолжить",
+    back: "Назад",
+    badgeHint: "Сменить издание",
+    switchConfirm: "Перезапустить в другом издании?",
+    switchYes: "Перезапустить",
+    cancel: "Отмена",
+    mismatch: (core: string, chosen: string) =>
+      `Ядро запущено в издании «${core}», а выбрано «${chosen}»: перезапустите ядро с --edition ${chosen}.`,
+  },
   app: {
     stage: "Сцена",
     chatWidth: "Ширина чата",

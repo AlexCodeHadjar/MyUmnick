@@ -2,6 +2,25 @@
 import type { Messages } from "./ru";
 
 export const en: Messages = {
+  edition: {
+    title: "Who's on air today?",
+    remember: "Remember my choice",
+    keys: "← → choose · Enter start",
+    starting: "Starting…",
+    failed: (reason: string) => `The core failed to start: ${reason}`,
+    tile: (name: string, caption: string) => `${name}, ${caption}`,
+    ageTitle: "Uncensored edition (18+)",
+    ageText:
+      "No content filter: profanity, dark humor, mature themes between adults. You must be 18 or older. Text is generated locally by an AI and may be offensive or wrong.",
+    ageConfirm: "I'm 18+, continue",
+    back: "Back",
+    badgeHint: "Switch edition",
+    switchConfirm: "Restart in the other edition?",
+    switchYes: "Restart",
+    cancel: "Cancel",
+    mismatch: (core: string, chosen: string) =>
+      `The core runs the “${core}” edition but “${chosen}” was chosen: restart the core with --edition ${chosen}.`,
+  },
   app: {
     stage: "Stage",
     chatWidth: "Chat width",
