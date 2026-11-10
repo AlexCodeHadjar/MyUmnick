@@ -644,7 +644,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:211` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:212` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).

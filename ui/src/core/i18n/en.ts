@@ -36,6 +36,7 @@ export const en: Messages = {
     cancel: "Cancel",
     save: "Save",
     switching: "Opening chat…",
+    offline: "The core is not connected: chats appear once it starts",
     collapse: "Hide chats",
     expand: "Show chats",
     actions: "Chat actions",

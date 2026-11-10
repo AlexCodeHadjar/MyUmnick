@@ -26,6 +26,17 @@
   let addingCategory = $state(false);
   let categoryDraft = $state("");
 
+  /**
+   * Фокус в поле, которое только что появилось: атрибут `autofocus` срабатывает лишь при загрузке
+   * страницы, и без этого набранное название уходило мимо поля (ошибка S-21.2).
+   */
+  function focusNow(input: HTMLInputElement): void {
+    queueMicrotask(() => {
+      input.focus();
+      input.select();
+    });
+  }
+
   function toggle(): void {
     collapsed = !collapsed;
     writeCollapsed(storage, collapsed);
@@ -44,6 +55,7 @@
   }
 
   function saveRename(id: string): void {
+    if (renaming !== id) return; // Enter уже сохранил, следом пришёл blur
     if (draft.trim() !== "") client.chatAction({ action: "rename", id, name: draft });
     renaming = null;
   }
@@ -68,7 +80,7 @@
       <button
         type="button"
         class="new"
-        disabled={chats?.switching}
+        disabled={chats === null || chats.switching}
         onclick={() => {
           client.chatAction({ action: "create" });
         }}>＋ {locale.t.chats.newChat}</button
@@ -89,14 +101,14 @@
           addCategory();
         }}
       >
-        <!-- svelte-ignore a11y_autofocus -->
-        <input bind:value={categoryDraft} placeholder={locale.t.chats.categoryName} autofocus />
+        <input bind:value={categoryDraft} placeholder={locale.t.chats.categoryName} use:focusNow />
         <button type="submit">{locale.t.chats.save}</button>
         <button type="button" onclick={() => (addingCategory = false)}
           >{locale.t.chats.cancel}</button
         >
       </form>
     {/if}
+    {#if chats === null}<p class="warn">{locale.t.chats.offline}</p>{/if}
     {#if chats?.switching}<p class="note">{locale.t.chats.switching}</p>{/if}
     {#if chats?.problem}<p class="warn" role="status">{chats.problem}</p>{/if}
 
@@ -127,8 +139,14 @@
                   saveRename(chat.id);
                 }}
               >
-                <!-- svelte-ignore a11y_autofocus -->
-                <input bind:value={draft} aria-label={locale.t.chats.rename} autofocus />
+                <input
+                  bind:value={draft}
+                  aria-label={locale.t.chats.rename}
+                  use:focusNow
+                  onblur={() => {
+                    saveRename(chat.id);
+                  }}
+                />
               </form>
             {:else}
               <button
