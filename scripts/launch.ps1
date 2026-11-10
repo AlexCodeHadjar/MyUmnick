@@ -1,0 +1,152 @@
+﻿<#
+.SYNOPSIS
+    Запуск витюбера одним кликом (ярлык на рабочем столе): ядро, LLM-сервер и окно.
+
+.DESCRIPTION
+    Пока нет собранной поставки (S-13.3 — только по команде), окно идёт из `pnpm tauri dev`, а ядро — из
+    `.venv`. Окно в режиме разработки само ядро не запускает, поэтому это делает скрипт: издание берётся из
+    `launcher.json` окна (последний выбор на экране выбора), а когда выбор меняется — ядро перезапускается
+    в новом издании, и окно переподключается само (ADR-0032).
+
+    LLM: если llama-server уже отвечает на 8080 — используется он; иначе, если в models/llm/ есть GGUF и
+    найден llama-server.exe, ядро поднимает его само (`[llama_server].autostart`, ADR-0019).
+    Закрыли окно — скрипт закрывает ядро (конец stdin) и выходит. Журнал — logs/launcher.log.
+
+    Первый запуск долгий: окно собирается (Rust) несколько минут, дальше — секунды.
+#>
+$ErrorActionPreference = "Stop"
+
+$Root = Split-Path -Parent $PSScriptRoot
+$Log = if ($env:VTUBER_LAUNCHER_LOG) { $env:VTUBER_LAUNCHER_LOG } else { Join-Path $Root "logs\launcher.log" }
+$LauncherFile = Join-Path $env:APPDATA "local.vtuber.ui\launcher.json"
+$Python = Join-Path $Root ".venv\Scripts\python.exe"
+$env:PATH = "C:\Program Files\nodejs;$env:APPDATA\npm;$env:USERPROFILE\.cargo\bin;$env:PATH"
+
+New-Item -ItemType Directory -Force (Split-Path $Log) | Out-Null
+
+function Write-Log([string] $Text) {
+    "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $Text" | Out-File -FilePath $Log -Append -Encoding utf8
+}
+
+function Show-Error([string] $Text) {
+    Write-Log "ОШИБКА: $Text"
+    Add-Type -AssemblyName PresentationFramework
+    [System.Windows.MessageBox]::Show($Text, "AI VTuber", "OK", "Error") | Out-Null
+}
+
+function Get-Edition {
+    # Выбор на экране окна; файла нет или он битый — русское издание.
+    try {
+        $last = (Get-Content -LiteralPath $LauncherFile -Raw -Encoding utf8 | ConvertFrom-Json).last
+        if ($last -in @("ru", "en")) { return $last }
+    } catch { }
+    return "ru"
+}
+
+function Test-Llm {
+    try {
+        Invoke-WebRequest -UseBasicParsing -TimeoutSec 1 "http://127.0.0.1:8080/health" | Out-Null
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function Set-LlmAutostart {
+    if (Test-Llm) {
+        Write-Log "llama-server уже запущен на 8080"
+        return
+    }
+    $model = Get-ChildItem -LiteralPath (Join-Path $Root "models\llm") -Filter *.gguf -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notlike "mmproj*" } | Select-Object -First 1
+    $server = @(
+        (Join-Path $Root "llama\llama-server.exe"),
+        (Join-Path $Root "packaging\dist\llama\llama-server.exe")
+    ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    if ($null -eq $server) {
+        $found = Get-Command llama-server -ErrorAction SilentlyContinue
+        if ($found) { $server = $found.Source }
+    }
+    if ($null -eq $model -or $null -eq $server) {
+        Write-Log "LLM не запущена: нет модели в models/llm или llama-server.exe — окно покажет «LLM недоступна»"
+        return
+    }
+    $env:VTUBER_LLAMA_SERVER__AUTOSTART = "true"
+    $env:VTUBER_LLAMA_SERVER__EXECUTABLE = $server
+    $env:VTUBER_LLAMA_SERVER__MODEL = $model.FullName
+    Write-Log "LLM поднимет ядро: $($model.Name) через $server"
+}
+
+function Start-Core([string] $Edition) {
+    $info = New-Object System.Diagnostics.ProcessStartInfo
+    $info.FileName = $Python
+    $info.Arguments = "-m vtuber serve --edition $Edition --root `"$Root`""
+    $info.WorkingDirectory = $Root
+    $info.UseShellExecute = $false
+    $info.RedirectStandardInput = $true    # ядро живёт, пока открыт stdin
+    $info.CreateNoWindow = $true
+    Write-Log "ядро: издание $Edition"
+    return [System.Diagnostics.Process]::Start($info)
+}
+
+function Stop-Core($Core) {
+    if ($null -eq $Core -or $Core.HasExited) { return }
+    $Core.StandardInput.Close()            # штатный выход: память дописывается
+    if (-not $Core.WaitForExit(15000)) {
+        Write-Log "ядро не вышло за 15 с — останавливаю"
+        $Core.Kill()
+    }
+}
+
+function Start-Window {
+    $info = New-Object System.Diagnostics.ProcessStartInfo
+    $info.FileName = "cmd.exe"
+    $info.Arguments = "/c pnpm tauri dev >> `"$Log`" 2>&1"
+    $info.WorkingDirectory = Join-Path $Root "ui"
+    $info.UseShellExecute = $false
+    $info.CreateNoWindow = $true
+    Write-Log "окно: pnpm tauri dev"
+    return [System.Diagnostics.Process]::Start($info)
+}
+
+# Второй клик по ярлыку не запускает второе ядро на том же порту.
+$mutex = New-Object System.Threading.Mutex($false, "Local\vtuber-launcher")
+if (-not $mutex.WaitOne(0)) {
+    Show-Error "Витюбер уже запущен."
+    exit 1
+}
+
+try {
+    if (-not (Test-Path -LiteralPath $Python)) {
+        Show-Error "Нет окружения Python (.venv). Выполните в папке проекта: uv sync --all-extras"
+        exit 1
+    }
+    if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
+        Show-Error "Не найден pnpm (Node.js). Установите Node.js и pnpm, затем: cd ui; pnpm install"
+        exit 1
+    }
+    Write-Log "запуск из $Root"
+    Set-LlmAutostart
+    $edition = Get-Edition
+    $core = Start-Core $edition
+    $window = Start-Window
+    while (-not $window.HasExited) {
+        Start-Sleep -Milliseconds 1000
+        $chosen = Get-Edition
+        if ($chosen -ne $edition -or $core.HasExited) {
+            # Выбор на экране сменился (или ядро упало): ядро — в выбранном издании, окно переподключится.
+            Stop-Core $core
+            $edition = $chosen
+            $core = Start-Core $edition
+        }
+    }
+    Write-Log "окно закрыто"
+} catch {
+    Show-Error "Запуск не удался: $($_.Exception.Message). Подробности — logs\launcher.log"
+} finally {
+    Stop-Core $core
+    if ($window -and -not $window.HasExited) {
+        & taskkill.exe /PID $window.Id /T /F | Out-Null
+    }
+    $mutex.ReleaseMutex()
+}
