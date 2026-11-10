@@ -1,9 +1,9 @@
 [project]
 name = "vtuber-web-search"
 version = "0.1.0"
-description = "Плагин: поиск в интернете по явной просьбе через локальный SearXNG."
+description = "Плагин: погода, новости и поиск в интернете (локальный SearXNG, Open-Meteo)."
 requires-python = ">=3.12,<3.13"
-dependencies = ["vtuber", "httpx>=0.27"]
+dependencies = ["vtuber", "httpx>=0.27", "trafilatura>=2.3,<3"]
 
 [project.entry-points."vtuber.plugins"]
 web_search = "vtuber_web_search:WebSearchPlugin"
