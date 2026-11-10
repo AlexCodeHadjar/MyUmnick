@@ -17,7 +17,7 @@ from vtuber.application.prompting import ContextConfig
 from vtuber.application.scheduler import ResourcesConfig, SchedulerConfig
 from vtuber.application.supervision import SupervisorConfig
 from vtuber.application.voice import AddressingConfig, SoundsConfig, SpeakersConfig, VoiceConfig
-from vtuber.bootstrap.edition import EditionConfig, check_edition, edition_files
+from vtuber.bootstrap.edition import EditionConfig, check_edition, edition_files, resolve_edition
 from vtuber.bootstrap.persona import PersonaConfig
 from vtuber.bootstrap.setup import SetupConfig
 from vtuber.domain import EditionId
@@ -128,14 +128,18 @@ class AppConfig(ConfigSection):
 
 
 def load_app_config(
-    root: Path, env: Mapping[str, str], edition: EditionId = EditionId.RU
+    root: Path, env: Mapping[str, str], edition: EditionId | None = None
 ) -> AppConfig:
-    """Читает конфиг издания `edition` из `<root>/config` поверх `env` (порядок — `edition_files`).
+    """Читает конфиг издания из `<root>/config` поверх `env` (порядок — `edition_files`).
+
+    Издание — `edition`, иначе `VTUBER_EDITION__ID` из `env`, иначе `ru`: так инструменты
+    (`tools/*`) работают с любым изданием без своего аргумента.
 
     Raises:
         ConfigError: см. `vtuber.kernel.load_config`; `[edition].id` не совпал с `edition`.
 
     """
-    cfg = load_config(AppConfig, edition_files(root / "config", edition), env)
-    check_edition(cfg.edition, edition)
+    chosen = edition if edition is not None else resolve_edition(None, env)
+    cfg = load_config(AppConfig, edition_files(root / "config", chosen), env)
+    check_edition(cfg.edition, chosen)
     return cfg

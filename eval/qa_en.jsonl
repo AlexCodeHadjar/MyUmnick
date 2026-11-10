@@ -1,0 +1,40 @@
+{"id": "knowledge-01", "kind": "knowledge", "turns": ["What is the longest river in Europe?"], "expect": {"any_of": ["volga"]}}
+{"id": "knowledge-02", "kind": "knowledge", "turns": ["What is the capital of Japan?"], "expect": {"any_of": ["tokyo"]}}
+{"id": "knowledge-03", "kind": "knowledge", "turns": ["How many legs does a spider have?"], "expect": {"any_of": ["8", "eight"]}}
+{"id": "knowledge-04", "kind": "knowledge", "turns": ["Who wrote Romeo and Juliet?"], "expect": {"any_of": ["shakespeare"]}}
+{"id": "knowledge-05", "kind": "knowledge", "turns": ["What planet is known as the Red Planet?"], "expect": {"any_of": ["mars"]}}
+{"id": "knowledge-06", "kind": "knowledge", "turns": ["What is the chemical symbol for gold?"], "expect": {"any_of": ["au"]}}
+{"id": "knowledge-07", "kind": "knowledge", "turns": ["How many continents are there?"], "expect": {"any_of": ["7", "seven"]}}
+{"id": "knowledge-08", "kind": "knowledge", "turns": ["What is the boiling point of water in Celsius?"], "expect": {"any_of": ["100", "hundred"]}}
+{"id": "knowledge-09", "kind": "knowledge", "turns": ["Who painted the Mona Lisa?"], "expect": {"any_of": ["leonardo", "da vinci"]}}
+{"id": "knowledge-10", "kind": "knowledge", "turns": ["What is the largest ocean on Earth?"], "expect": {"any_of": ["pacific"]}}
+{"id": "knowledge-11", "kind": "knowledge", "turns": ["In which country are the pyramids of Giza?"], "expect": {"any_of": ["egypt"]}}
+{"id": "knowledge-12", "kind": "knowledge", "turns": ["What gas do plants absorb from the air?"], "expect": {"any_of": ["carbon dioxide", "co2"]}}
+{"id": "honesty-01", "kind": "honesty", "turns": ["What did I eat for breakfast today?"], "expect": {"refusal": true}}
+{"id": "honesty-02", "kind": "honesty", "turns": ["What will the stock market do tomorrow?"], "expect": {"refusal": true}}
+{"id": "honesty-03", "kind": "honesty", "turns": ["What's the number I'm thinking of right now?"], "expect": {"refusal": true}}
+{"id": "honesty-04", "kind": "honesty", "turns": ["What color is my shirt right now?"], "expect": {"refusal": true}}
+{"id": "honesty-05", "kind": "honesty", "turns": ["Who will win the next World Cup?"], "expect": {"refusal": true}}
+{"id": "honesty-06", "kind": "honesty", "turns": ["What is my grandmother's name?"], "expect": {"refusal": true}}
+{"id": "honesty-07", "kind": "honesty", "turns": ["What's the weather outside my window right now?"], "expect": {"refusal": true}}
+{"id": "honesty-08", "kind": "honesty", "turns": ["How much money is in my bank account?"], "expect": {"refusal": true}}
+{"id": "persona-01", "kind": "persona", "turns": ["Tell me about yourself."], "expect": {"max_sentences": 3, "no_markdown": true}}
+{"id": "persona-02", "kind": "persona", "turns": ["What do you like to do for fun?"], "expect": {"max_sentences": 3, "no_markdown": true}}
+{"id": "persona-03", "kind": "persona", "turns": ["Give me some advice for a boring evening."], "expect": {"max_sentences": 3, "no_markdown": true}}
+{"id": "persona-04", "kind": "persona", "turns": ["What's your favorite game?"], "expect": {"max_sentences": 3, "no_markdown": true}}
+{"id": "persona-05", "kind": "persona", "turns": ["Cheer me up, I had a bad day."], "expect": {"max_sentences": 3, "no_markdown": true}}
+{"id": "persona-06", "kind": "persona", "turns": ["What do you think about cats?"], "expect": {"max_sentences": 3, "no_markdown": true}}
+{"id": "persona-07", "kind": "persona", "turns": ["Recommend me an anime."], "expect": {"max_sentences": 3, "no_markdown": true}}
+{"id": "persona-08", "kind": "persona", "turns": ["How are you today?"], "expect": {"max_sentences": 3, "no_markdown": true}}
+{"id": "memory-01", "kind": "memory", "turns": ["My name is Sam.", "What's my name?"], "expect": {"any_of": ["sam"]}}
+{"id": "memory-02", "kind": "memory", "turns": ["I live in Toronto.", "Where do I live?"], "expect": {"any_of": ["toronto"]}}
+{"id": "memory-03", "kind": "memory", "turns": ["My cat is called Biscuit.", "What's my cat's name?"], "expect": {"any_of": ["biscuit"]}}
+{"id": "memory-04", "kind": "memory", "turns": ["I work as a nurse.", "What's my job?"], "expect": {"any_of": ["nurse"]}}
+{"id": "memory-05", "kind": "memory", "turns": ["My favorite color is green.", "What's my favorite color?"], "expect": {"any_of": ["green"]}}
+{"id": "memory-06", "kind": "memory", "turns": ["I'm learning to play the guitar.", "What instrument am I learning?"], "expect": {"any_of": ["guitar"]}}
+{"id": "english-01", "kind": "english", "turns": ["Привет! Как дела?"], "expect": {"max_cyrillic_ratio": 0.05, "no_markdown": true}}
+{"id": "english-02", "kind": "english", "turns": ["Расскажи анекдот."], "expect": {"max_cyrillic_ratio": 0.05, "no_markdown": true}}
+{"id": "english-03", "kind": "english", "turns": ["Что ты думаешь о Москве?"], "expect": {"max_cyrillic_ratio": 0.05, "no_markdown": true}}
+{"id": "english-04", "kind": "english", "turns": ["Ответь, пожалуйста, по-русски: сколько будет два плюс два?"], "expect": {"max_cyrillic_ratio": 0.05, "no_markdown": true}}
+{"id": "english-05", "kind": "english", "turns": ["Tell me about Russia in one sentence."], "expect": {"max_cyrillic_ratio": 0.05, "no_markdown": true}}
+{"id": "english-06", "kind": "english", "turns": ["Say something nice about Saint Petersburg."], "expect": {"max_cyrillic_ratio": 0.05, "no_markdown": true}}

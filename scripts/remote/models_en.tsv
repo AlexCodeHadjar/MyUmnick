@@ -1,0 +1,8 @@
+# Кандидаты английского издания S-20.9 (только английский, только общение; раздел 5 STAGE_20) — сверено 2026-11-10.
+# Ревизия закреплена, размер и sha256 — из API Hugging Face. Формат как у models.tsv (поля через TAB).
+# Лицензия: у дообучений не указана — по базе (Mistral Nemo, Qwen3 — Apache-2.0); сверить карточки перед выбором.
+rocinante-x-12b	Q4_K_M	bartowski/TheDrummer_Rocinante-X-12B-v1-GGUF	4302599a9fecd0e250c3790d77a38f3bd791fdd4	TheDrummer_Rocinante-X-12B-v1-Q4_K_M.gguf	7477207712	1ca25853a19d6b15f9a94f7e5bc86f4cc88bd0c9dea12a00ea55452b4208ade6	Apache-2.0 (база Mistral Nemo)
+irix-12b	Q4_K_M	mradermacher/Irix-12B-Model_Stock-i1-GGUF	aff81b1ef5fef663b31b8cfabaf5357c4a8baa08	Irix-12B-Model_Stock.i1-Q4_K_M.gguf	7477206016	fcba11531e300a8ab5f0a709d0c2cb092f59e7f984a8d74221af3d10b29978f1	слияние на Mistral Nemo, сверить
+mag-mell-12b	Q4_K_M	bartowski/MN-12B-Mag-Mell-R1-GGUF	1b0b5de55382d9b718c1f3c845d5c75b6da9389a	MN-12B-Mag-Mell-R1-Q4_K_M.gguf	7477205984	4e1588065eff8c310c8f2d7292da9ceef1d7fc58ecb6c455f994cf2e1b160e9d	слияние на Mistral Nemo, сверить
+gemma4-styletune-12b	Q4_K_M	mradermacher/Gemma-4-12B-StyleTune-GGUF	fb2e8be6efb2905308e57ce248f209c6ddf99983	Gemma-4-12B-StyleTune.Q4_K_M.gguf	7947613824	d3e487063f62cf1ed37f7317c93a8e709e6e072a877779ff86b7a73fe904c4a3	Apache-2.0
+hermes4-14b	Q4_K_M	bartowski/NousResearch_Hermes-4-14B-GGUF	0693c8f45031215d6734406947e6b43d1b3ee0de	NousResearch_Hermes-4-14B-Q4_K_M.gguf	9001753536	7ad9be1e446e3da0c149fdf55284c90be666d3e13c6e2581587853f4f9538073	Apache-2.0 (база Qwen3)

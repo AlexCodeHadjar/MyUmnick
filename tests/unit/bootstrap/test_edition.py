@@ -90,6 +90,12 @@ def test_ignored_keys_are_reported_only_outside_russian(root: Path) -> None:
     assert ignored_user_keys(edition_files(config, EditionId.EN)) == ["persona"]
 
 
+def test_tools_pick_edition_from_environment(root: Path) -> None:
+    cfg = load_app_config(root, {"VTUBER_EDITION__ID": "en"})
+
+    assert cfg.edition.id is EditionId.EN
+
+
 def test_edition_cannot_be_swapped_by_environment(root: Path) -> None:
     with pytest.raises(ConfigError, match=r"\[edition\]\.id"):
         load_app_config(root, {"VTUBER_EDITION__ID": "en"}, EditionId.RU)

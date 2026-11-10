@@ -268,7 +268,7 @@
 - `MemoryConfig` — `src/vtuber/bootstrap/config.py:39` — Секция `[memory]`: фоновая память (Этап 10) — факты и резюме истории в простое.
 - `SttConfig` — `src/vtuber/bootstrap/config.py:72` — Секция `[stt]`: голосовой ввод в `serve` (Этап 11, ADR-0016); модели — при первом кадре.
 - `AppConfig` — `src/vtuber/bootstrap/config.py:106` — Корень конфига. Только агрегирует: каждую секцию описывает модуль, которому она нужна.
-- `load_app_config` — `src/vtuber/bootstrap/config.py:130` — Читает конфиг издания `edition` из `<root>/config` поверх `env` (порядок — `edition_files`).
+- `load_app_config` — `src/vtuber/bootstrap/config.py:130` — Читает конфиг издания из `<root>/config` поверх `env` (порядок — `edition_files`).
 - `Core` — `src/vtuber/bootstrap/container.py:29` — Общие механизмы, которые получают все: шина событий и телеметрия.
 - `Backends` — `src/vtuber/bootstrap/container.py:37` — Внешние движки хода: LLM обязательна, голос — только у шлюза (в терминале нет звука).
 - `llm_backends` — `src/vtuber/bootstrap/container.py:48` — Реестр LLM-адаптеров: имя из `[llm].backend` → адаптер (асинхронный контекстный менеджер).

@@ -42,7 +42,7 @@ PERCENT: Final = 100
 EXIT_FAILED: Final = 1
 EXIT_UNAVAILABLE: Final = 2
 
-type Kind = Literal["knowledge", "honesty", "persona", "memory", "russian"]
+type Kind = Literal["knowledge", "honesty", "persona", "memory", "russian", "english"]
 
 
 class EvalCase(BaseModel):

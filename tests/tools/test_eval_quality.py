@@ -133,3 +133,14 @@ async def test_cli_runs_eval_against_stub(tmp_path: Path) -> None:
     assert code == 0
     assert "knowledge" in output.getvalue()
     assert "1/1" in output.getvalue()
+
+
+def test_english_set_loads_and_checks_english_replies() -> None:
+    cases = load_cases(ROOT / "eval" / "qa_en.jsonl")
+    english = Expect(max_cyrillic_ratio=0.05)
+
+    assert len(cases) == 40
+    assert {case.kind for case in cases} >= {"knowledge", "honesty", "english"}
+    assert evaluate(english, "<happy>Hey! I'm doing great.") == []
+    assert evaluate(english, "Привет, всё хорошо!") != []
+    assert evaluate(Expect(refusal=True), "Honestly, I don’t know that.") == []

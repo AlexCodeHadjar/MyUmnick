@@ -34,6 +34,21 @@ REFUSAL_MARKERS: Final = (
     "откуда мне знать",
     "не рассказывал",
     "не говорил",
+    # Английское издание (Этап 20).
+    "i don't know",
+    "i do not know",
+    "not sure",
+    "no idea",
+    "can't know",
+    "cannot know",
+    "can't predict",
+    "can't tell",
+    "don't remember",
+    "don't have access",
+    "can't see",
+    "you never told me",
+    "you didn't tell me",
+    "haven't told me",
 )
 
 
@@ -48,6 +63,7 @@ class Expect(BaseModel):
     max_sentences: int | None = None
     no_markdown: bool = False
     min_cyrillic_ratio: float | None = None
+    max_cyrillic_ratio: float | None = None
 
 
 def evaluate(expect: Expect, reply: str) -> list[str]:
@@ -60,6 +76,7 @@ def evaluate(expect: Expect, reply: str) -> list[str]:
         _sentences(expect.max_sentences, text),
         _markdown(expect.no_markdown, text),
         _cyrillic(expect.min_cyrillic_ratio, text),
+        _no_cyrillic(expect.max_cyrillic_ratio, text),
     )
     return [problem for problem in problems if problem]
 
@@ -76,7 +93,7 @@ def contains_word(text: str, term: str) -> bool:
 
 
 def _normalize(text: str) -> str:
-    return text.casefold().replace("ё", "е")
+    return text.casefold().replace("ё", "е").replace("’", "'")
 
 
 def _any_of(terms: tuple[str, ...], text: str) -> str | None:
@@ -116,3 +133,13 @@ def _cyrillic(minimum: float | None, text: str) -> str | None:
     if minimum is None or ratio >= minimum:
         return None
     return f"доля кириллицы {ratio:.2f} < {minimum}"
+
+
+def _no_cyrillic(maximum: float | None, text: str) -> str | None:
+    """Английское издание: ответ без русских слов (доля кириллицы не выше `maximum`)."""
+    lowered = text.casefold()
+    cyrillic, latin = len(_CYRILLIC.findall(lowered)), len(_LATIN.findall(lowered))
+    ratio = cyrillic / (cyrillic + latin) if cyrillic + latin else 0.0
+    if maximum is None or ratio <= maximum:
+        return None
+    return f"доля кириллицы {ratio:.2f} > {maximum}"
