@@ -72,6 +72,7 @@ async def running_plugins(
     bus: EventBus,
     discover: Discover = _installed,
     models: ModelHost | None = None,
+    language: str = "ru",
 ) -> AsyncIterator[PluginServices]:
     """Включённые плагины работают на время контекста; остановка — в обратном порядке.
 
@@ -83,7 +84,7 @@ async def running_plugins(
     found = {point.name: point for point in discover()}
     attempts = []
     for name in cfg.enabled:
-        ctx = PluginContext(name, bus, cfg.settings.get(name, {}), models)
+        ctx = PluginContext(name, bus, cfg.settings.get(name, {}), models, language)
         attempts.append(await _start(found.get(name), cfg, ctx))
     started = [one for one in attempts if one is not None]
     pumps = [asyncio.create_task(one.ctx.run()) for one in started]
@@ -112,6 +113,11 @@ async def _start(
     try:
         # Импорт чужого пакета может быть долгим: цикл событий не блокируется (R-34).
         plugin = await asyncio.to_thread(_load, point)
+        # Плагин объявляет языки атрибутом `languages`; нет его — только русский (Этап 20).
+        languages = getattr(plugin, "languages", ("ru",))
+        if ctx.language not in languages:
+            _log.warning("plugin.language_unsupported", plugin=name, language=ctx.language)
+            return None
         async with asyncio.timeout(cfg.setup_timeout_s):
             await plugin.setup(ctx)
     except Exception:  # noqa: BLE001 — R-42: граница плагина, приложение работает без него

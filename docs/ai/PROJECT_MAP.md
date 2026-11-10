@@ -194,9 +194,9 @@
 
 - `CatalogFile` — `src/vtuber/application/setup/catalog.py:11` — Файл компонента: откуда, куда (от корня) и как проверить; адрес закреплён на ревизии.
 - `CatalogItem` — `src/vtuber/application/setup/catalog.py:20` — Компонент: модель или голос; `license` пользователь видит до согласия на загрузку.
-- `SetupCatalog` — `src/vtuber/application/setup/catalog.py:39` — `config/catalog.toml`: компоненты, голоса Silero и основная LLM.
-- `Recommendation` — `src/vtuber/application/setup/catalog.py:50` — Совет этой машине; `warnings` показываются пользователю как есть.
-- `recommend` — `src/vtuber/application/setup/catalog.py:58` — Всё, что помещается; обязательное советуется всегда, но с предупреждением.
+- `SetupCatalog` — `src/vtuber/application/setup/catalog.py:39` — `config/catalog.toml`: компоненты, голоса и основная LLM.
+- `Recommendation` — `src/vtuber/application/setup/catalog.py:55` — Совет этой машине; `warnings` показываются пользователю как есть.
+- `recommend` — `src/vtuber/application/setup/catalog.py:63` — Всё, что помещается; обязательное советуется всегда, но с предупреждением.
 - `InstallProgress` — `src/vtuber/application/setup/installer.py:30` — Сколько байт готово из общего числа, какой файл качается.
 - `Installer` — `src/vtuber/application/setup/installer.py:57` — Ставит компоненты каталога в корень приложения; пути не выходят за пределы корня.
 - `SetupState` — `src/vtuber/application/setup/wizard.py:20` — Что показать: нужен ли мастер, что на машине, что посоветовано и что уже стоит.
@@ -275,18 +275,18 @@
 - `tts_backends` — `src/vtuber/bootstrap/container.py:59` — Реестр движков TTS: имя из `[tts].backend` → адаптер; `none` — без голоса (OCP).
 - `Conversation` — `src/vtuber/bootstrap/container.py:78` — Собранный диалог: сервис хода, сборщик промпта (прогрев, T-06), история (фоновая память).
 - `build_conversation` — `src/vtuber/bootstrap/container.py:86` — Собирает сервис хода; сборщик промпта и история отдаются наружу — прогреву и памяти.
-- `EditionConfig` — `src/vtuber/bootstrap/edition.py:36` — Секция `[edition]`: задаётся файлом `config/editions/<id>.toml`, а не пользователем.
-- `resolve_edition` — `src/vtuber/bootstrap/edition.py:45` — Издание из `--edition`, иначе из `VTUBER_EDITION__ID`, иначе `ru` (прежнее поведение).
-- `edition_files` — `src/vtuber/bootstrap/edition.py:62` — Файлы издания; у `ru` мастер пишет прежний `setup.toml` и действуют все ключи `user.toml`.
-- `check_edition` — `src/vtuber/bootstrap/edition.py:75` — Файл издания или переменная окружения не должны подменить выбранное издание.
-- `ignored_user_keys` — `src/vtuber/bootstrap/edition.py:90` — Языковые ключи общего `user.toml`, которые в этом издании не действуют (предупреждение).
-- `language_pack` — `src/vtuber/bootstrap/edition.py:111` — Языковой пакет по `[edition].language`.
-- `edition_persona` — `src/vtuber/bootstrap/edition.py:128` — Персона из файла с правилами профиля содержания издания (ADR-0033).
-- `warn_ignored_user_keys` — `src/vtuber/bootstrap/edition.py:140` — Предупреждение: ключи общего `user.toml` (он для `ru`) здесь не действуют.
+- `EditionConfig` — `src/vtuber/bootstrap/edition.py:37` — Секция `[edition]`: задаётся файлом `config/editions/<id>.toml`, а не пользователем.
+- `resolve_edition` — `src/vtuber/bootstrap/edition.py:46` — Издание из `--edition`, иначе из `VTUBER_EDITION__ID`, иначе `ru` (прежнее поведение).
+- `edition_files` — `src/vtuber/bootstrap/edition.py:63` — Файлы издания; у `ru` мастер пишет прежний `setup.toml` и действуют все ключи `user.toml`.
+- `check_edition` — `src/vtuber/bootstrap/edition.py:76` — Файл издания или переменная окружения не должны подменить выбранное издание.
+- `ignored_user_keys` — `src/vtuber/bootstrap/edition.py:91` — Языковые ключи общего `user.toml`, которые в этом издании не действуют (предупреждение).
+- `language_pack` — `src/vtuber/bootstrap/edition.py:112` — Языковой пакет по `[edition].language`.
+- `edition_persona` — `src/vtuber/bootstrap/edition.py:129` — Персона из файла с правилами профиля содержания издания (ADR-0033).
+- `warn_ignored_user_keys` — `src/vtuber/bootstrap/edition.py:141` — Предупреждение: ключи общего `user.toml` (он для `ru`) здесь не действуют.
 - `LineSource` — `src/vtuber/bootstrap/main.py:67` — Откуда читать строки: `sys.stdin` или его тестовая замена.
 - `Console` — `src/vtuber/bootstrap/main.py:74` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
 - `main` — `src/vtuber/bootstrap/main.py:87` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
-- `run` — `src/vtuber/bootstrap/main.py:312` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
+- `run` — `src/vtuber/bootstrap/main.py:314` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
 - `background_memory` — `src/vtuber/bootstrap/memory.py:50` — Память на время контекста: фон в простое и факты в ходе; выключена — пустой контекст.
 - `PersonaConfig` — `src/vtuber/bootstrap/persona.py:13` — Секция `[persona]`: путь к файлу персоны относительно корня проекта.
 - `load_persona` — `src/vtuber/bootstrap/persona.py:40` — Читает и проверяет файл персоны; лишний или пропущенный ключ — ошибка.
@@ -505,7 +505,7 @@
 - `LoadableModel` — `src/vtuber/kernel/plugin.py:63` — Модель, которую можно загрузить в видеопамять и выгрузить.
 - `ModelHost` — `src/vtuber/kernel/plugin.py:75` — Менеджер видеопамяти для плагинов; сам он живёт выше ядра (ADR-0005).
 - `PluginContext` — `src/vtuber/kernel/plugin.py:85` — Доступ плагина к ядру: подписка на события, своя секция конфига, логгер.
-- `Plugin` — `src/vtuber/kernel/plugin.py:203` — Плагин: entry point группы `vtuber.plugins` указывает на его класс или фабрику.
+- `Plugin` — `src/vtuber/kernel/plugin.py:206` — Плагин: entry point группы `vtuber.plugins` указывает на его класс или фабрику.
 - `Registry` — `src/vtuber/kernel/registry.py:8` — Имя → фабрика `A → T`; например, `Registry[TTSConfig, TTSPort]` для движков TTS.
 - `TelemetryConfig` — `src/vtuber/kernel/telemetry.py:23` — Секция `[telemetry]`; `traces_file` открывает bootstrap (относительно корня проекта).
 - `Telemetry` — `src/vtuber/kernel/telemetry.py:29` — Замеряет стадии хода и отдаёт метрики в шину фоновой задачей `run`.

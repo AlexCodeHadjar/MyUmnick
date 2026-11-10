@@ -95,9 +95,12 @@ class PluginContext:
         bus: EventBus,
         settings: Mapping[str, object],
         models: ModelHost | None = None,
+        language: str = "ru",
     ) -> None:
         self.name = name
         self.models = models
+        # Язык издания (Этап 20, ADR-0032): плагин говорит с персоной на нём.
+        self.language = language
         self.log = get_logger(f"plugin.{name}")
         self._bus = bus
         self._settings = settings

@@ -29,6 +29,7 @@ LANGUAGE_BOUND_KEYS: Final = frozenset(
         "memory.vault_path",
         "llama_server.model",
         "setup.choice_file",
+        "setup.catalog_file",
     }
 )
 

@@ -66,6 +66,15 @@ class NotAPlugin:
     pass
 
 
+class Bilingual(Recording):
+    name = "bilingual"
+    languages = ("ru", "en")
+    seen: list[str] = []  # noqa: RUF012 — язык контекста, который увидел плагин
+
+    async def setup(self, ctx: PluginContext) -> None:
+        Bilingual.seen.append(ctx.language)
+
+
 def _cfg(*enabled: str, settings: Mapping[str, dict[str, object]] | None = None) -> PluginsConfig:
     return PluginsConfig(
         enabled=enabled,
@@ -195,3 +204,25 @@ async def test_example_plugin_works_through_entry_point(
     assert logged["example.turn"]["label"] == "тест"
     assert logged["example.turn"]["module"] == "plugin.example"
     assert logged["example.total"]["turns"] == 1
+
+
+async def test_plugin_without_languages_is_skipped_in_english_edition() -> None:
+    discover = _found(_point("recording", "Recording"), _point("bilingual", "Bilingual"))
+    Bilingual.seen.clear()
+
+    async with running_plugins(_cfg("recording", "bilingual"), EventBus(), discover, language="en"):
+        pass
+
+    assert Recording.instances[0].events == []
+    assert [type(one).__name__ for one in Recording.instances] == ["Recording", "Bilingual"]
+    assert Bilingual.seen == ["en"]
+
+
+async def test_plugins_start_in_russian_edition_as_before() -> None:
+    Bilingual.seen.clear()
+    discover = _found(_point("bilingual", "Bilingual"))
+
+    async with running_plugins(_cfg("bilingual"), EventBus(), discover):
+        pass
+
+    assert Bilingual.seen == ["ru"]

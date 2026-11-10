@@ -135,7 +135,9 @@ async def _run(
         # Память (Этап 10): факты и резюме — в простое, LLM фонового слота; поиск — в ходе (T-12).
         async with (
             background_memory(cfg, conversation, core) as controls,
-            running_plugins(cfg.plugins, bus, models=ResourceModels(resources)) as plugins,
+            running_plugins(
+                cfg.plugins, bus, models=ResourceModels(resources), language=cfg.edition.language
+            ) as plugins,
         ):
             _connect_tools(cfg, conversation.service, plugins)
             if mode == SERVE_MODE:

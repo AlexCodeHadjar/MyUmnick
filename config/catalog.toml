@@ -4,6 +4,7 @@ llm_item = "llm"
 llm_model_path = "models/llm/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf"
 voices = ["xenia", "baya", "kseniya", "aidar", "eugene"]
 default_voice = "xenia"   # ADR-0014, выбор голоса открыт
+voice_setting = "tts.silero.speaker"   # куда мастер пишет выбранный голос
 
 [[items]]
 id = "llm"

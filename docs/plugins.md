@@ -38,6 +38,11 @@
 | `perform(title, audio)` | Исполнить готовый звук ходом без модели, с обычной отменой |
 | `report_sources(sources)` | Показать в чате, откуда взят ответ |
 | `log` | Логгер; события попадают в общий JSON-лог с полем `module = plugin.<имя>` |
+| `language` | Язык издания (`ru`, `en`; Этап 20, ADR-0032): на нём плагин говорит с персоной |
+
+**Языки плагина.** Класс плагина объявляет `languages = ("ru", "en")`. Нет атрибута — плагин считается
+только русским и в английском издании не запускается (`plugin.language_unsupported` в логе). Сейчас оба языка
+у `obs` и `code_assistant`; `stream_chat`, `stream_director`, `tools`, `web_search`, `singing` — только `ru`.
 
 События: `TurnStarted`, `TurnFinished`, `TurnCancelled`, `TurnRemembered`, `EmotionChanged`,
 `PhraseVoiced`, `MetricRecorded`, `BackendStatusChanged`.

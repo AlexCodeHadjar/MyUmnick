@@ -64,6 +64,7 @@ def _catalog(*, llm_sha: str | None = None) -> SetupCatalog:
         llm_model_path="models/llm/m.gguf",
         voices=("xenia", "baya"),
         default_voice="xenia",
+        voice_setting="tts.silero.speaker",
         items=(llm, stt),
     )
 
@@ -248,12 +249,21 @@ def test_choice_file_is_read_back_as_toml(tmp_path: Path) -> None:
     assert loaded["tts"]["silero"]["speaker"] == "ё"
 
 
-def test_shipped_catalog_is_valid_and_pinned() -> None:
+@pytest.mark.parametrize("name", ["catalog.toml", "catalog.en.toml"])
+def test_shipped_catalog_is_valid_and_pinned(name: str) -> None:
     root = Path(__file__).parents[4]
-    catalog = load_catalog(root / "config" / "catalog.toml")
+    catalog = load_catalog(root / "config" / name)
     assert catalog.default_voice in catalog.voices
     assert catalog.llm_item in {item.id for item in catalog.items}
     for item in catalog.items:
         for file in item.files:
             assert file.url.startswith("https://")
             assert file.path.startswith("models/")
+
+
+def test_english_catalog_writes_kokoro_voice() -> None:
+    root = Path(__file__).parents[4]
+    catalog = load_catalog(root / "config" / "catalog.en.toml")
+
+    assert catalog.voice_setting == "tts.kokoro.voice"
+    assert catalog.default_voice == "af_heart"

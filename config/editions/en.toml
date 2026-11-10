@@ -40,3 +40,4 @@ vault_path = "data/en/vault"
 
 [setup]
 choice_file = "config/setup.en.toml"
+catalog_file = "config/catalog.en.toml"   # свой голос; LLM — до выбора английской модели (S-20.9)

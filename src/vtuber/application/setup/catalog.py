@@ -37,12 +37,17 @@ class CatalogItem(ConfigSection):
 
 
 class SetupCatalog(ConfigSection):
-    """`config/catalog.toml`: компоненты, голоса Silero и основная LLM."""
+    """`config/catalog.toml`: компоненты, голоса и основная LLM.
+
+    `voice_setting` — куда мастер пишет выбранный голос: `секция.ключ` (`tts.silero.speaker`
+    у русского издания, `tts.kokoro.voice` у английского — Этап 20).
+    """
 
     llm_item: str
     llm_model_path: str
     voices: tuple[str, ...]
     default_voice: str
+    voice_setting: str = Field(pattern=r"^[a-z_.]+\.[a-z_]+$")
     items: tuple[CatalogItem, ...]
 
 

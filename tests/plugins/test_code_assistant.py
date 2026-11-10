@@ -10,7 +10,7 @@ import pytest
 
 from vtuber.domain import TextShown
 from vtuber.kernel import EventBus, LoadableModel, PluginContext
-from vtuber_code_assistant import CodeAssistantPlugin, asks_for_code
+from vtuber_code_assistant import CodeAssistantPlugin, asks_for_code, texts_for
 
 CODE = "def add(a, b):\n    return a + b\n"
 
@@ -212,3 +212,13 @@ async def test_own_server_goes_through_the_resource_manager() -> None:
     code_srv.close()
     assert host.held == [("code_assistant", 4321)]
     assert host.used == 1
+
+
+def test_english_requests_are_recognised_and_not_translated() -> None:
+    assert asks_for_code("Write me a function that sorts a list")
+    assert asks_for_code("Can you help me with my code?")
+    assert asks_for_code("fix this code please")
+    assert not asks_for_code("Write me a poem")
+    assert texts_for("en").translate is False
+    assert texts_for("ru").translate is True
+    assert texts_for("en").cancel == ("cancel code", "Cancel code")

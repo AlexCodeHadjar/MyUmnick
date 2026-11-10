@@ -25,6 +25,7 @@ class ObsPlugin:
     """Показывает фразу, когда она звучит: ответ готов намного раньше, чем произнесён."""
 
     name = "obs"
+    languages = ("ru", "en")  # показывает фразы как есть — язык не важен
 
     def __init__(self) -> None:
         self._cfg: ObsConfig | None = None

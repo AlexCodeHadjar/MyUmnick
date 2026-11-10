@@ -8,6 +8,7 @@ import asyncio
 import re
 from collections.abc import AsyncGenerator, Callable
 from contextlib import AbstractAsyncContextManager, aclosing
+from dataclasses import dataclass
 from pathlib import Path
 from types import TracebackType
 from typing import Final, Self
@@ -23,21 +24,70 @@ from vtuber.ports import GenerationParams, LLMPort
 _REQUEST: Final = re.compile(
     r"\b(?:напиши|набросай|сделай)\s+(?:мне\s+)?(?:код|функцию|скрипт|программу|класс)\b"
     r"|\bпомоги\s+с\s+кодом\b"
-    r"|\b(?:исправь|почини)\s+(?:этот\s+|мой\s+)?код\b",
+    r"|\b(?:исправь|почини)\s+(?:этот\s+|мой\s+)?код\b"
+    # Английское издание (Этап 20): та же модель для кода, просьба — уже по-английски.
+    r"|\b(?:write|make|code)\s+(?:me\s+)?(?:a\s+|some\s+)?(?:code|function|script|program|class)\b"
+    r"|\bhelp\s+(?:me\s+)?with\s+(?:my\s+|this\s+)?code\b"
+    r"|\bfix\s+(?:this\s+|my\s+)?code\b",
     re.IGNORECASE,
 )
-_CANCEL: Final = ("отмени код", "Отмени код")
-_STARTED: Final = (
-    "Ты передала эту просьбу помощнику-программисту, ответ появится в чате позже. "
-    "Скажи об этом одной фразой и сама код не пиши."
-)
-_BUSY: Final = "Помощник-программист ещё занят прошлой задачей. Скажи об этом одной фразой."
 _TRANSLATE: Final = (
     "Translate the programming request to English. Keep names and code as they are. "
     "Reply with the translation only."
 )
 _CODE_SYSTEM: Final = "You are a senior programmer. Reply in English with working code."
-_AUTHOR: Final = "помощник"
+
+
+@dataclass(frozen=True, slots=True)
+class _Texts:
+    """Что помощник просит сказать персону — на языке издания; `translate` — нужен ли перевод."""
+
+    cancel: tuple[str, ...]
+    started: str
+    busy: str
+    timeout: str
+    unavailable: str
+    done: str
+    author: str
+    title: str
+    translate: bool
+
+
+_RU: Final = _Texts(
+    cancel=("отмени код", "Отмени код"),
+    started=(
+        "Ты передала эту просьбу помощнику-программисту, ответ появится в чате позже. "
+        "Скажи об этом одной фразой и сама код не пиши."
+    ),
+    busy="Помощник-программист ещё занят прошлой задачей. Скажи об этом одной фразой.",
+    timeout="Помощник-программист не уложился в срок. Скажи об этом одной фразой.",
+    unavailable="Помощник-программист сейчас недоступен. Честно скажи об этом одной фразой.",
+    done="Код от помощника уже в чате. Скажи об этом одной фразой, код не читай.",
+    author="помощник",
+    title="Помощник-программист",
+    translate=True,
+)
+_EN: Final = _Texts(
+    cancel=("cancel code", "Cancel code"),
+    started=(
+        "You passed this request to the coding assistant, the answer will appear in the chat "
+        "later. Say so in one sentence and don't write the code yourself."
+    ),
+    busy="The coding assistant is still busy with the previous task. Say so in one sentence.",
+    timeout="The coding assistant ran out of time. Say so in one sentence.",
+    unavailable="The coding assistant is unavailable right now. Honestly say so in one sentence.",
+    done=(
+        "The assistant's code is already in the chat. Say so in one sentence, don't read the code."
+    ),
+    author="assistant",
+    title="Coding assistant",
+    translate=False,
+)
+
+
+def texts_for(language: str) -> _Texts:
+    """Тексты издания; неизвестный язык — русские (прежнее поведение)."""
+    return _EN if language == "en" else _RU
 
 
 class CodeAssistantConfig(ConfigSection):
@@ -115,6 +165,7 @@ class _Worker:
     def __init__(self, ctx: PluginContext, cfg: CodeAssistantConfig) -> None:
         self._ctx = ctx
         self._cfg = cfg
+        self._texts = texts_for(ctx.language)
         self._translator = LlamaCppLLM(
             _llm_config(cfg.main_url, "main", cfg.translate_slot, cfg.timeout_s)
         )
@@ -141,6 +192,11 @@ class _Worker:
         await self._coder.__aexit__(None, None, None)
 
     @property
+    def texts(self) -> _Texts:
+        """Тексты на языке издания."""
+        return self._texts
+
+    @property
     def busy(self) -> bool:
         """Идёт ли задача."""
         return self._job is not None and not self._job.done()
@@ -160,21 +216,21 @@ class _Worker:
             async with asyncio.timeout(self._cfg.timeout_s):
                 code = await self._write(task)
         except TimeoutError:
-            await self._say("Помощник-программист не уложился в срок. Скажи об этом одной фразой.")
+            await self._say(self._texts.timeout)
         except (VtuberError, OSError) as exc:
             self._ctx.log.warning("code_assistant.failed", problem=repr(exc))
-            await self._say(
-                "Помощник-программист сейчас недоступен. Честно скажи об этом одной фразой."
-            )
+            await self._say(self._texts.unavailable)
         else:
-            await self._ctx.show_text("Помощник-программист", code)
-            await self._say(
-                "Код от помощника уже в чате. Скажи об этом одной фразой, код не читай."
-            )
+            await self._ctx.show_text(self._texts.title, code)
+            await self._say(self._texts.done)
 
     async def _write(self, task: str) -> str:
-        ask = [Message(Role.SYSTEM, _TRANSLATE), Message(Role.USER, task)]
-        english = await _complete(self._translator, ask, 256)
+        # Модель для кода — одна на оба издания и работает на английском: русскую просьбу сначала
+        # переводит модель общения, английскую — передаём как есть (STAGE_20, 4.10).
+        english = task
+        if self._texts.translate:
+            ask = [Message(Role.SYSTEM, _TRANSLATE), Message(Role.USER, task)]
+            english = await _complete(self._translator, ask, 256)
         prompt = [Message(Role.SYSTEM, _CODE_SYSTEM), Message(Role.USER, english.strip())]
         if self._hold is None:
             return await _complete(self._coder, prompt, self._cfg.max_tokens)
@@ -182,13 +238,16 @@ class _Worker:
             return await _complete(self._coder, prompt, self._cfg.max_tokens)
 
     async def _say(self, text: str) -> None:
-        await self.finished.put(IncomingMessage(self._ctx.name, _AUTHOR, text, is_viewer=False))
+        await self.finished.put(
+            IncomingMessage(self._ctx.name, self._texts.author, text, is_viewer=False)
+        )
 
 
 class CodeAssistantPlugin:
     """Инструмент помощника; выключен, пока его не включат, и в диалог ничего не добавляет."""
 
     name = "code_assistant"
+    languages = ("ru", "en")
 
     def __init__(self) -> None:
         self._worker: _Worker | None = None
@@ -198,7 +257,7 @@ class CodeAssistantPlugin:
         self._worker = _Worker(ctx, ctx.settings(CodeAssistantConfig))
         ctx.add_context(self.context)
         ctx.add_source(self.results)
-        for text in _CANCEL:
+        for text in texts_for(ctx.language).cancel:
             ctx.add_command(text, self._worker.cancel)
 
     async def shutdown(self) -> None:
@@ -211,10 +270,11 @@ class CodeAssistantPlugin:
         worker = self._worker
         if worker is None or not asks_for_code(text):
             return None
+        texts = worker.texts
         if worker.busy:
-            return _BUSY
+            return texts.busy
         worker.start(text)
-        return _STARTED
+        return texts.started
 
     async def results(self) -> AsyncGenerator[IncomingMessage]:
         """Что сказать вслух, когда задача закончилась; сам код сюда не попадает."""

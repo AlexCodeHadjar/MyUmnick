@@ -125,8 +125,9 @@ class SetupWizard:
             await finished(None)
 
     def _sections(self, voice: str) -> Mapping[str, Mapping[str, str | bool]]:
+        section, key = self._catalog.voice_setting.rsplit(".", 1)
         return {
             "setup": {"enabled": True},
             "llama_server": {"autostart": True, "model": self._catalog.llm_model_path},
-            "tts.silero": {"speaker": voice},
+            section: {key: voice},
         }
