@@ -742,6 +742,21 @@
 - `withExpressions` — `ui/src/features/avatar/live2d/settings.ts:46` — Копия model3.json с выражениями маппинга (поверх одноимённых из манифеста) и `url` — по нему
 - `loadSettings` — `ui/src/features/avatar/live2d/settings.ts:67` — Манифест модели с выражениями из маппинга — готов для `Live2DModel.from`.
 
+## ui/src/features/avatar/orb
+—
+
+- `Sphere` — `ui/src/features/avatar/orb/geometry.ts:6` — —
+- `fibonacciSphere` — `ui/src/features/avatar/orb/geometry.ts:16` — `count` точек, равномерно по сфере (спираль Фибоначчи).
+- `nearestEdges` — `ui/src/features/avatar/orb/geometry.ts:30` — Рёбра к `neighbors` ближайшим точкам; повторы (a–b и b–a) убираются.
+- `buildSphere` — `ui/src/features/avatar/orb/geometry.ts:63` — —
+- `ripple` — `ui/src/features/avatar/orb/geometry.ts:72` — Отклонение точки вдоль радиуса: «вибрация» голосом. Волны бегут по поверхности (зависят от
+- `ORB_AVATAR` — `ui/src/features/avatar/orb/name.ts:2` — Имя аватара-сферы в `VITE_AVATAR` и выборе мастера (Этап 22, ADR-0038).
+- `OrbRenderer` — `ui/src/features/avatar/orb/OrbRenderer.ts:25` — —
+- `EMOTION_HUE` — `ui/src/features/avatar/orb/palette.ts:8` — Оттенок (0…360) эмоции; нейтральная — голубой «Джарвиса».
+- `shimmerHue` — `ui/src/features/avatar/orb/palette.ts:19` — Переливание: медленный дрейф ±25° вокруг оттенка эмоции.
+- `mixHue` — `ui/src/features/avatar/orb/palette.ts:24` — Плавный переход оттенка по короткой дуге круга; `t` 0…1.
+- `sparkle` — `ui/src/features/avatar/orb/palette.ts:30` — Искрение точки: у каждой своя фаза, яркость 0.55…1.
+
 ## ui/src/features/chat
 Публичный API фичи чата: приложение монтирует только панель (R-63).
 

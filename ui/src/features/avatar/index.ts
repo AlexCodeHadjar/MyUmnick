@@ -2,3 +2,4 @@
 export type { AvatarReaction, AvatarRenderer, AvatarSource, StageSize } from "./AvatarRenderer";
 export { default as AvatarStage } from "./AvatarStage.svelte";
 export type { MouthSource } from "./session";
+export { ORB_AVATAR } from "./orb/name";

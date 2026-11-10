@@ -6,7 +6,7 @@
 
   import type { CoreClient } from "../core";
   import { connectVoice, type VoicePlayer } from "../features/audio";
-  import { AvatarStage } from "../features/avatar";
+  import { AvatarStage, ORB_AVATAR } from "../features/avatar";
   import { Chat } from "../features/chat";
   import { ChatSidebar } from "../features/chats";
   import {
@@ -35,6 +35,12 @@
   let showResources = $state(false);
   let showMemory = $state(false);
   let setupClosed = $state(false);
+
+  /** Сфера, если она выбрана в `.env` (Этап 22): выбор модели в мастере её не перекрывает. */
+  function avatarName(): string {
+    const configured = import.meta.env.VITE_AVATAR;
+    return configured === ORB_AVATAR ? ORB_AVATAR : (chosenAvatar(layoutStorage()) ?? configured);
+  }
   // Вне Tauri такого окна нет: режим и кнопка просто отсутствуют.
   const desktopPort = tauriWindow();
   let desktop = $state(loadDesktop(layoutStorage()));
@@ -147,7 +153,7 @@
             onhittest={(contains: HitTest) => {
               overModel = contains;
             }}
-            name={chosenAvatar(layoutStorage()) ?? import.meta.env.VITE_AVATAR}
+            name={avatarName()}
             store={client.store}
             mouth={(deltaMs: number) => player?.mouth(deltaMs) ?? 0}
             mouthForm={() => player?.mouthForm() ?? 0}

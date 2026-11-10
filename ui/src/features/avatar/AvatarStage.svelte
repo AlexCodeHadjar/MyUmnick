@@ -5,6 +5,7 @@
   import { onMount } from "svelte";
 
   import type { AppStore } from "../../core";
+  import { ORB_AVATAR } from "./orb/name";
   import type { AvatarReaction } from "./AvatarRenderer";
   import { isWaiting, THINKING_AFTER_MS } from "./reactions";
   import { AvatarSession, type AvatarStatus, type MouthSource } from "./session";
@@ -114,6 +115,11 @@
     // Разговор идёт, пока идёт ход или звучит голос: эмоция угасает только после речи.
     current.activity = () => store.phase !== "idle" || (store.voice.speech?.speaking ?? false);
     void current.start(name, async (element, size) => {
+      // Сфера — свой лёгкий чанк без Pixi и Live2D; модель Live2D — по имени (ADR-0038).
+      if (name === ORB_AVATAR) {
+        const { OrbRenderer } = await import("./orb/OrbRenderer");
+        return OrbRenderer.create(element, size);
+      }
       const { Live2DRenderer } = await import("./live2d/Live2DRenderer");
       return Live2DRenderer.create(element, size);
     });
