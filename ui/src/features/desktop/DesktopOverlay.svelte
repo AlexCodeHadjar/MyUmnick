@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../../core";
   // Кнопки режима поверх стола и работа с окном. Кнопки видны всегда, а не только над моделью:
   // модель могла не загрузиться, а окно не должно остаться без выхода.
   import { onMount } from "svelte";
@@ -58,9 +59,9 @@
 
 <div class="controls" bind:this={controls}>
   <button type="button" aria-pressed={pinned} onclick={onpin}>
-    {pinned ? "Поверх окон: да" : "Поверх окон: нет"}
+    {pinned ? locale.t.desktop.pinnedOn : locale.t.desktop.pinnedOff}
   </button>
-  <button type="button" onclick={onleave}>Обычный вид</button>
+  <button type="button" onclick={onleave}>{locale.t.desktop.leave}</button>
 </div>
 
 <style>

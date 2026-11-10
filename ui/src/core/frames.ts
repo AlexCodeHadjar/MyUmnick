@@ -74,6 +74,7 @@ const OUTBOUND_TYPES = {
   "branch.state": true,
   "chat.sources": true,
   "chat.attachment": true,
+  "app.edition": true,
   error: true,
 } satisfies Record<OutboundMessage["type"], true>;
 

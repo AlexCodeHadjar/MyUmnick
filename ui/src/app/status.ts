@@ -3,7 +3,7 @@
  * полсекунды–пять секунд; пользователю это одно состояние — «нет связи, переподключаюсь».
  * Различаем только первое подключение после запуска и потерю уже бывшей связи.
  */
-import type { BackendState, ConnectionState } from "../core";
+import { messagesFor, type BackendState, type ConnectionState, type Messages } from "../core";
 
 export type Tone = "ok" | "wait" | "bad" | "off";
 
@@ -12,30 +12,40 @@ export interface Indicator {
   tone: Tone;
 }
 
-export function connectionIndicator(state: ConnectionState, everOpen: boolean): Indicator {
+export function connectionIndicator(
+  state: ConnectionState,
+  everOpen: boolean,
+  t: Messages = messagesFor("ru"),
+): Indicator {
   switch (state) {
     case "open":
-      return { label: "на связи", tone: "ok" };
+      return { label: t.status.online, tone: "ok" };
     case "replaced":
-      return { label: "открыто другое окно", tone: "off" };
+      return { label: t.status.replaced, tone: "off" };
     case "connecting":
     case "closed":
       return everOpen
-        ? { label: "нет связи — переподключаюсь", tone: "bad" }
-        : { label: "подключение…", tone: "wait" };
+        ? { label: t.status.reconnecting, tone: "bad" }
+        : { label: t.status.connecting, tone: "wait" };
   }
 }
 
-const BACKEND: Record<BackendState | "unknown", Indicator> = {
-  loading: { label: "загрузка…", tone: "wait" },
-  ready: { label: "готов", tone: "ok" },
-  failed: { label: "ошибка", tone: "bad" },
-  unknown: { label: "—", tone: "off" },
-};
+function backendIndicators(t: Messages): Record<BackendState | "unknown", Indicator> {
+  return {
+    loading: { label: t.status.loading, tone: "wait" },
+    ready: { label: t.status.ready, tone: "ok" },
+    failed: { label: t.status.failed, tone: "bad" },
+    unknown: { label: "—", tone: "off" },
+  };
+}
 
 /** Состояние бэкенда, пока связи нет, — устаревшее: показываем «—», а не последнее известное. */
-export function backendIndicator(state: BackendState | "unknown", online: boolean): Indicator {
-  return BACKEND[online ? state : "unknown"];
+export function backendIndicator(
+  state: BackendState | "unknown",
+  online: boolean,
+  t: Messages = messagesFor("ru"),
+): Indicator {
+  return backendIndicators(t)[online ? state : "unknown"];
 }
 
 /** Подсказка над счётчиком: кто и что написал; решение — за ведущим (`/пауза`, FR-31). */

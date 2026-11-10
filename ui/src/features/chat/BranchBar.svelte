@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../../core";
   // Ветки диалога (S-16.1): показывается, когда есть что выбирать или куда вернуться.
   import type { CoreClient } from "../../core";
 
@@ -9,10 +10,10 @@
 </script>
 
 {#if store.branches.branches.length > 0}
-  <div class="branches" aria-label="Ветки диалога">
+  <div class="branches" aria-label={locale.t.branches.region}>
     {#if store.branches.branches.length > 1}
       <label>
-        Ветка
+        {locale.t.branches.branch}
         <select
           value={store.branches.branches.find((branch) => branch.active)?.leaf}
           onchange={(event) => {
@@ -27,14 +28,14 @@
     {/if}
     {#if store.branches.checkpoints.length > 0}
       <label>
-        Точка
+        {locale.t.branches.checkpoint}
         <select
           value=""
           onchange={(event) => {
             client.goToTurn(event.currentTarget.value);
           }}
         >
-          <option value="" disabled>выбрать</option>
+          <option value="" disabled>{locale.t.branches.choose}</option>
           {#each store.branches.checkpoints as point (point.name)}
             <option value={point.turn}>{point.name}</option>
           {/each}
@@ -48,8 +49,13 @@
         name = "";
       }}
     >
-      <input bind:value={name} placeholder="Имя точки" aria-label="Имя контрольной точки" />
-      <button type="submit" disabled={name.trim() === ""}>Сохранить точку</button>
+      <input
+        bind:value={name}
+        placeholder={locale.t.branches.checkpointName}
+        aria-label={locale.t.branches.checkpointNameLabel}
+      />
+      <button type="submit" disabled={name.trim() === ""}>{locale.t.branches.saveCheckpoint}</button
+      >
     </form>
     {#if store.branches.problem !== null}
       <span class="warn" role="status">{store.branches.problem}</span>

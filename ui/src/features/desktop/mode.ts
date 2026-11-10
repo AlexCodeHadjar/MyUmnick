@@ -2,6 +2,7 @@
  * Режим «персонаж поверх рабочего стола» (S-15.2): что включено и как это пережить перезапуск.
  * Окно — за портом: логика проверяется без Tauri, а в браузере режима просто нет.
  */
+import { messagesFor } from "../../core";
 
 const STORAGE_KEY = "vtuber.desktop";
 
@@ -71,4 +72,4 @@ export function isDesktopHotkey(event: {
   return event.code === "KeyO" && event.ctrlKey && event.shiftKey && !event.altKey;
 }
 
-export const DESKTOP_HOTKEY_LABEL = "Ctrl+Shift+O — поверх стола";
+export const DESKTOP_HOTKEY_LABEL = messagesFor("ru").desktop.hotkey;

@@ -3,7 +3,9 @@
  * Меняется только методами — их зовут транспорт (сообщения ядра) и действия пользователя.
  * Дельты пока применяются по одной; батчинг по кадрам (T-16, R-65) — в S-5.3.
  */
+import { isLang, locale } from "./i18n";
 import type {
+  EditionData,
   BackendState,
   Component,
   Emotion,
@@ -105,6 +107,8 @@ export class AppStore {
   branches = $state<BranchesView>({ branches: [], checkpoints: [], problem: null });
   /** Откуда взят текущий ответ; новая реплика их убирает (FR-25). */
   sources = $state<SourceData[]>([]);
+  /** Издание ядра (Этап 20): язык интерфейса берётся из него, пока экран выбора не задал свой. */
+  edition = $state<EditionData | null>(null);
 
   #nextId = 0;
   /** Индекс сообщения текущего хода в `messages`: массив только растёт, индекс не сдвигается. */
@@ -190,7 +194,7 @@ export class AppStore {
         this.privacy.erasable = message.data.erasable;
         break;
       case "memory.erased":
-        this.privacy.result = message.data.problem ?? "Память очищена";
+        this.privacy.result = message.data.problem ?? locale.t.privacy.erased;
         break;
       case "backend.notice":
         this.notice = message.data.text;
@@ -215,6 +219,10 @@ export class AppStore {
         break;
       case "status":
         this.backends[message.data.component] = message.data.state;
+        break;
+      case "app.edition":
+        this.edition = message.data;
+        if (isLang(message.data.language)) locale.set(message.data.language);
         break;
       case "error":
         this.error = message.data;

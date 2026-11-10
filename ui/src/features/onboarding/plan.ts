@@ -2,6 +2,7 @@
  * Логика мастера первого запуска (S-13.2): что выбрано, сколько качать, можно ли начинать.
  * Загрузка начинается только с явного согласия: без галочки кнопка не активна.
  */
+import { messagesFor, type Messages } from "../../core";
 import type { SetupData } from "../../core";
 
 export type SetupItem = SetupData["items"][number];
@@ -38,11 +39,11 @@ export function canInstall(
   return agreed && setup.items.every((item) => !item.required || selection.has(item.id));
 }
 
-export function formatSize(bytes: number): string {
+export function formatSize(bytes: number, t: Messages = messagesFor("ru")): string {
   const gb = bytes / 1024 ** 3;
   return gb >= 1
-    ? `${gb.toFixed(1)} ГБ`
-    : `${Math.max(1, Math.round(bytes / 1024 ** 2)).toString()} МБ`;
+    ? t.onboarding.gb(gb.toFixed(1))
+    : t.onboarding.mb(Math.max(1, Math.round(bytes / 1024 ** 2)).toString());
 }
 
 export function percent(done: number, total: number): number {

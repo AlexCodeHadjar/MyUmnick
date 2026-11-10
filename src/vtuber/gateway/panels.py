@@ -1,6 +1,6 @@
 """Панели UI вне хода диалога: мастер, ресурсы, память, ветки; у каждой свой мост."""
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from vtuber.gateway.branch_bridge import BranchBridge
@@ -15,7 +15,7 @@ from vtuber.gateway.protocol_memory import (
     MemoryList,
     PrivacySet,
 )
-from vtuber.gateway.protocol_presence import WindowVisibility
+from vtuber.gateway.protocol_presence import AppEdition, WindowVisibility
 from vtuber.gateway.resources_feed import ResourcesFeed
 from vtuber.gateway.setup_bridge import SetupBridge
 
@@ -43,9 +43,13 @@ class Panels:
     memory: MemoryBridge | None = None
     branches: BranchBridge | None = None
     window: Callable[[bool], None] | None = None
+    edition: AppEdition | None = None
+    send: Callable[[AppEdition], Awaitable[None]] | None = None
 
     async def greet(self) -> None:
         """Что новый клиент должен узнать сразу: окно могло перезапуститься посреди работы."""
+        if self.edition is not None and self.send is not None:
+            await self.send(self.edition)  # первым: от издания зависит язык всего остального
         if self.setup is not None:
             await self.setup.send_state()
         if self.privacy is not None:

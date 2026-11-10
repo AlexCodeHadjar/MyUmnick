@@ -163,3 +163,19 @@ describe("голосовой ввод", () => {
     expect(store.messages.map((m) => [m.role, m.text])).toEqual([["user", "как дела"]]);
   });
 });
+
+describe("издание", () => {
+  it("app.edition запоминается и переключает язык интерфейса", async () => {
+    const { locale } = await import("./i18n");
+    store.apply({
+      v: 1,
+      type: "app.edition",
+      data: { id: "en", language: "en", content_profile: "unfiltered", stream_safe: false },
+    });
+
+    expect(store.edition?.id).toBe("en");
+    expect(locale.lang).toBe("en");
+    expect(locale.t.composer.send).toBe("Send");
+    locale.set("ru");
+  });
+});

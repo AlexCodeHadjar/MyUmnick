@@ -2,6 +2,13 @@
 
 export const PROTOCOL_VERSION = 1 as const;
 
+/** Ядро → UI при подключении: в каком издании запущено ядро; UI сверяет с выбором на экране. */
+export interface AppEdition {
+  v: Version;
+  type: "app.edition";
+  data: EditionData;
+}
+
 /** Заголовок и текст. */
 export interface AttachmentData {
   title: string;
@@ -158,6 +165,14 @@ export type Component = "llm" | "tts" | "stt";
 /** Порция текста ответа. */
 export interface DeltaData {
   text: string;
+}
+
+/** Издание ядра (Этап 20, ADR-0032): язык интерфейса и профиль содержания. */
+export interface EditionData {
+  id: string;
+  language: string;
+  content_profile: string;
+  stream_safe: boolean;
 }
 
 /** Единственный источник списка эмоций: из него строятся промпт персоны и разбор ответа. */
@@ -558,4 +573,4 @@ export interface WindowVisibility {
 
 export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint | WindowVisibility | ChatSendImage;
 
-export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | AvatarGesture | ChatAttachment | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryFacts | BranchState | ChatSources | ErrorMessage;
+export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | AvatarGesture | ChatAttachment | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryFacts | BranchState | ChatSources | AppEdition | ErrorMessage;

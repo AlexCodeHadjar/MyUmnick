@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../../core";
   // Редактор памяти (S-16.2): что витюбер запомнил, откуда это и как исправить.
   // Список запрашивается при открытии: закрытая панель заметки не читает.
   import { onMount } from "svelte";
@@ -12,64 +13,60 @@
   let draft = $state("");
   let deleting = $state<string | null>(null);
 
-  const SOURCES: Record<string, string> = {
-    user: "сказано прямо",
-    extracted: "из разговора",
-    summary: "из резюме",
-  };
-
   onMount(() => {
     client.listMemory();
   });
 </script>
 
-<aside class="memory" aria-label="Память">
+<aside class="memory" aria-label={locale.t.memory.title}>
   <header>
-    <h2>Память</h2>
-    <button type="button" onclick={onclose} aria-label="Закрыть память">×</button>
+    <h2>{locale.t.memory.title}</h2>
+    <button type="button" onclick={onclose} aria-label={locale.t.memory.close}>×</button>
   </header>
   {#if store.memory.problem !== null}
     <p class="warn" role="status">{store.memory.problem}</p>
   {/if}
   {#if store.memory.facts.length === 0}
-    <p class="note">Пока ничего не запомнено.</p>
+    <p class="note">{locale.t.memory.empty}</p>
   {/if}
   <ul>
     {#each store.memory.facts as fact (fact.note)}
       <li>
         {#if editing === fact.note}
-          <textarea bind:value={draft} rows="2" aria-label="Текст факта"></textarea>
+          <textarea bind:value={draft} rows="2" aria-label={locale.t.memory.factText}></textarea>
           <button
             type="button"
             disabled={draft.trim() === ""}
             onclick={() => {
               client.saveFact(fact.note, draft);
               editing = null;
-            }}>Сохранить</button
+            }}>{locale.t.memory.save}</button
           >
           <button
             type="button"
             onclick={() => {
               editing = null;
-            }}>Отмена</button
+            }}>{locale.t.memory.cancel}</button
           >
         {:else}
           <p>{fact.text}</p>
-          <p class="note">{SOURCES[fact.source] ?? fact.source} · {fact.created.slice(0, 10)}</p>
+          <p class="note">
+            {locale.t.memory.sources[fact.source] ?? fact.source} · {fact.created.slice(0, 10)}
+          </p>
           {#if deleting === fact.note}
-            <span class="warn">Удалить этот факт?</span>
+            <span class="warn">{locale.t.memory.confirmDelete}</span>
             <button
               type="button"
               onclick={() => {
                 client.deleteFact(fact.note);
                 deleting = null;
-              }}>Удалить</button
+              }}>{locale.t.memory.delete}</button
             >
             <button
               type="button"
               onclick={() => {
                 deleting = null;
-              }}>Отмена</button
+              }}>{locale.t.memory.cancel}</button
             >
           {:else}
             <button
@@ -77,13 +74,13 @@
               onclick={() => {
                 editing = fact.note;
                 draft = fact.text;
-              }}>Исправить</button
+              }}>{locale.t.memory.edit}</button
             >
             <button
               type="button"
               onclick={() => {
                 deleting = fact.note;
-              }}>Удалить</button
+              }}>{locale.t.memory.delete}</button
             >
           {/if}
         {/if}

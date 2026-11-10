@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../core";
   // Статус-бар: связь с ядром и состояние бэкендов (LLM, TTS). Тексты и цвета — status.ts.
   import type { Snippet } from "svelte";
 
@@ -17,13 +18,13 @@
 
   const online = $derived(store.connection === "open");
   const items = $derived([
-    { name: "Ядро", ...connectionIndicator(store.connection, everOpen) },
-    { name: "LLM", ...backendIndicator(store.backends.llm, online) },
-    { name: "TTS", ...backendIndicator(store.backends.tts, online) },
+    { name: locale.t.status.core, ...connectionIndicator(store.connection, everOpen, locale.t) },
+    { name: "LLM", ...backendIndicator(store.backends.llm, online, locale.t) },
+    { name: "TTS", ...backendIndicator(store.backends.tts, online, locale.t) },
     // Микрофон загружает модель по первому кадру: до этого показывать нечего.
     ...(store.backends.stt === "unknown"
       ? []
-      : [{ name: "STT", ...backendIndicator(store.backends.stt, online) }]),
+      : [{ name: "STT", ...backendIndicator(store.backends.stt, online, locale.t) }]),
   ]);
 </script>
 
@@ -37,7 +38,7 @@
   {@render children?.()}
   {#if store.blockedViewers.length > 0}
     <span class="blocked" data-testid="status-blocked" title={blockedDetails(store.blockedViewers)}>
-      Атаки зрителей: {store.blockedViewers.length}
+      {locale.t.status.viewerAttacks}: {store.blockedViewers.length}
     </span>
   {/if}
   <span class="hint">{hint}</span>

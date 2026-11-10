@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../../core";
   // Поле ввода: Enter — отправить, Shift+Enter — перенос, Esc или «Стоп» — прервать ответ.
   // Отправка во время ответа разрешена: новая реплика сама прерывает текущий ход (ADR-0002).
   import { attachmentFromFile, type Attachment } from "./image";
@@ -49,7 +50,7 @@
         fromScreen = true;
       }
     } catch {
-      attachProblem = "Не получилось снять экран";
+      attachProblem = locale.t.composer.screenFailed;
     }
   }
 
@@ -59,7 +60,7 @@
       attached = await attachmentFromFile(file);
       fromScreen = false;
     } catch {
-      attachProblem = "Не получилось открыть эту картинку";
+      attachProblem = locale.t.composer.imageFailed;
     }
   }
 
@@ -93,19 +94,18 @@
 {#if attached !== null || attachProblem !== null}
   <div class="attached">
     {#if attached !== null}
-      <img src={attached.preview} alt="Прикреплённая картинка" />
+      <img src={attached.preview} alt={locale.t.composer.attached} />
       <button
         type="button"
         class="stop"
         onclick={() => {
           attached = null;
           fromScreen = false;
-        }}>Убрать</button
+        }}>{locale.t.composer.remove}</button
       >
       {#if fromScreen}
         <span class="warning" role="status">
-          Снимок экрана: проверьте, нет ли на нём личного. На стриме его могут увидеть. Уйдёт только
-          по кнопке «Отправить».
+          {locale.t.composer.screenWarning}
         </span>
       {/if}
     {/if}
@@ -129,22 +129,24 @@
       ontyping(text);
     }}
     rows="2"
-    placeholder="Сообщение… (Enter — отправить, Shift+Enter — новая строка)"
-    aria-label="Сообщение"></textarea>
+    placeholder={locale.t.composer.placeholder}
+    aria-label={locale.t.composer.label}></textarea>
   <div class="actions">
     {#if busy}
-      <button type="button" class="stop" onclick={onstop} title="Esc">Стоп</button>
+      <button type="button" class="stop" onclick={onstop} title="Esc"
+        >{locale.t.composer.stop}</button
+      >
     {/if}
-    <button type="submit" disabled={empty}>Отправить</button>
-    <label class="attach" title="Прикрепить картинку; можно и вставить из буфера">
-      Картинка
+    <button type="submit" disabled={empty}>{locale.t.composer.send}</button>
+    <label class="attach" title={locale.t.composer.imageHint}>
+      {locale.t.composer.image}
       <input type="file" accept="image/*" onchange={onfile} />
     </label>
     <button
       type="button"
       class="stop"
-      title="Выбрать окно и сделать один снимок"
-      onclick={() => void shoot()}>Экран</button
+      title={locale.t.composer.screenHint}
+      onclick={() => void shoot()}>{locale.t.composer.screen}</button
     >
   </div>
 </form>

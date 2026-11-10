@@ -328,6 +328,17 @@ UI → Ядро: новая реплика с картинкой; прерыва
 |---|---|
 | `sources` | `SourceData[]` |
 
+### `app.edition` — `AppEdition`
+
+Ядро → UI при подключении: в каком издании запущено ядро; UI сверяет с выбором на экране.
+
+| Поле `data` | Тип |
+|---|---|
+| `id` | `string` |
+| `language` | `string` |
+| `content_profile` | `string` |
+| `stream_safe` | `boolean` |
+
 ### `error` — `ErrorMessage`
 
 Ядро → UI: ошибка; `turn` — None, если не относится к ходу (битое сообщение).

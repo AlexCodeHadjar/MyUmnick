@@ -2,6 +2,7 @@
  * История нагрузки для графика панели ресурсов: занятая память каждой модели по снимкам.
  * Живёт, только пока панель открыта; новая модель появляется сама, правка UI не нужна.
  */
+import { messagesFor, type Messages } from "../../core";
 import type { ResourcesData } from "../../core";
 
 /** Снимок приходит раз в секунду: на графике пять минут. */
@@ -42,13 +43,6 @@ export function sparkline(
     .join(" ");
 }
 
-const STATE_LABELS: Record<string, string> = {
-  unloaded: "выгружена",
-  idle: "простаивает",
-  in_use: "работает",
-  waiting: "ждёт",
-};
-
-export function stateLabel(state: string): string {
-  return STATE_LABELS[state] ?? state;
+export function stateLabel(state: string, t: Messages = messagesFor("ru")): string {
+  return t.resources.states[state] ?? state;
 }

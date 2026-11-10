@@ -305,12 +305,12 @@
 - `build_voice` — `src/vtuber/bootstrap/supervision.py:98` — Голос из конфига; `none` — без голоса.
 - `with_voice` — `src/vtuber/bootstrap/supervision.py:109` — Движки хода: конвейер получает обёртку, чтобы сбой голоса был замечен.
 - `voice_input` — `src/vtuber/bootstrap/voice_input.py:148` — Подключает микрофон к шлюзу на время контекста; выключено в конфиге — кадры не нужны.
-- `AppParts` — `src/vtuber/bootstrap/wiring.py:31` — Что шлюзу нужно от приложения, кроме сервиса хода.
-- `connect_memory` — `src/vtuber/bootstrap/wiring.py:43` — Приватный режим работает и без памяти; редактор и очистка честно скажут, что её нет.
-- `connect_branches` — `src/vtuber/bootstrap/wiring.py:53` — Дерево начинается с восстановленного разговора: его ветки тоже можно продолжить.
-- `connect_panels` — `src/vtuber/bootstrap/wiring.py:63` — Всё, что UI может сделать помимо реплики.
-- `connect_initiative` — `src/vtuber/bootstrap/wiring.py:72` — Персонаж сам заговаривает, только если это включили (S-15.1); фон памяти не прерывается.
-- `connect_setup` — `src/vtuber/bootstrap/wiring.py:94` — Мастер есть только в поставке: при разработке модели кладут сами.
+- `AppParts` — `src/vtuber/bootstrap/wiring.py:32` — Что шлюзу нужно от приложения, кроме сервиса хода.
+- `connect_memory` — `src/vtuber/bootstrap/wiring.py:44` — Приватный режим работает и без памяти; редактор и очистка честно скажут, что её нет.
+- `connect_branches` — `src/vtuber/bootstrap/wiring.py:54` — Дерево начинается с восстановленного разговора: его ветки тоже можно продолжить.
+- `connect_panels` — `src/vtuber/bootstrap/wiring.py:64` — Всё, что UI может сделать помимо реплики.
+- `connect_initiative` — `src/vtuber/bootstrap/wiring.py:81` — Персонаж сам заговаривает, только если это включили (S-15.1); фон памяти не прерывается.
+- `connect_setup` — `src/vtuber/bootstrap/wiring.py:103` — Мастер есть только в поставке: при разработке модели кладут сами.
 
 ## src/vtuber/domain
 Доменный слой: неизменяемые сущности и значения диалога, речи и эмоций.
@@ -473,6 +473,8 @@
 - `MemoryFacts` — `src/vtuber/gateway/protocol_memory.py:131` — Ядро → UI: факты памяти (S-16.2).
 - `VisibilityData` — `src/vtuber/gateway/protocol_presence.py:8` — Видно ли окно.
 - `WindowVisibility` — `src/vtuber/gateway/protocol_presence.py:14` — UI → Ядро: окно свернули или вернули; свёрнутому персонаж сам не заговорит (S-15.1).
+- `EditionData` — `src/vtuber/gateway/protocol_presence.py:22` — Издание ядра (Этап 20, ADR-0032): язык интерфейса и профиль содержания.
+- `AppEdition` — `src/vtuber/gateway/protocol_presence.py:31` — Ядро → UI при подключении: в каком издании запущено ядро; UI сверяет с выбором на экране.
 - `ImageData` — `src/vtuber/gateway/protocol_vision.py:12` — Картинка; UI уменьшает её заранее.
 - `SendImageData` — `src/vtuber/gateway/protocol_vision.py:19` — Реплика с картинкой.
 - `ChatSendImage` — `src/vtuber/gateway/protocol_vision.py:26` — UI → Ядро: новая реплика с картинкой; прерывает текущий ход, как `chat.send`.
@@ -532,7 +534,7 @@
 ## ui/src/app
 —
 
-- `App.svelte` — `ui/src/app/App.svelte:1` — Окно: чат слева, сцена с аватаром справа (FR-01), статус-бар внизу, панель метрик по горячей
+- `App.svelte` — `ui/src/app/App.svelte:1` — —
 - `DEFAULT_RATIO` — `ui/src/app/split.ts:7` — Чат 2 : сцена 3 — как в каркасе S-5.1.
 - `MIN_CHAT_PX` — `ui/src/app/split.ts:9` — Уже — чат не читается, сцена теряет модель.
 - `MIN_STAGE_PX` — `ui/src/app/split.ts:10` — —
@@ -542,13 +544,13 @@
 - `ratioAt` — `ui/src/app/split.ts:30` — Доля по положению указателя внутри раскладки.
 - `loadRatio` — `ui/src/app/split.ts:35` — Сохранённая доля или умолчание; битое значение или недоступное хранилище — умолчание.
 - `saveRatio` — `ui/src/app/split.ts:45` — Запомнить долю; ошибка хранилища (переполнено, запрещено) не ломает раскладку.
-- `SplitLayout.svelte` — `ui/src/app/SplitLayout.svelte:1` — Две панели с перетаскиваемым разделителем (FR-01). Доля — в split.ts: ограничение минимумами
+- `SplitLayout.svelte` — `ui/src/app/SplitLayout.svelte:1` — —
 - `Tone` — `ui/src/app/status.ts:8` — —
 - `Indicator` — `ui/src/app/status.ts:10` — —
 - `connectionIndicator` — `ui/src/app/status.ts:15` — —
-- `backendIndicator` — `ui/src/app/status.ts:37` — Состояние бэкенда, пока связи нет, — устаревшее: показываем «—», а не последнее известное.
-- `blockedDetails` — `ui/src/app/status.ts:42` — Подсказка над счётчиком: кто и что написал; решение — за ведущим (`/пауза`, FR-31).
-- `StatusBar.svelte` — `ui/src/app/StatusBar.svelte:1` — Статус-бар: связь с ядром и состояние бэкендов (LLM, TTS). Тексты и цвета — status.ts.
+- `backendIndicator` — `ui/src/app/status.ts:43` — Состояние бэкенда, пока связи нет, — устаревшее: показываем «—», а не последнее известное.
+- `blockedDetails` — `ui/src/app/status.ts:52` — Подсказка над счётчиком: кто и что написал; решение — за ведущим (`/пауза`, FR-31).
+- `StatusBar.svelte` — `ui/src/app/StatusBar.svelte:1` — —
 
 ## ui/src/core
 Публичный API core: фичи импортируют отсюда, а не из модулей пакета (R-63).
@@ -565,9 +567,9 @@
 - `encodeMicFrame` — `ui/src/core/frames.ts:20` — Кадр микрофона для ядра: заголовок + PCM s16le моно.
 - `AudioFrame` — `ui/src/core/frames.ts:37` — Аудиокадр ядра. `turn` — в том же виде, что в JSON-сообщениях, чтобы их сопоставлять.
 - `FrameError` — `ui/src/core/frames.ts:45` — Кадр не соответствует протоколу: ядро другой версии или повреждённые данные.
-- `turnRef` — `ui/src/core/frames.ts:81` — Номер хода из аудиокадра в виде JSON-сообщений.
-- `parseMessage` — `ui/src/core/frames.ts:105` — Текстовый кадр → сообщение ядра; `FrameError`, если это не сообщение протокола.
-- `decodeAudioFrame` — `ui/src/core/frames.ts:122` — Бинарный кадр → аудиокадр. PCM не копируется: `Int16Array` смотрит в тот же буфер
+- `turnRef` — `ui/src/core/frames.ts:82` — Номер хода из аудиокадра в виде JSON-сообщений.
+- `parseMessage` — `ui/src/core/frames.ts:106` — Текстовый кадр → сообщение ядра; `FrameError`, если это не сообщение протокола.
+- `decodeAudioFrame` — `ui/src/core/frames.ts:123` — Бинарный кадр → аудиокадр. PCM не копируется: `Int16Array` смотрит в тот же буфер
 - `FIRST_CHAR_SPAN` — `ui/src/core/probe.ts:8` — —
 - `FirstCharProbe` — `ui/src/core/probe.ts:10` — —
 - `FIRST_AUDIO_SPAN` — `ui/src/core/probe.ts:57` — —
@@ -575,16 +577,16 @@
 - `protocol.gen.ts` — `ui/src/core/protocol.gen.ts:1` — Автогенерация: `uv run python tools/gen_protocol.py`. Не редактировать.
 - `int16ToFloat` — `ui/src/core/resample.ts:11` — Сэмплы s16 → float [-1, 1).
 - `StreamResampler` — `ui/src/core/resample.ts:19` — —
-- `Role` — `ui/src/core/store.svelte.ts:25` — —
-- `MessageStatus` — `ui/src/core/store.svelte.ts:26` — —
-- `TurnPhase` — `ui/src/core/store.svelte.ts:28` — Фаза хода для аватара и кнопки «Стоп»: ждём первый токен / идёт ответ / ничего.
-- `ChatMessage` — `ui/src/core/store.svelte.ts:30` — —
-- `BranchesView` — `ui/src/core/store.svelte.ts:44` — —
-- `PrivacyView` — `ui/src/core/store.svelte.ts:46` — —
-- `SPAN_HISTORY` — `ui/src/core/store.svelte.ts:52` — —
-- `SpeechProgress` — `ui/src/core/store.svelte.ts:55` — Что звучит в плеере (сообщает фича звука): ход, идёт ли звук, сыграно и получено, секунд.
-- `VoiceState` — `ui/src/core/store.svelte.ts:66` — Голос в UI. Ход ядра заканчивается, когда синтез готов, а звучит голос дольше (синтез
-- `AppStore` — `ui/src/core/store.svelte.ts:71` — —
+- `Role` — `ui/src/core/store.svelte.ts:27` — —
+- `MessageStatus` — `ui/src/core/store.svelte.ts:28` — —
+- `TurnPhase` — `ui/src/core/store.svelte.ts:30` — Фаза хода для аватара и кнопки «Стоп»: ждём первый токен / идёт ответ / ничего.
+- `ChatMessage` — `ui/src/core/store.svelte.ts:32` — —
+- `BranchesView` — `ui/src/core/store.svelte.ts:46` — —
+- `PrivacyView` — `ui/src/core/store.svelte.ts:48` — —
+- `SPAN_HISTORY` — `ui/src/core/store.svelte.ts:54` — —
+- `SpeechProgress` — `ui/src/core/store.svelte.ts:57` — Что звучит в плеере (сообщает фича звука): ход, идёт ли звук, сыграно и получено, секунд.
+- `VoiceState` — `ui/src/core/store.svelte.ts:68` — Голос в UI. Ход ядра заканчивается, когда синтез готов, а звучит голос дольше (синтез
+- `AppStore` — `ui/src/core/store.svelte.ts:73` — —
 - `CLOSE_REPLACED` — `ui/src/core/transport.ts:10` — Код закрытия «вытеснен новым клиентом» — `gateway/server.py` (ADR-0008).
 - `SocketLike` — `ui/src/core/transport.ts:14` — Часть WebSocket, нужная транспорту: в тестах подменяется фейком.
 - `SocketFactory` — `ui/src/core/transport.ts:24` — —
@@ -593,6 +595,17 @@
 - `Backoff` — `ui/src/core/transport.ts:37` — Пауза перед попыткой n (с нуля): `min(maxMs, initialMs · factor^n)`.
 - `TransportOptions` — `ui/src/core/transport.ts:43` — —
 - `Transport` — `ui/src/core/transport.ts:66` — —
+
+## ui/src/core/i18n
+Тексты интерфейса по языкам издания (Этап 20): фичи берут `locale.t`, а не строки в разметке.
+
+- `en` — `ui/src/core/i18n/en.ts:4` — —
+- `Lang` — `ui/src/core/i18n/locale.svelte.ts:8` — —
+- `isLang` — `ui/src/core/i18n/locale.svelte.ts:12` — —
+- `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
+- `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
+- `ru` — `ui/src/core/i18n/ru.ts:21` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:164` — —
 
 ## ui/src/features/audio
 Публичный API фичи звука: плеер голоса и его подключение к ядру (ADR-0003).
@@ -621,7 +634,7 @@
 - `AvatarReaction` — `ui/src/features/avatar/AvatarRenderer.ts:24` — Реакция на ход разговора, не зависящая от текста: «слушаю» (пользователь печатает),
 - `StageSize` — `ui/src/features/avatar/AvatarRenderer.ts:27` — Размер области сцены в CSS-пикселях; рендер сам учитывает devicePixelRatio.
 - `AvatarRenderer` — `ui/src/features/avatar/AvatarRenderer.ts:32` — —
-- `AvatarStage.svelte` — `ui/src/features/avatar/AvatarStage.svelte:1` — Сцена с аватаром: холст Live2D на всю панель, статус загрузки или ошибки поверх. Логика —
+- `AvatarStage.svelte` — `ui/src/features/avatar/AvatarStage.svelte:1` — —
 - `HeadAxis` — `ui/src/features/avatar/gesture.ts:6` — —
 - `GestureSpec` — `ui/src/features/avatar/gesture.ts:8` — —
 - `gestureAngle` — `ui/src/features/avatar/gesture.ts:18` — Добавка к углу головы через `elapsedMs`; огибающая возвращает голову на место к концу жеста.
@@ -651,12 +664,12 @@
 - `THINKING_AFTER_MS` — `ui/src/features/avatar/reactions.ts:9` — Порог «думаю», мс: бюджет TTFA (NFR-02) — ответ медленнее нормы виден по лицу.
 - `ConversationView` — `ui/src/features/avatar/reactions.ts:11` — —
 - `isWaiting` — `ui/src/features/avatar/reactions.ts:23` — Реплика ушла, а ответа ещё не слышно (без голоса — не видно).
-- `avatarSource` — `ui/src/features/avatar/session.ts:12` — Файлы модели `<имя>` в `ui/public/avatars/<имя>/` (ADR-0011).
-- `MouthSource` — `ui/src/features/avatar/session.ts:21` — Открытие рта 0…1 за прошедшие `deltaMs`; без звука — всегда 0.
-- `ActivitySource` — `ui/src/features/avatar/session.ts:23` — Идёт ли разговор (ход или голос): пока да — эмоция не угасает.
-- `AvatarStatus` — `ui/src/features/avatar/session.ts:25` — —
-- `RendererFactory` — `ui/src/features/avatar/session.ts:29` — Создатель рендера: Live2D в окне, фейк в тестах.
-- `AvatarSession` — `ui/src/features/avatar/session.ts:35` — —
+- `avatarSource` — `ui/src/features/avatar/session.ts:13` — Файлы модели `<имя>` в `ui/public/avatars/<имя>/` (ADR-0011).
+- `MouthSource` — `ui/src/features/avatar/session.ts:22` — Открытие рта 0…1 за прошедшие `deltaMs`; без звука — всегда 0.
+- `ActivitySource` — `ui/src/features/avatar/session.ts:24` — Идёт ли разговор (ход или голос): пока да — эмоция не угасает.
+- `AvatarStatus` — `ui/src/features/avatar/session.ts:26` — —
+- `RendererFactory` — `ui/src/features/avatar/session.ts:30` — Создатель рендера: Live2D в окне, фейк в тестах.
+- `AvatarSession` — `ui/src/features/avatar/session.ts:36` — —
 
 ## ui/src/features/avatar/live2d
 —
@@ -693,9 +706,9 @@
 ## ui/src/features/chat
 Публичный API фичи чата: приложение монтирует только панель (R-63).
 
-- `BranchBar.svelte` — `ui/src/features/chat/BranchBar.svelte:1` — Ветки диалога (S-16.1): показывается, когда есть что выбирать или куда вернуться.
-- `Chat.svelte` — `ui/src/features/chat/Chat.svelte:1` — Панель чата: история, индикатор «печатает», ошибка ядра, поле ввода, режим субтитров.
-- `Composer.svelte` — `ui/src/features/chat/Composer.svelte:1` — Поле ввода: Enter — отправить, Shift+Enter — перенос, Esc или «Стоп» — прервать ответ.
+- `BranchBar.svelte` — `ui/src/features/chat/BranchBar.svelte:1` — —
+- `Chat.svelte` — `ui/src/features/chat/Chat.svelte:1` — —
+- `Composer.svelte` — `ui/src/features/chat/Composer.svelte:1` — —
 - `MAX_IMAGE_SIDE` — `ui/src/features/chat/image.ts:8` — Больше длинной стороны модели всё равно не увидят: проектор сжимает картинку сам.
 - `ImageSize` — `ui/src/features/chat/image.ts:12` — —
 - `Attachment` — `ui/src/features/chat/image.ts:17` — —
@@ -714,13 +727,13 @@
 - `isAtBottom` — `ui/src/features/chat/layout.ts:76` — Пользователь внизу списка — новые сообщения прокручивают к себе; ушёл читать выше — нет.
 - `MeasureTarget` — `ui/src/features/chat/measure.ts:7` — —
 - `measureHeight` — `ui/src/features/chat/measure.ts:27` — —
-- `MessageList.svelte` — `ui/src/features/chat/MessageList.svelte:1` — Виртуализированная история: в DOM только окно вокруг экрана (layout.ts), строки
-- `asksForScreen` — `ui/src/features/chat/screen.ts:11` — Просит ли реплика посмотреть на экран; решает только открыть диалог, снимка без него нет.
-- `wantsCapture` — `ui/src/features/chat/screen.ts:16` — Открыть ли диалог вместо отправки: снимок уже есть — значит, пользователь решает его судьбу.
-- `Stoppable` — `ui/src/features/chat/screen.ts:21` — Что нужно от потока: остановить его.
-- `ScreenSource` — `ui/src/features/chat/screen.ts:26` — Что нужно от захвата: в тестах — подмена.
-- `captureFrom` — `ui/src/features/chat/screen.ts:50` — Снимок выбранного окна; null — пользователь передумал. Захват завершается при любом исходе, чтобы
-- `captureScreen` — `ui/src/features/chat/screen.ts:70` — —
+- `MessageList.svelte` — `ui/src/features/chat/MessageList.svelte:1` — —
+- `asksForScreen` — `ui/src/features/chat/screen.ts:14` — Просит ли реплика посмотреть на экран; решает только открыть диалог, снимка без него нет.
+- `wantsCapture` — `ui/src/features/chat/screen.ts:19` — Открыть ли диалог вместо отправки: снимок уже есть — значит, пользователь решает его судьбу.
+- `Stoppable` — `ui/src/features/chat/screen.ts:24` — Что нужно от потока: остановить его.
+- `ScreenSource` — `ui/src/features/chat/screen.ts:29` — Что нужно от захвата: в тестах — подмена.
+- `captureFrom` — `ui/src/features/chat/screen.ts:53` — Снимок выбранного окна; null — пользователь передумал. Захват завершается при любом исходе, чтобы
+- `captureScreen` — `ui/src/features/chat/screen.ts:73` — —
 - `SPEECH_CHARS_PER_S` — `ui/src/features/chat/subtitles.ts:10` — Темп речи до конца хода, символов на секунду звука: Silero `xenia` — ≈ 18 (замер S-7.6).
 - `SUBTITLES_KEY` — `ui/src/features/chat/subtitles.ts:12` — Ключ настройки в localStorage.
 - `SettingStorage` — `ui/src/features/chat/subtitles.ts:15` — Нужное от localStorage: в тестах — словарь.
@@ -738,31 +751,31 @@
 
 - `POLL_MS` — `ui/src/features/desktop/clickThrough.ts:9` — 10 раз в секунду: реакция незаметна глазу, а обращения к оболочке не мешают рендеру (NFR-05).
 - `ClickThrough` — `ui/src/features/desktop/clickThrough.ts:13` — —
-- `DesktopOverlay.svelte` — `ui/src/features/desktop/DesktopOverlay.svelte:1` — Кнопки режима поверх стола и работа с окном. Кнопки видны всегда, а не только над моделью:
-- `OVERLAY_SIZE` — `ui/src/features/desktop/mode.ts:9` — Размер небольшого окна с моделью, CSS-пиксели: модель видна целиком и не занимает экран.
-- `DesktopState` — `ui/src/features/desktop/mode.ts:11` — —
-- `Point` — `ui/src/features/desktop/mode.ts:16` — —
-- `WindowPort` — `ui/src/features/desktop/mode.ts:22` — Что режиму нужно от окна. Все вызовы асинхронны: это обращения к оболочке.
-- `DesktopStorage` — `ui/src/features/desktop/mode.ts:34` — Нужное от localStorage: в тестах — словарь.
-- `loadDesktop` — `ui/src/features/desktop/mode.ts:42` — Запись могла испортиться или устареть: тогда обычное окно, а не сюрприз при запуске.
-- `saveDesktop` — `ui/src/features/desktop/mode.ts:60` — —
-- `isDesktopHotkey` — `ui/src/features/desktop/mode.ts:65` — Хоткей: окно без рамки, а кнопка может оказаться за краем экрана.
-- `DESKTOP_HOTKEY_LABEL` — `ui/src/features/desktop/mode.ts:74` — —
+- `DesktopOverlay.svelte` — `ui/src/features/desktop/DesktopOverlay.svelte:1` — —
+- `OVERLAY_SIZE` — `ui/src/features/desktop/mode.ts:10` — Размер небольшого окна с моделью, CSS-пиксели: модель видна целиком и не занимает экран.
+- `DesktopState` — `ui/src/features/desktop/mode.ts:12` — —
+- `Point` — `ui/src/features/desktop/mode.ts:17` — —
+- `WindowPort` — `ui/src/features/desktop/mode.ts:23` — Что режиму нужно от окна. Все вызовы асинхронны: это обращения к оболочке.
+- `DesktopStorage` — `ui/src/features/desktop/mode.ts:35` — Нужное от localStorage: в тестах — словарь.
+- `loadDesktop` — `ui/src/features/desktop/mode.ts:43` — Запись могла испортиться или устареть: тогда обычное окно, а не сюрприз при запуске.
+- `saveDesktop` — `ui/src/features/desktop/mode.ts:61` — —
+- `isDesktopHotkey` — `ui/src/features/desktop/mode.ts:66` — Хоткей: окно без рамки, а кнопка может оказаться за краем экрана.
+- `DESKTOP_HOTKEY_LABEL` — `ui/src/features/desktop/mode.ts:75` — —
 - `tauriWindow` — `ui/src/features/desktop/tauriWindow.ts:9` — —
 
 ## ui/src/features/memory
 Публичный API редактора памяти (R-63).
 
-- `MEMORY_HOTKEY_LABEL` — `ui/src/features/memory/index.ts:6` — —
-- `isMemoryHotkey` — `ui/src/features/memory/index.ts:9` — По `code`, а не `key`: в русской раскладке `key` для этой клавиши — «Н».
-- `MemoryPanel.svelte` — `ui/src/features/memory/MemoryPanel.svelte:1` — Редактор памяти (S-16.2): что витюбер запомнил, откуда это и как исправить.
+- `MEMORY_HOTKEY_LABEL` — `ui/src/features/memory/index.ts:7` — —
+- `isMemoryHotkey` — `ui/src/features/memory/index.ts:10` — По `code`, а не `key`: в русской раскладке `key` для этой клавиши — «Н».
+- `MemoryPanel.svelte` — `ui/src/features/memory/MemoryPanel.svelte:1` — —
 
 ## ui/src/features/metrics
 Публичный API фичи метрик: панель и её горячая клавиша (R-63).
 
-- `METRICS_HOTKEY_LABEL` — `ui/src/features/metrics/hotkey.ts:5` — Горячая клавиша панели метрик (FR-15): Ctrl+Shift+M. F12 занят инструментами разработчика
-- `isMetricsHotkey` — `ui/src/features/metrics/hotkey.ts:10` — По `code`, а не `key`: в русской раскладке `key` для этой клавиши — «Ь».
-- `MetricsPanel.svelte` — `ui/src/features/metrics/MetricsPanel.svelte:1` — Панель метрик для разработчика (FR-15): задержки стадий хода — от ядра (`metrics.span`) и
+- `METRICS_HOTKEY_LABEL` — `ui/src/features/metrics/hotkey.ts:6` — —
+- `isMetricsHotkey` — `ui/src/features/metrics/hotkey.ts:11` — По `code`, а не `key`: в русской раскладке `key` для этой клавиши — «Ь».
+- `MetricsPanel.svelte` — `ui/src/features/metrics/MetricsPanel.svelte:1` — —
 - `Summary` — `ui/src/features/metrics/stats.ts:7` — —
 - `percentile` — `ui/src/features/metrics/stats.ts:28` — Перцентиль по ближайшему рангу: значение из выборки, без интерполяции — честно для малых n.
 - `summarize` — `ui/src/features/metrics/stats.ts:36` — —
@@ -778,43 +791,44 @@
 - `FrameSink` — `ui/src/features/mic/framer.ts:13` — —
 - `MicFramer` — `ui/src/features/mic/framer.ts:15` — —
 - `MicCapture` — `ui/src/features/mic/MicCapture.ts:10` — —
-- `MicControl.svelte` — `ui/src/features/mic/MicControl.svelte:1` — Голосовой ввод: режим «выключен / всегда слушать / по клавише F9» (FR-голос, Этап 11). Захват
-- `MicMode` — `ui/src/features/mic/mode.ts:3` — —
-- `MIC_MODES` — `ui/src/features/mic/mode.ts:5` — —
-- `TRAILING_SILENCE_MS` — `ui/src/features/mic/mode.ts:12` — Тишина после отпускания клавиши: чуть дольше паузы конца фразы в ядре — фраза закрывается сразу.
-- `parseMode` — `ui/src/features/mic/mode.ts:14` — —
-- `isPushToTalk` — `ui/src/features/mic/mode.ts:18` — —
+- `MicControl.svelte` — `ui/src/features/mic/MicControl.svelte:1` — —
+- `MicMode` — `ui/src/features/mic/mode.ts:5` — —
+- `MIC_MODE_VALUES` — `ui/src/features/mic/mode.ts:7` — —
+- `micModes` — `ui/src/features/mic/mode.ts:10` — Режимы с подписями на языке издания.
+- `TRAILING_SILENCE_MS` — `ui/src/features/mic/mode.ts:15` — Тишина после отпускания клавиши: чуть дольше паузы конца фразы в ядре — фраза закрывается сразу.
+- `parseMode` — `ui/src/features/mic/mode.ts:17` — —
+- `isPushToTalk` — `ui/src/features/mic/mode.ts:21` — —
 
 ## ui/src/features/onboarding
 Публичный API мастера первого запуска (R-63).
 
 - `chosenAvatar` — `ui/src/features/onboarding/avatar.ts:4` — —
 - `chooseAvatar` — `ui/src/features/onboarding/avatar.ts:8` — —
-- `Onboarding.svelte` — `ui/src/features/onboarding/Onboarding.svelte:1` — Мастер первого запуска (S-13.2): что подходит этой машине, согласие на загрузку, ход загрузки,
-- `SetupItem` — `ui/src/features/onboarding/plan.ts:7` — —
-- `initialSelection` — `ui/src/features/onboarding/plan.ts:9` — —
-- `toggled` — `ui/src/features/onboarding/plan.ts:14` — Обязательное снять нельзя: без него диалог не заработает.
-- `downloadSize` — `ui/src/features/onboarding/plan.ts:27` — Сколько байт ещё скачивать: уже стоящее не считается.
-- `canInstall` — `ui/src/features/onboarding/plan.ts:33` — —
-- `formatSize` — `ui/src/features/onboarding/plan.ts:41` — —
-- `percent` — `ui/src/features/onboarding/plan.ts:48` — —
-- `parseAvatars` — `ui/src/features/onboarding/plan.ts:53` — Список аватаров из `avatars/index.json`; файла нет или он не JSON — только встроенный.
-- `loadAvatars` — `ui/src/features/onboarding/plan.ts:62` — Dev-сервер на отсутствующий файл отдаёт index.html: такой ответ — тоже «файла нет».
+- `Onboarding.svelte` — `ui/src/features/onboarding/Onboarding.svelte:1` — —
+- `SetupItem` — `ui/src/features/onboarding/plan.ts:8` — —
+- `initialSelection` — `ui/src/features/onboarding/plan.ts:10` — —
+- `toggled` — `ui/src/features/onboarding/plan.ts:15` — Обязательное снять нельзя: без него диалог не заработает.
+- `downloadSize` — `ui/src/features/onboarding/plan.ts:28` — Сколько байт ещё скачивать: уже стоящее не считается.
+- `canInstall` — `ui/src/features/onboarding/plan.ts:34` — —
+- `formatSize` — `ui/src/features/onboarding/plan.ts:42` — —
+- `percent` — `ui/src/features/onboarding/plan.ts:49` — —
+- `parseAvatars` — `ui/src/features/onboarding/plan.ts:54` — Список аватаров из `avatars/index.json`; файла нет или он не JSON — только встроенный.
+- `loadAvatars` — `ui/src/features/onboarding/plan.ts:63` — Dev-сервер на отсутствующий файл отдаёт index.html: такой ответ — тоже «файла нет».
 - `restartApp` — `ui/src/features/onboarding/restart.ts:7` — Модели подхватываются при старте ядра, поэтому после установки приложение перезапускается.
 
 ## ui/src/features/privacy
 Публичный API приватного режима (R-63).
 
-- `PrivacyControl.svelte` — `ui/src/features/privacy/PrivacyControl.svelte:1` — Приватный режим и очистка памяти (S-17.2). Режим хранит ядро, поэтому индикатор честен и после
+- `PrivacyControl.svelte` — `ui/src/features/privacy/PrivacyControl.svelte:1` — —
 
 ## ui/src/features/resources
 Публичный API фичи ресурсов: панель и её горячая клавиша (R-63).
 
-- `HISTORY_POINTS` — `ui/src/features/resources/history.ts:8` — Снимок приходит раз в секунду: на графике пять минут.
-- `LoadHistory` — `ui/src/features/resources/history.ts:10` — —
-- `addSnapshot` — `ui/src/features/resources/history.ts:17` — —
-- `sparkline` — `ui/src/features/resources/history.ts:29` — Точки SVG `polyline`; новые — справа, вертикальный масштаб — от `maxMb`.
-- `stateLabel` — `ui/src/features/resources/history.ts:52` — —
-- `RESOURCES_HOTKEY_LABEL` — `ui/src/features/resources/index.ts:6` — —
-- `isResourcesHotkey` — `ui/src/features/resources/index.ts:9` — По `code`, а не `key`: в русской раскладке `key` для этой клавиши — «Г».
-- `ResourcesPanel.svelte` — `ui/src/features/resources/ResourcesPanel.svelte:1` — Панель ресурсов (FR-29): что сейчас в видеопамяти, кто и почему ждёт, нагрузка во времени.
+- `HISTORY_POINTS` — `ui/src/features/resources/history.ts:9` — Снимок приходит раз в секунду: на графике пять минут.
+- `LoadHistory` — `ui/src/features/resources/history.ts:11` — —
+- `addSnapshot` — `ui/src/features/resources/history.ts:18` — —
+- `sparkline` — `ui/src/features/resources/history.ts:30` — Точки SVG `polyline`; новые — справа, вертикальный масштаб — от `maxMb`.
+- `stateLabel` — `ui/src/features/resources/history.ts:46` — —
+- `RESOURCES_HOTKEY_LABEL` — `ui/src/features/resources/index.ts:7` — —
+- `isResourcesHotkey` — `ui/src/features/resources/index.ts:10` — По `code`, а не `key`: в русской раскладке `key` для этой клавиши — «Г».
+- `ResourcesPanel.svelte` — `ui/src/features/resources/ResourcesPanel.svelte:1` — —

@@ -23,3 +23,4 @@ export {
   type VoiceState,
 } from "./store.svelte";
 export { type ConnectionState } from "./transport";
+export { isLang, locale, messagesFor, type Lang, type Messages } from "./i18n";

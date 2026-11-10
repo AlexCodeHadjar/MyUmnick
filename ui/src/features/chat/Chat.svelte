@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../../core";
   // Панель чата: история, индикатор «печатает», ошибка ядра, поле ввода, режим субтитров.
   // Состояние — только из store, действия — через CoreClient (R-63); своей логики диалога нет.
   import type { ChatMessage, CoreClient } from "../../core";
@@ -35,7 +36,7 @@
   }
 </script>
 
-<section class="chat" aria-label="Чат">
+<section class="chat" aria-label={locale.t.chat.region}>
   <BranchBar {client} />
   <MessageList
     messages={store.messages}
@@ -46,7 +47,7 @@
   />
   {#if store.sources.length > 0}
     <p class="sources">
-      Источники:
+      {locale.t.chat.sources}
       {#each store.sources as source (source.url)}
         <a href={source.url} target="_blank" rel="noreferrer">{source.title || source.url}</a>
       {/each}
@@ -55,9 +56,11 @@
   <div class="status">
     <span class="state" aria-live="polite">
       {#if store.hypothesis !== ""}
-        <span class="hypothesis">слышу: {store.hypothesis}</span>
+        <span class="hypothesis">{locale.t.chat.hearing} {store.hypothesis}</span>
       {:else if store.phase === "thinking"}
-        <span class="typing">печатает<span class="dots" aria-hidden="true">…</span></span>
+        <span class="typing"
+          >{locale.t.chat.typing}<span class="dots" aria-hidden="true">…</span></span
+        >
       {:else if store.error !== null}
         <span class="error" role="alert">{store.error.message}</span>
       {:else if store.notice !== null}
@@ -68,8 +71,8 @@
       type="button"
       class="toggle"
       aria-pressed={subtitles}
-      title="Текст ответа появляется вместе с голосом"
-      onclick={toggleSubtitles}>Субтитры</button
+      title={locale.t.chat.subtitlesHint}
+      onclick={toggleSubtitles}>{locale.t.chat.subtitles}</button
     >
   </div>
   <!-- «Стоп» нужен и после конца хода: голос звучит дольше, чем идёт ход (синтез быстрее речи). -->

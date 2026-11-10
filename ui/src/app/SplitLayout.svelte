@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../core";
   // Две панели с перетаскиваемым разделителем (FR-01). Доля — в split.ts: ограничение минимумами
   // панелей и запоминание между запусками. Разделитель двигается и стрелками (role="separator").
   import type { Snippet } from "svelte";
@@ -91,7 +92,7 @@
     class="divider"
     role="separator"
     aria-orientation="vertical"
-    aria-label="Ширина чата"
+    aria-label={locale.t.app.chatWidth}
     aria-valuemin={0}
     aria-valuemax={100}
     aria-valuenow={Math.round(effective * 100)}

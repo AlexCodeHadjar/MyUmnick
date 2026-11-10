@@ -3,6 +3,7 @@
  * панели и курсором; всё снять в `dispose()`. Компонент сцены только показывает статус. Каждый
  * кадр: эмоция с затуханием (`mood.ts`), рот из звука, шаг модели.
  */
+import { locale } from "../../core";
 import type { AvatarRenderer, AvatarSource, StageSize } from "./AvatarRenderer";
 import { gazeAt } from "./live2d/fit";
 import { AvatarLoop } from "./loop";
@@ -69,7 +70,7 @@ export class AvatarSession {
       this.#onStatus({ state: "ready" });
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
-      this.#onStatus({ state: "error", message: `Модель «${name}» не загрузилась: ${reason}` });
+      this.#onStatus({ state: "error", message: locale.t.avatar.failed(name, reason) });
     }
   }
 

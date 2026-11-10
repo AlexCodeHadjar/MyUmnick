@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../../core";
   // Мастер первого запуска (S-13.2): что подходит этой машине, согласие на загрузку, ход загрузки,
   // выбор аватара. Без явного согласия ядру не уходит ни одной команды на скачивание.
   import { onMount, untrack } from "svelte";
@@ -83,15 +84,15 @@
 
 {#if setup !== null}
   <div class="backdrop">
-    <section class="wizard" aria-label="Первый запуск">
-      <h2>Первый запуск</h2>
+    <section class="wizard" aria-label={locale.t.onboarding.title}>
+      <h2>{locale.t.onboarding.title}</h2>
       <p>
         {#if setup.gpu_total_mb === null}
-          Видеокарта NVIDIA не найдена.
+          {locale.t.onboarding.noGpu}
         {:else}
-          Видеопамять: {setup.gpu_total_mb} МБ.
+          {locale.t.onboarding.vram(setup.gpu_total_mb)}
         {/if}
-        Приложению нужны модели: они работают на этом компьютере.
+        {locale.t.onboarding.intro}
       </p>
       {#each setup.warnings as warning (warning)}
         <p class="warn">{warning}</p>
@@ -99,17 +100,19 @@
 
       {#if finished}
         <label>
-          Аватар
+          {locale.t.onboarding.avatar}
           <select bind:value={avatar}>
             {#each avatars as name (name)}
               <option value={name}>{name}</option>
             {/each}
           </select>
         </label>
-        <p>Всё установлено. Приложение перезапустится и загрузит модели.</p>
-        <button type="button" class="primary" onclick={() => void finish()}>Завершить</button>
+        <p>{locale.t.onboarding.done}</p>
+        <button type="button" class="primary" onclick={() => void finish()}
+          >{locale.t.onboarding.finish}</button
+        >
         {#if restartByHand}
-          <p class="warn">Перезапустите приложение вручную.</p>
+          <p class="warn">{locale.t.onboarding.restartManually}</p>
         {/if}
       {:else}
         <ul>
@@ -127,13 +130,13 @@
                 {item.title}
               </label>
               <span class="meta">
-                {item.installed ? "уже установлено" : formatSize(item.size)} · {item.license}
+                {item.installed ? locale.t.onboarding.installed : formatSize(item.size, locale.t)} · {item.license}
               </span>
             </li>
           {/each}
         </ul>
         <label>
-          Голос
+          {locale.t.onboarding.voice}
           <select bind:value={voice} disabled={installing}>
             {#each setup.voices as name (name)}
               <option value={name}>{name}</option>
@@ -142,7 +145,7 @@
         </label>
         <label class="consent">
           <input type="checkbox" bind:checked={agreed} disabled={installing} />
-          Согласен скачать {formatSize(size)} из интернета и принимаю лицензии выше
+          {locale.t.onboarding.consent(formatSize(size, locale.t))}
         </label>
 
         {#if result?.problem}
@@ -152,7 +155,10 @@
           <progress max="100" value={percent(store.setupProgress.done, store.setupProgress.total)}
           ></progress>
           <p class="meta">
-            {formatSize(store.setupProgress.done)} из {formatSize(store.setupProgress.total)}
+            {locale.t.onboarding.progress(
+              formatSize(store.setupProgress.done, locale.t),
+              formatSize(store.setupProgress.total, locale.t),
+            )}
           </p>
         {/if}
 
@@ -163,15 +169,15 @@
               onclick={() => {
                 client.cancelSetup();
                 installing = false;
-              }}>Прервать</button
+              }}>{locale.t.onboarding.abort}</button
             >
           {:else}
-            <button type="button" onclick={onclose}>Позже</button>
+            <button type="button" onclick={onclose}>{locale.t.onboarding.later}</button>
             <button
               type="button"
               class="primary"
               disabled={!canInstall(setup, selection, agreed)}
-              onclick={install}>Скачать и установить</button
+              onclick={install}>{locale.t.onboarding.install}</button
             >
           {/if}
         </div>

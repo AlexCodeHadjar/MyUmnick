@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../../core";
   // Виртуализированная история: в DOM только окно вокруг экрана (layout.ts), строки
   // позиционируются по замеренным высотам (measure.ts). Внизу список «прилипает» к новым.
   import { SvelteMap } from "svelte/reactivity";
@@ -53,7 +54,7 @@
   bind:this={viewport}
   bind:clientHeight={viewportHeight}
   {onscroll}
-  aria-label="История чата"
+  aria-label={locale.t.chat.history}
 >
   <div class="canvas" style:height="{view.totalHeight}px">
     {#each view.placed as { item, top } (item.id)}
@@ -64,18 +65,20 @@
       >
         <p class="bubble" class:cancelled={item.status === "cancelled"}>
           {#if item.image !== undefined}
-            <img class="shown" src={item.image} alt="Показанная картинка" />
+            <img class="shown" src={item.image} alt={locale.t.chat.shownImage} />
           {/if}
           {textOf(item)}{#if item.status === "streaming"}<span class="caret" aria-hidden="true"
-            ></span>{/if}{#if item.status === "cancelled"}<span class="mark">— прервано</span>{/if}
+            ></span>{/if}{#if item.status === "cancelled"}<span class="mark"
+              >{locale.t.chat.interrupted}</span
+            >{/if}
         </p>
         {#if onrewind && item.turn !== null && item.status !== "streaming"}
           {@const turn = item.turn}
           <button
             type="button"
             class="rewind"
-            title="Вернуться сюда: следующая реплика начнёт новую ветку, эта останется"
-            aria-label="Продолжить отсюда"
+            title={locale.t.chat.continueHereHint}
+            aria-label={locale.t.chat.continueHere}
             onclick={() => {
               onrewind(turn);
             }}>↩</button

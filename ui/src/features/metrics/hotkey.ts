@@ -2,7 +2,8 @@
  * Горячая клавиша панели метрик (FR-15): Ctrl+Shift+M. F12 занят инструментами разработчика
  * WebView2, одиночные буквы — полем ввода чата.
  */
-export const METRICS_HOTKEY_LABEL = "Ctrl+Shift+M — метрики";
+import { messagesFor } from "../../core";
+export const METRICS_HOTKEY_LABEL = messagesFor("ru").metrics.hotkey;
 
 type KeyInfo = Pick<KeyboardEvent, "code" | "ctrlKey" | "shiftKey" | "altKey" | "metaKey">;
 

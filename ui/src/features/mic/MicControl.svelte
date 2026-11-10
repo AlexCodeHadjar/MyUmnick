@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../../core";
   // Голосовой ввод: режим «выключен / всегда слушать / по клавише F9» (FR-голос, Этап 11). Захват
   // живёт, пока режим не «выключен»; кадры идут ядру через CoreClient (R-63). Отказ в доступе к
   // микрофону не мешает чату: режим откатывается, причина — в подсказке.
@@ -7,7 +8,7 @@
   import type { CoreClient } from "../../core";
   import { MIC_SAMPLE_RATE } from "./framer";
   import { MicCapture } from "./MicCapture";
-  import { isPushToTalk, MIC_MODES, parseMode, TRAILING_SILENCE_MS, type MicMode } from "./mode";
+  import { isPushToTalk, micModes, parseMode, TRAILING_SILENCE_MS, type MicMode } from "./mode";
 
   const MODE_KEY = "vtuber.mic.mode";
 
@@ -88,16 +89,16 @@
 
 <svelte:window {onkeydown} {onkeyup} />
 
-<label class="mic" title={problem ?? "Голосовой ввод"}>
+<label class="mic" title={problem ?? locale.t.mic.title}>
   <span class:error={problem !== null}>🎤</span>
   <select
-    aria-label="Режим микрофона"
+    aria-label={locale.t.mic.mode}
     value={mode}
     onchange={(event) => {
       choose(parseMode(event.currentTarget.value));
     }}
   >
-    {#each MIC_MODES as option (option.value)}
+    {#each micModes(locale.t) as option (option.value)}
       <option value={option.value}>{option.label}</option>
     {/each}
   </select>

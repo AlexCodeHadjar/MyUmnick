@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../core";
   // Окно: чат слева, сцена с аватаром справа (FR-01), статус-бар внизу, панель метрик по горячей
   // клавише (FR-15). Голос: плеер из фичи audio, его громкость — рот аватара (ADR-0003, R-63).
   import { onMount } from "svelte";
@@ -8,7 +9,6 @@
   import { AvatarStage } from "../features/avatar";
   import { Chat } from "../features/chat";
   import {
-    DESKTOP_HOTKEY_LABEL,
     DesktopOverlay,
     isDesktopHotkey,
     loadDesktop,
@@ -17,11 +17,11 @@
     type Point,
   } from "../features/desktop";
   import { MicControl } from "../features/mic";
-  import { isMetricsHotkey, METRICS_HOTKEY_LABEL, MetricsPanel } from "../features/metrics";
-  import { isMemoryHotkey, MEMORY_HOTKEY_LABEL, MemoryPanel } from "../features/memory";
+  import { isMetricsHotkey, MetricsPanel } from "../features/metrics";
+  import { isMemoryHotkey, MemoryPanel } from "../features/memory";
   import { chosenAvatar, Onboarding } from "../features/onboarding";
   import { PrivacyControl } from "../features/privacy";
-  import { isResourcesHotkey, RESOURCES_HOTKEY_LABEL, ResourcesPanel } from "../features/resources";
+  import { isResourcesHotkey, ResourcesPanel } from "../features/resources";
   import SplitLayout from "./SplitLayout.svelte";
   import StatusBar from "./StatusBar.svelte";
 
@@ -136,7 +136,7 @@
       <Chat {client} storage={layoutStorage()} />
     {/snippet}
     {#snippet right()}
-      <section class="stage" aria-label="Сцена">
+      <section class="stage" aria-label={locale.t.app.stage}>
         <AvatarStage
           onhittest={(contains: HitTest) => {
             overModel = contains;
@@ -177,7 +177,7 @@
   <div class="status" class:hidden={overlay}>
     <StatusBar
       store={client.store}
-      hint={`${METRICS_HOTKEY_LABEL}, ${RESOURCES_HOTKEY_LABEL}, ${MEMORY_HOTKEY_LABEL}${desktopPort === null ? "" : `, ${DESKTOP_HOTKEY_LABEL}`}`}
+      hint={`${locale.t.metrics.hotkey}, ${locale.t.resources.hotkey}, ${locale.t.memory.hotkey}${desktopPort === null ? "" : `, ${locale.t.desktop.hotkey}`}`}
     >
       <MicControl {client} storage={layoutStorage()} />
       <PrivacyControl {client} />

@@ -49,6 +49,7 @@ from vtuber.gateway.protocol import (
 )
 from vtuber.gateway.protocol_base import PROTOCOL_VERSION, EmptyData
 from vtuber.gateway.protocol_extras import ViewerBlockedMessage
+from vtuber.gateway.protocol_presence import AppEdition
 from vtuber.gateway.resources_feed import ResourcesFeed
 from vtuber.gateway.server import REPLACED_CODE, GatewayConfig, GatewayServer, MicSink
 from vtuber.gateway.setup_bridge import SetupBridge
@@ -66,6 +67,7 @@ __all__ = [
     "PROTOCOL_VERSION",
     "REPLACED_CODE",
     "STOP_COMMAND",
+    "AppEdition",
     "AudioFrame",
     "AvatarEmotion",
     "BranchBridge",

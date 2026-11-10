@@ -32,7 +32,7 @@ from vtuber.gateway.protocol_memory import (
     PrivacySet,
     PrivacyState,
 )
-from vtuber.gateway.protocol_presence import WindowVisibility
+from vtuber.gateway.protocol_presence import AppEdition, WindowVisibility
 from vtuber.gateway.protocol_vision import ChatSendImage
 
 
@@ -321,6 +321,7 @@ type OutboundMessage = Annotated[
     | MemoryFacts
     | BranchState
     | ChatSources
+    | AppEdition
     | ErrorMessage,
     Field(discriminator="type"),
 ]

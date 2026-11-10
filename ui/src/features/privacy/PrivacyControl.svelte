@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../../core";
   // Приватный режим и очистка памяти (S-17.2). Режим хранит ядро, поэтому индикатор честен и после
   // перезапуска окна. Очистка — в два шага: необратимое действие не должно срабатывать от одного клика.
   import type { CoreClient } from "../../core";
@@ -14,36 +15,36 @@
     type="button"
     class:active={store.privacy.enabled}
     aria-pressed={store.privacy.enabled}
-    title="Разговор не попадает в память, чаты и резюме"
+    title={locale.t.privacy.hint}
     onclick={() => {
       client.setPrivate(!store.privacy.enabled);
     }}
   >
-    {store.privacy.enabled ? "ПРИВАТНО: не запоминаю" : "Приватный режим"}
+    {store.privacy.enabled ? locale.t.privacy.on : locale.t.privacy.off}
   </button>
   {#if store.privacy.erasable}
     {#if confirming}
-      <span class="warn">Удалить всю память без возврата?</span>
+      <span class="warn">{locale.t.privacy.confirmErase}</span>
       <button
         type="button"
         class="danger"
         onclick={() => {
           confirming = false;
           client.eraseMemory();
-        }}>Удалить</button
+        }}>{locale.t.privacy.erase}</button
       >
       <button
         type="button"
         onclick={() => {
           confirming = false;
-        }}>Отмена</button
+        }}>{locale.t.privacy.cancel}</button
       >
     {:else}
       <button
         type="button"
         onclick={() => {
           confirming = true;
-        }}>Очистить память</button
+        }}>{locale.t.privacy.clear}</button
       >
     {/if}
   {/if}

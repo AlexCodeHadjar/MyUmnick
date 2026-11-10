@@ -17,6 +17,7 @@ from vtuber.bootstrap.plugins import PluginServices
 from vtuber.bootstrap.setup import build_wizard
 from vtuber.domain import Persona
 from vtuber.gateway import (
+    AppEdition,
     BranchBridge,
     ExternalTurns,
     GatewayServer,
@@ -63,6 +64,14 @@ def connect_branches(
 def connect_panels(app: AppParts, server: GatewayServer, service: ConversationService) -> None:
     """Всё, что UI может сделать помимо реплики."""
     server.use_commands(app.plugins.commands)
+    edition = app.cfg.edition
+    server.panels.edition = AppEdition.of(
+        edition.id.value,
+        edition.language,
+        edition.content_profile.value,
+        stream_safe=edition.stream_safe,
+    )
+    server.panels.send = server.send
     server.panels.resources = ResourcesFeed(app.resources.snapshot, server.send)
     connect_setup(app.cfg, server)
     connect_memory(app.memory, server, service)

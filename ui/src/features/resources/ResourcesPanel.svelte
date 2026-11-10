@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../../core";
   // Панель ресурсов (FR-29): что сейчас в видеопамяти, кто и почему ждёт, нагрузка во времени.
   // Снимки ядро шлёт только при открытой панели: закрытая ничего не считает и не занимает кадр.
   import { untrack } from "svelte";
@@ -33,30 +34,36 @@
   });
 </script>
 
-<aside class="resources" aria-label="Ресурсы">
+<aside class="resources" aria-label={locale.t.resources.title}>
   <header>
-    <h2>Ресурсы</h2>
-    <button type="button" onclick={onclose} aria-label="Закрыть ресурсы">×</button>
+    <h2>{locale.t.resources.title}</h2>
+    <button type="button" onclick={onclose} aria-label={locale.t.resources.close}>×</button>
   </header>
   {#if snapshot === null}
-    <p class="note">Ждём данные ядра…</p>
+    <p class="note">{locale.t.resources.waiting}</p>
   {:else}
     <p class="limits">
-      Свободно {snapshot.free_mb} из {snapshot.limit_mb} МБ
+      {locale.t.resources.free(snapshot.free_mb, snapshot.limit_mb)}
       {#if snapshot.limit_mb < snapshot.capacity_mb}
-        <span class="warn">(на карте свободно меньше, чем по конфигу: {snapshot.capacity_mb})</span>
+        <span class="warn">{locale.t.resources.lessOnCard(snapshot.capacity_mb)}</span>
       {/if}
     </p>
     <p class="note">
-      Закреплено:
-      {snapshot.pinned.map((item) => `${item.name} ${String(item.vram_mb)} МБ`).join(", ")}
+      {locale.t.resources.pinned}
+      {snapshot.pinned
+        .map((item) => `${item.name} ${String(item.vram_mb)} ${locale.t.resources.mb}`)
+        .join(", ")}
     </p>
     {#if snapshot.models.length === 0}
-      <p class="note">Моделей под управлением пока нет: они появятся вместе с инструментами.</p>
+      <p class="note">{locale.t.resources.none}</p>
     {:else}
       <table>
         <thead>
-          <tr><th>Модель</th><th>МБ</th><th>Приоритет</th><th>Состояние</th><th>Нагрузка</th></tr>
+          <tr
+            ><th>{locale.t.resources.model}</th><th>{locale.t.resources.mb}</th><th
+              >{locale.t.resources.priority}</th
+            ><th>{locale.t.resources.state}</th><th>{locale.t.resources.load}</th></tr
+          >
         </thead>
         <tbody>
           {#each snapshot.models as model (model.name)}
@@ -65,7 +72,7 @@
               <td>{model.vram_mb}</td>
               <td>{model.priority}</td>
               <td class="state">
-                {stateLabel(model.state)}
+                {stateLabel(model.state, locale.t)}
                 {#if model.waiting_reason !== null}<span class="warn">: {model.waiting_reason}</span
                   >{/if}
               </td>

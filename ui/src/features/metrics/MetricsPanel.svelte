@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../../core";
   // Панель метрик для разработчика (FR-15): задержки стадий хода — от ядра (`metrics.span`) и
   // замер самого UI. Поверх сцены, не отнимает место у чата; открывается горячей клавишей.
   import { SPAN_HISTORY, type AppStore } from "../../core";
@@ -11,18 +12,19 @@
   const ms = (value: number): string => (Number.isNaN(value) ? "—" : value.toFixed(1));
 </script>
 
-<aside class="metrics" aria-label="Метрики">
+<aside class="metrics" aria-label={locale.t.metrics.region}>
   <header>
-    <h2>Метрики, мс</h2>
-    <button type="button" onclick={onclose} aria-label="Закрыть метрики">×</button>
+    <h2>{locale.t.metrics.title}</h2>
+    <button type="button" onclick={onclose} aria-label={locale.t.metrics.close}>×</button>
   </header>
   {#if rows.length === 0}
-    <p class="empty">Замеров ещё нет — отправьте сообщение.</p>
+    <p class="empty">{locale.t.metrics.empty}</p>
   {:else}
     <table>
       <thead>
         <tr>
-          <th>Стадия</th><th>посл.</th><th>p50</th><th>p95</th><th>норма p50</th><th>n</th>
+          <th>{locale.t.metrics.stage}</th><th>{locale.t.metrics.last}</th><th>p50</th><th>p95</th
+          ><th>{locale.t.metrics.norm}</th><th>n</th>
         </tr>
       </thead>
       <tbody>
@@ -38,7 +40,7 @@
         {/each}
       </tbody>
     </table>
-    <p class="note">Последние {SPAN_HISTORY} замеров каждой стадии.</p>
+    <p class="note">{locale.t.metrics.note(SPAN_HISTORY)}</p>
   {/if}
 </aside>
 

@@ -6,10 +6,13 @@ import { encodeFrame, type Attachment, type ImageSize } from "./image";
 
 const SCREEN_REQUEST =
   /(?:посмотри|взгляни|глянь)\s+(?:на\s+)?(?:мой\s+|моё\s+|мое\s+|этот\s+|это\s+)?(?:экран|окно)|что\s+(?:у\s+меня\s+)?на\s+экране/iu;
+// Английское издание (Этап 20): «look at my screen», «what's on my screen».
+const SCREEN_REQUEST_EN =
+  /\b(?:look|check|glance)\s+at\s+(?:my\s+|this\s+|the\s+)?(?:screen|window)\b|\bwhat(?:'s|\s+is)\s+on\s+(?:my\s+|the\s+)?screen\b/iu;
 
 /** Просит ли реплика посмотреть на экран; решает только открыть диалог, снимка без него нет. */
 export function asksForScreen(text: string): boolean {
-  return SCREEN_REQUEST.test(text);
+  return SCREEN_REQUEST.test(text) || SCREEN_REQUEST_EN.test(text);
 }
 
 /** Открыть ли диалог вместо отправки: снимок уже есть — значит, пользователь решает его судьбу. */

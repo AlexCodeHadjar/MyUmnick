@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "../../core";
   // Сцена с аватаром: холст Live2D на всю панель, статус загрузки или ошибки поверх. Логика —
   // в session.ts, reactions.ts и mood.ts; движок грузится динамически, чат не ждёт Pixi и Core.
   import { onMount } from "svelte";
@@ -135,7 +136,7 @@
 
 <div class="avatar" bind:this={host}>
   {#if status.state === "loading"}
-    <p class="note">Загрузка модели…</p>
+    <p class="note">{locale.t.avatar.loading}</p>
   {:else if status.state === "error"}
     <p class="note error" role="alert">{status.message}</p>
   {/if}
