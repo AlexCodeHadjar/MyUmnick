@@ -7,7 +7,8 @@ import { messagesFor } from "../../core";
 const STORAGE_KEY = "vtuber.desktop";
 
 /** Размер небольшого окна с моделью, CSS-пиксели: модель видна целиком и не занимает экран. */
-export const OVERLAY_SIZE = { width: 360, height: 560 } as const;
+// Квадрат под сферу (Этап 22): у сферы нет «роста», а в узком окне она мельчала.
+export const OVERLAY_SIZE = { width: 520, height: 520 } as const;
 
 export interface DesktopState {
   overlay: boolean;

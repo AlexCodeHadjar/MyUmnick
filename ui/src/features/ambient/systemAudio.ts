@@ -14,7 +14,7 @@ export interface AmbientBands {
 export const SILENCE: AmbientBands = { bass: 0, mid: 0, high: 0 };
 
 /** Громкость в полосе мала даже на громкой музыке: усиление до 0…1 с мягким потолком. */
-const GAIN: AmbientBands = { bass: 4, mid: 6, high: 10 };
+const GAIN: AmbientBands = { bass: 10, mid: 16, high: 24 };
 /** Подъём — быстро (удар баса виден сразу), спад — плавно. */
 const RISE = 0.6;
 const FALL = 0.12;

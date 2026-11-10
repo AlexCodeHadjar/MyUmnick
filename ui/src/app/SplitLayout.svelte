@@ -81,9 +81,10 @@
   bind:clientWidth={width}
   class:only-right={onlyRight}
   style:grid-template-columns={onlyRight
-    ? "0 0 1fr"
+    ? "0 1fr"
     : `${String(effective)}fr 6px ${String(1 - effective)}fr`}
 >
+  <!-- Поверх стола разделитель скрыт (display: none) и выпадает из сетки: колонок две, а не три. -->
   <div class="pane">{@render left()}</div>
   <!-- Фокусируемый separator — интерактивный виджет по WAI-ARIA (шаблон window splitter), а
        проверка Svelte считает separator неинтерактивным всегда. -->

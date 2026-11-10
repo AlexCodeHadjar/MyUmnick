@@ -829,15 +829,15 @@
 - `POLL_MS` — `ui/src/features/desktop/clickThrough.ts:9` — 10 раз в секунду: реакция незаметна глазу, а обращения к оболочке не мешают рендеру (NFR-05).
 - `ClickThrough` — `ui/src/features/desktop/clickThrough.ts:13` — —
 - `DesktopOverlay.svelte` — `ui/src/features/desktop/DesktopOverlay.svelte:1` — —
-- `OVERLAY_SIZE` — `ui/src/features/desktop/mode.ts:10` — Размер небольшого окна с моделью, CSS-пиксели: модель видна целиком и не занимает экран.
-- `DesktopState` — `ui/src/features/desktop/mode.ts:12` — —
-- `Point` — `ui/src/features/desktop/mode.ts:17` — —
-- `WindowPort` — `ui/src/features/desktop/mode.ts:23` — Что режиму нужно от окна. Все вызовы асинхронны: это обращения к оболочке.
-- `DesktopStorage` — `ui/src/features/desktop/mode.ts:35` — Нужное от localStorage: в тестах — словарь.
-- `loadDesktop` — `ui/src/features/desktop/mode.ts:43` — Запись могла испортиться или устареть: тогда обычное окно, а не сюрприз при запуске.
-- `saveDesktop` — `ui/src/features/desktop/mode.ts:61` — —
-- `isDesktopHotkey` — `ui/src/features/desktop/mode.ts:66` — Хоткей: окно без рамки, а кнопка может оказаться за краем экрана.
-- `DESKTOP_HOTKEY_LABEL` — `ui/src/features/desktop/mode.ts:75` — —
+- `OVERLAY_SIZE` — `ui/src/features/desktop/mode.ts:11` — Размер небольшого окна с моделью, CSS-пиксели: модель видна целиком и не занимает экран.
+- `DesktopState` — `ui/src/features/desktop/mode.ts:13` — —
+- `Point` — `ui/src/features/desktop/mode.ts:18` — —
+- `WindowPort` — `ui/src/features/desktop/mode.ts:24` — Что режиму нужно от окна. Все вызовы асинхронны: это обращения к оболочке.
+- `DesktopStorage` — `ui/src/features/desktop/mode.ts:36` — Нужное от localStorage: в тестах — словарь.
+- `loadDesktop` — `ui/src/features/desktop/mode.ts:44` — Запись могла испортиться или устареть: тогда обычное окно, а не сюрприз при запуске.
+- `saveDesktop` — `ui/src/features/desktop/mode.ts:62` — —
+- `isDesktopHotkey` — `ui/src/features/desktop/mode.ts:67` — Хоткей: окно без рамки, а кнопка может оказаться за краем экрана.
+- `DESKTOP_HOTKEY_LABEL` — `ui/src/features/desktop/mode.ts:76` — —
 - `tauriWindow` — `ui/src/features/desktop/tauriWindow.ts:9` — —
 
 ## ui/src/features/edition

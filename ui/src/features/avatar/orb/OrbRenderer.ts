@@ -190,9 +190,11 @@ export class OrbRenderer implements AvatarRenderer {
     const ctx = this.#ctx;
     const cx = this.#size.width / 2;
     const cy = this.#size.height / 2;
-    const radius = this.#radius() * (1.5 + this.#energy * 2 + this.#ambient.bass * 0.8);
+    // Ореол сдержанный: поверх рабочего стола он не должен закрывать всё вокруг сферы.
+    const radius = this.#radius() * (1.25 + this.#energy + this.#ambient.bass * 0.3);
     const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-    glow.addColorStop(0, `hsla(${String(hue)}, 90%, 60%, ${String(0.16 + this.#energy * 2.4)})`);
+    const alpha = Math.min(0.3, 0.08 + this.#energy * 1.2 + this.#ambient.bass * 0.12);
+    glow.addColorStop(0, `hsla(${String(hue)}, 90%, 60%, ${String(alpha)})`);
     glow.addColorStop(1, `hsla(${String(hue)}, 90%, 40%, 0)`);
     ctx.fillStyle = glow;
     ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
