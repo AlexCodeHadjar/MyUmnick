@@ -6,7 +6,7 @@ import { locale } from "./i18n";
 import { animationFrame, FrameBatch, type FrameScheduler } from "./batch";
 import { encodeMicFrame, type AudioFrame } from "./frames";
 import { FIRST_AUDIO_SPAN, FIRST_CHAR_SPAN, FirstAudioProbe, FirstCharProbe } from "./probe";
-import { PROTOCOL_VERSION, type ImageData } from "./protocol.gen";
+import { PROTOCOL_VERSION, type ChatActionData, type ImageData } from "./protocol.gen";
 import { AppStore, type SpeechProgress } from "./store.svelte";
 import { Transport, type Backoff, type SocketFactory } from "./transport";
 
@@ -203,6 +203,12 @@ export class CoreClient {
   }
 
   /** Панель памяти открыта: нужен список фактов. */
+  /** Действие со списком чатов (Этап 21): ответ — новый `store.chats`. */
+  chatAction(data: Pick<ChatActionData, "action"> & Partial<ChatActionData>): void {
+    const full: ChatActionData = { id: null, name: null, category: null, ...data };
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "chats.action", data: full });
+  }
+
   /** Перенести факты в другое издание (S-20.10); итог — `store.transfer`. */
   transferMemory(): void {
     this.store.transfer = { state: "running", count: null, problem: null };

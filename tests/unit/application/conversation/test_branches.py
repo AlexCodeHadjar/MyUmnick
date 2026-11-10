@@ -233,3 +233,13 @@ async def test_nothing_is_sent_for_an_empty_dialogue() -> None:
     world = _Setup(FakeLLM("Ответ"))
     await world.bridge.send_state()
     assert world.sent == []
+
+
+async def test_empty_chat_state_is_sent_only_when_asked() -> None:
+    world = _Setup(FakeLLM("<happy>Ответ"))
+
+    await world.bridge.send_state()
+    assert world.sent == []
+    await world.bridge.send_state(always=True)
+
+    assert world.last().data.messages == []

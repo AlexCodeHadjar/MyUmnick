@@ -8,6 +8,7 @@
   import { connectVoice, type VoicePlayer } from "../features/audio";
   import { AvatarStage } from "../features/avatar";
   import { Chat } from "../features/chat";
+  import { ChatSidebar } from "../features/chats";
   import {
     DesktopOverlay,
     isDesktopHotkey,
@@ -132,48 +133,53 @@
       }}
     />
   {/if}
-  <SplitLayout storage={layoutStorage()} onlyRight={overlay}>
-    {#snippet left()}
-      <Chat {client} storage={layoutStorage()} />
-    {/snippet}
-    {#snippet right()}
-      <section class="stage" aria-label={locale.t.app.stage}>
-        <AvatarStage
-          onhittest={(contains: HitTest) => {
-            overModel = contains;
-          }}
-          name={chosenAvatar(layoutStorage()) ?? import.meta.env.VITE_AVATAR}
-          store={client.store}
-          mouth={(deltaMs: number) => player?.mouth(deltaMs) ?? 0}
-          mouthForm={() => player?.mouthForm() ?? 0}
-        />
-        {#if showMetrics}
-          <MetricsPanel
+  <div class="workspace">
+    {#if !overlay}
+      <ChatSidebar {client} storage={layoutStorage() ?? null} />
+    {/if}
+    <SplitLayout storage={layoutStorage()} onlyRight={overlay}>
+      {#snippet left()}
+        <Chat {client} storage={layoutStorage()} />
+      {/snippet}
+      {#snippet right()}
+        <section class="stage" aria-label={locale.t.app.stage}>
+          <AvatarStage
+            onhittest={(contains: HitTest) => {
+              overModel = contains;
+            }}
+            name={chosenAvatar(layoutStorage()) ?? import.meta.env.VITE_AVATAR}
             store={client.store}
-            onclose={() => {
-              showMetrics = false;
-            }}
+            mouth={(deltaMs: number) => player?.mouth(deltaMs) ?? 0}
+            mouthForm={() => player?.mouthForm() ?? 0}
           />
-        {/if}
-        {#if showMemory}
-          <MemoryPanel
-            {client}
-            onclose={() => {
-              showMemory = false;
-            }}
-          />
-        {/if}
-        {#if showResources}
-          <ResourcesPanel
-            {client}
-            onclose={() => {
-              showResources = false;
-            }}
-          />
-        {/if}
-      </section>
-    {/snippet}
-  </SplitLayout>
+          {#if showMetrics}
+            <MetricsPanel
+              store={client.store}
+              onclose={() => {
+                showMetrics = false;
+              }}
+            />
+          {/if}
+          {#if showMemory}
+            <MemoryPanel
+              {client}
+              onclose={() => {
+                showMemory = false;
+              }}
+            />
+          {/if}
+          {#if showResources}
+            <ResourcesPanel
+              {client}
+              onclose={() => {
+                showResources = false;
+              }}
+            />
+          {/if}
+        </section>
+      {/snippet}
+    </SplitLayout>
+  </div>
   <!-- Скрыт, а не снят: микрофон продолжает слушать и поверх стола. -->
   <div class="status" class:hidden={overlay}>
     <StatusBar
@@ -223,6 +229,16 @@
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
     height: 100vh;
+  }
+
+  /* Чаты слева, затем чат и сцена: панель чатов сворачивается сама, раскладка не прыгает. */
+  .workspace {
+    display: flex;
+    min-height: 0;
+  }
+  .workspace > :global(:last-child) {
+    flex: 1;
+    min-width: 0;
   }
 
   .stage {

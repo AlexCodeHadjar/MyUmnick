@@ -331,9 +331,9 @@
 - `connect_memory` — `src/vtuber/bootstrap/wiring.py:46` — Приватный режим работает и без памяти; редактор и очистка честно скажут, что её нет.
 - `connect_branches` — `src/vtuber/bootstrap/wiring.py:57` — Дерево начинается с восстановленного разговора: его ветки тоже можно продолжить.
 - `connect_panels` — `src/vtuber/bootstrap/wiring.py:67` — Всё, что UI может сделать помимо реплики.
-- `connect_chat` — `src/vtuber/bootstrap/wiring.py:93` — Панели памяти и веток — к открытому чату: его факты, его история и шина его ходов.
-- `connect_initiative` — `src/vtuber/bootstrap/wiring.py:99` — Персонаж сам заговаривает, только если это включили (S-15.1); фон памяти не прерывается.
-- `connect_setup` — `src/vtuber/bootstrap/wiring.py:121` — Мастер есть только в поставке: при разработке модели кладут сами.
+- `connect_chat` — `src/vtuber/bootstrap/wiring.py:95` — Панели памяти и веток — к открытому чату: его факты, его история и шина его ходов.
+- `connect_initiative` — `src/vtuber/bootstrap/wiring.py:101` — Персонаж сам заговаривает, только если это включили (S-15.1); фон памяти не прерывается.
+- `connect_setup` — `src/vtuber/bootstrap/wiring.py:123` — Мастер есть только в поставке: при разработке модели кладут сами.
 
 ## src/vtuber/domain
 Доменный слой: неизменяемые сущности и значения диалога, речи и эмоций.
@@ -644,7 +644,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:187` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:206` — —
 
 ## ui/src/features/audio
 Публичный API фичи звука: плеер голоса и его подключение к ядру (ADR-0003).
@@ -784,6 +784,17 @@
 - `TYPING_DEBOUNCE_MS` — `ui/src/features/chat/typing.ts:8` — Пауза в наборе, после которой черновик уходит ядру, мс (T-05: ~300).
 - `Timers` — `ui/src/features/chat/typing.ts:10` — —
 - `TypingDebouncer` — `ui/src/features/chat/typing.ts:22` — —
+
+## ui/src/features/chats
+Публичный API панели чатов (Этап 21, R-63).
+
+- `ChatSidebar.svelte` — `ui/src/features/chats/ChatSidebar.svelte:1` — Чаты слева, как в Claude (Этап 21, ADR-0037): у каждого чата своя память и свой контекст,
+- `ChatGroup` — `ui/src/features/chats/groups.ts:7` — —
+- `groupChats` — `ui/src/features/chats/groups.ts:14` — Без категории — сверху, затем категории в порядке создания; пустые категории тоже видны.
+- `chatLabel` — `ui/src/features/chats/groups.ts:30` — Название в списке: пустое — «Новый чат» на языке интерфейса.
+- `SettingStorage` — `ui/src/features/chats/groups.ts:34` — —
+- `readCollapsed` — `ui/src/features/chats/groups.ts:42` — Свёрнута ли панель чатов; хранилище недоступно — развёрнута.
+- `writeCollapsed` — `ui/src/features/chats/groups.ts:50` — —
 
 ## ui/src/features/desktop
 Публичный API режима «персонаж поверх рабочего стола» (S-15.2).

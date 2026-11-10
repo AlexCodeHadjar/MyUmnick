@@ -5,6 +5,10 @@ export { FIRST_AUDIO_SPAN, FIRST_CHAR_SPAN } from "./probe";
 export { int16ToFloat, StreamResampler } from "./resample";
 export type {
   BackendState,
+  CategoryData,
+  ChatActionData,
+  ChatItemData,
+  ChatsData,
   Component,
   Emotion,
   Gesture,

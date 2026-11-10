@@ -86,6 +86,8 @@ def connect_panels(app: AppParts, server: GatewayServer, service: ConversationSe
             # Новый чат: панели — к его памяти, UI — его история, приватность и список фактов.
             connect_chat(app, server, service)
             await server.panels.greet()
+            if server.panels.branches is not None:
+                await server.panels.branches.send_state(always=True)
 
         memory.on_switched = switched
 

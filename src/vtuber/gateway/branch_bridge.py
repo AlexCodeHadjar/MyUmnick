@@ -54,9 +54,12 @@ class BranchBridge:
         self._tree = tree
         self._send = send
 
-    async def send_state(self) -> None:
-        """Окно перезапустилось или диалог восстановлен: показать то, что знает ядро."""
-        if self._tree.active is not None:
+    async def send_state(self, *, always: bool = False) -> None:
+        """Окно перезапустилось или диалог восстановлен: показать то, что знает ядро.
+
+        `always` — и пустой разговор тоже: после смены чата окно должно очистить чужую историю.
+        """
+        if always or self._tree.active is not None:
             await self._send_state(None)
 
     async def handle(self, message: BranchGo | BranchCheckpoint) -> None:
