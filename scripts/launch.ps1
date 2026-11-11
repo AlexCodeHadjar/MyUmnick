@@ -13,7 +13,12 @@
     Закрыли окно — скрипт закрывает ядро (конец stdin) и выходит. Журнал — logs/launcher.log.
 
     Первый запуск долгий: окно собирается (Rust) несколько минут, дальше — секунды.
+
+    -Background (ADR-0041): окно стартует скрытым в трее и открывается, когда витюбера зовут по имени.
+    Так его запускает Windows при входе, если в меню значка включено «Запускать вместе с Windows».
+    Повторный клик по ярлыку при запущенном витюбере открывает его окно.
 #>
+param([switch] $Background)
 $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $PSScriptRoot
@@ -117,6 +122,21 @@ function Stop-Core($Core) {
     }
 }
 
+function Show-RunningWindow {
+    # Окно уже живёт (часто — скрытым в трее): показать его вместо второго запуска.
+    Add-Type -Namespace Vtuber -Name User32 -MemberDefinition @'
+[DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindow(string c, string t);
+[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
+[DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+'@
+    # Класс — обязательно: `$null` PowerShell передаёт строкой "", и поиск без класса ничего не находит.
+    $handle = [Vtuber.User32]::FindWindow("Tauri Window", "AI VTuber")
+    if ($handle -eq [IntPtr]::Zero) { return $false }
+    [Vtuber.User32]::ShowWindow($handle, 9) | Out-Null    # SW_RESTORE: и скрытое, и свёрнутое
+    [Vtuber.User32]::SetForegroundWindow($handle) | Out-Null
+    return $true
+}
+
 function Start-Window {
     $info = New-Object System.Diagnostics.ProcessStartInfo
     $info.FileName = "cmd.exe"
@@ -124,15 +144,21 @@ function Start-Window {
     $info.WorkingDirectory = Join-Path $Root "ui"
     $info.UseShellExecute = $false
     $info.CreateNoWindow = $true
-    Write-Log "окно: tauri dev через node"
+    # Строку автозапуска окно пишет в реестр само (меню значка): в разработке запускать надо этот скрипт.
+    $self = $PSCommandPath
+    $info.EnvironmentVariables["VTUBER_AUTOSTART_COMMAND"] =
+        "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$self`" -Background"
+    $info.EnvironmentVariables["VTUBER_BACKGROUND"] = if ($Background) { "1" } else { "0" }
+    Write-Log "окно: tauri dev через node$(if ($Background) { ', в фоне' })"
     return [System.Diagnostics.Process]::Start($info)
 }
 
 # Второй клик по ярлыку не запускает второе ядро на том же порту.
 $mutex = New-Object System.Threading.Mutex($false, "Local\vtuber-launcher")
 if (-not $mutex.WaitOne(0)) {
-    Show-Error "Витюбер уже запущен."
-    exit 1
+    if ($Background) { exit 0 }            # автозапуск, а витюбер уже работает — ничего не делать
+    if (-not (Show-RunningWindow)) { Show-Error "Витюбер уже запускается — окно появится через минуту." }
+    exit 0
 }
 
 try {

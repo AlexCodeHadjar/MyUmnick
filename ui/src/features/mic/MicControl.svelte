@@ -8,11 +8,22 @@
   import type { CoreClient } from "../../core";
   import { MIC_SAMPLE_RATE } from "./framer";
   import { MicCapture } from "./MicCapture";
-  import { isPushToTalk, micModes, parseMode, TRAILING_SILENCE_MS, type MicMode } from "./mode";
+  import {
+    isPushToTalk,
+    micModes,
+    parseMode,
+    startMode,
+    TRAILING_SILENCE_MS,
+    type MicMode,
+  } from "./mode";
 
   const MODE_KEY = "vtuber.mic.mode";
 
-  const { client, storage }: { client: CoreClient; storage?: Storage | undefined } = $props();
+  const {
+    client,
+    storage,
+    background = false,
+  }: { client: CoreClient; storage?: Storage | undefined; background?: boolean } = $props();
 
   let mode = $state<MicMode>("off");
   let problem = $state<string | null>(null);
@@ -76,9 +87,11 @@
   }
 
   onMount(() => {
-    const saved = remembered();
+    // В фоне — «всегда слушать», но выбор пользователя не перезаписывается: это режим запуска.
+    const saved = startMode(remembered(), background);
     if (saved !== "off") {
-      choose(saved);
+      mode = saved;
+      applying = applying.then(() => apply(saved));
     }
     return () => {
       void capture?.stop();

@@ -30,7 +30,7 @@
 
   type HitTest = (x: number, y: number) => boolean;
 
-  const { client }: { client: CoreClient } = $props();
+  const { client, background = false }: { client: CoreClient; background?: boolean } = $props();
 
   let showMetrics = $state(false);
   let showResources = $state(false);
@@ -195,7 +195,7 @@
     >
       <EditionBadge store={client.store} />
       <AmbientControl audio={systemAudio} storage={layoutStorage()} />
-      <MicControl {client} storage={layoutStorage()} />
+      <MicControl {client} storage={layoutStorage()} {background} />
       <PrivacyControl {client} />
     </StatusBar>
   </div>

@@ -860,10 +860,10 @@
 - `PickerAction` — `ui/src/features/edition/editions.ts:90` — —
 - `keyAction` — `ui/src/features/edition/editions.ts:94` — Клавиши экрана: ←/→ — фокус по кругу, Enter/Пробел — запуск, 1…9 — сразу плитка.
 - `afterPick` — `ui/src/features/edition/editions.ts:106` — Состояние после выбора: издание запоминается как последнее, подтверждение — с датой.
-- `LauncherPort` — `ui/src/features/edition/launcher.ts:10` — —
-- `launcher` — `ui/src/features/edition/launcher.ts:71` — —
-- `PICK_PARAM` — `ui/src/features/edition/launcher.ts:76` — Запрос экрана выбора при перезагрузке окна (смена издания из строки статуса).
-- `pickRequested` — `ui/src/features/edition/launcher.ts:78` — —
+- `LauncherPort` — `ui/src/features/edition/launcher.ts:11` — —
+- `launcher` — `ui/src/features/edition/launcher.ts:108` — —
+- `PICK_PARAM` — `ui/src/features/edition/launcher.ts:113` — Запрос экрана выбора при перезагрузке окна (смена издания из строки статуса).
+- `pickRequested` — `ui/src/features/edition/launcher.ts:115` — —
 
 ## ui/src/features/memory
 Публичный API редактора памяти (R-63).
@@ -900,6 +900,7 @@
 - `TRAILING_SILENCE_MS` — `ui/src/features/mic/mode.ts:15` — Тишина после отпускания клавиши: чуть дольше паузы конца фразы в ядре — фраза закрывается сразу.
 - `parseMode` — `ui/src/features/mic/mode.ts:17` — —
 - `isPushToTalk` — `ui/src/features/mic/mode.ts:21` — —
+- `startMode` — `ui/src/features/mic/mode.ts:26` — Режим при старте: в фоне (ADR-0041) витюбер ждёт зова, поэтому слушает всегда.
 
 ## ui/src/features/onboarding
 Публичный API мастера первого запуска (R-63).

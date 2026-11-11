@@ -15,7 +15,8 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+# tray-icon — значок фонового режима (ADR-0041): флаг уже стоящей зависимости.
+tauri = { version = "2", features = ["tray-icon"] }
 # Звук компьютера для сферы (ADR-0039): WASAPI loopback. serde — числа полос в событие окна.
 cpal = "0.16"
 serde = { version = "1", features = ["derive"] }

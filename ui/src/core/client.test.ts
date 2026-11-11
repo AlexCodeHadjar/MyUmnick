@@ -195,6 +195,14 @@ describe("CoreClient", () => {
     expect(cancelled).toEqual([null]);
   });
 
+  it("зов по имени — сразу, без кадра: скрытое окно открывается (ADR-0041)", () => {
+    const { client, socket } = connected();
+    let called = 0;
+    client.onCalled(() => (called += 1));
+    socket.receive(JSON.stringify({ v: 1, type: "input.barge_in", data: {} }));
+    expect(called).toBe(1);
+  });
+
   it("снимок ресурсов — в store, закрытая панель его сбрасывает", () => {
     const { client, socket, frames } = connected();
     client.watchResources(true);

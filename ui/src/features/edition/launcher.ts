@@ -4,6 +4,7 @@
  * (Vite без окна) — localStorage, а ядро запускают руками: `python -m vtuber serve --edition <id>`.
  */
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
 import { DEFAULT_LAUNCHER, parseLauncher, type EditionId, type LauncherState } from "./editions";
 
@@ -14,6 +15,12 @@ export interface LauncherPort {
   startCore(edition: EditionId): Promise<void>;
   /** Остановить ядро перед сменой издания: два ядра с LLM в 16 ГБ не поместятся. */
   stopCore(): Promise<void>;
+  /** Окно запущено в фоне (автозапуск с Windows, ADR-0041): без экрана выбора, ждёт зова. */
+  background(): Promise<boolean>;
+  /** Показать скрытое или свёрнутое окно: витюбера позвали. */
+  reveal(): Promise<void>;
+  /** Окно показали или спрятали в трей: WebView2 сам `visibilitychange` при этом не шлёт. */
+  onShown(sink: (shown: boolean) => void): void;
 }
 
 const STORAGE_KEY = "vtuber.launcher";
@@ -37,6 +44,24 @@ class TauriLauncher implements LauncherPort {
 
   async stopCore(): Promise<void> {
     await invoke("core_stop");
+  }
+
+  async background(): Promise<boolean> {
+    try {
+      return await invoke<boolean>("background_mode");
+    } catch {
+      return false;
+    }
+  }
+
+  async reveal(): Promise<void> {
+    await invoke("window_reveal");
+  }
+
+  onShown(sink: (shown: boolean) => void): void {
+    void listen<boolean>("window-shown", (event) => {
+      sink(event.payload);
+    });
   }
 }
 
@@ -65,6 +90,18 @@ class BrowserLauncher implements LauncherPort {
 
   stopCore(): Promise<void> {
     return Promise.resolve();
+  }
+
+  background(): Promise<boolean> {
+    return Promise.resolve(false); // у вкладки браузера нет трея
+  }
+
+  reveal(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  onShown(): void {
+    // Вкладка браузера скрывается сама — хватает `visibilitychange`.
   }
 }
 

@@ -20,24 +20,34 @@ const root = target;
 const port = launcher();
 
 /** Главное окно издания: язык выставлен до подключения — интерфейс не мигает другим языком. */
-function openApp(edition: Edition): void {
+function openApp(edition: Edition, background: boolean): void {
   locale.set(edition.lang);
   const client = new CoreClient({ url: import.meta.env.VITE_CORE_URL });
   client.store.expectedEdition = edition.id;
+  // Позвали по имени — окно из трея открывается (ADR-0041).
+  client.onCalled(() => {
+    void port.reveal().catch(() => undefined);
+  });
   client.start();
+  // Окно в трее (фон или крестик) — скрытое: персонаж сам не заговаривает (S-15.1).
+  if (background || document.hidden) client.setWindowVisible(false);
+  port.onShown((shown) => {
+    client.setWindowVisible(shown);
+  });
   document.addEventListener("visibilitychange", () => {
     client.setWindowVisible(!document.hidden);
   });
-  mount(App, { target: root, props: { client } });
+  mount(App, { target: root, props: { client, background } });
 }
 
 async function start(): Promise<void> {
-  const state = await port.load();
+  const [state, background] = await Promise.all([port.load(), port.background()]);
   // Предзапуск (STAGE_20, 2.2): ядро прошлого издания стартует, пока пользователь смотрит на плитки.
   const preload = port.startCore(state.last);
-  if (!needsPicker(state, pickRequested(location.search))) {
+  // В фоне выбирать некому: открывается прошлое издание.
+  if (background || !needsPicker(state, pickRequested(location.search))) {
     await preload;
-    openApp(editionById(state.last));
+    openApp(editionById(state.last), background);
     return;
   }
   const picker = mount(EditionPicker, {
@@ -50,7 +60,7 @@ async function start(): Promise<void> {
         await port.save(next);
         await unmount(picker);
         history.replaceState(null, "", location.pathname);
-        openApp(edition);
+        openApp(edition, false);
       },
     },
   });

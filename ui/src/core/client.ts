@@ -35,6 +35,8 @@ export class CoreClient {
   /** Плеер подключается из фичи audio; до него кадры отбрасываются. */
   #audio: AudioSink = () => undefined;
   #cancel: CancelSink = () => undefined;
+  /** Зов по имени — мимо пачки: скрытое окно кадров не рисует, а открыться должно (ADR-0041). */
+  #called: () => void = () => undefined;
   #micSeq = 0;
   #hidden = false;
   readonly #batch: FrameBatch;
@@ -62,7 +64,10 @@ export class CoreClient {
         message: (message) => {
           // Отмена — мимо пачки: тишина за ≤ 100 мс (NFR-04) не ждёт следующего кадра.
           if (message.type === "turn.cancelled") this.#cancel(message.turn);
-          if (message.type === "input.barge_in") this.#cancel(null);
+          if (message.type === "input.barge_in") {
+            this.#cancel(null);
+            this.#called();
+          }
           if (message.type === "input.final") {
             // Голосовая реплика — как `say()`: замеры идут от неё.
             probe.sent();
@@ -109,6 +114,11 @@ export class CoreClient {
 
   onCancel(sink: CancelSink): void {
     this.#cancel = sink;
+  }
+
+  /** Витюбера позвали (в режиме `by_name` — по имени); окно в трее открывается. */
+  onCalled(sink: () => void): void {
+    this.#called = sink;
   }
 
   /** Плеер: что звучит. В store — пачкой раз в кадр, как и сообщения ядра (T-16). */

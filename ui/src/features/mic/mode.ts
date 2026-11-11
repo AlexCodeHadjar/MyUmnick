@@ -21,3 +21,8 @@ export function parseMode(value: string | null): MicMode {
 export function isPushToTalk(event: { code: string }): boolean {
   return event.code === "F9";
 }
+
+/** Режим при старте: в фоне (ADR-0041) витюбер ждёт зова, поэтому слушает всегда. */
+export function startMode(saved: MicMode, background: boolean): MicMode {
+  return background ? "always" : saved;
+}

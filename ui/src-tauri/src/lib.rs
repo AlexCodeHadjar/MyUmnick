@@ -2,6 +2,9 @@
 //! В релизной сборке окно запускает ядро рядом с собой (ADR-0019) в выбранном издании (ADR-0032);
 //! в разработке ядро запускают сами (`python -m vtuber serve --edition <id>`).
 
+use tauri::Manager;
+
+mod background;
 mod launcher;
 mod system_audio;
 
@@ -93,7 +96,6 @@ fn core_start(_app: tauri::AppHandle, edition: String) -> Result<(), String> {
 fn core_stop(_app: tauri::AppHandle) {
     #[cfg(not(debug_assertions))]
     {
-        use tauri::Manager;
         if let Some(core) = _app.try_state::<core_process::CoreProcess>() {
             core_process::stop(&core);
         }
@@ -115,14 +117,30 @@ pub fn run() {
             restart_app,
             core_start,
             core_stop,
+            background::background_mode,
+            background::window_reveal,
             launcher::launcher_load,
             launcher::launcher_save,
             system_audio::system_audio_start,
             system_audio::system_audio_stop
         ])
-        .setup(|_app| {
+        // Крестик прячет окно в трей: витюбер продолжает слушать, выход — из меню значка (ADR-0041).
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                if let Some(webview) = window.app_handle().get_webview_window(window.label()) {
+                    background::hide(&webview);
+                }
+            }
+        })
+        .setup(|app| {
             #[cfg(not(debug_assertions))]
-            core_process::manage(_app);
+            core_process::manage(app);
+            background::tray(app)?;
+            // Окно создаётся скрытым (tauri.conf.json): в фоне его откроет зов по имени.
+            if !background::requested() {
+                background::reveal(app.handle(), true);
+            }
             Ok(())
         })
         .run(tauri::generate_context!())
