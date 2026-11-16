@@ -18,9 +18,9 @@
   });
 </script>
 
-<aside class="memory" aria-label={locale.t.memory.title}>
+<aside class="memory u-frame" aria-label={locale.t.memory.title}>
   <header>
-    <h2>{locale.t.memory.title}</h2>
+    <h2 class="u-section">{locale.t.memory.title}</h2>
     <button type="button" onclick={onclose} aria-label={locale.t.memory.close}>×</button>
   </header>
   {#if store.memory.problem !== null}
@@ -116,9 +116,6 @@
     max-height: calc(100% - 24px);
     overflow: auto;
     padding: 10px 14px;
-    border: 1px solid #2c2c38;
-    border-radius: 10px;
-    background: rgb(17 17 23 / 95%);
     font-size: 0.85em;
   }
 
@@ -141,7 +138,7 @@
 
   li {
     padding: 6px 0;
-    border-top: 1px solid #2c2c38;
+    border-top: 1px solid var(--rule-dim);
   }
 
   li p {
@@ -152,14 +149,14 @@
     width: 100%;
     box-sizing: border-box;
     color: inherit;
-    background: #15151c;
-    border: 1px solid #3a3a48;
+    background: var(--well);
+    border: 1px solid var(--edge);
   }
 
   button {
-    border: 1px solid #3a3a48;
+    border: 1px solid var(--edge);
     border-radius: 6px;
-    background: #22222c;
+    background: var(--plate);
     color: inherit;
     cursor: pointer;
   }
@@ -175,6 +172,6 @@
   }
 
   .warn {
-    color: #ffc27a;
+    color: var(--hot);
   }
 </style>

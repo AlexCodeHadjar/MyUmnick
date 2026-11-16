@@ -127,7 +127,7 @@
 
   .divider {
     cursor: col-resize;
-    background: #2c2c38;
+    background: var(--rule-dim);
     touch-action: none;
   }
 

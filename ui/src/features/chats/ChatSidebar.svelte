@@ -266,7 +266,7 @@
     padding: 0;
     border: 0;
     background: #1c1f26;
-    color: #9aa3b2;
+    color: var(--faint);
     cursor: pointer;
   }
   .toggle:hover {
@@ -297,7 +297,7 @@
   .ghost {
     border: 0;
     background: transparent;
-    color: #9aa3b2;
+    color: var(--faint);
     cursor: pointer;
   }
   .small {
@@ -316,7 +316,7 @@
     margin-top: 10px;
     padding: 0 6px;
     font-size: 12px;
-    color: #8a93a3;
+    color: var(--faint);
     text-transform: uppercase;
   }
   .row {
@@ -365,15 +365,15 @@
   .note {
     margin: 0;
     font-size: 12px;
-    color: #8a93a3;
+    color: var(--faint);
   }
   .warn {
     margin: 0;
     font-size: 12px;
-    color: #ffc27a;
+    color: var(--hot);
   }
   .danger {
-    color: #ff8a80;
+    color: var(--danger);
   }
   @media (prefers-reduced-motion: reduce) {
     .dock,

@@ -62,16 +62,16 @@
 
   button {
     padding: 1px 8px;
-    border: 1px solid #3a3a48;
+    border: 1px solid var(--edge);
     border-radius: 6px;
-    background: #22222c;
+    background: var(--plate);
     color: inherit;
     font: inherit;
     cursor: pointer;
   }
 
   .active {
-    border-color: #ff8a8a;
+    border-color: var(--danger);
     background: #5a1f1f;
     color: #fff;
     font-weight: 600;
@@ -82,6 +82,6 @@
   }
 
   .warn {
-    color: #ffc27a;
+    color: var(--hot);
   }
 </style>

@@ -70,7 +70,7 @@
     gap: 8px;
     align-items: center;
     padding: 4px 16px;
-    border-bottom: 1px solid #2c2c38;
+    border-bottom: 1px solid var(--rule-dim);
     font-size: 0.8em;
   }
 
@@ -83,14 +83,14 @@
   input,
   button {
     max-width: 180px;
-    border: 1px solid #3a3a48;
+    border: 1px solid var(--edge);
     border-radius: 6px;
-    background: #22222c;
+    background: var(--plate);
     color: inherit;
     font: inherit;
   }
 
   .warn {
-    color: #ffc27a;
+    color: var(--hot);
   }
 </style>

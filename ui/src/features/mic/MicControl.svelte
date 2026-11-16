@@ -130,9 +130,9 @@
   }
 
   select {
-    border: 1px solid #44445a;
+    border: 1px solid var(--edge);
     border-radius: 6px;
-    background: #23232e;
+    background: var(--plate);
     color: inherit;
     font: inherit;
   }

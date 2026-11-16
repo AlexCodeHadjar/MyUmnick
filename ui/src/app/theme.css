@@ -1,0 +1,102 @@
+/*
+ * Оформление окна (Этап 23, ADR-0046): по образцу интерфейса Capri — почти чёрный фон со свечением сверху,
+ * разделы под цветной чертой, названия одним цветом, значения другим, срезанные углы, узкий шрифт.
+ * Палитра своя, «ночь Умника»: индиго-фиолетовая вместо винно-розовой с бирюзой у Capri.
+ * Цвета — только отсюда: компоненты берут переменные, а не свои значения.
+ */
+:root {
+  --ground: #0a0b14; /* фон окна */
+  --glow: #1d1652; /* свечение сверху */
+  --band: #0f1020; /* полоса раздела */
+  --panel: rgb(12 13 24 / 96%); /* выезжающие панели и меню */
+  --well: #0d0e19; /* поля ввода */
+  --plate: #151632; /* кнопки */
+  --hover: #1d1d42;
+  --pressed: #282660;
+  --edge: #3a3672; /* кайма */
+  --rule: #6d5cff; /* черта под разделом */
+  --rule-dim: #23224a; /* тонкие разделители */
+  --title: #a7b8ff; /* названия, заголовки */
+  --value: #5ef0b4; /* значения, включённое */
+  --hot: #ffb547; /* акцентные штрихи на углах, предупреждения */
+  --danger: #ff6b8b; /* ошибки */
+  --text: #e9eaf4;
+  --faint: #8c8fa8;
+  --accent: #7c6cff; /* основное действие */
+  --font: "Bahnschrift SemiCondensed", "Bahnschrift", "Segoe UI", system-ui, sans-serif;
+  --font-title:
+    "Bahnschrift SemiBold SemiConden", "Bahnschrift SemiBold", "Bahnschrift", "Segoe UI", system-ui,
+    sans-serif;
+  /* Срез углов: большой — слева сверху и справа снизу, как у рамок Capri. */
+  --cut: 12px;
+  --cut-small: 4px;
+}
+
+/* Рамка панели со срезанными углами; кайма — внутренней тенью, чтобы её не срезал clip-path. */
+.u-frame {
+  clip-path: polygon(
+    var(--cut) 0,
+    calc(100% - var(--cut-small)) 0,
+    100% var(--cut-small),
+    100% calc(100% - var(--cut)),
+    calc(100% - var(--cut)) 100%,
+    var(--cut-small) 100%,
+    0 calc(100% - var(--cut-small)),
+    0 var(--cut)
+  );
+  box-shadow: inset 0 0 0 1px var(--edge);
+  /* Штрих акцентом вдоль двух больших срезов, как красные штрихи на рамках Capri. */
+  background:
+    linear-gradient(135deg, transparent 25%, var(--hot) 25% 31%, transparent 31%) top left /
+      calc(var(--cut) * 2) calc(var(--cut) * 2) no-repeat,
+    linear-gradient(135deg, transparent 69%, var(--hot) 69% 75%, transparent 75%) bottom right /
+      calc(var(--cut) * 2) calc(var(--cut) * 2) no-repeat,
+    radial-gradient(ellipse at top, var(--glow), transparent 55%),
+    var(--panel);
+}
+
+/* Заголовок раздела в духе «BRAIN >»: заглавными, цветом названий, под ним — черта. */
+.u-section {
+  margin: 0 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--title);
+  font-family: var(--font-title);
+  font-size: 0.95em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.u-section::after {
+  content: " >";
+  color: var(--rule);
+}
+
+/* Кнопка-пластина: срезан правый нижний угол, наведение — кайма акцентом. */
+:where(button) {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+}
+
+:where(button:not(:disabled)):hover {
+  box-shadow: inset 0 0 0 1px var(--hot);
+}
+
+:where(button:not(:disabled)):active {
+  background-color: var(--pressed);
+}
+
+:where(input, select, textarea):focus-visible,
+:where(button):focus-visible {
+  outline: 1px solid var(--value);
+  outline-offset: 1px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--text);
+}
+
+* {
+  scrollbar-color: var(--edge) transparent;
+  scrollbar-width: thin;
+}

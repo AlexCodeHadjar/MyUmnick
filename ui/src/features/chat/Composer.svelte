@@ -156,14 +156,14 @@
     display: flex;
     gap: 8px;
     padding: 12px 16px;
-    border-top: 1px solid #2c2c38;
+    border-top: 1px solid var(--rule-dim);
   }
 
   textarea {
     flex: 1;
     resize: none;
     padding: 8px 10px;
-    border: 1px solid #2c2c38;
+    border: 1px solid var(--rule-dim);
     border-radius: 8px;
     background: #1b1b24;
     color: inherit;
@@ -185,7 +185,7 @@
     border: none;
     border-radius: 8px;
     background: #ec70a0;
-    color: #15151c;
+    color: var(--well);
     font: inherit;
     cursor: pointer;
   }
@@ -209,7 +209,7 @@
 
   .warning {
     font-size: 0.8em;
-    color: #ffc27a;
+    color: var(--hot);
   }
 
   .attach {
@@ -225,7 +225,7 @@
   }
 
   .stop {
-    background: #3a3a48;
+    background: var(--edge);
     color: inherit;
   }
 </style>

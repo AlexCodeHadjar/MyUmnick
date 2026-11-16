@@ -39,9 +39,13 @@
   }
 </script>
 
-<aside class="skills" aria-label={locale.t.skills.title} transition:fly={{ x: 360, duration: 180 }}>
+<aside
+  class="skills u-frame"
+  aria-label={locale.t.skills.title}
+  transition:fly={{ x: 360, duration: 180 }}
+>
   <header>
-    <h2>{locale.t.skills.title}</h2>
+    <h2 class="u-section">{locale.t.skills.title}</h2>
     <button type="button" class="close" onclick={onclose} aria-label={locale.t.skills.close}
       >×</button
     >
@@ -132,8 +136,6 @@
     overflow: auto;
     box-sizing: border-box;
     padding: 12px 14px;
-    border-left: 1px solid #2c2c38;
-    background: rgb(17 17 23 / 96%);
     font-size: 0.85em;
   }
 
@@ -150,6 +152,7 @@
 
   h3 {
     margin: 14px 0 4px;
+    color: var(--title);
     font-size: 0.8em;
     font-weight: 600;
     letter-spacing: 0.06em;
@@ -162,9 +165,9 @@
     box-sizing: border-box;
     margin-top: 10px;
     padding: 6px 8px;
-    border: 1px solid #3a3a48;
+    border: 1px solid var(--edge);
     border-radius: 6px;
-    background: #15151c;
+    background: var(--well);
     color: inherit;
     font: inherit;
   }
@@ -177,7 +180,7 @@
 
   li {
     padding: 8px 0;
-    border-top: 1px solid #2c2c38;
+    border-top: 1px solid var(--rule-dim);
     transition: opacity 0.15s;
   }
 
@@ -211,7 +214,7 @@
 
   .badges span:not(.stats) {
     padding: 0 6px;
-    border: 1px solid #3a3a48;
+    border: 1px solid var(--edge);
     border-radius: 999px;
   }
 
@@ -235,7 +238,7 @@
     position: absolute;
     inset: 0;
     border-radius: 999px;
-    background: #3a3a48;
+    background: var(--edge);
     transition: background 0.15s;
   }
 
@@ -247,12 +250,12 @@
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #e8e8f0;
+    background: var(--text);
     transition: transform 0.15s;
   }
 
   .switch input:checked + span {
-    background: #5b7cfa;
+    background: var(--value);
   }
 
   .switch input:checked + span::after {
@@ -260,16 +263,16 @@
   }
 
   .switch input:focus-visible + span {
-    outline: 2px solid #8aa2ff;
+    outline: 2px solid var(--title);
     outline-offset: 2px;
   }
 
   button {
     margin-top: 4px;
     margin-right: 6px;
-    border: 1px solid #3a3a48;
+    border: 1px solid var(--edge);
     border-radius: 6px;
-    background: #22222c;
+    background: var(--plate);
     color: inherit;
     cursor: pointer;
   }
@@ -287,6 +290,6 @@
   }
 
   .warn {
-    color: #ffc27a;
+    color: var(--hot);
   }
 </style>

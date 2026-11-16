@@ -46,7 +46,7 @@
 
 <style>
   .blocked {
-    color: #ffc27a;
+    color: var(--hot);
   }
 
   .status-bar {
@@ -54,7 +54,7 @@
     gap: 18px;
     align-items: center;
     padding: 4px 12px;
-    border-top: 1px solid #2c2c38;
+    border-top: 1px solid var(--rule-dim);
     background: #111117;
     font-size: 0.8em;
     color: #b8b8c8;
@@ -81,7 +81,7 @@
   }
 
   .bad {
-    background: #ff6b6b;
+    background: var(--danger);
   }
 
   .off {

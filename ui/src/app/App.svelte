@@ -252,11 +252,13 @@
   :global(body) {
     margin: 0;
     height: 100%;
-    font-family: system-ui, sans-serif;
+    font-family: var(--font);
     /* Полосы прокрутки и поля ввода — в тёмной гамме WebView. */
     color-scheme: dark;
-    background: #15151c;
-    color: #e8e8f0;
+    background:
+      radial-gradient(ellipse 120% 45% at 50% 0, var(--glow), transparent 70%) fixed,
+      var(--ground);
+    color: var(--text);
   }
 
   /* Прозрачно только поверх стола: у обычного окна фон свой, хоть само окно и прозрачное. */
@@ -295,9 +297,9 @@
 
   .skills-button {
     padding: 2px 8px;
-    border: 1px solid #44445a;
+    border: 1px solid var(--edge);
     border-radius: 6px;
-    background: #23232e;
+    background: var(--plate);
     color: inherit;
     font: inherit;
     font-size: 0.85em;
@@ -305,6 +307,6 @@
   }
 
   .skills-button.active {
-    border-color: #5b7cfa;
+    border-color: var(--accent);
   }
 </style>

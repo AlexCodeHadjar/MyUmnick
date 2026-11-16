@@ -192,7 +192,7 @@
   }
 
   .error {
-    color: #ff8a8a;
+    color: var(--danger);
     opacity: 1;
   }
 </style>

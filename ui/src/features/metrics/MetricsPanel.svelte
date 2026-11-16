@@ -12,9 +12,9 @@
   const ms = (value: number): string => (Number.isNaN(value) ? "—" : value.toFixed(1));
 </script>
 
-<aside class="metrics" aria-label={locale.t.metrics.region}>
+<aside class="metrics u-frame" aria-label={locale.t.metrics.region}>
   <header>
-    <h2>{locale.t.metrics.title}</h2>
+    <h2 class="u-section">{locale.t.metrics.title}</h2>
     <button type="button" onclick={onclose} aria-label={locale.t.metrics.close}>×</button>
   </header>
   {#if rows.length === 0}
@@ -51,9 +51,6 @@
     right: 12px;
     min-width: 360px;
     padding: 10px 14px;
-    border: 1px solid #2c2c38;
-    border-radius: 10px;
-    background: rgb(17 17 23 / 92%);
     font-size: 0.85em;
     font-variant-numeric: tabular-nums;
   }
@@ -100,7 +97,7 @@
   }
 
   .over td {
-    color: #ff8a8a;
+    color: var(--danger);
   }
 
   .empty,

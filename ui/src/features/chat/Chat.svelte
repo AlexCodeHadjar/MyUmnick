@@ -115,7 +115,7 @@
 
   .toggle {
     padding: 1px 8px;
-    border: 1px solid #44445a;
+    border: 1px solid var(--edge);
     border-radius: 10px;
     background: transparent;
     color: inherit;
@@ -142,15 +142,15 @@
   }
 
   .sources a {
-    color: #8ab4ff;
+    color: var(--title);
   }
 
   .notice {
-    color: #ffc27a;
+    color: var(--hot);
   }
 
   .error {
-    color: #ff8a8a;
+    color: var(--danger);
   }
 
   .dots {

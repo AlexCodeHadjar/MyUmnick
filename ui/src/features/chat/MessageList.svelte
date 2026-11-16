@@ -145,7 +145,7 @@
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     line-height: 1.4;
-    background: #23232e;
+    background: var(--plate);
   }
 
   .user .bubble {

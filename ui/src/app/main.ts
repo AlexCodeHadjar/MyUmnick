@@ -1,5 +1,7 @@
 import { mount, unmount } from "svelte";
 
+import "./theme.css";
+
 import { CoreClient, locale } from "../core";
 import {
   EditionPicker,

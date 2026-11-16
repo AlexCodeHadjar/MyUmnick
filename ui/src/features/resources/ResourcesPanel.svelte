@@ -34,9 +34,9 @@
   });
 </script>
 
-<aside class="resources" aria-label={locale.t.resources.title}>
+<aside class="resources u-frame" aria-label={locale.t.resources.title}>
   <header>
-    <h2>{locale.t.resources.title}</h2>
+    <h2 class="u-section">{locale.t.resources.title}</h2>
     <button type="button" onclick={onclose} aria-label={locale.t.resources.close}>×</button>
   </header>
   {#if snapshot === null}
@@ -105,9 +105,6 @@
     min-width: 420px;
     max-width: calc(100% - 24px);
     padding: 10px 14px;
-    border: 1px solid #2c2c38;
-    border-radius: 10px;
-    background: rgb(17 17 23 / 92%);
     font-size: 0.85em;
     font-variant-numeric: tabular-nums;
   }
@@ -141,7 +138,7 @@
   }
 
   .warn {
-    color: #ffc27a;
+    color: var(--hot);
   }
 
   table {
@@ -170,7 +167,7 @@
 
   polyline {
     fill: none;
-    stroke: #8ab4ff;
+    stroke: var(--title);
     stroke-width: 1.5;
   }
 </style>

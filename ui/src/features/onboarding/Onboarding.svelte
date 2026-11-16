@@ -168,9 +168,9 @@
     max-height: calc(100% - 32px);
     overflow: auto;
     padding: 16px 20px;
-    border: 1px solid #2c2c38;
+    border: 1px solid var(--rule-dim);
     border-radius: 10px;
-    background: #15151c;
+    background: var(--well);
   }
 
   h2 {
@@ -195,7 +195,7 @@
   }
 
   .warn {
-    color: #ffc27a;
+    color: var(--hot);
   }
 
   .consent {
@@ -215,9 +215,9 @@
 
   button {
     padding: 6px 12px;
-    border: 1px solid #3a3a48;
+    border: 1px solid var(--edge);
     border-radius: 6px;
-    background: #22222c;
+    background: var(--plate);
     color: inherit;
     cursor: pointer;
   }

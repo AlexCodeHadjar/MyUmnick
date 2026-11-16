@@ -49,7 +49,7 @@
     border: 1px solid #3a3f4b;
     border-radius: 3px;
     background: transparent;
-    color: #9aa3b2;
+    color: var(--faint);
     cursor: pointer;
   }
   .ambient.on {
