@@ -676,7 +676,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:212` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:238` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).
@@ -925,3 +925,14 @@
 - `RESOURCES_HOTKEY_LABEL` — `ui/src/features/resources/index.ts:7` — —
 - `isResourcesHotkey` — `ui/src/features/resources/index.ts:10` — По `code`, а не `key`: в русской раскладке `key` для этой клавиши — «Г».
 - `ResourcesPanel.svelte` — `ui/src/features/resources/ResourcesPanel.svelte:1` — —
+
+## ui/src/features/skills
+Публичный API панели «Навыки» (Этап 23, ADR-0043; R-63).
+
+- `SkillGroup` — `ui/src/features/skills/skills.ts:7` — —
+- `groupOf` — `ui/src/features/skills/skills.ts:10` — Включён — «on»; выключен, но плагин работает — «off»; плагин установлен, но не запущен — «idle».
+- `grouped` — `ui/src/features/skills/skills.ts:16` — Навыки по группам в порядке панели; поиск — по названию, описанию и примерам, без регистра.
+- `needsConfirm` — `ui/src/features/skills/skills.ts:35` — Включение навыка, который ходит в интернет, — только после явного «да» (NFR-06).
+- `statsLine` — `ui/src/features/skills/skills.ts:40` — Строка счётчиков: «сработал 3 раза · 12 мс · не успел 1»; не срабатывал — пусто.
+- `isSkillsHotkey` — `ui/src/features/skills/skills.ts:51` — Ctrl+Shift+K по `code`: в русской раскладке `key` у этой клавиши — «Л».
+- `SkillsPanel.svelte` — `ui/src/features/skills/SkillsPanel.svelte:1` — —

@@ -24,6 +24,7 @@
 | `src/features/avatar/` | `AvatarStage` (сцена), `session.ts` (жизнь персонажа), `loop.ts` (кадры вне Svelte, R-66), контракт `AvatarRenderer`, вид показа `view.ts`, взгляд `gaze.ts` |
 | `src/features/avatar/reactions.ts`, `orb/` | ожидание ответа → «думаю»; сфера (ADR-0038) |
 | `src/features/avatar/mood.ts`, `nod.ts` | затухание эмоции после речи; процедурный кивок в начале хода |
+| `src/features/skills/` | `SkillsPanel` (Ctrl+Shift+K, кнопка «Навыки»): навыки помощника, поиск, включатели (ADR-0043); логика — `skills.ts` |
 | `src/features/audio/` | `VoicePlayer`, `connectVoice` (index.ts): кадры звука → ресемплинг → AudioWorklet (`player.worklet.ts`, `pcm-queue.ts`); липсинк `lipsync.ts` (ADR-0003) |
 | `src/features/mic/` | `MicControl`: режим «выключен / всегда / пока нажата F9»; `MicCapture` (getUserMedia с эхоподавлением, worklet), `framer.ts` (16 кГц, s16, кадры 20 мс) |
 | `src-tauri/` | оболочка Tauri: `tauri.conf.json`, права окна в `capabilities/` |

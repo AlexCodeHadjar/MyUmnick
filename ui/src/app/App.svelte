@@ -22,6 +22,7 @@
   import { MicControl } from "../features/mic";
   import { isMetricsHotkey, MetricsPanel } from "../features/metrics";
   import { isMemoryHotkey, MemoryPanel } from "../features/memory";
+  import { isSkillsHotkey, SkillsPanel } from "../features/skills";
   import { Onboarding } from "../features/onboarding";
   import { PrivacyControl } from "../features/privacy";
   import { isResourcesHotkey, ResourcesPanel } from "../features/resources";
@@ -35,6 +36,7 @@
   let showMetrics = $state(false);
   let showResources = $state(false);
   let showMemory = $state(false);
+  let showSkills = $state(false);
   let setupClosed = $state(false);
   // Звук компьютера для сферы: один на окно, читается циклом аватара каждый кадр (ADR-0039).
   const systemAudio = new SystemAudio();
@@ -104,6 +106,9 @@
     } else if (isMemoryHotkey(event)) {
       event.preventDefault();
       showMemory = !showMemory;
+    } else if (isSkillsHotkey(event)) {
+      event.preventDefault();
+      showSkills = !showSkills;
     } else if (isResourcesHotkey(event)) {
       event.preventDefault();
       showResources = !showResources;
@@ -172,6 +177,14 @@
               }}
             />
           {/if}
+          {#if showSkills}
+            <SkillsPanel
+              {client}
+              onclose={() => {
+                showSkills = false;
+              }}
+            />
+          {/if}
           {#if showResources}
             <ResourcesPanel
               {client}
@@ -188,12 +201,22 @@
   <div class="status" class:hidden={overlay}>
     <StatusBar
       store={client.store}
-      hint={`${locale.t.metrics.hotkey}, ${locale.t.resources.hotkey}, ${locale.t.memory.hotkey}${desktopPort === null ? "" : `, ${locale.t.desktop.hotkey}`}`}
+      hint={`${locale.t.metrics.hotkey}, ${locale.t.resources.hotkey}, ${locale.t.memory.hotkey}, ${locale.t.skills.hotkey}${desktopPort === null ? "" : `, ${locale.t.desktop.hotkey}`}`}
     >
       <EditionBadge store={client.store} />
       <AmbientControl audio={systemAudio} storage={layoutStorage()} />
       <MicControl {client} storage={layoutStorage()} {background} />
       <PrivacyControl {client} />
+      <button
+        type="button"
+        class="skills-button"
+        class:active={showSkills}
+        title={locale.t.skills.openHint}
+        aria-pressed={showSkills}
+        onclick={() => {
+          showSkills = !showSkills;
+        }}>🧩 {locale.t.skills.open}</button
+      >
     </StatusBar>
   </div>
   {#if client.store.setup?.needed && !setupClosed}
@@ -250,5 +273,20 @@
     place-content: center;
     height: 100%;
     text-align: center;
+  }
+
+  .skills-button {
+    padding: 2px 8px;
+    border: 1px solid #44445a;
+    border-radius: 6px;
+    background: #23232e;
+    color: inherit;
+    font: inherit;
+    font-size: 0.85em;
+    cursor: pointer;
+  }
+
+  .skills-button.active {
+    border-color: #5b7cfa;
   }
 </style>
