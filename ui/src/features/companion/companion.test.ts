@@ -1,0 +1,189 @@
+import { describe, expect, it } from "vitest";
+
+import { below, floorSpot, seatSpot, snap, surfaces } from "./anchors";
+import { Brain, WALK_LIMIT } from "./brain";
+import { bubbleText, followSpot, release, velocityOf } from "./control";
+import { along, lightning, seeded } from "./effects";
+import { poseName, resolve } from "./pack";
+import { DEFAULT_SETTINGS, parseSettings, shouldShow } from "./settings";
+import { worldToCss, type World } from "./world";
+
+const WORLD: World = {
+  monitor: { x: 0, y: 0, w: 1920, h: 1080 },
+  work: { x: 0, y: 0, w: 1920, h: 1040 },
+  seats: [
+    { id: 1, rect: { x: 200, y: 300, w: 800, h: 500 }, open: [[200, 1000]] },
+    { id: 2, rect: { x: 1200, y: 200, w: 500, h: 400 }, open: [[1200, 1700]] },
+  ],
+  focus: { kind: "window", id: 1 },
+  fullscreen: false,
+};
+const LIST = surfaces(WORLD);
+
+function settle(brain: Brain, seconds = 3): void {
+  for (let t = 0; t < seconds; t += 0.016) brain.tick(0.016);
+}
+
+describe("опоры и позы", () => {
+  it("верх окна — сидит, угол окна — на углу, «пол» — стоит, угол экрана — сидит в углу", () => {
+    expect(snap(LIST, 600, 310)?.pose).toBe("sit_edge");
+    expect(snap(LIST, 985, 305)?.pose).toBe("perch_corner");
+    expect(snap(LIST, 800, 1030)?.pose).toBe("stand");
+    expect(snap(LIST, 1910, 1040)?.pose).toBe("sit_corner");
+    expect(snap(LIST, 600, 700)).toBeNull(); // посреди окна опоры нет
+  });
+
+  it("бок окна: вверху — висит, ниже — облокотился", () => {
+    expect(snap(LIST, 195, 320)?.pose).toBe("hang_side");
+    expect(snap(LIST, 1005, 450)?.pose).toBe("lean_side");
+  });
+
+  it("под точкой — ближайший край ниже, иначе «пол»", () => {
+    expect(below(LIST, 600, 100)?.y).toBe(300);
+    expect(below(LIST, 100, 100)?.y).toBe(1040);
+  });
+
+  it("активное окно — правая треть края; рабочий стол — «пол», развёрнутое — угол", () => {
+    const seat = seatSpot(LIST, 1, 200, 800);
+    expect(seat?.x).toBe(800);
+    expect(followSpot(WORLD, LIST, { kind: "desktop" })?.pose).toBe("stand");
+    expect(followSpot(WORLD, LIST, { kind: "maximized" })?.pose).toBe("sit_corner");
+    expect(floorSpot(LIST, true)?.x).toBe(1900);
+  });
+
+  it("физические пиксели при масштабе 150% → CSS", () => {
+    const css = worldToCss({ ...WORLD, monitor: { x: 0, y: 0, w: 2880, h: 1620 } }, 1.5);
+    expect(css.seats[0]?.rect).toEqual({ x: 200 / 1.5, y: 200, w: 800 / 1.5, h: 500 / 1.5 });
+  });
+});
+
+describe("поведение", () => {
+  function seated(): Brain {
+    const brain = new Brain(() => 0.5);
+    brain.setWorld(WORLD);
+    const spot = snap(LIST, 600, 300);
+    if (spot === null) throw new Error("нет места");
+    brain.place(spot);
+    return brain;
+  }
+
+  it("близко — пешком, далеко — молнией", () => {
+    const brain = seated();
+    const near = snap(LIST, 800, 300);
+    if (near === null) throw new Error("нет места");
+    brain.goTo(near);
+    expect(brain.phase).toBe("walk");
+    settle(brain);
+    expect([brain.phase, brain.x]).toEqual(["rest", 800]);
+
+    const far = seatSpot(LIST, 2, 1200, 500);
+    if (far === null) throw new Error("нет места");
+    expect(Math.hypot(far.x - brain.x, far.y - brain.y)).toBeGreaterThan(WALK_LIMIT);
+    brain.goTo(far);
+    expect(brain.phase).toBe("bolt");
+    expect(brain.body().effects.map((e) => e.kind)).toContain("bolt");
+    settle(brain, 1);
+    expect([brain.phase, brain.x, brain.y]).toEqual(["rest", far.x, 200]);
+  });
+
+  it("окно сдвинули — едет вместе с ним; окно закрыли — падает на «пол»", () => {
+    const brain = seated();
+    brain.hostMoved(1, { x: 300, y: 350, w: 800, h: 500 });
+    expect([brain.x, brain.y]).toEqual([700, 350]);
+    brain.setWorld({ ...WORLD, seats: WORLD.seats.slice(1) });
+    expect(brain.phase).toBe("fall");
+    settle(brain, 4);
+    expect([brain.phase, brain.y, brain.body().pose]).toEqual(["rest", 1040, "stand"]);
+  });
+
+  it("бросок: отскакивает от стены и пола и в итоге встаёт", () => {
+    const brain = seated();
+    brain.hold(500, 100);
+    expect(brain.body().pose).toBe("held");
+    brain.toss(-3000, -500);
+    settle(brain, 6);
+    expect(brain.phase).toBe("rest");
+    expect(brain.x).toBeGreaterThanOrEqual(30);
+  });
+
+  it("портал: выходит из точки и уходит обратно", () => {
+    const brain = new Brain();
+    brain.setWorld(WORLD);
+    brain.portalOut(900, 500);
+    expect(brain.body().scale).toBe(0);
+    settle(brain, 4);
+    expect(brain.phase).toBe("rest");
+    brain.portalIn();
+    settle(brain, 1);
+    expect(brain.phase).toBe("hidden");
+  });
+
+  it("долгий простой — лежит, потом спит; зов будит", () => {
+    const brain = seated();
+    settle(brain, 95);
+    expect(brain.body().pose).toBe("laydown");
+    brain.wake();
+    brain.tick(0.016);
+    expect(brain.body().pose).toBe("sit_edge");
+  });
+});
+
+describe("мышь и облачко", () => {
+  it("Ctrl — повиснуть, Shift — сесть рядом, иначе — бросок", () => {
+    const p = { x: 600, y: 290, shift: false, ctrl: false };
+    expect(release(LIST, { ...p, ctrl: true }, { vx: 0, vy: 0 }).kind).toBe("hang");
+    expect(release(LIST, { ...p, shift: true }, { vx: 0, vy: 0 }).kind).toBe("place");
+    expect(release(LIST, p, { vx: 500, vy: 0 })).toEqual({ kind: "toss", vx: 500, vy: 0 });
+  });
+
+  it("скорость по следу за 80 мс", () => {
+    const trail = [
+      { x: 0, y: 0, t: 0 },
+      { x: 100, y: 0, t: 100 },
+      { x: 150, y: 20, t: 150 },
+    ];
+    expect(velocityOf(trail)).toEqual({ vx: 1000, vy: 400 });
+    expect(velocityOf([])).toEqual({ vx: 0, vy: 0 });
+  });
+
+  it("облачко — хвост реплики целыми словами", () => {
+    expect(bubbleText("коротко")).toBe("коротко");
+    const long = bubbleText("слово ".repeat(60));
+    expect(long.startsWith("…слово")).toBe(true);
+    expect(long.length).toBeLessThanOrEqual(141);
+  });
+});
+
+describe("молния, позы, настройки", () => {
+  it("молния начинается и кончается в заданных точках, разряд бежит по ней", () => {
+    const points = lightning([0, 0], [400, 0], seeded(7));
+    expect(points[0]).toEqual([0, 0]);
+    expect(points.at(-1)).toEqual([400, 0]);
+    expect(points.length).toBe(65);
+    expect(along(points, 0)).toEqual([0, 0]);
+    const [ex, ey] = along(points, 1);
+    expect(ex).toBeCloseTo(400);
+    expect(ey).toBeCloseTo(0);
+    expect(lightning([0, 0], [400, 0], seeded(7))).toEqual(points);
+  });
+
+  it("поза: вариант, без варианта, замена, `stand`", () => {
+    const have = new Set(["stand", "sit_edge", "sit_edge_talk"]);
+    expect(resolve("sit_edge", "_talk", have)).toBe("sit_edge_talk");
+    expect(resolve("sit_edge", "_blink", have)).toBe("sit_edge");
+    expect(resolve("perch_corner", "", have)).toBe("sit_edge");
+    expect(resolve("held", "", have)).toBe("stand");
+    expect(resolve("held", "", new Set())).toBeNull();
+    expect(poseName("Sit_Edge.PNG")).toBe("sit_edge");
+    expect(poseName("notes.txt")).toBeNull();
+  });
+
+  it("настройки: битое — умолчания; полный экран прячет всегда", () => {
+    expect(parseSettings("{oops")).toEqual(DEFAULT_SETTINGS);
+    expect(parseSettings('{"when":"always","height":9999}').height).toBe(280);
+    const always = { ...DEFAULT_SETTINGS, when: "always" as const };
+    expect(shouldShow(DEFAULT_SETTINGS, true, false)).toBe(false);
+    expect(shouldShow(DEFAULT_SETTINGS, false, false)).toBe(true);
+    expect(shouldShow(always, true, true)).toBe(false);
+  });
+});

@@ -136,8 +136,19 @@ pub fn background_mode() -> bool {
     requested()
 }
 
-/// Позвали по имени (`input.barge_in`): скрытое или свёрнутое окно открывается.
+/// Позвали по имени (`input.barge_in`): скрытое или свёрнутое окно открывается. Если на экране спутник
+/// («Сопровождение», ADR-0045), отвечает он — облачком «Я вас слушаю», окно не выдёргивается.
 #[tauri::command]
 pub fn window_reveal(app: AppHandle) {
+    if crate::companion::visible(&app) {
+        let _ = app.emit_to(crate::companion::LABEL, "companion-called", ());
+        return;
+    }
     reveal(&app, false);
+}
+
+/// Открыть главное окно из меню спутника.
+#[tauri::command]
+pub fn main_show(app: AppHandle) {
+    reveal(&app, true);
 }

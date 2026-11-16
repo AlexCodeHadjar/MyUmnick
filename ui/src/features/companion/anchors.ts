@@ -1,0 +1,150 @@
+/**
+ * Точки привязки спутника (Этап 23, раздел 4.3): где он может сидеть, стоять, висеть и какая поза этому
+ * месту подходит. Чистые функции над картиной рабочего стола в CSS-пикселях — проверяются тестами.
+ */
+import type { World } from "./world";
+
+export type Pose =
+  | "stand"
+  | "walk"
+  | "sit_edge"
+  | "perch_corner"
+  | "lean_side"
+  | "hang_side"
+  | "sit_corner"
+  | "laydown"
+  | "sleep"
+  | "held"
+  | "float";
+
+/** Опора: горизонтальная (край окна, «пол») или вертикальная (бок окна). */
+export type Surface =
+  | { kind: "edge"; host: number; x0: number; x1: number; y: number }
+  | { kind: "floor"; x0: number; x1: number; y: number }
+  | { kind: "side"; host: number; x: number; y0: number; y1: number; side: "left" | "right" };
+
+/** Место на опоре: точка опоры позы (сиденье, ступни, ладони) и сама поза. */
+export interface Spot {
+  surface: Surface;
+  x: number;
+  y: number;
+  pose: Pose;
+  /** Куда смотрит: при сидении в правом углу — влево и наоборот. */
+  facing: 1 | -1;
+}
+
+export const SNAP_RADIUS = 40;
+/** Ближе к концу опоры — «угловая» поза. */
+const CORNER = 36;
+
+/** Все опоры картины: открытые участки верхних краёв окон, бока окон, «пол» над панелью задач. */
+export function surfaces(world: World): Surface[] {
+  const list: Surface[] = [];
+  for (const seat of world.seats) {
+    for (const [x0, x1] of seat.open) {
+      list.push({ kind: "edge", host: seat.id, x0, x1, y: seat.rect.y });
+    }
+    const { x, y, w, h } = seat.rect;
+    const y1 = y + Math.min(h, 240);
+    list.push({ kind: "side", host: seat.id, x, y0: y + 8, y1, side: "left" });
+    list.push({ kind: "side", host: seat.id, x: x + w, y0: y + 8, y1, side: "right" });
+  }
+  const { work } = world;
+  list.push({ kind: "floor", x0: work.x, x1: work.x + work.w, y: work.y + work.h });
+  return list;
+}
+
+function clamp(value: number, low: number, high: number): number {
+  return Math.min(high, Math.max(low, value));
+}
+
+/** Место на опоре `surface`, ближайшее к точке; поза — по месту. */
+export function spotOn(surface: Surface, px: number, py: number): Spot {
+  if (surface.kind === "side") {
+    const y = clamp(py, surface.y0, surface.y1);
+    const facing = surface.side === "left" ? 1 : -1;
+    // Наверху бока — висит, держась за край; ниже — стоит, облокотившись.
+    const pose: Pose = y - surface.y0 < 60 ? "hang_side" : "lean_side";
+    return { surface, x: surface.x, y, pose, facing };
+  }
+  const x = clamp(px, surface.x0 + 20, surface.x1 - 20);
+  const nearLeft = x - surface.x0 < CORNER + 20;
+  const nearRight = surface.x1 - x < CORNER + 20;
+  const corner = nearLeft || nearRight;
+  const facing: 1 | -1 = nearRight ? -1 : 1;
+  if (surface.kind === "edge") {
+    return { surface, x, y: surface.y, pose: corner ? "perch_corner" : "sit_edge", facing };
+  }
+  return { surface, x, y: surface.y, pose: corner ? "sit_corner" : "stand", facing };
+}
+
+function distance(surface: Surface, px: number, py: number): number {
+  if (surface.kind === "side") {
+    const dy = py < surface.y0 ? surface.y0 - py : py > surface.y1 ? py - surface.y1 : 0;
+    return Math.hypot(px - surface.x, dy);
+  }
+  const dx = px < surface.x0 ? surface.x0 - px : px > surface.x1 ? px - surface.x1 : 0;
+  return Math.hypot(dx, py - surface.y);
+}
+
+/** Ближайшее место в радиусе `radius` или `null` — тогда спутник «парит» и опускается сам. */
+export function snap(
+  list: readonly Surface[],
+  px: number,
+  py: number,
+  radius = SNAP_RADIUS,
+): Spot | null {
+  let best: Surface | null = null;
+  let bestDistance = radius;
+  for (const surface of list) {
+    const d = distance(surface, px, py);
+    if (d <= bestDistance) {
+      best = surface;
+      bestDistance = d;
+    }
+  }
+  return best === null ? null : spotOn(best, px, py);
+}
+
+/** Горизонтальная опора под точкой (падение): ближайшая сверху вниз, иначе «пол». */
+export function below(list: readonly Surface[], px: number, py: number): Spot | null {
+  let best: Exclude<Surface, { kind: "side" }> | null = null;
+  for (const surface of list) {
+    if (surface.kind === "side" || px < surface.x0 || px > surface.x1 || surface.y < py) continue;
+    if (best === null || surface.y < best.y) best = surface;
+  }
+  return best === null ? null : spotOn(best, px, py);
+}
+
+/** Куда сесть, когда активным стало окно: правая треть верхнего края, на открытом участке. */
+export function seatSpot(
+  list: readonly Surface[],
+  host: number,
+  x: number,
+  w: number,
+): Spot | null {
+  const want = x + w * 0.75;
+  let best: Spot | null = null;
+  for (const surface of list) {
+    if (surface.kind !== "edge" || surface.host !== host) continue;
+    const spot = spotOn(surface, want, surface.y);
+    if (best === null || Math.abs(spot.x - want) < Math.abs(best.x - want)) best = spot;
+  }
+  return best;
+}
+
+/** Место на «полу» у правого края — рабочий стол или развёрнутое окно. */
+export function floorSpot(list: readonly Surface[], corner: boolean): Spot | null {
+  const floor = list.find(
+    (surface): surface is Extract<Surface, { kind: "floor" }> => surface.kind === "floor",
+  );
+  if (floor === undefined) return null;
+  return spotOn(floor, corner ? floor.x1 : floor.x1 - 180, floor.y);
+}
+
+/** Та же опора в новой картине (окно сдвинули): по хозяину и виду. */
+export function sameSurface(a: Surface, b: Surface): boolean {
+  if (a.kind === "floor" || b.kind === "floor") return a.kind === b.kind;
+  if (a.kind === "edge" && b.kind === "edge") return a.host === b.host;
+  return a.kind === "side" && b.kind === "side" && a.host === b.host && a.side === b.side;
+}

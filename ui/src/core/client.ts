@@ -6,7 +6,12 @@ import { locale } from "./i18n";
 import { animationFrame, FrameBatch, type FrameScheduler } from "./batch";
 import { encodeMicFrame, type AudioFrame } from "./frames";
 import { FIRST_AUDIO_SPAN, FIRST_CHAR_SPAN, FirstAudioProbe, FirstCharProbe } from "./probe";
-import { PROTOCOL_VERSION, type ChatActionData, type ImageData } from "./protocol.gen";
+import {
+  PROTOCOL_VERSION,
+  type ChatActionData,
+  type ImageData,
+  type OutboundMessage,
+} from "./protocol.gen";
 import { AppStore, type SpeechProgress } from "./store.svelte";
 import { Transport, type Backoff, type SocketFactory } from "./transport";
 
@@ -35,6 +40,8 @@ export class CoreClient {
   /** Плеер подключается из фичи audio; до него кадры отбрасываются. */
   #audio: AudioSink = () => undefined;
   #cancel: CancelSink = () => undefined;
+  /** Все сообщения — мимо пачки кадров: скрытое окно кадров не рисует, а спутнику они нужны. */
+  #tap: (message: OutboundMessage) => void = () => undefined;
   /** Зов по имени — мимо пачки: скрытое окно кадров не рисует, а открыться должно (ADR-0041). */
   #called: () => void = () => undefined;
   #micSeq = 0;
@@ -62,6 +69,7 @@ export class CoreClient {
       },
       {
         message: (message) => {
+          this.#tap(message);
           // Отмена — мимо пачки: тишина за ≤ 100 мс (NFR-04) не ждёт следующего кадра.
           if (message.type === "turn.cancelled") this.#cancel(message.turn);
           if (message.type === "input.barge_in") {
@@ -117,6 +125,11 @@ export class CoreClient {
   }
 
   /** Витюбера позвали (в режиме `by_name` — по имени); окно в трее открывается. */
+  /** Сообщения ядра сразу, без пачки кадров («Сопровождение» получает речь и эмоцию). */
+  onMessage(sink: (message: OutboundMessage) => void): void {
+    this.#tap = sink;
+  }
+
   onCalled(sink: () => void): void {
     this.#called = sink;
   }

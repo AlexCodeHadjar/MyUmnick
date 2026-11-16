@@ -2,6 +2,8 @@
   import { locale } from "../../../core";
   // Окошко персонажа (Этап 23, ADR-0044): файл перетаскивают в окошко — картинка меняется; правая
   // кнопка — меню: сменить картинку, вписать или заполнить, вернуть стандартную, сфера или персонаж.
+  import type { Snippet } from "svelte";
+
   import type { AvatarView } from "../view";
   import {
     clearPicture,
@@ -17,10 +19,13 @@
     host,
     view,
     onview,
+    extra,
   }: {
     host: HTMLElement | undefined;
     view: AvatarView;
     onview: (view: AvatarView) => void;
+    /** Пункты других фич (спутник): получают «закрыть меню» и «показать заметку». */
+    extra?: Snippet<[() => void, (text: string) => void]>;
   } = $props();
 
   let dragging = $state(false);
@@ -198,6 +203,17 @@
       }}
       >{view === "portrait" ? locale.t.character.showOrb : locale.t.character.showPortrait}</button
     >
+    {#if extra}
+      <hr />
+      {@render extra(
+        () => {
+          menu = null;
+        },
+        (text: string) => {
+          report(text);
+        },
+      )}
+    {/if}
   </div>
 {/if}
 

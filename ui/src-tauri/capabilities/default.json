@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Права главного окна: только базовые API ядра Tauri.",
-  "windows": ["main"],
+  "description": "Права главного окна и слоя спутника: только базовые API ядра Tauri.",
+  "windows": ["main", "companion"],
   "permissions": [
     "core:default",
     "core:window:allow-set-decorations",

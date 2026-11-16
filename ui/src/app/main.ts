@@ -2,7 +2,11 @@ import { mount, unmount } from "svelte";
 
 import "./theme.css";
 
+import { isTauri } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+
 import { CoreClient, locale } from "../core";
+import { Companion } from "../features/companion";
 import {
   EditionPicker,
   editionById,
@@ -68,4 +72,9 @@ async function start(): Promise<void> {
   });
 }
 
-void start();
+// Слой «Сопровождения» — второе окно того же приложения (ADR-0045): своя точка входа, без ядра и выбора.
+if (isTauri() && getCurrentWindow().label === "companion") {
+  mount(Companion, { target: root });
+} else {
+  void start();
+}

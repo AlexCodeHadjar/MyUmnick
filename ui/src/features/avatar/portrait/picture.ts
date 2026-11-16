@@ -79,7 +79,8 @@ function open(): Promise<IDBDatabase> {
   });
 }
 
-async function run<T>(
+/** Запрос к хранилищу картинок (окошко, позы спутника); соединение закрывается после него. */
+export async function run<T>(
   mode: IDBTransactionMode,
   act: (store: IDBObjectStore) => IDBRequest<T>,
 ): Promise<T> {
@@ -121,3 +122,7 @@ export async function clearPicture(): Promise<void> {
 
 /** Картинку сменили: рендер окошка перечитывает её без перезапуска сцены. */
 export const pictureChanged = new EventTarget();
+
+/** Между окнами (главное и спутник): одно происхождение — общий канал. */
+export const characterChannel: BroadcastChannel | null =
+  typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("vtuber-character");

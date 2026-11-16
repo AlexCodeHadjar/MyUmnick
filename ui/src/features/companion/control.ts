@@ -1,0 +1,63 @@
+/**
+ * Решения спутника, которые не зависят от DOM (Этап 23): куда идти при смене активного окна, что делать
+ * с отпущенной мышью, что показать в облачке. Компонент слоя только передаёт сюда события.
+ */
+import { below, floorSpot, seatSpot, snap, type Spot, type Surface } from "./anchors";
+import type { Focus, World } from "./world";
+
+/** Место для активного окна (раздел 4.1): край окна, «пол» у правого края или угол экрана. */
+export function followSpot(world: World, list: readonly Surface[], focus: Focus): Spot | null {
+  if (focus.kind === "window") {
+    const seat = world.seats.find((one) => one.id === focus.id);
+    return seat === undefined ? null : seatSpot(list, seat.id, seat.rect.x, seat.rect.w);
+  }
+  if (focus.kind === "desktop") return floorSpot(list, false);
+  if (focus.kind === "maximized") return floorSpot(list, true);
+  return null;
+}
+
+/** Хозяин места (окно) или `null` для «пола». */
+export function hostOf(spot: Spot | null): number | null {
+  if (spot === null || spot.surface.kind === "floor") return null;
+  return spot.surface.host;
+}
+
+export type Release =
+  | { kind: "place"; spot: Spot }
+  | { kind: "hang"; x: number; y: number }
+  | { kind: "toss"; vx: number; vy: number };
+
+/** Отпустили, держа мышью (как у Capri): Shift — сесть рядом, Ctrl — повиснуть, иначе — бросок. */
+export function release(
+  list: readonly Surface[],
+  point: { x: number; y: number; shift: boolean; ctrl: boolean },
+  velocity: { vx: number; vy: number },
+): Release {
+  if (point.ctrl) return { kind: "hang", x: point.x, y: point.y };
+  if (point.shift) {
+    const spot = snap(list, point.x, point.y, 160) ?? below(list, point.x, point.y);
+    if (spot !== null) return { kind: "place", spot };
+  }
+  return { kind: "toss", vx: velocity.vx, vy: velocity.vy };
+}
+
+/** Скорость по следу курсора за последние 80 мс, пикселей в секунду. */
+export function velocityOf(trail: readonly { x: number; y: number; t: number }[]): {
+  vx: number;
+  vy: number;
+} {
+  const last = trail.at(-1);
+  if (last === undefined) return { vx: 0, vy: 0 };
+  const first = trail.find((p) => last.t - p.t <= 80) ?? last;
+  const dt = (last.t - first.t) / 1000;
+  return dt <= 0 ? { vx: 0, vy: 0 } : { vx: (last.x - first.x) / dt, vy: (last.y - first.y) / dt };
+}
+
+/** Облачко: последние ~140 знаков реплики, целыми словами. */
+export function bubbleText(text: string, limit = 140): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= limit) return clean;
+  const tail = clean.slice(clean.length - limit);
+  const space = tail.indexOf(" ");
+  return `…${space > 0 ? tail.slice(space + 1) : tail}`;
+}

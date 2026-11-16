@@ -25,6 +25,7 @@
 | `src/features/avatar/reactions.ts`, `orb/` | ожидание ответа → «думаю»; сфера (ADR-0038) |
 | `src/features/avatar/portrait/` | окно персонажа (ADR-0044): `PortraitRenderer`, картинка в IndexedDB (`picture.ts`), перетаскивание и меню — `CharacterControls` |
 | `src/features/avatar/mood.ts`, `nod.ts` | затухание эмоции после речи; процедурный кивок в начале хода |
+| `src/features/companion/` | «Сопровождение» (ADR-0045): слой поверх экрана `Companion`, поведение `brain.ts`, опоры `anchors.ts`, эффекты, позы `pack.ts`; меню в окошке — `CompanionMenu`, речь из главного окна — `feed.ts` |
 | `src/features/skills/` | `SkillsPanel` (Ctrl+Shift+K, кнопка «Навыки»): навыки помощника, поиск, включатели (ADR-0043); логика — `skills.ts` |
 | `src/features/audio/` | `VoicePlayer`, `connectVoice` (index.ts): кадры звука → ресемплинг → AudioWorklet (`player.worklet.ts`, `pcm-queue.ts`); липсинк `lipsync.ts` (ADR-0003) |
 | `src/features/mic/` | `MicControl`: режим «выключен / всегда / пока нажата F9»; `MicCapture` (getUserMedia с эхоподавлением, worklet), `framer.ts` (16 кГц, s16, кадры 20 мс) |

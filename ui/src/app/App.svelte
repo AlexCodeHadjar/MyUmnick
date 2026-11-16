@@ -29,6 +29,7 @@
   import { isMetricsHotkey, MetricsPanel } from "../features/metrics";
   import { isMemoryHotkey, MemoryPanel } from "../features/memory";
   import { isSkillsHotkey, SkillsPanel } from "../features/skills";
+  import { CompanionMenu, startFeed } from "../features/companion";
   import { Onboarding } from "../features/onboarding";
   import { PrivacyControl } from "../features/privacy";
   import { isResourcesHotkey, ResourcesPanel } from "../features/resources";
@@ -90,8 +91,12 @@
         // Без звука чат и аватар работают — голос не обязателен.
         console.warn("[audio] плеер не создан", error);
       });
+    // Спутнику — речь и эмоция (Этап 23): к ядру он не подключается.
+    const stopFeed =
+      desktopPort === null ? null : startFeed(client, (dt) => player?.mouth(dt) ?? 0);
     return () => {
       disposed = true;
+      stopFeed?.();
       void player?.dispose();
       player = null;
     };
@@ -178,7 +183,13 @@
               avatarView = next;
               saveView(layoutStorage(), next);
             }}
-          />
+          >
+            {#snippet extra(close: () => void, note: (text: string) => void)}
+              {#if desktopPort !== null}
+                <CompanionMenu onclose={close} onnote={note} />
+              {/if}
+            {/snippet}
+          </CharacterControls>
           {#if showMetrics}
             <MetricsPanel
               store={client.store}

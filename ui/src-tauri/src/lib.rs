@@ -5,6 +5,8 @@
 use tauri::Manager;
 
 mod background;
+mod companion;
+mod desktop;
 mod launcher;
 mod system_audio;
 
@@ -119,6 +121,11 @@ pub fn run() {
             core_stop,
             background::background_mode,
             background::window_reveal,
+            background::main_show,
+            companion::companion_set,
+            companion::companion_hit,
+            companion::companion_attach,
+            companion::companion_world,
             launcher::launcher_load,
             launcher::launcher_save,
             system_audio::system_audio_start,
@@ -137,6 +144,7 @@ pub fn run() {
             #[cfg(not(debug_assertions))]
             core_process::manage(app);
             background::tray(app)?;
+            companion::create(app)?;
             // Окно создаётся скрытым (tauri.conf.json): в фоне его откроет зов по имени.
             if !background::requested() {
                 background::reveal(app.handle(), true);
