@@ -676,7 +676,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:238` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:251` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).
@@ -743,7 +743,7 @@
 - `AvatarStatus` — `ui/src/features/avatar/session.ts:21` — —
 - `RendererFactory` — `ui/src/features/avatar/session.ts:25` — Создатель рендера: вид показа в окне, фейк в тестах.
 - `AvatarSession` — `ui/src/features/avatar/session.ts:31` — —
-- `AvatarView` — `ui/src/features/avatar/view.ts:5` — Вид показа персонажа справа (Этап 23): сфера или окно персонажа. Выбор — в настройках окна
+- `AvatarView` — `ui/src/features/avatar/view.ts:5` — Вид показа персонажа справа (Этап 23): окно персонажа с картинкой или сфера. Выбор — в меню по
 - `AVATAR_VIEWS` — `ui/src/features/avatar/view.ts:7` — —
 - `DEFAULT_VIEW` — `ui/src/features/avatar/view.ts:8` — —
 - `parseView` — `ui/src/features/avatar/view.ts:12` — —
@@ -763,6 +763,25 @@
 - `shimmerHue` — `ui/src/features/avatar/orb/palette.ts:19` — Переливание: медленный дрейф ±25° вокруг оттенка эмоции.
 - `mixHue` — `ui/src/features/avatar/orb/palette.ts:24` — Плавный переход оттенка по короткой дуге круга; `t` 0…1.
 - `sparkle` — `ui/src/features/avatar/orb/palette.ts:30` — Искрение точки: у каждой своя фаза, яркость 0.55…1.
+
+## ui/src/features/avatar/portrait
+—
+
+- `CharacterControls.svelte` — `ui/src/features/avatar/portrait/CharacterControls.svelte:1` — —
+- `PICTURE_TYPES` — `ui/src/features/avatar/portrait/picture.ts:8` — Форматы, которые `<img>` WebView2 показывает сам, включая анимированные GIF, WebP и APNG.
+- `MAX_PICTURE_BYTES` — `ui/src/features/avatar/portrait/picture.ts:15` — —
+- `PictureFit` — `ui/src/features/avatar/portrait/picture.ts:17` — —
+- `pictureProblem` — `ui/src/features/avatar/portrait/picture.ts:20` — Причина отказа на языке интерфейса или `null`, если файл подходит.
+- `parseFit` — `ui/src/features/avatar/portrait/picture.ts:31` — Способ вписать картинку: битое или чужое значение — «вписать целиком».
+- `loadFit` — `ui/src/features/avatar/portrait/picture.ts:37` — —
+- `saveFit` — `ui/src/features/avatar/portrait/picture.ts:45` — —
+- `windowStorage` — `ui/src/features/avatar/portrait/picture.ts:55` — localStorage окна; недоступно (приватный режим WebView) — без хранилища.
+- `loadPicture` — `ui/src/features/avatar/portrait/picture.ts:103` — Сохранённая картинка; нет её или хранилище недоступно — `null` (стандартный силуэт).
+- `savePicture` — `ui/src/features/avatar/portrait/picture.ts:112` — —
+- `clearPicture` — `ui/src/features/avatar/portrait/picture.ts:117` — —
+- `pictureChanged` — `ui/src/features/avatar/portrait/picture.ts:123` — Картинку сменили: рендер окошка перечитывает её без перезапуска сцены.
+- `portraitPose` — `ui/src/features/avatar/portrait/PortraitRenderer.ts:24` — Поза кадра: чистая функция времени и состояния — проверяется тестами.
+- `PortraitRenderer` — `ui/src/features/avatar/portrait/PortraitRenderer.ts:41` — —
 
 ## ui/src/features/chat
 Публичный API фичи чата: приложение монтирует только панель (R-63).

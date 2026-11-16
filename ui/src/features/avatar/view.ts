@@ -1,11 +1,11 @@
 /**
- * Вид показа персонажа справа (Этап 23): сфера или окно персонажа. Выбор — в настройках окна
- * (localStorage); Live2D убран (ADR-0042).
+ * Вид показа персонажа справа (Этап 23): окно персонажа с картинкой или сфера. Выбор — в меню по
+ * правой кнопке (localStorage); по умолчанию — картинка (ADR-0044). Live2D убран (ADR-0042).
  */
-export type AvatarView = "orb";
+export type AvatarView = "portrait" | "orb";
 
-export const AVATAR_VIEWS: readonly AvatarView[] = ["orb"];
-export const DEFAULT_VIEW: AvatarView = "orb";
+export const AVATAR_VIEWS: readonly AvatarView[] = ["portrait", "orb"];
+export const DEFAULT_VIEW: AvatarView = "portrait";
 
 const KEY = "vtuber.avatar.view";
 

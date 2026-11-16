@@ -7,7 +7,13 @@
   import type { CoreClient } from "../core";
   import { connectVoice, type VoicePlayer } from "../features/audio";
   import { AmbientControl, SystemAudio } from "../features/ambient";
-  import { AvatarStage, loadView } from "../features/avatar";
+  import {
+    AvatarStage,
+    CharacterControls,
+    loadView,
+    saveView,
+    type AvatarView,
+  } from "../features/avatar";
   import { Chat } from "../features/chat";
   import { ChatSidebar } from "../features/chats";
   import {
@@ -41,8 +47,9 @@
   // Звук компьютера для сферы: один на окно, читается циклом аватара каждый кадр (ADR-0039).
   const systemAudio = new SystemAudio();
 
-  // Вид показа справа (Этап 23): выбор в настройках окна.
-  const avatarView = loadView(layoutStorage());
+  // Вид показа справа (Этап 23): картинка персонажа или сфера — выбор в меню по правой кнопке.
+  let avatarView = $state(loadView(layoutStorage()));
+  let stageHost: HTMLElement | undefined = $state();
   // Вне Tauri такого окна нет: режим и кнопка просто отсутствуют.
   const desktopPort = tauriWindow();
   let desktop = $state(loadDesktop(layoutStorage()));
@@ -150,16 +157,27 @@
         <Chat {client} storage={layoutStorage()} />
       {/snippet}
       {#snippet right()}
-        <section class="stage" aria-label={locale.t.app.stage}>
-          <AvatarStage
-            onhittest={(contains: HitTest) => {
-              overModel = contains;
-            }}
+        <section class="stage" aria-label={locale.t.app.stage} bind:this={stageHost}>
+          <!-- Смена вида пересоздаёт сцену: у каждого вида свой рендер. -->
+          {#key avatarView}
+            <AvatarStage
+              onhittest={(contains: HitTest) => {
+                overModel = contains;
+              }}
+              view={avatarView}
+              store={client.store}
+              mouth={(deltaMs: number) => player?.mouth(deltaMs) ?? 0}
+              mouthForm={() => player?.mouthForm() ?? 0}
+              ambient={() => systemAudio.bands}
+            />
+          {/key}
+          <CharacterControls
+            host={stageHost}
             view={avatarView}
-            store={client.store}
-            mouth={(deltaMs: number) => player?.mouth(deltaMs) ?? 0}
-            mouthForm={() => player?.mouthForm() ?? 0}
-            ambient={() => systemAudio.bands}
+            onview={(next: AvatarView) => {
+              avatarView = next;
+              saveView(layoutStorage(), next);
+            }}
           />
           {#if showMetrics}
             <MetricsPanel

@@ -19,6 +19,7 @@
         "minHeight": 500,
         "transparent": true,
         "visible": false,
+        "dragDropEnabled": false,
         "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --use-fake-ui-for-media-stream"
       }
     ],

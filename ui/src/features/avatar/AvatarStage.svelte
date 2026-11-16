@@ -18,6 +18,10 @@
 
   // Каждый вид — свой лёгкий чанк (ADR-0038): чат не ждёт загрузки рендера.
   const RENDERERS: Record<AvatarView, RendererFactory> = {
+    portrait: async (element) => {
+      const { PortraitRenderer } = await import("./portrait/PortraitRenderer");
+      return PortraitRenderer.create(element);
+    },
     orb: async (element, size) => {
       const { OrbRenderer } = await import("./orb/OrbRenderer");
       return OrbRenderer.create(element, size);

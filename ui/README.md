@@ -23,6 +23,7 @@
 | `src/features/metrics/` | `MetricsPanel` по Ctrl+Shift+M: последний, p50, p95, норма (FR-15) |
 | `src/features/avatar/` | `AvatarStage` (сцена), `session.ts` (жизнь персонажа), `loop.ts` (кадры вне Svelte, R-66), контракт `AvatarRenderer`, вид показа `view.ts`, взгляд `gaze.ts` |
 | `src/features/avatar/reactions.ts`, `orb/` | ожидание ответа → «думаю»; сфера (ADR-0038) |
+| `src/features/avatar/portrait/` | окно персонажа (ADR-0044): `PortraitRenderer`, картинка в IndexedDB (`picture.ts`), перетаскивание и меню — `CharacterControls` |
 | `src/features/avatar/mood.ts`, `nod.ts` | затухание эмоции после речи; процедурный кивок в начале хода |
 | `src/features/skills/` | `SkillsPanel` (Ctrl+Shift+K, кнопка «Навыки»): навыки помощника, поиск, включатели (ADR-0043); логика — `skills.ts` |
 | `src/features/audio/` | `VoicePlayer`, `connectVoice` (index.ts): кадры звука → ресемплинг → AudioWorklet (`player.worklet.ts`, `pcm-queue.ts`); липсинк `lipsync.ts` (ADR-0003) |
