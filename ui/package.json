@@ -18,9 +18,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.12.4",
-    "pixi.js": "^8.22.0",
-    "untitled-pixi-live2d-engine": "^1.4.0"
+    "@tauri-apps/api": "^2.12.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -679,13 +679,14 @@
 - `VoicePlayer` — `ui/src/features/audio/VoicePlayer.ts:24` — —
 
 ## ui/src/features/avatar
-Публичный API фичи аватара: сцена и контракт рендера (ADR-0011).
+Публичный API фичи персонажа: сцена, контракт рендера и выбор вида (Этап 23).
 
-- `AvatarSource` — `ui/src/features/avatar/AvatarRenderer.ts:13` — Что загрузить: файлы модели в `ui/public/avatars/<имя>/` (ADR-0011).
-- `AvatarReaction` — `ui/src/features/avatar/AvatarRenderer.ts:24` — Реакция на ход разговора, не зависящая от текста: «слушаю» (пользователь печатает),
-- `StageSize` — `ui/src/features/avatar/AvatarRenderer.ts:27` — Размер области сцены в CSS-пикселях; рендер сам учитывает devicePixelRatio.
-- `AvatarRenderer` — `ui/src/features/avatar/AvatarRenderer.ts:32` — —
+- `AvatarReaction` — `ui/src/features/avatar/AvatarRenderer.ts:16` — Реакция на ход разговора, не зависящая от текста: «слушаю» (пользователь печатает),
+- `StageSize` — `ui/src/features/avatar/AvatarRenderer.ts:19` — Размер области сцены в CSS-пикселях; рендер сам учитывает devicePixelRatio.
+- `AvatarRenderer` — `ui/src/features/avatar/AvatarRenderer.ts:24` — —
 - `AvatarStage.svelte` — `ui/src/features/avatar/AvatarStage.svelte:1` — —
+- `StageRect` — `ui/src/features/avatar/gaze.ts:3` — —
+- `gazeAt` — `ui/src/features/avatar/gaze.ts:14` — -1…1 по осям, y вверх (как `AvatarRenderer.lookAt`). За пределами сцены значение обрезается:
 - `HeadAxis` — `ui/src/features/avatar/gesture.ts:6` — —
 - `GestureSpec` — `ui/src/features/avatar/gesture.ts:8` — —
 - `gestureAngle` — `ui/src/features/avatar/gesture.ts:18` — Добавка к углу головы через `elapsedMs`; огибающая возвращает голову на место к концу жеста.
@@ -695,16 +696,6 @@
 - `browserFrames` — `ui/src/features/avatar/loop.ts:21` — —
 - `browserVisibility` — `ui/src/features/avatar/loop.ts:28` — —
 - `AvatarLoop` — `ui/src/features/avatar/loop.ts:38` — —
-- `MAPPING_VERSION` — `ui/src/features/avatar/mapping.ts:10` — —
-- `MotionRef` — `ui/src/features/avatar/mapping.ts:12` — —
-- `ReactionSpec` — `ui/src/features/avatar/mapping.ts:17` — —
-- `FrameSpec` — `ui/src/features/avatar/mapping.ts:25` — Кадр поверх «вписать целиком»: масштаб и сдвиг центра в долях сцены (y — вниз).
-- `LipsyncSpec` — `ui/src/features/avatar/mapping.ts:32` — Форма рта при речи (ADR-0023): параметр модели и насколько сильно его двигать.
-- `AvatarMapping` — `ui/src/features/avatar/mapping.ts:38` — —
-- `DEFAULT_MAPPING` — `ui/src/features/avatar/mapping.ts:50` — Маппинга нет — модель как есть: без выражений и реакций, кадр «вписать целиком».
-- `MappingError` — `ui/src/features/avatar/mapping.ts:80` — —
-- `parseMapping` — `ui/src/features/avatar/mapping.ts:217` — JSON маппинга → проверенный маппинг; ошибка называет поле и что с ним не так.
-- `expressionFor` — `ui/src/features/avatar/mapping.ts:237` — Какое выражение должно быть на лице: реакция (например, «думаю» до первого токена) важнее
 - `MoodConfig` — `ui/src/features/avatar/mood.ts:8` — —
 - `DEFAULT_MOOD` — `ui/src/features/avatar/mood.ts:16` — Пара фраз тишины — эмоция ещё «про» ответ; дольше — лицо застывает маской.
 - `MoodFrame` — `ui/src/features/avatar/mood.ts:18` — —
@@ -715,45 +706,18 @@
 - `THINKING_AFTER_MS` — `ui/src/features/avatar/reactions.ts:9` — Порог «думаю», мс: бюджет TTFA (NFR-02) — ответ медленнее нормы виден по лицу.
 - `ConversationView` — `ui/src/features/avatar/reactions.ts:11` — —
 - `isWaiting` — `ui/src/features/avatar/reactions.ts:23` — Реплика ушла, а ответа ещё не слышно (без голоса — не видно).
-- `AmbientSource` — `ui/src/features/avatar/session.ts:14` — Файлы модели `<имя>` в `ui/public/avatars/<имя>/` (ADR-0011).
-- `avatarSource` — `ui/src/features/avatar/session.ts:17` — —
-- `MouthSource` — `ui/src/features/avatar/session.ts:26` — Открытие рта 0…1 за прошедшие `deltaMs`; без звука — всегда 0.
-- `ActivitySource` — `ui/src/features/avatar/session.ts:28` — Идёт ли разговор (ход или голос): пока да — эмоция не угасает.
-- `AvatarStatus` — `ui/src/features/avatar/session.ts:30` — —
-- `RendererFactory` — `ui/src/features/avatar/session.ts:34` — Создатель рендера: Live2D в окне, фейк в тестах.
-- `AvatarSession` — `ui/src/features/avatar/session.ts:40` — —
-
-## ui/src/features/avatar/live2d
-—
-
-- `CUBISM_CORE_URL` — `ui/src/features/avatar/live2d/core-loader.ts:8` — Где Vite отдаёт Core из `ui/public/live2d/`.
-- `CORE_MISSING_MESSAGE` — `ui/src/features/avatar/live2d/core-loader.ts:10` — —
-- `MAX_CORE_MAJOR` — `ui/src/features/avatar/live2d/core-loader.ts:18` — Старший номер Core, с которым работает движок: Core 6 (SDK 5-r.5) убрал
-- `formatCoreVersion` — `ui/src/features/avatar/live2d/core-loader.ts:21` — Версия Core из `csmGetVersion()`: 0xMMmmpppp.
-- `unsupportedCoreMessage` — `ui/src/features/avatar/live2d/core-loader.ts:25` — —
-- `ScriptHost` — `ui/src/features/avatar/live2d/core-loader.ts:33` — Части `window`/`document`, нужные загрузчику: в тестах — подмена.
-- `browserHost` — `ui/src/features/avatar/live2d/core-loader.ts:55` — —
-- `loadCubismCore` — `ui/src/features/avatar/live2d/core-loader.ts:82` — Подключить Core один раз на окно; повторные вызовы ждут ту же загрузку.
-- `Engine` — `ui/src/features/avatar/live2d/engine.ts:9` — —
-- `Pixi` — `ui/src/features/avatar/live2d/engine.ts:10` — —
-- `Model` — `ui/src/features/avatar/live2d/engine.ts:11` — —
-- `CubismInternal` — `ui/src/features/avatar/live2d/engine.ts:12` — —
-- `loadEngine` — `ui/src/features/avatar/live2d/engine.ts:22` — —
-- `mouthIndices` — `ui/src/features/avatar/live2d/engine.ts:36` — Индексы параметров рта: ищутся один раз при загрузке, в кадре — запись по индексу.
-- `headPitchIndices` — `ui/src/features/avatar/live2d/engine.ts:42` — Индексы наклона головы для кивка; у модели без параметра — пусто, кивка нет.
-- `mouthFormIndices` — `ui/src/features/avatar/live2d/engine.ts:47` — Индексы формы рта; `declared` — из `mapping.json`. У модели без параметра список пуст.
-- `headAxisIndices` — `ui/src/features/avatar/live2d/engine.ts:52` — Индексы параметров головы по осям для жестов; нет параметра — жест по этой оси не виден.
-- `Size` — `ui/src/features/avatar/live2d/fit.ts:3` — —
-- `Placement` — `ui/src/features/avatar/live2d/fit.ts:8` — —
-- `FIT_MARGIN` — `ui/src/features/avatar/live2d/fit.ts:16` — Поля вокруг модели, доля сцены: не упираться в края при наклонах головы и физике волос.
-- `fitModel` — `ui/src/features/avatar/live2d/fit.ts:19` — Масштаб «вписать целиком» с полями; модель по центру. Пустая сцена или модель — масштаб 0.
-- `applyFrame` — `ui/src/features/avatar/live2d/fit.ts:32` — Кадр маппинга (масштаб и сдвиг центра в долях сцены) поверх «вписать целиком».
-- `gazeAt` — `ui/src/features/avatar/live2d/fit.ts:48` — Курсор → взгляд: -1…1 по осям, y вверх (как `AvatarRenderer.lookAt`). За пределами сцены
-- `Live2DRenderer` — `ui/src/features/avatar/live2d/Live2DRenderer.ts:33` — —
-- `Fetcher` — `ui/src/features/avatar/live2d/settings.ts:8` — —
-- `loadMapping` — `ui/src/features/avatar/live2d/settings.ts:23` — `mapping.json` модели; нет файла — модель как есть, битый файл — ошибка с полем.
-- `withExpressions` — `ui/src/features/avatar/live2d/settings.ts:46` — Копия model3.json с выражениями маппинга (поверх одноимённых из манифеста) и `url` — по нему
-- `loadSettings` — `ui/src/features/avatar/live2d/settings.ts:67` — Манифест модели с выражениями из маппинга — готов для `Live2DModel.from`.
+- `AmbientSource` — `ui/src/features/avatar/session.ts:13` — Полосы звука компьютера 0…1 (Этап 22).
+- `MouthSource` — `ui/src/features/avatar/session.ts:17` — Открытие рта 0…1 за прошедшие `deltaMs`; без звука — всегда 0.
+- `ActivitySource` — `ui/src/features/avatar/session.ts:19` — Идёт ли разговор (ход или голос): пока да — эмоция не угасает.
+- `AvatarStatus` — `ui/src/features/avatar/session.ts:21` — —
+- `RendererFactory` — `ui/src/features/avatar/session.ts:25` — Создатель рендера: вид показа в окне, фейк в тестах.
+- `AvatarSession` — `ui/src/features/avatar/session.ts:31` — —
+- `AvatarView` — `ui/src/features/avatar/view.ts:5` — Вид показа персонажа справа (Этап 23): сфера или окно персонажа. Выбор — в настройках окна
+- `AVATAR_VIEWS` — `ui/src/features/avatar/view.ts:7` — —
+- `DEFAULT_VIEW` — `ui/src/features/avatar/view.ts:8` — —
+- `parseView` — `ui/src/features/avatar/view.ts:12` — —
+- `loadView` — `ui/src/features/avatar/view.ts:17` — Сохранённый вид; хранилище недоступно — вид по умолчанию.
+- `saveView` — `ui/src/features/avatar/view.ts:25` — —
 
 ## ui/src/features/avatar/orb
 —
@@ -763,7 +727,6 @@
 - `nearestEdges` — `ui/src/features/avatar/orb/geometry.ts:30` — Рёбра к `neighbors` ближайшим точкам; повторы (a–b и b–a) убираются.
 - `buildSphere` — `ui/src/features/avatar/orb/geometry.ts:63` — —
 - `ripple` — `ui/src/features/avatar/orb/geometry.ts:72` — Отклонение точки вдоль радиуса: «вибрация» голосом. Волны бегут по поверхности (зависят от
-- `ORB_AVATAR` — `ui/src/features/avatar/orb/name.ts:2` — Имя аватара-сферы в `VITE_AVATAR` и выборе мастера (Этап 22, ADR-0038).
 - `OrbRenderer` — `ui/src/features/avatar/orb/OrbRenderer.ts:25` — —
 - `EMOTION_HUE` — `ui/src/features/avatar/orb/palette.ts:8` — Оттенок (0…360) эмоции; нейтральная — голубой «Джарвиса».
 - `shimmerHue` — `ui/src/features/avatar/orb/palette.ts:19` — Переливание: медленный дрейф ±25° вокруг оттенка эмоции.
@@ -905,8 +868,6 @@
 ## ui/src/features/onboarding
 Публичный API мастера первого запуска (R-63).
 
-- `chosenAvatar` — `ui/src/features/onboarding/avatar.ts:4` — —
-- `chooseAvatar` — `ui/src/features/onboarding/avatar.ts:8` — —
 - `Onboarding.svelte` — `ui/src/features/onboarding/Onboarding.svelte:1` — —
 - `SetupItem` — `ui/src/features/onboarding/plan.ts:8` — —
 - `initialSelection` — `ui/src/features/onboarding/plan.ts:10` — —
@@ -915,8 +876,6 @@
 - `canInstall` — `ui/src/features/onboarding/plan.ts:34` — —
 - `formatSize` — `ui/src/features/onboarding/plan.ts:42` — —
 - `percent` — `ui/src/features/onboarding/plan.ts:49` — —
-- `parseAvatars` — `ui/src/features/onboarding/plan.ts:54` — Список аватаров из `avatars/index.json`; файла нет или он не JSON — только встроенный.
-- `loadAvatars` — `ui/src/features/onboarding/plan.ts:63` — Dev-сервер на отсутствующий файл отдаёт index.html: такой ответ — тоже «файла нет».
 - `restartApp` — `ui/src/features/onboarding/restart.ts:7` — Модели подхватываются при старте ядра, поэтому после установки приложение перезапускается.
 
 ## ui/src/features/privacy

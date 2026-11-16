@@ -7,7 +7,7 @@
   import type { CoreClient } from "../core";
   import { connectVoice, type VoicePlayer } from "../features/audio";
   import { AmbientControl, SystemAudio } from "../features/ambient";
-  import { AvatarStage, ORB_AVATAR } from "../features/avatar";
+  import { AvatarStage, loadView } from "../features/avatar";
   import { Chat } from "../features/chat";
   import { ChatSidebar } from "../features/chats";
   import {
@@ -22,7 +22,7 @@
   import { MicControl } from "../features/mic";
   import { isMetricsHotkey, MetricsPanel } from "../features/metrics";
   import { isMemoryHotkey, MemoryPanel } from "../features/memory";
-  import { chosenAvatar, Onboarding } from "../features/onboarding";
+  import { Onboarding } from "../features/onboarding";
   import { PrivacyControl } from "../features/privacy";
   import { isResourcesHotkey, ResourcesPanel } from "../features/resources";
   import SplitLayout from "./SplitLayout.svelte";
@@ -39,11 +39,8 @@
   // Звук компьютера для сферы: один на окно, читается циклом аватара каждый кадр (ADR-0039).
   const systemAudio = new SystemAudio();
 
-  /** Сфера, если она выбрана в `.env` (Этап 22): выбор модели в мастере её не перекрывает. */
-  function avatarName(): string {
-    const configured = import.meta.env.VITE_AVATAR;
-    return configured === ORB_AVATAR ? ORB_AVATAR : (chosenAvatar(layoutStorage()) ?? configured);
-  }
+  // Вид показа справа (Этап 23): выбор в настройках окна.
+  const avatarView = loadView(layoutStorage());
   // Вне Tauri такого окна нет: режим и кнопка просто отсутствуют.
   const desktopPort = tauriWindow();
   let desktop = $state(loadDesktop(layoutStorage()));
@@ -153,7 +150,7 @@
             onhittest={(contains: HitTest) => {
               overModel = contains;
             }}
-            name={avatarName()}
+            view={avatarView}
             store={client.store}
             mouth={(deltaMs: number) => player?.mouth(deltaMs) ?? 0}
             mouthForm={() => player?.mouthForm() ?? 0}
@@ -202,8 +199,6 @@
   {#if client.store.setup?.needed && !setupClosed}
     <Onboarding
       {client}
-      storage={layoutStorage()}
-      fallbackAvatar={import.meta.env.VITE_AVATAR}
       onclose={() => {
         setupClosed = true;
       }}

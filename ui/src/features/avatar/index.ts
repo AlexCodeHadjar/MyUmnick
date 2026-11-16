@@ -1,5 +1,5 @@
-// Публичный API фичи аватара: сцена и контракт рендера (ADR-0011).
-export type { AvatarReaction, AvatarRenderer, AvatarSource, StageSize } from "./AvatarRenderer";
+// Публичный API фичи персонажа: сцена, контракт рендера и выбор вида (Этап 23).
+export type { AvatarReaction, AvatarRenderer, StageSize } from "./AvatarRenderer";
 export { default as AvatarStage } from "./AvatarStage.svelte";
 export type { MouthSource } from "./session";
-export { ORB_AVATAR } from "./orb/name";
+export { AVATAR_VIEWS, loadView, saveView, type AvatarView } from "./view";

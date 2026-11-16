@@ -1,18 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AvatarRenderer, AvatarSource, StageSize } from "./AvatarRenderer";
-import { AvatarSession, avatarSource, type AvatarStatus } from "./session";
+import type { AvatarRenderer, StageSize } from "./AvatarRenderer";
+import { AvatarSession, type AvatarStatus } from "./session";
 
 class FakeRenderer implements AvatarRenderer {
-  loaded: AvatarSource | null = null;
+  loaded = false;
   readonly sizes: StageSize[] = [];
   readonly gaze: [number, number][] = [];
   updates = 0;
   disposed = false;
   failLoad: Error | null = null;
 
-  load(source: AvatarSource): Promise<void> {
-    this.loaded = source;
+  load(): Promise<void> {
+    this.loaded = true;
     return this.failLoad === null ? Promise.resolve() : Promise.reject(this.failLoad);
   }
   form = 0;
@@ -97,27 +97,18 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("avatarSource", () => {
-  it("файлы модели — в /avatars/<имя>/", () => {
-    expect(avatarSource("haru")).toEqual({
-      modelUrl: "/avatars/haru/haru.model3.json",
-      mappingUrl: "/avatars/haru/mapping.json",
-    });
-  });
-});
-
 describe("AvatarSession", () => {
   it("загрузка: размер сцены, модель, кадры, ресайз, взгляд", async () => {
     const renderer = new FakeRenderer();
     const statuses: AvatarStatus[] = [];
     const session = new AvatarSession(host, (s) => statuses.push(s));
     let created: StageSize | null = null;
-    await session.start("haru", (_, size) => {
+    await session.start((_, size) => {
       created = size;
       return Promise.resolve(renderer);
     });
     expect(created).toEqual({ width: 800, height: 600 });
-    expect(renderer.loaded?.modelUrl).toBe("/avatars/haru/haru.model3.json");
+    expect(renderer.loaded).toBe(true);
     expect(statuses.map((s) => s.state)).toEqual(["loading", "ready"]);
 
     frames.shift()?.();
@@ -139,7 +130,7 @@ describe("AvatarSession", () => {
   it("эмоция из mood доходит до рендера в каждом кадре", async () => {
     const renderer = new FakeRenderer();
     const session = new AvatarSession(host, () => undefined);
-    await session.start("haru", () => Promise.resolve(renderer));
+    await session.start(() => Promise.resolve(renderer));
     session.activity = () => true;
     session.mood.set("happy");
     frames.shift()?.();
@@ -151,22 +142,20 @@ describe("AvatarSession", () => {
     const renderer = new FakeRenderer();
     renderer.failLoad = new Error("404");
     const statuses: AvatarStatus[] = [];
-    await new AvatarSession(host, (s) => statuses.push(s)).start("haru", () =>
-      Promise.resolve(renderer),
-    );
+    await new AvatarSession(host, (s) => statuses.push(s)).start(() => Promise.resolve(renderer));
     expect(statuses.at(-1)).toEqual({
       state: "error",
-      message: "Модель «haru» не загрузилась: 404",
+      message: "Персонаж не загрузился: 404",
     });
   });
 
   it("закрыли сцену, пока создавался рендер — рендер освобождается сразу", async () => {
     const renderer = new FakeRenderer();
     const session = new AvatarSession(host, () => undefined);
-    const started = session.start("haru", () => Promise.resolve(renderer));
+    const started = session.start(() => Promise.resolve(renderer));
     session.dispose();
     await started;
     expect(renderer.disposed).toBe(true);
-    expect(renderer.loaded).toBeNull();
+    expect(renderer.loaded).toBe(false);
   });
 });

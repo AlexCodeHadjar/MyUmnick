@@ -49,23 +49,3 @@ export function formatSize(bytes: number, t: Messages = messagesFor("ru")): stri
 export function percent(done: number, total: number): number {
   return total > 0 ? Math.min(100, Math.floor((done / total) * 100)) : 0;
 }
-
-/** Список аватаров из `avatars/index.json`; файла нет или он не JSON — только встроенный. */
-export function parseAvatars(raw: unknown, fallback: string): string[] {
-  return isNameList(raw) && raw.length > 0 ? raw : [fallback];
-}
-
-function isNameList(raw: unknown): raw is string[] {
-  return Array.isArray(raw) && raw.every((name) => typeof name === "string");
-}
-
-/** Dev-сервер на отсутствующий файл отдаёт index.html: такой ответ — тоже «файла нет». */
-export async function loadAvatars(fallback: string): Promise<string[]> {
-  try {
-    const response = await fetch("/avatars/index.json");
-    const raw: unknown = await response.json();
-    return parseAvatars(raw, fallback);
-  } catch {
-    return [fallback];
-  }
-}

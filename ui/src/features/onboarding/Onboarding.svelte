@@ -1,31 +1,18 @@
 <script lang="ts">
   import { locale } from "../../core";
   // Мастер первого запуска (S-13.2): что подходит этой машине, согласие на загрузку, ход загрузки,
-  // выбор аватара. Без явного согласия ядру не уходит ни одной команды на скачивание.
-  import { onMount, untrack } from "svelte";
+  // перезапуск. Без явного согласия ядру не уходит ни одной команды на скачивание.
+  import { untrack } from "svelte";
 
   import type { CoreClient } from "../../core";
-  import { chooseAvatar } from "./avatar";
-  import {
-    canInstall,
-    downloadSize,
-    formatSize,
-    initialSelection,
-    loadAvatars,
-    percent,
-    toggled,
-  } from "./plan";
+  import { canInstall, downloadSize, formatSize, initialSelection, percent, toggled } from "./plan";
   import { restartApp } from "./restart";
 
   const {
     client,
-    storage,
-    fallbackAvatar,
     onclose,
   }: {
     client: CoreClient;
-    storage: Storage | undefined;
-    fallbackAvatar: string;
     onclose: () => void;
   } = $props();
 
@@ -36,8 +23,6 @@
   let voice = $state("");
   let agreed = $state(false);
   let installing = $state(false);
-  let avatars = $state<string[]>([]);
-  let avatar = $state("");
   let restartByHand = $state(false);
 
   const result = $derived(store.setupResult);
@@ -62,22 +47,12 @@
     }
   });
 
-  onMount(() => {
-    avatar = fallbackAvatar;
-    avatars = [fallbackAvatar];
-    void loadAvatars(fallbackAvatar).then((names) => {
-      avatars = names;
-      avatar = names[0] ?? fallbackAvatar;
-    });
-  });
-
   function install(): void {
     installing = true;
     client.installSetup([...selection], voice);
   }
 
   async function finish(): Promise<void> {
-    chooseAvatar(storage, avatar);
     restartByHand = !(await restartApp());
   }
 </script>
@@ -99,14 +74,6 @@
       {/each}
 
       {#if finished}
-        <label>
-          {locale.t.onboarding.avatar}
-          <select bind:value={avatar}>
-            {#each avatars as name (name)}
-              <option value={name}>{name}</option>
-            {/each}
-          </select>
-        </label>
         <p>{locale.t.onboarding.done}</p>
         <button type="button" class="primary" onclick={() => void finish()}
           >{locale.t.onboarding.finish}</button

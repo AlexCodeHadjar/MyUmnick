@@ -23,7 +23,7 @@
 | Векторное хранилище | SQLite + sqlite-vec | hnswlib, FAISS | Один файл, транзакции, факты и векторы вместе |
 | UI-оболочка | Tauri 2 (ADR-0009) | Electron | Лёгкий, sidecar для ядра |
 | UI-фреймворк | Svelte 5 + TypeScript 6.0 + Vite 8, pnpm (ADR-0009) | React, Solid | Минимум шаблонного кода, быстрый DOM |
-| Аватар | Live2D Cubism 5: PixiJS 8 + untitled-pixi-live2d-engine (ADR-0011) | VRM: three.js + @pixiv/three-vrm | Самый распространённый формат витюберов — **см. лицензии** |
+| Персонаж | Canvas 2D и `<img>` без движков (Этап 23; Live2D убран, ADR-0042) | — | Кадры PNG от пользователя, без лицензий сторонних форматов |
 | Звук в UI | WebAudio (AudioWorklet, AnalyserNode) | — | Точное воспроизведение и анализ громкости |
 | Качество Python | ruff, mypy --strict, import-linter, pytest, pytest-asyncio, hypothesis | pyright | Линт + типы + архитектурные контракты |
 | Качество TS | eslint (strict), prettier, svelte-check, vitest | biome | Строгий TS без any |
@@ -31,9 +31,7 @@
 
 ## Версии
 
-Все версии фиксируются в lock-файлах (`uv.lock`, `pnpm-lock.yaml`). У pixi-live2d-display есть
-ограничения совместимости с мажорными версиями PixiJS — связка выбирается и фиксируется на
-Этапе 6 после проверки (ADR), а не берётся «последняя». Сборка llama-server для RTX 5070 Ti
+Все версии фиксируются в lock-файлах (`uv.lock`, `pnpm-lock.yaml`).
 (Blackwell) — с CUDA 12.8+.
 
 ## Альтернатива: всё на Python

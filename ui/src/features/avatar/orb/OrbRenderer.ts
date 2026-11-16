@@ -1,10 +1,10 @@
 /**
- * Сфера из точек и связей вместо модели (Этап 22, ADR-0038): Canvas 2D, без Pixi и Live2D.
+ * Сфера из точек и связей вместо модели (Этап 22, ADR-0038): Canvas 2D, без сторонних движков.
  * Голос (`setMouth`) раскачивает точки вдоль радиуса и раздувает свечение; эмоция тянет оттенок;
  * «думаю» ускоряет вращение и пульс; взгляд (`lookAt`) наклоняет сферу к курсору.
  * Работает за контрактом `AvatarRenderer`: остальное UI не знает, модель это или сфера.
  */
-import type { Emotion } from "../../../core";
+import { locale, type Emotion } from "../../../core";
 import type { AvatarReaction, AvatarRenderer, StageSize } from "../AvatarRenderer";
 import { buildSphere, ripple, type Sphere } from "./geometry";
 import { EMOTION_HUE, mixHue, shimmerHue, sparkle } from "./palette";
@@ -49,7 +49,7 @@ export class OrbRenderer implements AvatarRenderer {
     this.#canvas.style.cssText = "position:absolute;inset:0;width:100%;height:100%";
     host.append(this.#canvas);
     const ctx = this.#canvas.getContext("2d");
-    if (ctx === null) throw new Error("Canvas 2D недоступен в этом окне");
+    if (ctx === null) throw new Error(locale.t.avatar.noCanvas);
     this.#ctx = ctx;
     this.#size = size;
     this.resize(size);

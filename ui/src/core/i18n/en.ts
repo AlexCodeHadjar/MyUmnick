@@ -101,8 +101,9 @@ export const en: Messages = {
     saveCheckpoint: "Save checkpoint",
   },
   avatar: {
-    loading: "Loading the model…",
-    failed: (name: string, reason: string) => `Model “${name}” failed to load: ${reason}`,
+    loading: "Loading…",
+    failed: (reason: string) => `The character failed to load: ${reason}`,
+    noCanvas: "Canvas 2D is not available in this window",
   },
   desktop: {
     pinnedOn: "Always on top: yes",
@@ -150,7 +151,6 @@ export const en: Messages = {
     noGpu: "No NVIDIA graphics card found.",
     vram: (mb: number) => `Video memory: ${String(mb)} MB.`,
     intro: "The app needs models: they run on this computer.",
-    avatar: "Avatar",
     done: "Everything is installed. The app will restart and load the models.",
     finish: "Finish",
     restartManually: "Please restart the app manually.",

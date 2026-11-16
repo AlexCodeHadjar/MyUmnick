@@ -4,23 +4,14 @@
  * кадр: эмоция с затуханием (`mood.ts`), рот из звука, шаг модели.
  */
 import { locale } from "../../core";
-import type { AvatarRenderer, AvatarSource, StageSize } from "./AvatarRenderer";
-import { gazeAt } from "./live2d/fit";
+import type { AvatarRenderer, StageSize } from "./AvatarRenderer";
+import { gazeAt } from "./gaze";
 import { AvatarLoop } from "./loop";
 import { Mood } from "./mood";
 
-/** Файлы модели `<имя>` в `ui/public/avatars/<имя>/` (ADR-0011). */
 /** Полосы звука компьютера 0…1 (Этап 22). */
 export type AmbientSource = () => { bass: number; mid: number; high: number };
 const QUIET = { bass: 0, mid: 0, high: 0 };
-
-export function avatarSource(name: string): AvatarSource {
-  const base = `/avatars/${encodeURIComponent(name)}`;
-  return {
-    modelUrl: `${base}/${encodeURIComponent(name)}.model3.json`,
-    mappingUrl: `${base}/mapping.json`,
-  };
-}
 
 /** Открытие рта 0…1 за прошедшие `deltaMs`; без звука — всегда 0. */
 export type MouthSource = (deltaMs: number) => number;
@@ -30,7 +21,7 @@ export type ActivitySource = () => boolean;
 export type AvatarStatus =
   { state: "loading" } | { state: "ready" } | { state: "error"; message: string };
 
-/** Создатель рендера: Live2D в окне, фейк в тестах. */
+/** Создатель рендера: вид показа в окне, фейк в тестах. */
 export type RendererFactory = (host: HTMLElement, size: StageSize) => Promise<AvatarRenderer>;
 
 function sizeOf(host: HTMLElement): StageSize {
@@ -61,7 +52,7 @@ export class AvatarSession {
     return this.#renderer;
   }
 
-  async start(name: string, create: RendererFactory): Promise<void> {
+  async start(create: RendererFactory): Promise<void> {
     this.#onStatus({ state: "loading" });
     try {
       const renderer = await create(this.#host, sizeOf(this.#host));
@@ -70,12 +61,12 @@ export class AvatarSession {
         return;
       }
       this.#renderer = renderer;
-      await renderer.load(avatarSource(name));
+      await renderer.load();
       this.#run(renderer);
       this.#onStatus({ state: "ready" });
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
-      this.#onStatus({ state: "error", message: locale.t.avatar.failed(name, reason) });
+      this.#onStatus({ state: "error", message: locale.t.avatar.failed(reason) });
     }
   }
 

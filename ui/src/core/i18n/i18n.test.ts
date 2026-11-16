@@ -17,9 +17,6 @@ const ALLOWED = new Set([
   // Имя и подпись плитки — на языке своего издания: язык ещё не выбран.
   "features/edition/editions.ts",
   "features/chat/image.ts",
-  "features/avatar/mapping.ts",
-  "features/avatar/live2d/core-loader.ts",
-  "features/avatar/live2d/settings.ts",
 ]);
 
 // Исходники как текст через Vite: без node-типов (их в UI нет, ADR-0010).

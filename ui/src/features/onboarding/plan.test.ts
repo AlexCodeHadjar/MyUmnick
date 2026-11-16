@@ -6,7 +6,6 @@ import {
   downloadSize,
   formatSize,
   initialSelection,
-  parseAvatars,
   percent,
   toggled,
   type SetupItem,
@@ -87,12 +86,5 @@ describe("показ", () => {
     expect(percent(50, 200)).toBe(25);
     expect(percent(0, 0)).toBe(0);
     expect(percent(300, 200)).toBe(100);
-  });
-
-  it("аватары", () => {
-    expect(parseAvatars(["a", "b"], "haru")).toEqual(["a", "b"]);
-    expect(parseAvatars(null, "haru")).toEqual(["haru"]);
-    expect(parseAvatars([], "haru")).toEqual(["haru"]);
-    expect(parseAvatars([1], "haru")).toEqual(["haru"]);
   });
 });

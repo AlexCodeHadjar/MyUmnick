@@ -1,11 +1,11 @@
 <script lang="ts">
   import { locale } from "../../core";
-  // Сцена с аватаром: холст Live2D на всю панель, статус загрузки или ошибки поверх. Логика —
-  // в session.ts, reactions.ts и mood.ts; движок грузится динамически, чат не ждёт Pixi и Core.
+  // Сцена с персонажем: вид показа на всю панель, статус загрузки или ошибки поверх. Логика —
+  // в session.ts, reactions.ts и mood.ts; рендер вида — отдельный чанк, чат его не ждёт.
   import { onMount } from "svelte";
 
   import type { AppStore } from "../../core";
-  import { ORB_AVATAR } from "./orb/name";
+  import type { AvatarView } from "./view";
   import type { AvatarReaction } from "./AvatarRenderer";
   import { isWaiting, THINKING_AFTER_MS } from "./reactions";
   import {
@@ -13,17 +13,26 @@
     type AmbientSource,
     type AvatarStatus,
     type MouthSource,
+    type RendererFactory,
   } from "./session";
 
+  // Каждый вид — свой лёгкий чанк (ADR-0038): чат не ждёт загрузки рендера.
+  const RENDERERS: Record<AvatarView, RendererFactory> = {
+    orb: async (element, size) => {
+      const { OrbRenderer } = await import("./orb/OrbRenderer");
+      return OrbRenderer.create(element, size);
+    },
+  };
+
   const {
-    name,
+    view,
     store,
     mouth = () => 0,
     mouthForm = () => 0,
     ambient = () => ({ bass: 0, mid: 0, high: 0 }),
     onhittest,
   }: {
-    name: string;
+    view: AvatarView;
     store: AppStore;
     mouth?: MouthSource;
     /** Форма рта, -1…1 (ADR-0023). */
@@ -133,15 +142,7 @@
     current.ambient = () => ambient();
     // Разговор идёт, пока идёт ход или звучит голос: эмоция угасает только после речи.
     current.activity = () => store.phase !== "idle" || (store.voice.speech?.speaking ?? false);
-    void current.start(name, async (element, size) => {
-      // Сфера — свой лёгкий чанк без Pixi и Live2D; модель Live2D — по имени (ADR-0038).
-      if (name === ORB_AVATAR) {
-        const { OrbRenderer } = await import("./orb/OrbRenderer");
-        return OrbRenderer.create(element, size);
-      }
-      const { Live2DRenderer } = await import("./live2d/Live2DRenderer");
-      return Live2DRenderer.create(element, size);
-    });
+    void current.start(RENDERERS[view]);
     const onmove = (event: PointerEvent): void => {
       current.lookAtPointer(event.clientX, event.clientY);
     };
