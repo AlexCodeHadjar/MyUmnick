@@ -29,6 +29,7 @@
   import { isMetricsHotkey, MetricsPanel } from "../features/metrics";
   import { isMemoryHotkey, MemoryPanel } from "../features/memory";
   import { isSkillsHotkey, SkillsPanel } from "../features/skills";
+  import { isThemeHotkey, ThemePanel } from "../features/theme";
   import { CompanionMenu, startFeed } from "../features/companion";
   import { Onboarding } from "../features/onboarding";
   import { PrivacyControl } from "../features/privacy";
@@ -44,6 +45,7 @@
   let showResources = $state(false);
   let showMemory = $state(false);
   let showSkills = $state(false);
+  let showTheme = $state(false);
   let setupClosed = $state(false);
   // Звук компьютера для сферы: один на окно, читается циклом аватара каждый кадр (ADR-0039).
   const systemAudio = new SystemAudio();
@@ -121,6 +123,9 @@
     } else if (isSkillsHotkey(event)) {
       event.preventDefault();
       showSkills = !showSkills;
+    } else if (isThemeHotkey(event)) {
+      event.preventDefault();
+      showTheme = !showTheme;
     } else if (isResourcesHotkey(event)) {
       event.preventDefault();
       showResources = !showResources;
@@ -206,6 +211,14 @@
               }}
             />
           {/if}
+          {#if showTheme}
+            <ThemePanel
+              storage={layoutStorage()}
+              onclose={() => {
+                showTheme = false;
+              }}
+            />
+          {/if}
           {#if showSkills}
             <SkillsPanel
               {client}
@@ -230,7 +243,7 @@
   <div class="status" class:hidden={overlay}>
     <StatusBar
       store={client.store}
-      hint={`${locale.t.metrics.hotkey}, ${locale.t.resources.hotkey}, ${locale.t.memory.hotkey}, ${locale.t.skills.hotkey}${desktopPort === null ? "" : `, ${locale.t.desktop.hotkey}`}`}
+      hint={`${locale.t.metrics.hotkey}, ${locale.t.resources.hotkey}, ${locale.t.memory.hotkey}, ${locale.t.skills.hotkey}, ${locale.t.theme.hotkey}${desktopPort === null ? "" : `, ${locale.t.desktop.hotkey}`}`}
     >
       <EditionBadge store={client.store} />
       <AmbientControl audio={systemAudio} storage={layoutStorage()} />
@@ -245,6 +258,16 @@
         onclick={() => {
           showSkills = !showSkills;
         }}>🧩 {locale.t.skills.open}</button
+      >
+      <button
+        type="button"
+        class="skills-button"
+        class:active={showTheme}
+        title={locale.t.theme.openHint}
+        aria-pressed={showTheme}
+        onclick={() => {
+          showTheme = !showTheme;
+        }}>🎨 {locale.t.theme.open}</button
       >
     </StatusBar>
   </div>

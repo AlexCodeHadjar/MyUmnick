@@ -676,7 +676,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:268` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:292` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).
@@ -1022,3 +1022,27 @@
 - `statsLine` — `ui/src/features/skills/skills.ts:40` — Строка счётчиков: «сработал 3 раза · 12 мс · не успел 1»; не срабатывал — пусто.
 - `isSkillsHotkey` — `ui/src/features/skills/skills.ts:51` — Ctrl+Shift+K по `code`: в русской раскладке `key` у этой клавиши — «Л».
 - `SkillsPanel.svelte` — `ui/src/features/skills/SkillsPanel.svelte:1` — —
+
+## ui/src/features/theme
+Публичный API оформления (ADR-0047; R-63): панель с цветовым кругом и применение темы при старте.
+
+- `isThemeHotkey` — `ui/src/features/theme/index.ts:8` — Ctrl+Shift+L («look») по `code`: в русской раскладке `key` у этой клавиши — «Д».
+- `Swatch` — `ui/src/features/theme/palette.ts:7` — Точка на круге: оттенок 0…360 и насыщенность 0…1.
+- `Theme` — `ui/src/features/theme/palette.ts:12` — —
+- `Preset` — `ui/src/features/theme/palette.ts:20` — —
+- `DEFAULT_THEME` — `ui/src/features/theme/palette.ts:28` — «Ночь Умника» — палитра по умолчанию (ADR-0046).
+- `BUILT_IN` — `ui/src/features/theme/palette.ts:35` — —
+- `themeVars` — `ui/src/features/theme/palette.ts:81` — Все переменные темы. Насыщенность основного цвета тянет за собой фон, рамки и текст.
+- `applyTheme` — `ui/src/features/theme/palette.ts:106` — Применить к корню документа: переменные `theme.css` перекрываются инлайн-стилем.
+- `swatchAt` — `ui/src/features/theme/palette.ts:111` — Точка круга → оттенок и насыщенность; красный сверху, по часовой стрелке (как `conic-gradient`).
+- `pointOf` — `ui/src/features/theme/palette.ts:117` — Оттенок и насыщенность → смещение маркера от центра круга.
+- `toHex` — `ui/src/features/theme/palette.ts:123` — Цвет маркера (яркость 60%) в `#rrggbb`: показ и ручной ввод в поле.
+- `fromHex` — `ui/src/features/theme/palette.ts:137` — `#rrggbb` → оттенок и насыщенность (яркость задаёт роль цвета); не цвет — `null`.
+- `THEME_KEY` — `ui/src/features/theme/palette.ts:159` — Ключ текущей темы: другое окно (спутник) узнаёт о смене по событию `storage`.
+- `parseTheme` — `ui/src/features/theme/palette.ts:172` — Разбор сохранённой темы; чужое или битое — `null`.
+- `loadTheme` — `ui/src/features/theme/palette.ts:200` — —
+- `saveTheme` — `ui/src/features/theme/palette.ts:204` — —
+- `loadPresets` — `ui/src/features/theme/palette.ts:209` — Встроенные палитры и свои сохранённые.
+- `savePreset` — `ui/src/features/theme/palette.ts:236` — Сохранить свою палитру; то же имя — заменить.
+- `deletePreset` — `ui/src/features/theme/palette.ts:243` — —
+- `ThemePanel.svelte` — `ui/src/features/theme/ThemePanel.svelte:1` — —

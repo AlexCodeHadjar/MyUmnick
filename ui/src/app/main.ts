@@ -7,6 +7,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { CoreClient, locale } from "../core";
 import { Companion } from "../features/companion";
+import { applyTheme, loadTheme, THEME_KEY } from "../features/theme";
 import {
   EditionPicker,
   editionById,
@@ -71,6 +72,19 @@ async function start(): Promise<void> {
     },
   });
 }
+
+// Тема из цветового круга (ADR-0047) — до первого кадра, в обоих окнах; смена в другом окне — по `storage`.
+function storageOf(): Storage | undefined {
+  try {
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
+applyTheme(loadTheme(storageOf()));
+window.addEventListener("storage", (event) => {
+  if (event.key === THEME_KEY) applyTheme(loadTheme(storageOf()));
+});
 
 // Слой «Сопровождения» — второе окно того же приложения (ADR-0045): своя точка входа, без ядра и выбора.
 if (isTauri() && getCurrentWindow().label === "companion") {
