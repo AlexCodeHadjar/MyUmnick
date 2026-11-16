@@ -33,10 +33,11 @@ from vtuber.application.memory import (
     reconcile,
 )
 from vtuber.application.scheduler import IdleJob, IdleScheduler
+from vtuber.application.skills import gated_hints
 from vtuber.bootstrap.config import AppConfig, MemoryConfig
 from vtuber.bootstrap.container import Conversation, Core, llm_backends
 from vtuber.bootstrap.edition import language_pack
-from vtuber.domain import MemoryUnavailable
+from vtuber.domain import CORE_MEMORY, MemoryUnavailable
 from vtuber.kernel import get_logger
 from vtuber.ports import EmbedderPort, GenerationParams, LLMPort, MemoryStorePort, MemoryVaultPort
 
@@ -185,7 +186,9 @@ def _wire(
     recall = MemoryRecall(
         RecallSearch(engines.embedder, engines.store), memory.retrieval, core.telemetry, texts
     )
-    conversation.service.use_memory(recall.hints)
+    skills = conversation.skills
+    hints = recall.hints if skills is None else gated_hints(recall.hints, CORE_MEMORY, skills)
+    conversation.service.use_memory(hints)
     return scheduler, keeper
 
 

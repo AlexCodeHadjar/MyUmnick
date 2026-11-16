@@ -8,8 +8,8 @@ from typing import Final
 
 from pydantic import Field
 
-from vtuber.domain import IncomingMessage
-from vtuber.kernel import ConfigSection, PluginContext
+from vtuber.domain import IncomingMessage, SkillInfo
+from vtuber.kernel import ConfigSection, ContextProvider, PluginContext
 from vtuber_tools.intents import (
     AddNote,
     AskTime,
@@ -63,6 +63,19 @@ class ToolsConfig(ConfigSection):
     max_notes_read: int = Field(default=10, ge=1)
 
 
+def _skill(local: str, title: str, example: str) -> SkillInfo:
+    return SkillInfo(
+        id=local, plugin="", title=title, summary=_SUMMARIES[local], examples=(example,)
+    )
+
+
+_SUMMARIES: Final = {
+    "time": "Отвечает, который час и какое сегодня число",
+    "timer": "Ставит таймер и напоминает, когда время вышло",
+    "notes": "Записывает и читает ваши заметки",
+}
+
+
 def describe_seconds(seconds: int) -> str:
     """Длительность для справки модели: она сама просклоняет, цифры ей понятнее слов."""
     if seconds < _SECONDS_IN_MINUTE:
@@ -86,8 +99,14 @@ class ToolsPlugin:
     async def setup(self, ctx: PluginContext) -> None:
         """Подключить справку хода и источник сработавших таймеров."""
         self._cfg = ctx.settings(ToolsConfig)
-        ctx.add_context(self.context)
-        ctx.add_source(self.fired)
+        # Три навыка — три переключателя в панели «Навыки» (ADR-0043).
+        clock = ctx.declare_skill(_skill("time", "Время и дата", "Который час?"))
+        timer = ctx.declare_skill(_skill("timer", "Таймер и напоминания", "Таймер на 5 минут"))
+        notes = ctx.declare_skill(_skill("notes", "Заметки", "Запиши в заметки купить молоко"))
+        ctx.add_context(self._only(AskTime), skill=clock)
+        ctx.add_context(self._only(SetTimer), skill=timer)
+        ctx.add_context(self._only(AddNote, ListNotes), skill=notes)
+        ctx.add_source(self.fired, skill=timer)
 
     async def shutdown(self) -> None:
         """Несработавшие таймеры пропадают: в файле они не хранятся."""
@@ -98,6 +117,17 @@ class ToolsPlugin:
         """Результат инструмента для справки; None — реплика не про инструменты."""
         intent = detect_intent(text)
         return None if intent is None else await self._run(intent)
+
+    def _only(self, *kinds: type[object]) -> ContextProvider:
+        """Справка только по своим намерениям: у каждого навыка — свой переключатель."""
+
+        async def provide(text: str) -> str | None:
+            intent = detect_intent(text)
+            if intent is None or not isinstance(intent, kinds):
+                return None
+            return await self._run(intent)
+
+        return provide
 
     async def fired(self) -> AsyncGenerator[IncomingMessage]:
         """Сработавшие таймеры: витюбер скажет о них, когда договорит."""

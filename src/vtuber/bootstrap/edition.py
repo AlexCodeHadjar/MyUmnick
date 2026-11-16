@@ -28,6 +28,7 @@ LANGUAGE_BOUND_KEYS: Final = frozenset(
         "memory.store_path",
         "memory.vault_path",
         "memory.inbox",
+        "skills.file",
         "memory.transfer_to",
         "llama_server.model",
         "setup.choice_file",

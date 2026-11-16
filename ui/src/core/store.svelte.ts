@@ -6,6 +6,7 @@
 import { isLang, locale } from "./i18n";
 import type {
   ChatsData,
+  SkillsData,
   EditionData,
   BackendState,
   Component,
@@ -122,6 +123,8 @@ export class AppStore {
   edition = $state<EditionData | null>(null);
   /** Список чатов слева (Этап 21); null — ядро ещё не прислало. */
   chats = $state<ChatsData | null>(null);
+  /** Навыки помощника (Этап 23, ADR-0043): приходят по запросу панели «Навыки». */
+  skills = $state<SkillsData | null>(null);
   /** Сколько раз к витюберу обратились голосом (Этап 22): каждый новый номер — вспышка внимания. */
   called = $state(0);
   /** Издание, выбранное на экране выбора; `null` — экрана не было (язык берётся из ядра). */
@@ -249,6 +252,9 @@ export class AppStore {
         break;
       case "chats.state":
         this.chats = message.data;
+        break;
+      case "skills.state":
+        this.skills = message.data;
         break;
       case "app.edition":
         this.edition = message.data;

@@ -101,3 +101,43 @@ async def test_long_tool_keeps_its_own_deadline_and_short_ones_do_not_wait() -> 
 
     tools = [ContextTool(long_tool, timeout_s=1.0)]
     assert (await ToolContext(tools, timeout_s=0.001).hints("x")).context == ("поиск",)
+
+
+async def test_time_timer_and_notes_are_separate_skills(tmp_path: Path) -> None:
+    ctx = PluginContext("tools", EventBus(), {"notes_file": str(tmp_path / "n.txt")})
+    await ToolsPlugin().setup(ctx)
+
+    assert [info.id for info in ctx.skills] == ["tools.time", "tools.timer", "tools.notes"]
+    assert [tool.skill for tool in ctx.contexts] == ["tools.time", "tools.timer", "tools.notes"]
+    assert [skill for _, skill in ctx.skilled_sources] == ["tools.timer"]
+    clock = ctx.contexts[0]
+    assert await clock.provider("Запиши в заметки хлеб") is None  # чужое намерение — молчит
+
+
+async def test_disabled_skill_is_not_asked_and_used_one_is_counted() -> None:
+    asked: list[str] = []
+
+    async def clock(text: str) -> str | None:
+        asked.append(text)
+        return "14:05"
+
+    async def notes(_: str) -> str | None:
+        raise AssertionError
+
+    class Gate:
+        def __init__(self) -> None:
+            self.used: list[tuple[str, float | None]] = []
+
+        def enabled(self, skill_id: str) -> bool:
+            return skill_id != "tools.notes"
+
+        def record(self, skill_id: str, ms: float | None) -> None:
+            self.used.append((skill_id, ms))
+
+    gate = Gate()
+    tools = [ContextTool(clock, skill="tools.time"), ContextTool(notes, skill="tools.notes")]
+    hints = await ToolContext(tools, timeout_s=1.0, skills=gate).hints("который час")
+
+    assert hints.context == ("14:05",)
+    assert asked == ["который час"]
+    assert [skill for skill, _ in gate.used] == ["tools.time"]

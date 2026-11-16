@@ -15,6 +15,7 @@ from vtuber.application.memory import FactMemoryConfig, RetrievalConfig
 from vtuber.application.pipeline import PipelineConfig
 from vtuber.application.prompting import ContextConfig
 from vtuber.application.scheduler import ResourcesConfig, SchedulerConfig
+from vtuber.application.skills import SkillsConfig
 from vtuber.application.supervision import SupervisorConfig
 from vtuber.application.voice import AddressingConfig, SoundsConfig, SpeakersConfig, VoiceConfig
 from vtuber.bootstrap.edition import EditionConfig, check_edition, edition_files, resolve_edition
@@ -142,6 +143,7 @@ class AppConfig(ConfigSection):
     memory: MemoryConfig
     stt: SttConfig
     plugins: PluginsConfig
+    skills: SkillsConfig
     resources: ResourcesConfig
     gpu_probe: NvidiaSmiConfig
     setup: SetupConfig

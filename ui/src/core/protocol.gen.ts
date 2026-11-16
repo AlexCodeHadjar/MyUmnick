@@ -547,6 +547,49 @@ export interface SetupStateMessage {
   data: SetupData;
 }
 
+/** Навык в панели: тексты на языке издания, флаги, состояние и счётчики за сессию. */
+export interface SkillData {
+  id: string;
+  plugin: string;
+  title: string;
+  summary: string;
+  examples: string[];
+  network: boolean;
+  gpu: boolean;
+  enabled: boolean;
+  loaded: boolean;
+  uses: number;
+  average_ms: number | null;
+  timeouts: number;
+}
+
+/** UI → Ядро: действие в панели «Навыки». */
+export interface SkillsAction {
+  v: Version;
+  type: "skills.action";
+  data: SkillsActionData;
+}
+
+/** `list` — прислать список (и найти установленные плагины); `set` — включить или выключить. */
+export interface SkillsActionData {
+  action: "list" | "set";
+  id: string | null;
+  enabled: boolean | null;
+}
+
+/** Все навыки; `problem` — почему не получилось последнее действие. */
+export interface SkillsData {
+  skills: SkillData[];
+  problem: string | null;
+}
+
+/** Ядро → UI: список навыков по запросу и после переключения. */
+export interface SkillsState {
+  v: Version;
+  type: "skills.state";
+  data: SkillsData;
+}
+
 /** Откуда взят ответ. */
 export interface SourceData {
   title: string;
@@ -638,6 +681,6 @@ export interface WindowVisibility {
   data: VisibilityData;
 }
 
-export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryTransfer | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint | WindowVisibility | ChatAction | ChatSendImage;
+export type InboundMessage = ChatSend | ChatCancel | InputTyping | ResourcesWatch | SetupInstall | SetupCancel | PrivacySet | MemoryErase | MemoryList | MemoryTransfer | MemoryFactSave | MemoryFactDelete | BranchGo | BranchCheckpoint | WindowVisibility | ChatAction | SkillsAction | ChatSendImage;
 
-export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | AvatarGesture | ChatAttachment | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryTransferred | MemoryFacts | BranchState | ChatSources | AppEdition | ChatsState | ErrorMessage;
+export type OutboundMessage = TurnStartedMessage | ChatDelta | AvatarEmotion | AvatarGesture | ChatAttachment | TurnFinishedMessage | TurnCancelledMessage | MetricsSpan | Status | InputBargeIn | InputHypothesis | InputFinal | ResourcesMessage | SetupStateMessage | SetupProgress | SetupFinished | ViewerBlockedMessage | BackendNoticeMessage | PrivacyState | MemoryErased | MemoryTransferred | MemoryFacts | BranchState | ChatSources | AppEdition | ChatsState | SkillsState | ErrorMessage;

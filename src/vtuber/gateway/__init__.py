@@ -55,6 +55,7 @@ from vtuber.gateway.resources_feed import ResourcesFeed
 from vtuber.gateway.server import REPLACED_CODE, GatewayConfig, GatewayServer, MicSink
 from vtuber.gateway.setup_bridge import SetupBridge
 from vtuber.gateway.sink import WsReplySink
+from vtuber.gateway.skills_bridge import SkillsBridge
 from vtuber.gateway.terminal import EXIT_COMMAND, STOP_COMMAND, TerminalChat, TerminalSink
 from vtuber.gateway.voice_bridge import END_TO_AUDIO_SPAN, VoiceBridge
 
@@ -101,6 +102,7 @@ __all__ = [
     "ResourcesFeed",
     "SendData",
     "SetupBridge",
+    "SkillsBridge",
     "SpanData",
     "Status",
     "StatusData",

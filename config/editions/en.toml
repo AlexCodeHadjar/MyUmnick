@@ -34,6 +34,9 @@ language = "en"
 [stt.addressing]
 names = ["umnik", "oomnik", "umnick"]
 
+[skills]                       # свой выбор навыков: плагины изданий разные
+file = "data/en/skills.json"
+
 [memory]                       # своя память: факты и заметки изданий не смешиваются
 store_path = "data/en/memory.sqlite"
 vault_path = "data/en/vault"

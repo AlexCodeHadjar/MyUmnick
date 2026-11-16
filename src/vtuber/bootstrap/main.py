@@ -6,7 +6,7 @@ import os
 import sys
 from collections.abc import AsyncIterator, Mapping, Sequence
 from contextlib import ExitStack, aclosing, asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Final, Protocol, TextIO
 
@@ -16,12 +16,12 @@ from vtuber.application.conversation import ConversationService, Initiative
 from vtuber.application.prompting import RU_PROMPT, PromptBuilder
 from vtuber.application.scheduler import ResourceManager
 from vtuber.application.supervision import Supervised, Supervisor
-from vtuber.application.tools import ToolContext
 from vtuber.bootstrap.chat_wiring import app_memory
 from vtuber.bootstrap.config import AppConfig, load_app_config
 from vtuber.bootstrap.container import Core, build_conversation, llm_backends
 from vtuber.bootstrap.edition import edition_persona, resolve_edition, warn_ignored_user_keys
-from vtuber.bootstrap.plugins import PluginServices, ResourceModels, running_plugins
+from vtuber.bootstrap.plugins import PluginEnv, ResourceModels, running_plugins
+from vtuber.bootstrap.skills import connect_skills, open_skills
 from vtuber.bootstrap.supervision import (
     LlmSupervised,
     TtsSupervised,
@@ -30,7 +30,7 @@ from vtuber.bootstrap.supervision import (
     with_voice,
 )
 from vtuber.bootstrap.voice_input import voice_input
-from vtuber.bootstrap.wiring import AppParts, connect_initiative, connect_panels
+from vtuber.bootstrap.wiring import AppParts, connect_initiative, connect_panels, read_sources
 from vtuber.domain import (
     BackendState,
     BackendStatusChanged,
@@ -99,6 +99,7 @@ def main(argv: Sequence[str], env: Mapping[str, str], console: Console) -> int:
             "stt": cfg.stt.resolved(args.root),
             "llama_server": cfg.llama_server.resolved(args.root),
             "setup": cfg.setup.resolved(args.root),
+            "skills": cfg.skills.resolved(args.root),
         }
         cfg = cfg.model_copy(update=resolved)
         persona = edition_persona(args.root / cfg.persona.file, cfg.edition)
@@ -130,19 +131,29 @@ async def _run(
     ):
         metrics = tg.create_task(core.telemetry.run())
         trimming = tg.create_task(resources.run(NvidiaSmiProbe(cfg.gpu_probe)))
+        skills = await open_skills(cfg)
         conversation = build_conversation(cfg, persona, with_voice(llm, voice), core)
+        conversation = replace(conversation, skills=skills)
         warmup = _Warmup(_Llm(llm, server), conversation.prompts, bus, voice)
         # Память (Этап 10): факты и резюме — в простое, LLM фонового слота; поиск — в ходе (T-12).
         async with (
             app_memory(cfg, conversation, core, chats=mode == SERVE_MODE) as memory,
             running_plugins(
-                cfg.plugins, bus, models=ResourceModels(resources), language=cfg.edition.language
+                PluginEnv(
+                    cfg.plugins,
+                    bus,
+                    models=ResourceModels(resources),
+                    language=cfg.edition.language,
+                ),
+                wanted=skills.wanted_plugins(),
             ) as plugins,
         ):
-            _connect_tools(cfg, conversation.service, plugins)
+            connect_skills(cfg, conversation.service, plugins, skills)
             if mode == SERVE_MODE:
                 code = await _serve(
-                    AppParts(cfg, core, plugins, resources, memory, conversation.history, persona),
+                    AppParts(
+                        cfg, core, plugins, resources, memory, conversation.history, persona, skills
+                    ),
                     conversation.service,
                     warmup,
                     console,
@@ -158,13 +169,6 @@ def _resources(cfg: AppConfig, bus: EventBus) -> ResourceManager:
     manager = ResourceManager(cfg.resources)
     manager.follow(bus)
     return manager
-
-
-def _connect_tools(cfg: AppConfig, service: ConversationService, plugins: PluginServices) -> None:
-    """Без инструментов сервис хода не тратит на них ни одного вызова."""
-    if plugins.contexts:
-        tools = ToolContext(plugins.contexts, cfg.plugins.context_timeout_s)
-        service.use_tools(tools.hints)
 
 
 async def _chat(
@@ -184,7 +188,7 @@ async def _serve(
     console: Console,
 ) -> int:
     """Шлюз живёт, пока открыт stdin: Tauri-родитель умер — pipe закрыт — ядро выходит."""
-    cfg, core, plugins = app.cfg, app.core, app.plugins
+    cfg, core = app.cfg, app.core
     async with GatewayServer(service, warmup.bus, cfg.gateway) as server:
         connect_panels(app, server, service)
         print(f"Шлюз для UI: ws://{cfg.gateway.host}:{server.port}", file=console.out)
@@ -201,7 +205,7 @@ async def _serve(
             external = ExternalTurns(
                 service, server.send, server.send_bytes, lambda: server.has_client
             )
-            readers = [tg.create_task(external.run(stream)) for stream in plugins.sources]
+            readers = read_sources(app, external, tg)
             initiative = connect_initiative(app, server, service, external)
             if initiative is not None:
                 readers.append(tg.create_task(_forever(initiative)))

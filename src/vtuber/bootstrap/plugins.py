@@ -1,18 +1,20 @@
 """Загрузка плагинов (Этап 12): entry points `vtuber.plugins`, включённые в `[plugins].enabled`.
 
 Плагин — чужой код: сбой при загрузке, старте или остановке пишется в лог и не мешает приложению.
-Ни один плагин не включён — нет ни поиска пакетов, ни задач, ни подписок.
+Ни один плагин не включён — нет ни поиска пакетов, ни задач, ни подписок. С Этапа 23 (ADR-0043)
+плагин можно запустить и на ходу — из панели «Навыки»: его справка, команды и источники
+дописываются в живые списки, которые читает ядро.
 """
 
 import asyncio
-from collections.abc import AsyncIterator, Callable, Iterable, Mapping
+from collections.abc import AsyncIterator, Callable, Iterable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from importlib.metadata import EntryPoint, entry_points
 from typing import Final
 
 from vtuber.application.scheduler import ModelSpec, Priority, ResourceManager
-from vtuber.domain import ConfigError
+from vtuber.domain import ConfigError, SkillInfo, plugin_skill
 from vtuber.kernel import (
     Command,
     ContextTool,
@@ -29,17 +31,10 @@ from vtuber.kernel import (
 ENTRY_POINT_GROUP: Final = "vtuber.plugins"
 
 type Discover = Callable[[], Iterable[EntryPoint]]
+type SourceSink = Callable[[MessageStream, str], None]
+"""Новый источник реплик (плагин включили на ходу): ядро начинает его читать."""
 
 _log = get_logger(__name__)
-
-
-@dataclass(frozen=True, slots=True)
-class PluginServices:
-    """Что плагины дали ядру в `setup`: источники реплик и справку хода."""
-
-    sources: tuple[MessageStream, ...] = ()
-    contexts: tuple[ContextTool, ...] = ()
-    commands: Mapping[str, Command] = field(default_factory=dict)
 
 
 class ResourceModels:
@@ -62,44 +57,107 @@ class _Started:
     ctx: PluginContext
 
 
-def _installed() -> Iterable[EntryPoint]:
-    return entry_points(group=ENTRY_POINT_GROUP)
+@dataclass(frozen=True, slots=True)
+class PluginEnv:
+    """С чем плагины стартуют: секция конфига, шина, видеопамять, язык издания."""
+
+    cfg: PluginsConfig
+    bus: EventBus
+    discover: Discover = lambda: entry_points(group=ENTRY_POINT_GROUP)
+    models: ModelHost | None = None
+    language: str = "ru"
+
+
+class PluginServices:
+    """Что плагины дали ядру: живые списки — ядро читает их на каждой реплике."""
+
+    def __init__(self, env: PluginEnv) -> None:
+        self._env = env
+        self.contexts: list[ContextTool] = []
+        self.commands: dict[str, Command] = {}
+        self.command_skills: dict[str, str] = {}
+        self.sources: list[tuple[MessageStream, str]] = []
+        self.skills: list[SkillInfo] = []
+        self.on_source: SourceSink | None = None
+        self._found: dict[str, EntryPoint] | None = None
+        self._started: list[_Started] = []
+        self._pumps: list[asyncio.Task[None]] = []
+
+    @property
+    def running(self) -> frozenset[str]:
+        """Имена запущенных плагинов."""
+        return frozenset(one.ctx.name for one in self._started)
+
+    async def load(self, name: str) -> tuple[SkillInfo, ...] | None:
+        """Запустить плагин `name`; вернёт его навыки или `None`, если он не запустился."""
+        if name in self.running:
+            return tuple(info for info in self.skills if info.plugin == name)
+        env = self._env
+        found = await self._entries()
+        ctx = PluginContext(name, env.bus, env.cfg.settings.get(name, {}), env.models, env.language)
+        one = await _start(found.get(name), env.cfg, ctx)
+        if one is None:
+            return None
+        self._started.append(one)
+        self._pumps.append(asyncio.create_task(ctx.run()))
+        self._take(ctx)
+        return ctx.skills
+
+    async def available(self) -> tuple[SkillInfo, ...]:
+        """Установленные, но не запущенные плагины — навыками «весь плагин» для панели."""
+        found = await self._entries()
+        return tuple(
+            plugin_skill(name, summary=_summary(point))
+            for name, point in sorted(found.items())
+            if name not in self.running
+        )
+
+    async def aclose(self) -> None:
+        """Остановить всё в обратном порядке запуска."""
+        for pump in self._pumps:
+            pump.cancel()
+        await asyncio.gather(*self._pumps, return_exceptions=True)
+        for one in reversed(self._started):
+            await _stop(one, self._env.cfg.shutdown_timeout_s)
+
+    def _take(self, ctx: PluginContext) -> None:
+        self.contexts.extend(ctx.contexts)
+        self.commands.update(ctx.commands)
+        self.command_skills.update(ctx.command_skills)
+        self.skills.extend(ctx.skills)
+        for stream, skill in ctx.skilled_sources:
+            self.sources.append((stream, skill))
+            if self.on_source is not None:
+                self.on_source(stream, skill)
+
+    async def _entries(self) -> dict[str, EntryPoint]:
+        if self._found is None:
+            # Поиск пакетов читает метаданные с диска — не в цикле событий (R-34).
+            points = await asyncio.to_thread(lambda: list(self._env.discover()))
+            self._found = {point.name: point for point in points}
+        return self._found
 
 
 @asynccontextmanager
 async def running_plugins(
-    cfg: PluginsConfig,
-    bus: EventBus,
-    discover: Discover = _installed,
-    models: ModelHost | None = None,
-    language: str = "ru",
+    env: PluginEnv, wanted: Iterable[str] = ()
 ) -> AsyncIterator[PluginServices]:
-    """Включённые плагины работают на время контекста; остановка — в обратном порядке.
+    """Включённые (в конфиге и в панели «Навыки» — `wanted`) плагины работают на время контекста.
 
-    Отдаёт то, что плагины зарегистрировали в `setup`.
+    Остановка — в обратном порядке. Ничего не включено — нет даже поиска пакетов.
     """
-    if not cfg.enabled:
-        yield PluginServices()
-        return
-    found = {point.name: point for point in discover()}
-    attempts = []
-    for name in cfg.enabled:
-        ctx = PluginContext(name, bus, cfg.settings.get(name, {}), models, language)
-        attempts.append(await _start(found.get(name), cfg, ctx))
-    started = [one for one in attempts if one is not None]
-    pumps = [asyncio.create_task(one.ctx.run()) for one in started]
+    services = PluginServices(env)
+    for name in dict.fromkeys([*env.cfg.enabled, *wanted]):
+        await services.load(name)
     try:
-        yield PluginServices(
-            tuple(stream for one in started for stream in one.ctx.sources),
-            tuple(provider for one in started for provider in one.ctx.contexts),
-            {text: cmd for one in started for text, cmd in one.ctx.commands.items()},
-        )
+        yield services
     finally:
-        for pump in pumps:
-            pump.cancel()
-        await asyncio.gather(*pumps, return_exceptions=True)
-        for one in reversed(started):
-            await _stop(one, cfg.shutdown_timeout_s)
+        await services.aclose()
+
+
+def _summary(point: EntryPoint) -> str:
+    dist = point.dist
+    return "" if dist is None else str(dist.metadata.get("Summary") or "")
 
 
 async def _start(

@@ -187,4 +187,24 @@ describe("обращение по имени", () => {
 
     expect(store.called).toBe(2);
   });
+
+  it("skills.state заменяет список навыков целиком", () => {
+    const skill = {
+      id: "tools.timer",
+      plugin: "tools",
+      title: "Таймер",
+      summary: "",
+      examples: [],
+      network: false,
+      gpu: false,
+      enabled: true,
+      loaded: true,
+      uses: 0,
+      average_ms: null,
+      timeouts: 0,
+    };
+    store.apply({ v: 1, type: "skills.state", data: { skills: [skill], problem: null } });
+
+    expect(store.skills?.skills.map((one) => one.id)).toEqual(["tools.timer"]);
+  });
 });

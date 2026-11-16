@@ -134,6 +134,16 @@ UI → Ядро: действие со списком чатов.
 | `name` | `string | null` |
 | `category` | `string | null` |
 
+### `skills.action` — `SkillsAction`
+
+UI → Ядро: действие в панели «Навыки».
+
+| Поле `data` | Тип |
+|---|---|
+| `action` | `"list" | "set"` |
+| `id` | `string | null` |
+| `enabled` | `boolean | null` |
+
 ### `chat.send_image` — `ChatSendImage`
 
 UI → Ядро: новая реплика с картинкой; прерывает текущий ход, как `chat.send`.
@@ -375,6 +385,15 @@ UI → Ядро: новая реплика с картинкой; прерыва
 | `categories` | `CategoryData[]` |
 | `active` | `string` |
 | `switching` | `boolean` |
+| `problem` | `string | null` |
+
+### `skills.state` — `SkillsState`
+
+Ядро → UI: список навыков по запросу и после переключения.
+
+| Поле `data` | Тип |
+|---|---|
+| `skills` | `SkillData[]` |
 | `problem` | `string | null` |
 
 ### `error` — `ErrorMessage`

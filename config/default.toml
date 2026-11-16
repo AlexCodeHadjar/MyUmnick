@@ -186,6 +186,9 @@ setup_timeout_s = 10.0         # зависший setup не должен ост
 shutdown_timeout_s = 5.0
 context_timeout_s = 0.03        # инструмент в горячем пути: не успел — ход идёт без него (приоритет 1)
 
+[skills]                       # панель «Навыки» (Этап 23, ADR-0043): выбор пользователя поверх [plugins]
+file = "data/skills.json"
+
 [plugins.settings]             # настройки плагина: [plugins.settings.<имя>]
 
 [resources]                    # бюджет видеопамяти (ADR-0017); числа из замеров, карту не опрашивает

@@ -60,6 +60,15 @@ from vtuber.domain.floor import crosses_hard_floor
 from vtuber.domain.gpu import GpuMemory
 from vtuber.domain.incoming import IncomingMessage
 from vtuber.domain.memory import EmbedKind, Fact, FactHit, FactId, FactSource, VaultScan, Vector
+from vtuber.domain.skill import (
+    CORE_INITIATIVE,
+    CORE_MEMORY,
+    CORE_PLUGIN,
+    SkillInfo,
+    SkillState,
+    SkillStats,
+    plugin_skill,
+)
 from vtuber.domain.speech import SAMPLE_WIDTH_BYTES, AudioChunk, AudioFormat
 from vtuber.domain.turn_state import TurnState, next_state
 from vtuber.domain.viewer import (
@@ -75,6 +84,9 @@ from vtuber.domain.viewer import (
 )
 
 __all__ = [
+    "CORE_INITIATIVE",
+    "CORE_MEMORY",
+    "CORE_PLUGIN",
     "EN_VIEWER",
     "MAIN_CHAT",
     "MAX_TAG_LENGTH",
@@ -124,6 +136,9 @@ __all__ = [
     "STTUnavailable",
     "SearchSource",
     "SetupFailed",
+    "SkillInfo",
+    "SkillState",
+    "SkillStats",
     "SoundHeard",
     "SoundKind",
     "SourcesFound",
@@ -151,6 +166,7 @@ __all__ = [
     "next_state",
     "parse_gesture",
     "parse_tag",
+    "plugin_skill",
     "viewer_line",
     "without_viewer_prefix",
 ]

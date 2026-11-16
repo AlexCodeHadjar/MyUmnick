@@ -1,14 +1,14 @@
 import asyncio
 import io
 import json
-from collections.abc import Iterable, Mapping
+from collections.abc import AsyncGenerator, Iterable, Mapping
 from importlib.metadata import EntryPoint
 from pathlib import Path
 
 import pytest
 
-from vtuber.bootstrap.plugins import ENTRY_POINT_GROUP, running_plugins
-from vtuber.domain import TurnFinished, TurnId
+from vtuber.bootstrap.plugins import ENTRY_POINT_GROUP, PluginEnv, running_plugins
+from vtuber.domain import IncomingMessage, TurnFinished, TurnId
 from vtuber.kernel import EventBus, LoggingConfig, PluginContext, PluginsConfig, logging_to
 
 EVENT = TurnFinished(TurnId(1))
@@ -66,6 +66,26 @@ class NotAPlugin:
     pass
 
 
+class Helper(Recording):
+    """Плагин с инструментом, командой и источником: проверка запуска на ходу (ADR-0043)."""
+
+    name = "helper"
+
+    async def setup(self, ctx: PluginContext) -> None:
+        async def hint(_: str) -> str | None:
+            return "справка"
+
+        async def stop() -> None:
+            return None
+
+        async def heard() -> AsyncGenerator[IncomingMessage]:
+            yield IncomingMessage("helper", "Помощник", "привет", is_viewer=False)
+
+        ctx.add_context(hint)
+        ctx.add_command("стоп", stop)
+        ctx.add_source(heard)
+
+
 class Bilingual(Recording):
     name = "bilingual"
     languages = ("ru", "en")
@@ -116,7 +136,7 @@ async def _settle() -> None:
 async def test_enabled_plugin_reacts_to_event_and_stops() -> None:
     bus = EventBus()
     discover = _found(_point("recording", "Recording"))
-    async with running_plugins(_cfg("recording"), bus, discover):
+    async with running_plugins(PluginEnv(_cfg("recording"), bus, discover)):
         await bus.publish(EVENT)
         await _settle()
     plugin = Recording.instances[0]
@@ -128,7 +148,7 @@ async def test_disabled_plugin_is_not_imported() -> None:
     bus = EventBus()
     broken_import = EntryPoint("other", "no_such_module_at_all:Plugin", ENTRY_POINT_GROUP)
     discover = _found(_point("recording", "Recording"), broken_import)
-    async with running_plugins(_cfg("recording"), bus, discover):
+    async with running_plugins(PluginEnv(_cfg("recording"), bus, discover)):
         pass
     assert len(Recording.instances) == 1
 
@@ -137,7 +157,7 @@ async def test_nothing_enabled_costs_nothing() -> None:
     bus = EventBus()
     discover = _found(_point("recording", "Recording"))
     tasks_before = len(asyncio.all_tasks())
-    async with running_plugins(_cfg(), bus, discover):
+    async with running_plugins(PluginEnv(_cfg(), bus, discover)):
         assert len(asyncio.all_tasks()) == tasks_before
     assert discover.calls == 0
     assert Recording.instances == []
@@ -156,7 +176,7 @@ async def test_nothing_enabled_costs_nothing() -> None:
 async def test_broken_plugin_does_not_affect_others(name: str, target: str) -> None:
     bus = EventBus()
     points = _found(_point(name, target), _point("recording", "Recording"))
-    async with running_plugins(_cfg(name, "recording"), bus, points):
+    async with running_plugins(PluginEnv(_cfg(name, "recording"), bus, points)):
         await bus.publish(EVENT)
         await _settle()
     working = next(p for p in Recording.instances if type(p) is Recording)
@@ -165,23 +185,22 @@ async def test_broken_plugin_does_not_affect_others(name: str, target: str) -> N
 
 async def test_failed_setup_gets_no_events() -> None:
     bus = EventBus()
-    async with running_plugins(
-        _cfg("fails_setup"), bus, _found(_point("fails_setup", "FailsSetup"))
-    ):
+    points = _found(_point("fails_setup", "FailsSetup"))
+    async with running_plugins(PluginEnv(_cfg("fails_setup"), bus, points)):
         await bus.publish(EVENT)
         await _settle()
     assert Recording.instances[0].events == []
 
 
 async def test_missing_package_is_only_a_warning() -> None:
-    async with running_plugins(_cfg("gone"), EventBus(), _found()):
+    async with running_plugins(PluginEnv(_cfg("gone"), EventBus(), _found())):
         pass
 
 
 async def test_failed_shutdown_does_not_stop_others() -> None:
     bus = EventBus()
     points = _found(_point("recording", "Recording"), _point("fails_shutdown", "FailsShutdown"))
-    async with running_plugins(_cfg("recording", "fails_shutdown"), bus, points):
+    async with running_plugins(PluginEnv(_cfg("recording", "fails_shutdown"), bus, points)):
         pass
     assert next(p for p in Recording.instances if type(p) is Recording).stopped
 
@@ -197,7 +216,7 @@ async def test_example_plugin_works_through_entry_point(
     cfg = _cfg("example", settings={"example": {"label": "тест"}})
     stream = io.StringIO()
     with logging_to(LoggingConfig(level="INFO", file=Path("unused")), stream):
-        async with running_plugins(cfg, bus, _found(point)):
+        async with running_plugins(PluginEnv(cfg, bus, _found(point))):
             await bus.publish(EVENT)
             await _settle()
     logged = {entry["event"]: entry for entry in map(json.loads, stream.getvalue().splitlines())}
@@ -210,7 +229,8 @@ async def test_plugin_without_languages_is_skipped_in_english_edition() -> None:
     discover = _found(_point("recording", "Recording"), _point("bilingual", "Bilingual"))
     Bilingual.seen.clear()
 
-    async with running_plugins(_cfg("recording", "bilingual"), EventBus(), discover, language="en"):
+    env = PluginEnv(_cfg("recording", "bilingual"), EventBus(), discover, language="en")
+    async with running_plugins(env):
         pass
 
     assert Recording.instances[0].events == []
@@ -222,7 +242,34 @@ async def test_plugins_start_in_russian_edition_as_before() -> None:
     Bilingual.seen.clear()
     discover = _found(_point("bilingual", "Bilingual"))
 
-    async with running_plugins(_cfg("bilingual"), EventBus(), discover):
+    async with running_plugins(PluginEnv(_cfg("bilingual"), EventBus(), discover)):
         pass
 
     assert Bilingual.seen == ["ru"]
+
+
+async def test_plugin_started_on_the_fly_joins_live_lists() -> None:
+    discover = _found(_point("helper", "Helper"), _point("recording", "Recording"))
+    seen: list[str] = []
+    async with running_plugins(PluginEnv(_cfg(), EventBus(), discover)) as plugins:
+        assert discover.calls == 0  # ничего не включено — пакеты не ищутся
+        plugins.on_source = lambda _, skill: seen.append(skill)
+        offered = await plugins.available()
+        assert [info.id for info in offered] == ["helper", "recording"]
+
+        skills = await plugins.load("helper")
+
+        assert skills is not None
+        assert [info.id for info in skills] == ["helper"]
+        assert [tool.skill for tool in plugins.contexts] == ["helper"]
+        assert plugins.command_skills == {"стоп": "helper"}
+        assert seen == ["helper"]
+        assert [info.id for info in await plugins.available()] == ["recording"]
+        assert await plugins.load("helper") == skills  # второй раз не запускается
+    assert next(p for p in Recording.instances if type(p) is Helper).stopped
+
+
+async def test_wanted_plugin_starts_with_the_config_ones() -> None:
+    discover = _found(_point("helper", "Helper"), _point("recording", "Recording"))
+    async with running_plugins(PluginEnv(_cfg("recording"), EventBus(), discover), ["helper"]) as p:
+        assert p.running == {"recording", "helper"}

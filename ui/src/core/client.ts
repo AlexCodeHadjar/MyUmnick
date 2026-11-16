@@ -219,6 +219,18 @@ export class CoreClient {
     this.#transport.send({ v: PROTOCOL_VERSION, type: "chats.action", data: full });
   }
 
+  /** Список навыков (панель открыта): ответ — `store.skills`. Ядро заодно ищет установленные плагины. */
+  listSkills(): void {
+    const data = { action: "list" as const, id: null, enabled: null };
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "skills.action", data });
+  }
+
+  /** Включить или выключить навык; действует со следующей реплики (ADR-0043). */
+  setSkill(id: string, enabled: boolean): void {
+    const data = { action: "set" as const, id, enabled };
+    this.#transport.send({ v: PROTOCOL_VERSION, type: "skills.action", data });
+  }
+
   /** Перенести факты в другое издание (S-20.10); итог — `store.transfer`. */
   transferMemory(): void {
     this.store.transfer = { state: "running", count: null, problem: null };

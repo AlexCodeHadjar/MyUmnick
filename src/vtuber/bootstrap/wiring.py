@@ -1,5 +1,6 @@
 """Подключение панелей к шлюзу: мастер первого запуска и управление памятью."""
 
+import asyncio
 from dataclasses import dataclass
 
 from vtuber.adapters.gpu import NvidiaSmiProbe
@@ -11,12 +12,13 @@ from vtuber.application.conversation import (
 )
 from vtuber.application.memory import MemoryControls, ShortTermMemory
 from vtuber.application.scheduler import ResourceManager
+from vtuber.application.skills import EnabledCommands, SkillRegistry, gated_stream
 from vtuber.bootstrap.chat_wiring import MemoryAccess
 from vtuber.bootstrap.config import AppConfig
 from vtuber.bootstrap.container import Core
 from vtuber.bootstrap.plugins import PluginServices
 from vtuber.bootstrap.setup import build_wizard
-from vtuber.domain import Persona
+from vtuber.domain import CORE_INITIATIVE, Persona
 from vtuber.gateway import (
     AppEdition,
     BranchBridge,
@@ -27,7 +29,9 @@ from vtuber.gateway import (
     PrivacyBridge,
     ResourcesFeed,
     SetupBridge,
+    SkillsBridge,
 )
+from vtuber.kernel import MessageStream
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +45,7 @@ class AppParts:
     memory: MemoryAccess
     history: ShortTermMemory
     persona: Persona
+    skills: SkillRegistry
 
 
 def connect_memory(
@@ -66,7 +71,9 @@ def connect_branches(
 
 def connect_panels(app: AppParts, server: GatewayServer, service: ConversationService) -> None:
     """Всё, что UI может сделать помимо реплики."""
-    server.use_commands(app.plugins.commands)
+    plugins = app.plugins
+    server.use_commands(EnabledCommands(plugins.commands, plugins.command_skills, app.skills))
+    server.panels.skills = SkillsBridge(app.skills, plugins.available, server.send)
     edition = app.cfg.edition
     server.panels.edition = AppEdition.of(
         edition.id.value,
@@ -111,7 +118,8 @@ def connect_initiative(
 
     def blocked() -> bool:
         working = memory.is_working()
-        return service.engaged or working or not server.has_client
+        off = not app.skills.enabled(CORE_INITIATIVE)  # навык выключен в панели (ADR-0043)
+        return off or service.engaged or working or not server.has_client
 
     actions = InitiativeActions(speak, external.stop_initiative, blocked)
     initiative = Initiative(app.cfg.initiative, actions)
@@ -125,3 +133,18 @@ def connect_setup(cfg: AppConfig, server: GatewayServer) -> None:
     if cfg.setup.enabled:
         wizard = build_wizard(cfg.setup, NvidiaSmiProbe(cfg.gpu_probe))
         server.panels.setup = SetupBridge(wizard, server.send)
+
+
+def read_sources(
+    app: AppParts, external: ExternalTurns, tg: asyncio.TaskGroup
+) -> list[asyncio.Task[None]]:
+    """Выключенный навык — его реплики не идут; плагин, включённый на ходу, читается сразу."""
+    readers: list[asyncio.Task[None]] = []
+
+    def read(stream: MessageStream, skill: str) -> None:
+        readers.append(tg.create_task(external.run(gated_stream(stream, skill, app.skills))))
+
+    for stream, skill in app.plugins.sources:
+        read(stream, skill)
+    app.plugins.on_source = read
+    return readers

@@ -3,7 +3,7 @@
 import asyncio
 from collections.abc import AsyncGenerator, Awaitable, Callable, Mapping, Sequence
 from contextlib import AbstractAsyncContextManager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import partial
 from typing import Final, Protocol, runtime_checkable
 
@@ -15,9 +15,11 @@ from vtuber.domain import (
     IncomingMessage,
     PerformanceRequested,
     SearchSource,
+    SkillInfo,
     SourcesFound,
     TextShown,
     ViewerBlocked,
+    plugin_skill,
 )
 from vtuber.kernel.bus import EventBus, Handler
 from vtuber.kernel.config import ConfigSection
@@ -35,10 +37,11 @@ type ContextProvider = Callable[[str], Awaitable[str | None]]
 
 @dataclass(frozen=True, slots=True)
 class ContextTool:
-    """Инструмент и его срок; `None` — обычный короткий срок из `[plugins]`."""
+    """Инструмент, его срок (`None` — обычный короткий срок из `[plugins]`) и навык (ADR-0043)."""
 
     provider: ContextProvider
     timeout_s: float | None = None
+    skill: str = ""
 
 
 type Command = Callable[[], Awaitable[None]]
@@ -108,9 +111,33 @@ class PluginContext:
             MAX_PENDING_PLUGIN_EVENTS
         )
         self._closed = False
-        self._sources: list[MessageStream] = []
+        self._sources: list[tuple[MessageStream, str]] = []
         self._contexts: list[ContextTool] = []
         self._commands: dict[str, Command] = {}
+        self._command_skills: dict[str, str] = {}
+        self._skills: dict[str, SkillInfo] = {}
+
+    def declare_skill(self, info: SkillInfo) -> str:
+        """Объявить навык для панели «Навыки» (ADR-0043); вернёт полный id `<плагин>.<id>`.
+
+        `info.id` — короткое имя внутри плагина («timer»), `info.plugin` заполняет ядро. Полный id
+        передают в `skill=` у `add_context`, `add_command`, `add_source`; без `skill=` всё
+        зарегистрированное — один навык с id = имя плагина.
+        """
+        full = replace(info, id=f"{self.name}.{info.id}", plugin=self.name)
+        self._skills[full.id] = full
+        return full.id
+
+    @property
+    def skills(self) -> tuple[SkillInfo, ...]:
+        """Навыки плагина: объявленные и навык «весь плагин», если на него что-то записано."""
+        used = {tool.skill for tool in self._contexts}
+        used |= set(self._command_skills.values()) | {skill for _, skill in self._sources}
+        whole = (plugin_skill(self.name),) if self.name in used or not self._skills else ()
+        return whole + tuple(self._skills.values())
+
+    def _skill(self, skill: str | None) -> str:
+        return self.name if skill is None else skill
 
     def subscribe[E](self, event_type: type[E], handler: Handler[E]) -> None:
         """Подписывает `handler`; события одного плагина обрабатываются строго по очереди."""
@@ -120,22 +147,33 @@ class PluginContext:
 
         self._bus.subscribe(event_type, enqueue)
 
-    def add_source(self, stream: MessageStream) -> None:
+    def add_source(self, stream: MessageStream, *, skill: str | None = None) -> None:
         """Реплики из `stream` становятся ходами диалога (только в режиме `serve`)."""
-        self._sources.append(stream)
+        self._sources.append((stream, self._skill(skill)))
 
     @property
     def sources(self) -> tuple[MessageStream, ...]:
         """Зарегистрированные источники реплик."""
+        return tuple(stream for stream, _ in self._sources)
+
+    @property
+    def skilled_sources(self) -> tuple[tuple[MessageStream, str], ...]:
+        """Источники вместе с навыком: выключенный навык — реплики не идут."""
         return tuple(self._sources)
 
-    def add_context(self, provider: ContextProvider, *, timeout_s: float | None = None) -> None:
+    def add_context(
+        self,
+        provider: ContextProvider,
+        *,
+        timeout_s: float | None = None,
+        skill: str | None = None,
+    ) -> None:
         """Строка от `provider` попадает в справку хода: инструмент срабатывает до генерации.
 
         Свой `timeout_s` нужен только долгому инструменту; ждать его будет лишь реплика, на которую
         он сам решит работать, остальные он пропускает сразу.
         """
-        self._contexts.append(ContextTool(provider, timeout_s))
+        self._contexts.append(ContextTool(provider, timeout_s, self._skill(skill)))
 
     async def perform(self, title: str, audio: AsyncGenerator[AudioChunk]) -> None:
         """Исполнить готовый звук ходом без модели; прерывается, как обычный ответ."""
@@ -154,9 +192,15 @@ class PluginContext:
         """Зарегистрированные поставщики справки."""
         return tuple(self._contexts)
 
-    def add_command(self, text: str, command: Command) -> None:
+    def add_command(self, text: str, command: Command, *, skill: str | None = None) -> None:
         """Реплика ведущего, в точности равная `text`, вызовет `command` и до модели не дойдёт."""
         self._commands[text] = command
+        self._command_skills[text] = self._skill(skill)
+
+    @property
+    def command_skills(self) -> Mapping[str, str]:
+        """Навык каждой команды: выключенный навык — реплика идёт к модели как обычная."""
+        return self._command_skills
 
     @property
     def commands(self) -> Mapping[str, Command]:

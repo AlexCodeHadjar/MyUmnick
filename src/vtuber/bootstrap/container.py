@@ -15,6 +15,7 @@ from vtuber.application.conversation import ConversationService
 from vtuber.application.memory import ShortTermMemory
 from vtuber.application.pipeline import FillerBank, ReplyPipeline, Voice
 from vtuber.application.prompting import ContextBudget, FloorGuard, PromptBuilder
+from vtuber.application.skills import SkillGate
 from vtuber.bootstrap.config import AppConfig
 from vtuber.bootstrap.edition import language_pack
 from vtuber.domain import Persona
@@ -81,6 +82,8 @@ class Conversation:
     service: ConversationService
     prompts: PromptBuilder
     history: ShortTermMemory
+    # Навыки (ADR-0043): память подключается через гейт `core.memory`; нет реестра — без гейта.
+    skills: SkillGate | None = None
 
 
 def build_conversation(

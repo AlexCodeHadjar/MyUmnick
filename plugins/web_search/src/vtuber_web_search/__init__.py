@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 import httpx
 from pydantic import Field, ValidationError, field_validator
 
-from vtuber.domain import SearchSource, looks_like_attack
+from vtuber.domain import SearchSource, SkillInfo, looks_like_attack
 from vtuber.kernel import ConfigSection, PluginContext
 from vtuber_web_search.intent import News, Search, Weather, classify, explicit_query
 from vtuber_web_search.news import Answer, NewsQuery, Result, clean, news_params, read_page
@@ -117,7 +117,17 @@ class WebSearchPlugin:
         # SearXNG — на этом компьютере; чужие сайты (погода, статьи) — клиентом с проверкой TLS.
         self._local = httpx.AsyncClient(timeout=cfg.timeout_s, verify=False, trust_env=False)  # noqa: S501 — localhost
         self._web = httpx.AsyncClient(timeout=cfg.timeout_s)
-        ctx.add_context(self.context, timeout_s=cfg.timeout_s * 2 + 1)
+        skill = ctx.declare_skill(
+            SkillInfo(
+                id="search",
+                plugin="",
+                title="Погода, новости и поиск",
+                summary="Ищет в интернете по смыслу реплики и показывает источники",
+                examples=("Какая сегодня погода в Москве?", "Что нового в мире?"),
+                network=True,
+            )
+        )
+        ctx.add_context(self.context, timeout_s=cfg.timeout_s * 2 + 1, skill=skill)
 
     async def shutdown(self) -> None:
         """Закрыть соединения."""

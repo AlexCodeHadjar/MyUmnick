@@ -15,6 +15,8 @@ export type {
   ImageData,
   ResourcesData,
   SetupData,
+  SkillData,
+  SkillsData,
 } from "./protocol.gen";
 export {
   AppStore,

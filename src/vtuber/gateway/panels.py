@@ -19,8 +19,10 @@ from vtuber.gateway.protocol_memory import (
     PrivacySet,
 )
 from vtuber.gateway.protocol_presence import AppEdition, WindowVisibility
+from vtuber.gateway.protocol_skills import SkillsAction
 from vtuber.gateway.resources_feed import ResourcesFeed
 from vtuber.gateway.setup_bridge import SetupBridge
+from vtuber.gateway.skills_bridge import SkillsBridge
 
 type _SetupMessage = SetupInstall | SetupCancel
 type _PrivacyMessage = PrivacySet | MemoryErase
@@ -34,6 +36,7 @@ type PanelMessage = (
     | _MemoryMessage
     | _BranchMessage
     | ChatAction
+    | SkillsAction
 )
 
 
@@ -49,6 +52,7 @@ class Panels:
     window: Callable[[bool], None] | None = None
     edition: AppEdition | None = None
     chats: ChatsBridge | None = None
+    skills: SkillsBridge | None = None
     send: Callable[[AppEdition], Awaitable[None]] | None = None
 
     async def greet(self) -> None:
@@ -87,12 +91,22 @@ class Panels:
             await self._handle_dialogue(message)
 
     async def _handle_dialogue(
-        self, message: _PrivacyMessage | _MemoryMessage | _BranchMessage | ChatAction
+        self,
+        message: _PrivacyMessage | _MemoryMessage | _BranchMessage | ChatAction | SkillsAction,
     ) -> None:
-        if isinstance(message, ChatAction):
+        if isinstance(message, SkillsAction):
+            if self.skills is not None:
+                await self.skills.handle(message)
+        elif isinstance(message, ChatAction):
             if self.chats is not None:
                 await self.chats.handle(message)
-        elif isinstance(message, PrivacySet | MemoryErase):
+        else:
+            await self._handle_memory(message)
+
+    async def _handle_memory(
+        self, message: _PrivacyMessage | _MemoryMessage | _BranchMessage
+    ) -> None:
+        if isinstance(message, PrivacySet | MemoryErase):
             if self.privacy is not None:
                 await self.privacy.handle(message)
         elif isinstance(message, BranchGo | BranchCheckpoint):

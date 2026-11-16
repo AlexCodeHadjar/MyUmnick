@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 import pytest
 
-from vtuber.domain import ConfigError, TurnFinished, TurnId
+from vtuber.domain import ConfigError, SkillInfo, TurnFinished, TurnId
 from vtuber.kernel import MAX_PENDING_PLUGIN_EVENTS, ConfigSection, EventBus, PluginContext
 
 
@@ -124,3 +124,21 @@ def test_settings_are_validated_by_plugin_model() -> None:
     assert PluginContext("a", bus, {"label": "x"}).settings(_Section).label == "x"
     with pytest.raises(ConfigError, match=r"plugins\.settings\.b"):
         PluginContext("b", bus, {"typo": "x"}).settings(_Section)
+
+
+async def test_skills_default_to_the_whole_plugin_and_declared_ones_get_full_ids() -> None:
+    async def hint(_: str) -> str | None:
+        return None
+
+    plain = PluginContext("plain", EventBus(), {})
+    plain.add_context(hint)
+    assert [info.id for info in plain.skills] == ["plain"]
+    assert plain.contexts[0].skill == "plain"
+
+    rich = PluginContext("rich", EventBus(), {})
+    search = rich.declare_skill(SkillInfo(id="search", plugin="", title="Поиск", network=True))
+    rich.add_context(hint, skill=search)
+    assert search == "rich.search"
+    assert [(info.id, info.plugin, info.network) for info in rich.skills] == [
+        ("rich.search", "rich", True)
+    ]
