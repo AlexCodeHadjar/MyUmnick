@@ -10,7 +10,7 @@
   import { characterChannel } from "../avatar/portrait/picture";
   import { snap, type Spot } from "./anchors";
   import { Brain } from "./brain";
-  import { bubbleText, followSpot, hostOf, release, velocityOf } from "./control";
+  import { bubbleText, dropTarget, followSpot, hostOf, release, velocityOf } from "./control";
   import {
     COMPANION_KEY,
     HEIGHTS,
@@ -63,6 +63,8 @@
   let lastRemarkTime = 0;
   let topic: RemarkTopic = "other";
   let poking = false;
+  /** Куда закрепится при отпускании перетаскиваемого персонажа. */
+  let drop: Spot | null = null;
   let onDesktop = false;
   let icons: Target[] = [];
   let desktopAt = Infinity;
@@ -340,6 +342,10 @@
     brain.tick(dt);
     look.attention = Math.max(0, look.attention - dt * 0.8);
     const body = brain.body();
+    // Где закрепится, если отпустить: кольцо у опоры (перетаскивание и молния).
+    const mark = gesture === "held" ? drop : (aim?.ghost ?? null);
+    if (mark !== null)
+      body.effects = [...body.effects, { kind: "mark", x: mark.x, y: mark.y, t: 0 }];
     if (aim !== null) {
       body.effects = [
         ...body.effects,
@@ -378,9 +384,12 @@
       gesture = "held";
       brain.hold(event.clientX, event.clientY);
     }
-    if (gesture === "held") brain.moveHeld(event.clientX, event.clientY);
+    if (gesture === "held") {
+      brain.moveHeld(event.clientX, event.clientY);
+      drop = dropTarget(brain.surfaceList, event.clientX, event.clientY);
+    }
     if (gesture === "aim") {
-      const ghost = snap(brain.surfaceList, event.clientX, event.clientY);
+      const ghost = dropTarget(brain.surfaceList, event.clientX, event.clientY);
       aim = { x: ghost?.x ?? event.clientX, y: ghost?.y ?? event.clientY, ghost };
     }
   }
@@ -409,6 +418,7 @@
     press = null;
     gesture = "none";
     aim = null;
+    drop = null;
     trail = [];
   }
 

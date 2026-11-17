@@ -25,7 +25,9 @@ export type Effect =
   | { kind: "portal"; x: number; y: number; t: number; opening: boolean }
   | { kind: "sparks"; x: number; y: number; t: number }
   /** Сердечки над головой: погладили. */
-  | { kind: "hearts"; x: number; y: number; t: number };
+  | { kind: "hearts"; x: number; y: number; t: number }
+  /** Кольцо «закрепится здесь» при перетаскивании и прицеливании; рисуется кадр, не хранится. */
+  | { kind: "mark"; x: number; y: number; t: number };
 
 export interface Body {
   phase: Phase;
@@ -299,6 +301,7 @@ export class Brain {
     if (effect.kind === "bolt") return BOLT_S;
     if (effect.kind === "portal") return PORTAL_S * 1.4;
     if (effect.kind === "hearts") return HEARTS_S;
+    if (effect.kind === "mark") return 0.05;
     return SPARKS_S;
   }
 

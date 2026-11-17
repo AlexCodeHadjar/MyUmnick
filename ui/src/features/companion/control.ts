@@ -27,6 +27,16 @@ export type Release =
   | { kind: "toss"; vx: number; vy: number };
 
 /** Отпустили, держа мышью (как у Capri): Shift — сесть рядом, Ctrl — повиснуть, иначе — бросок. */
+/** Радиус «примагничивания», когда отпускают или целятся молнией: 70 px — промахнуться трудно. */
+export const DROP_RADIUS = 70;
+/** Отпустили спокойнее этого (px/с) — закрепиться на месте рядом; резче — бросок. */
+export const CALM_SPEED = 900;
+
+/** Куда персонаж закрепится, если отпустить здесь: край, угол, бок окна, верх экрана, значок. */
+export function dropTarget(list: readonly Surface[], x: number, y: number): Spot | null {
+  return snap(list, x, y, DROP_RADIUS);
+}
+
 export function release(
   list: readonly Surface[],
   point: { x: number; y: number; shift: boolean; ctrl: boolean },
@@ -35,6 +45,11 @@ export function release(
   if (point.ctrl) return { kind: "hang", x: point.x, y: point.y };
   if (point.shift) {
     const spot = snap(list, point.x, point.y, 160) ?? below(list, point.x, point.y);
+    if (spot !== null) return { kind: "place", spot };
+  }
+  // Отпустили спокойно рядом с опорой — закрепиться там (просьба пользователя 2026-11-17).
+  if (Math.hypot(velocity.vx, velocity.vy) < CALM_SPEED) {
+    const spot = dropTarget(list, point.x, point.y);
     if (spot !== null) return { kind: "place", spot };
   }
   return { kind: "toss", vx: velocity.vx, vy: velocity.vy };

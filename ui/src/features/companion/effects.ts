@@ -191,6 +191,31 @@ function drawHearts(ctx: CanvasRenderingContext2D, x: number, y: number, t: numb
   ctx.restore();
 }
 
+/** Кольцо «закрепится здесь»: пунктир пульсирует, в центре точка опоры. */
+function drawMark(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  hue: number,
+  seed: number,
+): void {
+  const pulse = 1 + Math.sin(seed / 3) * 0.12;
+  ctx.save();
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 6]);
+  ctx.lineDashOffset = seed;
+  ctx.strokeStyle = `hsla(${String(hue)}, 95%, 75%, 0.9)`;
+  ctx.beginPath();
+  ctx.arc(x, y, 22 * pulse, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = `hsla(${String(hue)}, 95%, 85%, 0.95)`;
+  ctx.beginPath();
+  ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
 function drawPortal(
   ctx: CanvasRenderingContext2D,
   effect: { x: number; y: number; t: number; opening: boolean },
@@ -233,6 +258,7 @@ export function drawEffects(
     if (effect.kind === "bolt") drawBolt(ctx, effect.from, effect.to, hue, seed, effect.t);
     else if (effect.kind === "sparks") drawSparks(ctx, effect.x, effect.y, effect.t, hue);
     else if (effect.kind === "hearts") drawHearts(ctx, effect.x, effect.y, effect.t);
+    else if (effect.kind === "mark") drawMark(ctx, effect.x, effect.y, hue, seed);
     else drawPortal(ctx, effect, hue);
   }
 }

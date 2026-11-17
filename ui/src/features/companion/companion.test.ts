@@ -136,7 +136,20 @@ describe("мышь и облачко", () => {
     const p = { x: 600, y: 290, shift: false, ctrl: false };
     expect(release(LIST, { ...p, ctrl: true }, { vx: 0, vy: 0 }).kind).toBe("hang");
     expect(release(LIST, { ...p, shift: true }, { vx: 0, vy: 0 }).kind).toBe("place");
-    expect(release(LIST, p, { vx: 500, vy: 0 })).toEqual({ kind: "toss", vx: 500, vy: 0 });
+    // Спокойно у края окна — закрепиться; резко — бросок; вдали от опор — бросок.
+    const calm = release(LIST, p, { vx: 500, vy: 0 });
+    expect(calm.kind === "place" && calm.spot.pose).toBe("sit_edge");
+    expect(release(LIST, p, { vx: 2000, vy: 0 })).toEqual({ kind: "toss", vx: 2000, vy: 0 });
+    expect(release(LIST, { ...p, y: 600 }, { vx: 0, vy: 0 })).toEqual({
+      kind: "toss",
+      vx: 0,
+      vy: 0,
+    });
+    // Верхний угол экрана и бок окна — тоже места, куда закрепиться.
+    const corner = release(LIST, { ...p, x: 20, y: 30 }, { vx: 0, vy: 0 });
+    expect(corner.kind === "place" && corner.spot.pose).toBe("hang_side");
+    const side = release(LIST, { ...p, x: 1050, y: 450 }, { vx: 0, vy: 0 });
+    expect(side.kind === "place" && side.spot.pose).toBe("lean_side");
   });
 
   it("скорость по следу за 80 мс", () => {

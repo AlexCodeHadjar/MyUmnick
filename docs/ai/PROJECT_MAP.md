@@ -859,17 +859,20 @@
 - `sameSurface` — `ui/src/features/companion/anchors.ts:210` — Та же опора в новой картине (окно сдвинули): по хозяину и виду.
 - `Phase` — `ui/src/features/companion/brain.ts:20` — —
 - `Effect` — `ui/src/features/companion/brain.ts:23` — —
-- `Body` — `ui/src/features/companion/brain.ts:30` — —
-- `WALK_LIMIT` — `ui/src/features/companion/brain.ts:44` — Ближе — пешком или прыжком, дальше — молнией (решение пользователя, раздел 9.1).
-- `Brain` — `ui/src/features/companion/brain.ts:63` — —
+- `Body` — `ui/src/features/companion/brain.ts:32` — —
+- `WALK_LIMIT` — `ui/src/features/companion/brain.ts:46` — Ближе — пешком или прыжком, дальше — молнией (решение пользователя, раздел 9.1).
+- `Brain` — `ui/src/features/companion/brain.ts:65` — —
 - `Companion.svelte` — `ui/src/features/companion/Companion.svelte:1` — —
 - `CompanionMenu.svelte` — `ui/src/features/companion/CompanionMenu.svelte:1` — —
 - `followSpot` — `ui/src/features/companion/control.ts:9` — Место для активного окна (раздел 4.1): край окна, «пол» у правого края или угол экрана.
 - `hostOf` — `ui/src/features/companion/control.ts:20` — Хозяин места (окно) или `null` для «пола».
 - `Release` — `ui/src/features/companion/control.ts:24` — —
-- `release` — `ui/src/features/companion/control.ts:30` — Отпустили, держа мышью (как у Capri): Shift — сесть рядом, Ctrl — повиснуть, иначе — бросок.
-- `velocityOf` — `ui/src/features/companion/control.ts:44` — Скорость по следу курсора за последние 80 мс, пикселей в секунду.
-- `bubbleText` — `ui/src/features/companion/control.ts:56` — Облачко: последние ~140 знаков реплики, целыми словами.
+- `DROP_RADIUS` — `ui/src/features/companion/control.ts:31` — Отпустили, держа мышью (как у Capri): Shift — сесть рядом, Ctrl — повиснуть, иначе — бросок.
+- `CALM_SPEED` — `ui/src/features/companion/control.ts:33` — Отпустили спокойнее этого (px/с) — закрепиться на месте рядом; резче — бросок.
+- `dropTarget` — `ui/src/features/companion/control.ts:36` — Куда персонаж закрепится, если отпустить здесь: край, угол, бок окна, верх экрана, значок.
+- `release` — `ui/src/features/companion/control.ts:40` — —
+- `velocityOf` — `ui/src/features/companion/control.ts:59` — Скорость по следу курсора за последние 80 мс, пикселей в секунду.
+- `bubbleText` — `ui/src/features/companion/control.ts:71` — Облачко: последние ~140 знаков реплики, целыми словами.
 - `Point` — `ui/src/features/companion/effects.ts:8` — —
 - `Random` — `ui/src/features/companion/effects.ts:9` — —
 - `seeded` — `ui/src/features/companion/effects.ts:12` — Генератор с зерном (mulberry32): молния не «дёргается» сильнее, чем мы просим.
@@ -877,7 +880,7 @@
 - `branches` — `ui/src/features/companion/effects.ts:50` — Ответвления: короткие молнии от случайных точек ствола.
 - `along` — `ui/src/features/companion/effects.ts:63` — Точка на ломаной на доле `t` её длины — где сейчас разряд.
 - `drawBolt` — `ui/src/features/companion/effects.ts:97` — Молния тремя проходами: широкое свечение, мягкая линия, яркая сердцевина.
-- `drawEffects` — `ui/src/features/companion/effects.ts:226` — Нарисовать эффекты тела; `seed` меняется 30 раз в секунду — молния «живёт».
+- `drawEffects` — `ui/src/features/companion/effects.ts:251` — Нарисовать эффекты тела; `seed` меняется 30 раз в секунду — молния «живёт».
 - `startFeed` — `ui/src/features/companion/feed.ts:16` — Запустить передачу; `mouth(dt)` — громкость голоса 0…1. Возвращает остановку.
 - `FALLBACK` — `ui/src/features/companion/pack.ts:10` — Замены отсутствующей позы, в порядке предпочтения; всё кончается позой `stand`.
 - `ANCHORS` — `ui/src/features/companion/pack.ts:27` — Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот».
