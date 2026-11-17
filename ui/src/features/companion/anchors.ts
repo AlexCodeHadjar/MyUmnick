@@ -15,12 +15,16 @@ export type Pose =
   | "laydown"
   | "sleep"
   | "held"
-  | "float";
+  | "float"
+  /** Тыкает пальцем в элемент экрана (ADR-0048); точка опоры — кончик пальца. */
+  | "poke";
 
 /** Опора: горизонтальная (край окна, «пол») или вертикальная (бок окна). */
 export type Surface =
   | { kind: "edge"; host: number; x0: number; x1: number; y: number }
   | { kind: "floor"; x0: number; x1: number; y: number }
+  /** Верх экрана: висит, держась за край, — в том числе в верхних углах. */
+  | { kind: "ceiling"; x0: number; x1: number; y: number }
   | { kind: "side"; host: number; x: number; y0: number; y1: number; side: "left" | "right" };
 
 /** Место на опоре: точка опоры позы (сиденье, ступни, ладони) и сама поза. */
@@ -32,6 +36,11 @@ export interface Spot {
   /** Куда смотрит: при сидении в правом углу — влево и наоборот. */
   facing: 1 | -1;
 }
+
+/** «Хозяин» боков экрана: не окно, за ним не следят и его не опрашивают. */
+export const SCREEN = -1;
+/** Бока экрана — чуть внутри: персонаж облокачивается, а не уходит наполовину за край. */
+const WALL_INSET = 45;
 
 export const SNAP_RADIUS = 40;
 /** Ближе к концу опоры — «угловая» поза. */
@@ -51,6 +60,25 @@ export function surfaces(world: World): Surface[] {
   }
   const { work } = world;
   list.push({ kind: "floor", x0: work.x, x1: work.x + work.w, y: work.y + work.h });
+  const m = world.monitor;
+  list.push({ kind: "ceiling", x0: m.x, x1: m.x + m.w, y: m.y });
+  const bottom = work.y + work.h;
+  list.push({
+    kind: "side",
+    host: SCREEN,
+    x: m.x + WALL_INSET,
+    y0: m.y + 8,
+    y1: bottom,
+    side: "right",
+  });
+  list.push({
+    kind: "side",
+    host: SCREEN,
+    x: m.x + m.w - WALL_INSET,
+    y0: m.y + 8,
+    y1: bottom,
+    side: "left",
+  });
   return list;
 }
 
@@ -68,6 +96,9 @@ export function spotOn(surface: Surface, px: number, py: number): Spot {
     return { surface, x: surface.x, y, pose, facing };
   }
   const x = clamp(px, surface.x0 + 20, surface.x1 - 20);
+  if (surface.kind === "ceiling") {
+    return { surface, x, y: surface.y + 4, pose: "hang_side", facing: x > surface.x1 / 2 ? -1 : 1 };
+  }
   const nearLeft = x - surface.x0 < CORNER + 20;
   const nearRight = surface.x1 - x < CORNER + 20;
   const corner = nearLeft || nearRight;
@@ -76,6 +107,13 @@ export function spotOn(surface: Surface, px: number, py: number): Spot {
     return { surface, x, y: surface.y, pose: corner ? "perch_corner" : "sit_edge", facing };
   }
   return { surface, x, y: surface.y, pose: corner ? "sit_corner" : "stand", facing };
+}
+
+/** Окно, на котором место (за ним следят), или `null` — «пол», верх и бока экрана. */
+export function hostId(surface: Surface): number | null {
+  if (surface.kind === "edge" || surface.kind === "side")
+    return surface.host === SCREEN ? null : surface.host;
+  return null;
 }
 
 function distance(surface: Surface, px: number, py: number): number {
@@ -108,9 +146,16 @@ export function snap(
 
 /** Горизонтальная опора под точкой (падение): ближайшая сверху вниз, иначе «пол». */
 export function below(list: readonly Surface[], px: number, py: number): Spot | null {
-  let best: Exclude<Surface, { kind: "side" }> | null = null;
+  let best: Extract<Surface, { kind: "edge" | "floor" }> | null = null;
   for (const surface of list) {
-    if (surface.kind === "side" || px < surface.x0 || px > surface.x1 || surface.y < py) continue;
+    if (
+      surface.kind === "side" ||
+      surface.kind === "ceiling" ||
+      px < surface.x0 ||
+      px > surface.x1 ||
+      surface.y < py
+    )
+      continue;
     if (best === null || surface.y < best.y) best = surface;
   }
   return best === null ? null : spotOn(best, px, py);
@@ -144,7 +189,9 @@ export function floorSpot(list: readonly Surface[], corner: boolean): Spot | nul
 
 /** Та же опора в новой картине (окно сдвинули): по хозяину и виду. */
 export function sameSurface(a: Surface, b: Surface): boolean {
-  if (a.kind === "floor" || b.kind === "floor") return a.kind === b.kind;
+  if (a.kind === "floor" || b.kind === "floor" || a.kind === "ceiling" || b.kind === "ceiling") {
+    return a.kind === b.kind;
+  }
   if (a.kind === "edge" && b.kind === "edge") return a.host === b.host;
   return a.kind === "side" && b.kind === "side" && a.host === b.host && a.side === b.side;
 }

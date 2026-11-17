@@ -676,7 +676,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:292` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:343` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).
@@ -770,20 +770,20 @@
 - `CharacterControls.svelte` — `ui/src/features/avatar/portrait/CharacterControls.svelte:1` — —
 - `PICTURE_TYPES` — `ui/src/features/avatar/portrait/picture.ts:8` — Форматы, которые `<img>` WebView2 показывает сам, включая анимированные GIF, WebP и APNG.
 - `MAX_PICTURE_BYTES` — `ui/src/features/avatar/portrait/picture.ts:15` — —
-- `PictureFit` — `ui/src/features/avatar/portrait/picture.ts:17` — —
-- `pictureProblem` — `ui/src/features/avatar/portrait/picture.ts:20` — Причина отказа на языке интерфейса или `null`, если файл подходит.
-- `parseFit` — `ui/src/features/avatar/portrait/picture.ts:31` — Способ вписать картинку: битое или чужое значение — «вписать целиком».
-- `loadFit` — `ui/src/features/avatar/portrait/picture.ts:37` — —
-- `saveFit` — `ui/src/features/avatar/portrait/picture.ts:45` — —
-- `windowStorage` — `ui/src/features/avatar/portrait/picture.ts:55` — localStorage окна; недоступно (приватный режим WebView) — без хранилища.
-- `run` — `ui/src/features/avatar/portrait/picture.ts:83` — Запрос к хранилищу картинок (окошко, позы спутника); соединение закрывается после него.
-- `loadPicture` — `ui/src/features/avatar/portrait/picture.ts:104` — Сохранённая картинка; нет её или хранилище недоступно — `null` (стандартный силуэт).
-- `savePicture` — `ui/src/features/avatar/portrait/picture.ts:113` — —
-- `clearPicture` — `ui/src/features/avatar/portrait/picture.ts:118` — —
-- `pictureChanged` — `ui/src/features/avatar/portrait/picture.ts:124` — Картинку сменили: рендер окошка перечитывает её без перезапуска сцены.
-- `characterChannel` — `ui/src/features/avatar/portrait/picture.ts:127` — Между окнами (главное и спутник): одно происхождение — общий канал.
-- `portraitPose` — `ui/src/features/avatar/portrait/PortraitRenderer.ts:27` — Поза кадра: чистая функция времени и состояния — проверяется тестами.
-- `PortraitRenderer` — `ui/src/features/avatar/portrait/PortraitRenderer.ts:44` — —
+- `PictureFit` — `ui/src/features/avatar/portrait/picture.ts:18` — Целиком, заполнить окошко или «мордашка в углу» (по умолчанию, просьба пользователя 2026-11-17).
+- `pictureProblem` — `ui/src/features/avatar/portrait/picture.ts:21` — Причина отказа на языке интерфейса или `null`, если файл подходит.
+- `parseFit` — `ui/src/features/avatar/portrait/picture.ts:32` — Способ вписать картинку: битое, чужое или не выбранное — «мордашка в углу».
+- `loadFit` — `ui/src/features/avatar/portrait/picture.ts:38` — —
+- `saveFit` — `ui/src/features/avatar/portrait/picture.ts:46` — —
+- `windowStorage` — `ui/src/features/avatar/portrait/picture.ts:56` — localStorage окна; недоступно (приватный режим WebView) — без хранилища.
+- `run` — `ui/src/features/avatar/portrait/picture.ts:84` — Запрос к хранилищу картинок (окошко, позы спутника); соединение закрывается после него.
+- `loadPicture` — `ui/src/features/avatar/portrait/picture.ts:105` — Сохранённая картинка; нет её или хранилище недоступно — `null` (стандартный силуэт).
+- `savePicture` — `ui/src/features/avatar/portrait/picture.ts:114` — —
+- `clearPicture` — `ui/src/features/avatar/portrait/picture.ts:119` — —
+- `pictureChanged` — `ui/src/features/avatar/portrait/picture.ts:125` — Картинку сменили: рендер окошка перечитывает её без перезапуска сцены.
+- `characterChannel` — `ui/src/features/avatar/portrait/picture.ts:128` — Между окнами (главное и спутник): одно происхождение — общий канал.
+- `portraitPose` — `ui/src/features/avatar/portrait/PortraitRenderer.ts:38` — Поза кадра: чистая функция времени и состояния — проверяется тестами.
+- `PortraitRenderer` — `ui/src/features/avatar/portrait/PortraitRenderer.ts:55` — —
 
 ## ui/src/features/chat
 Публичный API фичи чата: приложение монтирует только панель (R-63).
@@ -843,29 +843,31 @@
 Публичный API «Сопровождения» (Этап 23, ADR-0045; R-63).
 
 - `Pose` — `ui/src/features/companion/anchors.ts:7` — —
-- `Surface` — `ui/src/features/companion/anchors.ts:21` — Опора: горизонтальная (край окна, «пол») или вертикальная (бок окна).
-- `Spot` — `ui/src/features/companion/anchors.ts:27` — Место на опоре: точка опоры позы (сиденье, ступни, ладони) и сама поза.
-- `SNAP_RADIUS` — `ui/src/features/companion/anchors.ts:36` — —
-- `surfaces` — `ui/src/features/companion/anchors.ts:41` — Все опоры картины: открытые участки верхних краёв окон, бока окон, «пол» над панелью задач.
-- `spotOn` — `ui/src/features/companion/anchors.ts:62` — Место на опоре `surface`, ближайшее к точке; поза — по месту.
-- `snap` — `ui/src/features/companion/anchors.ts:91` — Ближайшее место в радиусе `radius` или `null` — тогда спутник «парит» и опускается сам.
-- `below` — `ui/src/features/companion/anchors.ts:110` — Горизонтальная опора под точкой (падение): ближайшая сверху вниз, иначе «пол».
-- `seatSpot` — `ui/src/features/companion/anchors.ts:120` — Куда сесть, когда активным стало окно: правая треть верхнего края, на открытом участке.
-- `floorSpot` — `ui/src/features/companion/anchors.ts:137` — Место на «полу» у правого края — рабочий стол или развёрнутое окно.
-- `sameSurface` — `ui/src/features/companion/anchors.ts:146` — Та же опора в новой картине (окно сдвинули): по хозяину и виду.
-- `Phase` — `ui/src/features/companion/brain.ts:18` — —
-- `Effect` — `ui/src/features/companion/brain.ts:21` — —
-- `Body` — `ui/src/features/companion/brain.ts:26` — —
-- `WALK_LIMIT` — `ui/src/features/companion/brain.ts:38` — Ближе — пешком или прыжком, дальше — молнией (решение пользователя, раздел 9.1).
-- `Brain` — `ui/src/features/companion/brain.ts:53` — —
+- `Surface` — `ui/src/features/companion/anchors.ts:23` — Опора: горизонтальная (край окна, «пол») или вертикальная (бок окна).
+- `Spot` — `ui/src/features/companion/anchors.ts:31` — Место на опоре: точка опоры позы (сиденье, ступни, ладони) и сама поза.
+- `SCREEN` — `ui/src/features/companion/anchors.ts:41` — «Хозяин» боков экрана: не окно, за ним не следят и его не опрашивают.
+- `SNAP_RADIUS` — `ui/src/features/companion/anchors.ts:45` — —
+- `surfaces` — `ui/src/features/companion/anchors.ts:50` — Все опоры картины: открытые участки верхних краёв окон, бока окон, «пол» над панелью задач.
+- `spotOn` — `ui/src/features/companion/anchors.ts:90` — Место на опоре `surface`, ближайшее к точке; поза — по месту.
+- `hostId` — `ui/src/features/companion/anchors.ts:113` — Окно, на котором место (за ним следят), или `null` — «пол», верх и бока экрана.
+- `snap` — `ui/src/features/companion/anchors.ts:129` — Ближайшее место в радиусе `radius` или `null` — тогда спутник «парит» и опускается сам.
+- `below` — `ui/src/features/companion/anchors.ts:148` — Горизонтальная опора под точкой (падение): ближайшая сверху вниз, иначе «пол».
+- `seatSpot` — `ui/src/features/companion/anchors.ts:165` — Куда сесть, когда активным стало окно: правая треть верхнего края, на открытом участке.
+- `floorSpot` — `ui/src/features/companion/anchors.ts:182` — Место на «полу» у правого края — рабочий стол или развёрнутое окно.
+- `sameSurface` — `ui/src/features/companion/anchors.ts:191` — Та же опора в новой картине (окно сдвинули): по хозяину и виду.
+- `Phase` — `ui/src/features/companion/brain.ts:19` — —
+- `Effect` — `ui/src/features/companion/brain.ts:22` — —
+- `Body` — `ui/src/features/companion/brain.ts:27` — —
+- `WALK_LIMIT` — `ui/src/features/companion/brain.ts:39` — Ближе — пешком или прыжком, дальше — молнией (решение пользователя, раздел 9.1).
+- `Brain` — `ui/src/features/companion/brain.ts:54` — —
 - `Companion.svelte` — `ui/src/features/companion/Companion.svelte:1` — —
 - `CompanionMenu.svelte` — `ui/src/features/companion/CompanionMenu.svelte:1` — —
 - `followSpot` — `ui/src/features/companion/control.ts:9` — Место для активного окна (раздел 4.1): край окна, «пол» у правого края или угол экрана.
 - `hostOf` — `ui/src/features/companion/control.ts:20` — Хозяин места (окно) или `null` для «пола».
-- `Release` — `ui/src/features/companion/control.ts:25` — —
-- `release` — `ui/src/features/companion/control.ts:31` — Отпустили, держа мышью (как у Capri): Shift — сесть рядом, Ctrl — повиснуть, иначе — бросок.
-- `velocityOf` — `ui/src/features/companion/control.ts:45` — Скорость по следу курсора за последние 80 мс, пикселей в секунду.
-- `bubbleText` — `ui/src/features/companion/control.ts:57` — Облачко: последние ~140 знаков реплики, целыми словами.
+- `Release` — `ui/src/features/companion/control.ts:24` — —
+- `release` — `ui/src/features/companion/control.ts:30` — Отпустили, держа мышью (как у Capri): Shift — сесть рядом, Ctrl — повиснуть, иначе — бросок.
+- `velocityOf` — `ui/src/features/companion/control.ts:44` — Скорость по следу курсора за последние 80 мс, пикселей в секунду.
+- `bubbleText` — `ui/src/features/companion/control.ts:56` — Облачко: последние ~140 знаков реплики, целыми словами.
 - `Point` — `ui/src/features/companion/effects.ts:8` — —
 - `Random` — `ui/src/features/companion/effects.ts:9` — —
 - `seeded` — `ui/src/features/companion/effects.ts:12` — Генератор с зерном (mulberry32): молния не «дёргается» сильнее, чем мы просим.
@@ -876,18 +878,26 @@
 - `drawEffects` — `ui/src/features/companion/effects.ts:189` — Нарисовать эффекты тела; `seed` меняется 30 раз в секунду — молния «живёт».
 - `startFeed` — `ui/src/features/companion/feed.ts:16` — Запустить передачу; `mouth(dt)` — громкость голоса 0…1. Возвращает остановку.
 - `FALLBACK` — `ui/src/features/companion/pack.ts:10` — Замены отсутствующей позы, в порядке предпочтения; всё кончается позой `stand`.
-- `ANCHORS` — `ui/src/features/companion/pack.ts:25` — Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот».
-- `CANVAS_RATIO` — `ui/src/features/companion/pack.ts:40` — Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз.
-- `LOOP_FPS` — `ui/src/features/companion/pack.ts:47` — Частота кадров зацикленной позы (`<поза>_1…N`), кадров в секунду.
-- `FrameState` — `ui/src/features/companion/pack.ts:60` — Что сейчас с персонажем: для выбора кадра. `blink` — доля моргания 0…1 или `null`.
-- `sequence` — `ui/src/features/companion/pack.ts:68` — Кадры `<имя>_1`, `<имя>_2` … подряд, пока есть.
-- `pickFrame` — `ui/src/features/companion/pack.ts:104` — Кадр для позы с учётом замен: речь (кадры рта по громкости), моргание, зацикленные кадры позы,
-- `poseName` — `ui/src/features/companion/pack.ts:112` — Имя позы из имени файла: `Sit_Edge.PNG` → `sit_edge`; не картинка — `null`.
-- `savePoses` — `ui/src/features/companion/pack.ts:119` — Сохранить позы из выбранной папки; вернёт, сколько картинок принято.
-- `clearPoses` — `ui/src/features/companion/pack.ts:131` — —
-- `DEFAULT_PACK` — `ui/src/features/companion/pack.ts:142` — Встроенный персонаж (`ui/public/characters/default/`; подгонка — `docs/character/README.md`).
-- `loadPoses` — `ui/src/features/companion/pack.ts:175` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
-- `placeholderPose` — `ui/src/features/companion/placeholder.ts:238` — Силуэт позы: широкие линии с градиентом палитры окна, круг головы, подпись с именем позы.
+- `ANCHORS` — `ui/src/features/companion/pack.ts:26` — Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот».
+- `CANVAS_RATIO` — `ui/src/features/companion/pack.ts:43` — Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз.
+- `LOOP_FPS` — `ui/src/features/companion/pack.ts:50` — Частота кадров зацикленной позы (`<поза>_1…N`), кадров в секунду.
+- `FrameState` — `ui/src/features/companion/pack.ts:64` — Что сейчас с персонажем: для выбора кадра. `blink` — доля моргания 0…1 или `null`.
+- `sequence` — `ui/src/features/companion/pack.ts:72` — Кадры `<имя>_1`, `<имя>_2` … подряд, пока есть.
+- `pickFrame` — `ui/src/features/companion/pack.ts:108` — Кадр для позы с учётом замен: речь (кадры рта по громкости), моргание, зацикленные кадры позы,
+- `poseName` — `ui/src/features/companion/pack.ts:116` — Имя позы из имени файла: `Sit_Edge.PNG` → `sit_edge`; не картинка — `null`.
+- `savePoses` — `ui/src/features/companion/pack.ts:123` — Сохранить позы из выбранной папки; вернёт, сколько картинок принято.
+- `clearPoses` — `ui/src/features/companion/pack.ts:135` — —
+- `DEFAULT_PACK` — `ui/src/features/companion/pack.ts:146` — Встроенный персонаж (`ui/public/characters/default/`; подгонка — `docs/character/README.md`).
+- `loadPoses` — `ui/src/features/companion/pack.ts:179` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
+- `placeholderPose` — `ui/src/features/companion/placeholder.ts:249` — Силуэт позы: широкие линии с градиентом палитры окна, круг головы, подпись с именем позы.
+- `RemarkTopic` — `ui/src/features/companion/remarks.ts:9` — —
+- `topicOf` — `ui/src/features/companion/remarks.ts:74` — —
+- `TimeOfDay` — `ui/src/features/companion/remarks.ts:79` — —
+- `timeOfDay` — `ui/src/features/companion/remarks.ts:81` — —
+- `remark` — `ui/src/features/companion/remarks.ts:97` — Комментарий: чаще — про программу, иногда — про время суток или простой; без повтора подряд.
+- `nextPause` — `ui/src/features/companion/remarks.ts:111` — Пауза до следующего комментария сам по себе, секунды: не часто, чтобы не надоедал.
+- `Target` — `ui/src/features/companion/remarks.ts:116` — Элемент экрана от оболочки (`companion_targets`, ADR-0048): кнопка, ссылка, вкладка, значок.
+- `choosePoke` — `ui/src/features/companion/remarks.ts:126` — Что потыкать: случайный элемент целиком на экране. Палец — к ближнему краю элемента, тело — с той
 - `CompanionWhen` — `ui/src/features/companion/settings.ts:5` — Настройки «Сопровождения» (Этап 23, ADR-0045): общие для главного окна и слоя спутника через
 - `CompanionBehavior` — `ui/src/features/companion/settings.ts:6` — —
 - `CompanionSettings` — `ui/src/features/companion/settings.ts:8` — —
@@ -903,9 +913,9 @@
 - `Rect` — `ui/src/features/companion/world.ts:5` — Картина рабочего стола от оболочки (`desktop.rs`, физические пиксели экрана) → CSS-пиксели слоя спутника.
 - `Seat` — `ui/src/features/companion/world.ts:12` — —
 - `Focus` — `ui/src/features/companion/world.ts:18` — —
-- `World` — `ui/src/features/companion/world.ts:21` — —
-- `rectToCss` — `ui/src/features/companion/world.ts:29` — —
-- `worldToCss` — `ui/src/features/companion/world.ts:39` — Вся картина в CSS-пикселях слоя.
+- `World` — `ui/src/features/companion/world.ts:24` — —
+- `rectToCss` — `ui/src/features/companion/world.ts:32` — —
+- `worldToCss` — `ui/src/features/companion/world.ts:42` — Вся картина в CSS-пикселях слоя.
 
 ## ui/src/features/desktop
 Публичный API режима «персонаж поверх рабочего стола» (S-15.2).

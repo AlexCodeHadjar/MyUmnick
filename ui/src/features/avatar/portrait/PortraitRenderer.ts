@@ -10,8 +10,19 @@ import { EMOTION_HUE, mixHue } from "../orb/palette";
 import { loadFit, loadPicture, pictureChanged, windowStorage, type PictureFit } from "./picture";
 import silhouette from "./silhouette.svg";
 
-/** Персонаж по умолчанию — поза «стоит» встроенного персонажа (Этап 23); не загрузилась — силуэт. */
-const DEFAULT_PICTURE = "/characters/default/stand.webp";
+/**
+ * Персонаж по умолчанию: «мордашка» встроенного персонажа (капюшон, маска, рожки) с кадрами моргания и
+ * речи; в режимах «целиком» и «заполнить» — поза «стоит». Не загрузилась — силуэт.
+ */
+const PACK = "/characters/default";
+const HEAD = {
+  base: `${PACK}/head.webp`,
+  blink: `${PACK}/head_blink.webp`,
+  talk: `${PACK}/head_talk.webp`,
+};
+const FULL_BODY = `${PACK}/stand.webp`;
+const BLINK_EVERY_S = 4.2;
+const BLINK_S = 0.16;
 
 const BREATH_PERIOD_S = 3.5;
 const BREATH_SCALE = 0.012;
@@ -57,6 +68,10 @@ export class PortraitRenderer implements AvatarRenderer {
   #look = { x: 0, y: 0 };
   #lookTarget = { x: 0, y: 0 };
   #speaking = false;
+  #fit: PictureFit = "corner";
+  /** Своя картинка пользователя — кадры моргания и речи встроенного персонажа к ней не подходят. */
+  #own = false;
+  #frame = "";
   readonly #onChange = (): void => {
     void this.load();
   };
@@ -98,6 +113,11 @@ export class PortraitRenderer implements AvatarRenderer {
   async load(): Promise<void> {
     const picture = await loadPicture();
     const next = picture === null ? null : URL.createObjectURL(picture);
+    this.#own = next !== null;
+    if (!this.#own) {
+      // Кадры мордашки — в кэш заранее: смена `src` при моргании не мигает.
+      for (const url of Object.values(HEAD)) new Image().src = url;
+    }
     await new Promise<void>((resolve) => {
       this.#image.onload = () => {
         resolve();
@@ -108,14 +128,37 @@ export class PortraitRenderer implements AvatarRenderer {
         this.#image.src = silhouette;
         resolve();
       };
-      this.#image.src = next ?? DEFAULT_PICTURE;
+      this.#image.src = next ?? this.#defaultPicture();
     });
     if (this.#url !== null) URL.revokeObjectURL(this.#url);
     this.#url = next;
   }
 
-  /** «Вписать целиком» или «заполнить окошко». */
+  #defaultPicture(): string {
+    return this.#fit === "corner" ? HEAD.base : FULL_BODY;
+  }
+
+  /** «Мордашка в углу», «вписать целиком» или «заполнить окошко». */
   setFit(fit: PictureFit): void {
+    const changed = fit !== this.#fit;
+    this.#fit = fit;
+    const corner = fit === "corner";
+    // В углу: прижать к правому нижнему углу окошка, размер — с ладонь.
+    this.#root.style.alignItems = corner ? "flex-end" : "center";
+    this.#root.style.justifyContent = corner ? "flex-end" : "center";
+    this.#root.style.padding = corner ? "0 16px 16px 0" : "0";
+    this.#glow.style.inset = corner ? "auto 0 0 auto" : "8%";
+    this.#glow.style.width = corner ? "min(80%, 360px)" : "";
+    this.#glow.style.height = corner ? "min(80%, 360px)" : "";
+    if (changed && !this.#own && this.#image.src !== "") this.#image.src = this.#defaultPicture();
+    if (corner) {
+      this.#image.style.objectFit = "contain";
+      this.#image.style.width = "min(70%, 300px)";
+      this.#image.style.height = "auto";
+      this.#image.style.maxWidth = "92%";
+      this.#image.style.maxHeight = "50%";
+      return;
+    }
     const cover = fit === "cover";
     this.#image.style.objectFit = cover ? "cover" : "contain";
     this.#image.style.width = cover ? "100%" : "auto";
@@ -197,7 +240,20 @@ export class PortraitRenderer implements AvatarRenderer {
     this.#root.remove();
   }
 
+  /** Мордашка встроенного персонажа: моргает и открывает рот по громкости речи. */
+  #headFrame(): void {
+    if (this.#own || this.#fit !== "corner") return;
+    const blinking = this.#time % BLINK_EVERY_S < BLINK_S;
+    const frame =
+      this.#speaking && this.#mouth > 0.25 ? HEAD.talk : blinking ? HEAD.blink : HEAD.base;
+    if (frame !== this.#frame) {
+      this.#frame = frame;
+      this.#image.src = frame;
+    }
+  }
+
   #draw(): void {
+    this.#headFrame();
     const pose = portraitPose({
       time: this.#time,
       mouth: this.#mouth,

@@ -25,7 +25,15 @@ windows-sys = { version = "0.61", features = [
   "Win32_Foundation",
   "Win32_Graphics_Dwm",
   "Win32_Graphics_Gdi",
+  "Win32_System_Threading",
   "Win32_UI_Shell",
+  "Win32_UI_WindowsAndMessaging",
+] }
+# «Потыкать» в кнопки и значки (ADR-0048): UI Automation. Та же версия, что у Tauri — второй копии нет.
+windows = { version = "0.62", features = [
+  "Win32_Foundation",
+  "Win32_System_Com",
+  "Win32_UI_Accessibility",
   "Win32_UI_WindowsAndMessaging",
 ] }
 

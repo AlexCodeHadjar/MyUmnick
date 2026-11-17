@@ -21,8 +21,8 @@ use crate::desktop::{self, Rect, World};
 
 pub const LABEL: &str = "companion";
 const TICK: Duration = Duration::from_millis(16);
-/// Активное окно — 10 раз в секунду, полная картина — раз в секунду (как у Capri).
-const FOCUS_EVERY: u32 = 6;
+/// Активное окно — 20 раз в секунду, полная картина — раз в секунду (как у Capri).
+const FOCUS_EVERY: u32 = 3;
 const SCAN_EVERY: u32 = 60;
 
 /// Прямоугольник персонажа в CSS-пикселях окна спутника.
@@ -50,6 +50,8 @@ pub struct CompanionState(Arc<Mutex<Shared>>);
 #[derive(Serialize, Clone, PartialEq, Debug)]
 struct MainState {
     shown: bool,
+    /// Окно в фокусе: переключились на другую программу — спутник выходит из портала.
+    focused: bool,
     rect: Rect,
 }
 
@@ -187,7 +189,12 @@ fn publish_main(app: &AppHandle, last: Option<MainState>) -> Option<MainState> {
         w: size.width as i32,
         h: size.height as i32,
     };
-    let state = MainState { shown, rect };
+    let focused = main.is_focused().unwrap_or(false);
+    let state = MainState {
+        shown,
+        focused,
+        rect,
+    };
     if last.as_ref() != Some(&state) {
         let _ = app.emit_to(LABEL, "companion-main", &state);
     }
@@ -237,4 +244,23 @@ pub fn companion_attach(state: tauri::State<'_, CompanionState>, host: Option<i6
 #[tauri::command]
 pub fn companion_world(state: tauri::State<'_, CompanionState>) -> Option<World> {
     state.0.lock().ok().and_then(|shared| shared.world.clone())
+}
+
+/// Что можно «потыкать» в активном окне или на рабочем столе (ADR-0048). Обход UI Automation —
+/// в отдельном потоке: он блокирует, а окно и поток слежения не должны ждать.
+#[tauri::command]
+pub async fn companion_targets() -> Vec<crate::uia::Target> {
+    let own = std::process::id();
+    let world = desktop::scan(own);
+    let hwnd = match world.focus {
+        desktop::Focus::Desktop => 0,
+        desktop::Focus::Window { id, .. } => id as isize,
+        _ => match desktop::foreground(own) {
+            Some(h) => h as isize,
+            None => return Vec::new(),
+        },
+    };
+    tauri::async_runtime::spawn_blocking(move || crate::uia::targets(hwnd))
+        .await
+        .unwrap_or_default()
 }

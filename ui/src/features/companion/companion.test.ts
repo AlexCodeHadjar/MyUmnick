@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 
+import { messagesFor } from "../../core";
+
 import { below, floorSpot, seatSpot, snap, surfaces } from "./anchors";
 import { Brain, WALK_LIMIT } from "./brain";
 import { bubbleText, followSpot, release, velocityOf } from "./control";
 import { along, lightning, seeded } from "./effects";
 import { pickFrame, poseName, sequence } from "./pack";
+import { choosePoke, remark, topicOf } from "./remarks";
 import { DEFAULT_SETTINGS, parseSettings, shouldShow } from "./settings";
 import { worldToCss, type World } from "./world";
 
@@ -15,7 +18,7 @@ const WORLD: World = {
     { id: 1, rect: { x: 200, y: 300, w: 800, h: 500 }, open: [[200, 1000]] },
     { id: 2, rect: { x: 1200, y: 200, w: 500, h: 400 }, open: [[1200, 1700]] },
   ],
-  focus: { kind: "window", id: 1 },
+  focus: { kind: "window", id: 1, app: "code" },
   fullscreen: false,
 };
 const LIST = surfaces(WORLD);
@@ -47,7 +50,7 @@ describe("опоры и позы", () => {
     const seat = seatSpot(LIST, 1, 200, 800);
     expect(seat?.x).toBe(800);
     expect(followSpot(WORLD, LIST, { kind: "desktop" })?.pose).toBe("stand");
-    expect(followSpot(WORLD, LIST, { kind: "maximized" })?.pose).toBe("sit_corner");
+    expect(followSpot(WORLD, LIST, { kind: "maximized", app: "chrome" })?.pose).toBe("sit_corner");
     expect(floorSpot(LIST, true)?.x).toBe(1900);
   });
 
@@ -209,5 +212,76 @@ describe("молния, позы, настройки", () => {
     expect(shouldShow(DEFAULT_SETTINGS, true, false)).toBe(false);
     expect(shouldShow(DEFAULT_SETTINGS, false, false)).toBe(true);
     expect(shouldShow(always, true, true)).toBe(false);
+  });
+});
+
+describe("инициатива и новые опоры", () => {
+  it("верхние углы и верх экрана — висит; бока экрана — облокотился", () => {
+    expect(snap(LIST, 10, 8)?.pose).toBe("hang_side");
+    expect(snap(LIST, 1910, 5)?.pose).toBe("hang_side");
+    expect(snap(LIST, 960, 3)?.pose).toBe("hang_side");
+    expect(snap(LIST, 50, 700)?.pose).toBe("lean_side");
+  });
+
+  it("сам оглядывается и прогуливается в «следовать»", () => {
+    const rolls = [0.1, 0.9, 0.3, 0.7];
+    let i = 0;
+    const brain = new Brain(() => rolls[i++ % rolls.length] ?? 0.5);
+    brain.setWorld(WORLD);
+    const floor = snap(LIST, 800, 1040);
+    if (floor === null) throw new Error("нет места");
+    brain.place(floor);
+    brain.wander = true;
+    brain.calm = true;
+    const facings = new Set<number>();
+    let walked = false;
+    for (let t = 0; t < 60; t += 0.05) {
+      brain.tick(0.05);
+      facings.add(brain.facing);
+      if (brain.phase === "walk") walked = true;
+    }
+    expect(facings.size).toBe(2);
+    expect(walked).toBe(true);
+  });
+
+  it("тема по программе и комментарий без повтора подряд", () => {
+    const t = messagesFor("ru");
+    expect(topicOf("chrome", false)).toBe("browser");
+    expect(topicOf("code", false)).toBe("code");
+    expect(topicOf("неизвестно", false)).toBe("other");
+    expect(topicOf("", true)).toBe("desktop");
+    const first = remark(t, { topic: "code", hour: 14, idleS: 0 }, () => 0.1);
+    expect(t.companion.remarks.code).toContain(first);
+    const second = remark(t, { topic: "code", hour: 14, idleS: 0 }, () => 0.1, first);
+    expect(second).not.toBe(first);
+    expect(t.companion.remarks.night).toContain(
+      remark(t, { topic: "code", hour: 2, idleS: 0 }, () => 0.9),
+    );
+  });
+
+  it("тыкает в элемент: палец к ближнему краю, тело — где есть место; подлетел и вернулся", () => {
+    const screen = { x: 0, y: 0, w: 1920, h: 1040 };
+    const button = { name: "Корзина", kind: "item", rect: { x: 10, y: 100, w: 70, h: 60 } };
+    const far = { name: "OK", kind: "button", rect: { x: 900, y: 500, w: 80, h: 30 } };
+    expect(choosePoke([button], screen, () => 0)).toEqual({
+      x: 80,
+      y: 130,
+      facing: -1,
+      name: "Корзина",
+    });
+    expect(choosePoke([far], screen, () => 0)).toEqual({ x: 900, y: 515, facing: 1, name: "OK" });
+    expect(choosePoke([], screen)).toBeNull();
+
+    const brain = new Brain(() => 0.5);
+    brain.setWorld(WORLD);
+    const home = snap(LIST, 800, 1040);
+    if (home === null) throw new Error("нет места");
+    brain.place(home);
+    brain.visit(900, 515, "poke", 1);
+    settle(brain, 1);
+    expect([brain.phase, brain.x, brain.y, brain.body().pose]).toEqual(["rest", 900, 515, "poke"]);
+    brain.goTo(home);
+    settle(brain, 2);
+    expect([brain.phase, brain.body().pose]).toEqual(["rest", "stand"]);
   });
 });

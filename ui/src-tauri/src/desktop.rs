@@ -7,12 +7,15 @@ use std::mem::size_of;
 
 use serde::Serialize;
 use windows_sys::core::BOOL;
-use windows_sys::Win32::Foundation::{HWND, LPARAM, POINT, RECT};
+use windows_sys::Win32::Foundation::{CloseHandle, HWND, LPARAM, POINT, RECT};
 use windows_sys::Win32::Graphics::Dwm::{
     DwmGetWindowAttribute, DWMWA_CLOAKED, DWMWA_EXTENDED_FRAME_BOUNDS,
 };
 use windows_sys::Win32::Graphics::Gdi::{
     GetMonitorInfoW, MonitorFromPoint, MONITORINFO, MONITOR_DEFAULTTOPRIMARY,
+};
+use windows_sys::Win32::System::Threading::{
+    OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
 };
 use windows_sys::Win32::UI::Shell::SHQueryUserNotificationState;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
@@ -86,10 +89,10 @@ pub struct Seat {
 #[derive(Serialize, Clone, PartialEq, Debug)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum Focus {
-    Window { id: i64 },
-    Maximized,
+    Window { id: i64, app: String },
+    Maximized { app: String },
     Desktop,
-    Other,
+    Other { app: String },
 }
 
 /// Картина основного монитора в физических пикселях экрана.
@@ -260,20 +263,48 @@ pub fn foreground(own: u32) -> Option<HWND> {
     (!hwnd.is_null() && pid_of(hwnd) != own).then_some(hwnd)
 }
 
+/// Имя программы окна без пути и расширения, в нижнем регистре («chrome», «code»): спутнику — для
+/// комментариев к месту. Заголовок окна не берётся: в нём бывает личное.
+fn app_of(hwnd: HWND) -> String {
+    let pid = pid_of(hwnd);
+    // SAFETY: открываем процесс только на чтение имени; дескриптор закрывается ниже.
+    let process = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid) };
+    if process.is_null() {
+        return String::new();
+    }
+    let mut buf = [0u16; 260];
+    let mut len = buf.len() as u32;
+    // SAFETY: буфер на `len` символов; функция пишет не больше и возвращает длину в `len`.
+    let ok = unsafe {
+        QueryFullProcessImageNameW(process, PROCESS_NAME_WIN32, buf.as_mut_ptr(), &mut len)
+    };
+    // SAFETY: дескриптор получен выше.
+    unsafe { CloseHandle(process) };
+    if ok == 0 {
+        return String::new();
+    }
+    let path = String::from_utf16_lossy(&buf[..len as usize]);
+    let file = path.rsplit(['\\', '/']).next().unwrap_or_default();
+    file.trim_end_matches(".exe")
+        .trim_end_matches(".EXE")
+        .to_lowercase()
+}
+
 fn focus_of(hwnd: Option<HWND>, seats: &[Seat], monitor: &Rect, own: u32) -> Focus {
     let Some(hwnd) = hwnd else {
-        return Focus::Other;
+        return Focus::Other { app: String::new() };
     };
     if DESKTOP.contains(&class_of(hwnd).as_str()) {
         return Focus::Desktop;
     }
+    let app = app_of(hwnd);
     let id = hwnd as isize as i64;
     if seats.iter().any(|seat| seat.id == id) {
-        return Focus::Window { id };
+        return Focus::Window { id, app };
     }
     match seen(hwnd, own) {
-        Some(one) if one.zoomed || one.rect.covers(monitor) => Focus::Maximized,
-        _ => Focus::Other,
+        Some(one) if one.zoomed || one.rect.covers(monitor) => Focus::Maximized { app },
+        _ => Focus::Other { app },
     }
 }
 

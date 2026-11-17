@@ -19,8 +19,9 @@ describe("картинка персонажа", () => {
 
   it("способ вписать: неизвестное — целиком", () => {
     expect(parseFit("cover")).toBe("cover");
-    expect(parseFit("stretch")).toBe("contain");
-    expect(parseFit(null)).toBe("contain");
+    expect(parseFit("contain")).toBe("contain");
+    expect(parseFit("stretch")).toBe("corner");
+    expect(parseFit(null)).toBe("corner");
   });
 });
 

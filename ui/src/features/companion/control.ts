@@ -2,7 +2,7 @@
  * Решения спутника, которые не зависят от DOM (Этап 23): куда идти при смене активного окна, что делать
  * с отпущенной мышью, что показать в облачке. Компонент слоя только передаёт сюда события.
  */
-import { below, floorSpot, seatSpot, snap, type Spot, type Surface } from "./anchors";
+import { below, floorSpot, hostId, seatSpot, snap, type Spot, type Surface } from "./anchors";
 import type { Focus, World } from "./world";
 
 /** Место для активного окна (раздел 4.1): край окна, «пол» у правого края или угол экрана. */
@@ -18,8 +18,7 @@ export function followSpot(world: World, list: readonly Surface[], focus: Focus)
 
 /** Хозяин места (окно) или `null` для «пола». */
 export function hostOf(spot: Spot | null): number | null {
-  if (spot === null || spot.surface.kind === "floor") return null;
-  return spot.surface.host;
+  return spot === null ? null : hostId(spot.surface);
 }
 
 export type Release =

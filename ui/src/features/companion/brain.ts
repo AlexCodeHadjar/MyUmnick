@@ -5,6 +5,7 @@
  */
 import {
   below,
+  hostId,
   sameSurface,
   snap,
   spotOn,
@@ -61,6 +62,7 @@ export class Brain {
   /** Сдвиг от левого края окна-хозяина: окно двигают — персонаж едет вместе с ним. */
   #rel = 0;
   #pinned: Pose | null = null;
+  #pinAfter: { pose: Pose; facing: 1 | -1 } | null = null;
   #from: [number, number] = [0, 0];
   #target: Spot | null = null;
   #point: [number, number] = [0, 0];
@@ -72,11 +74,19 @@ export class Brain {
   #effects: Effect[] = [];
   #random: Random;
   wander = false;
+  /** «Следовать»: гуляет реже и недалеко; «Гулять» — часто. */
+  calm = false;
+  #lookIn = 6;
   /** Высота груди над точкой опоры: отсюда выходит молния и искры (рост × 0,55). */
   chest = 150;
 
   constructor(random: Random = Math.random) {
     this.#random = random;
+  }
+
+  /** Сколько секунд стоит на месте без дела: для комментариев «мне скучно». */
+  get idleSeconds(): number {
+    return this.#idle;
   }
 
   get spot(): Spot | null {
@@ -93,7 +103,7 @@ export class Brain {
     this.#bounds = world.monitor;
     const spot = this.#spot;
     if (this.phase !== "rest" || spot === null) return;
-    const host = spot.surface.kind === "floor" ? null : spot.surface.host;
+    const host = hostId(spot.surface);
     const seat = host === null ? null : world.seats.find((one) => one.id === host);
     const same = this.#surfaces.filter((surface) => sameSurface(surface, spot.surface));
     if (host !== null && seat === undefined) {
@@ -109,8 +119,8 @@ export class Brain {
   /** Окно-хозяин сдвинулось (`companion-host`, быстро) или исчезло. */
   hostMoved(id: number, rect: Rect | null): void {
     const spot = this.#spot;
-    if (this.phase !== "rest" || spot === null || spot.surface.kind === "floor") return;
-    if (spot.surface.host !== id) return;
+    if (this.phase !== "rest" || spot === null || hostId(spot.surface) !== id) return;
+    if (spot.surface.kind !== "edge" && spot.surface.kind !== "side") return;
     if (rect === null) {
       this.#fall();
       return;
@@ -148,6 +158,16 @@ export class Brain {
     this.#point = point;
     this.#t = 0;
     this.phase = "bolt";
+  }
+
+  /**
+   * Подлететь молнией к точке на экране и замереть там в позе `pose` (ADR-0048): кончик пальца — в
+   * точке. Опоры нет — до следующего перехода (`goTo`) персонаж висит, не падая.
+   */
+  visit(x: number, y: number, pose: Pose, facing: 1 | -1): void {
+    if (this.phase === "held" || this.phase === "hidden") return;
+    this.bolt(null, [x, y]);
+    this.#pinAfter = { pose, facing };
   }
 
   /** Персонажа взяли мышью: висит за «шиворот» у курсора. */
@@ -313,12 +333,21 @@ export class Brain {
 
   #tickRest(dt: number): void {
     this.#idle += dt;
-    if (!this.wander || this.#spot === null || this.#spot.surface.kind === "side") return;
+    const surface = this.#spot?.surface;
+    if (surface === undefined || this.#pinned !== null) return;
+    const standing = surface.kind === "edge" || surface.kind === "floor";
+    // Оглядывается: стоя и сидя не смотрит всё время в одну сторону.
+    this.#lookIn -= dt;
+    if (this.#lookIn <= 0 && standing && this.#idle < LAY_AFTER_S) {
+      this.#lookIn = 5 + this.#random() * 9;
+      this.facing = this.facing === 1 ? -1 : 1;
+    }
+    if (!this.wander || !standing) return;
     this.#wanderIn -= dt;
     if (this.#wanderIn > 0) return;
-    this.#wanderIn = 6 + this.#random() * 12;
-    const surface = this.#spot.surface;
-    this.goTo(spotOn(surface, this.x + (this.#random() - 0.5) * 500, this.y));
+    this.#wanderIn = this.calm ? 20 + this.#random() * 25 : 6 + this.#random() * 12;
+    const reach = this.calm ? 320 : 500;
+    this.goTo(spotOn(surface, this.x + (this.#random() - 0.5) * reach, this.y));
   }
 
   #tickWalk(dt: number): void {
@@ -344,6 +373,20 @@ export class Brain {
   #tickBolt(): void {
     if (this.#t < BOLT_S) return;
     const target = this.#target;
+    const pin = this.#pinAfter;
+    this.#pinAfter = null;
+    if (pin !== null) {
+      // Подлетел к элементу экрана: висит у него и тыкает — искры в точке касания.
+      this.#effects.push({ kind: "sparks", x: this.#point[0], y: this.#point[1], t: 0 });
+      this.phase = "rest";
+      this.#spot = null;
+      this.#pinned = pin.pose;
+      this.facing = pin.facing;
+      this.x = this.#point[0];
+      this.y = this.#point[1];
+      this.#idle = 0;
+      return;
+    }
     this.#effects.push({ kind: "sparks", x: this.#point[0], y: this.#point[1] - this.chest, t: 0 });
     if (target !== null) {
       this.#rest(target);

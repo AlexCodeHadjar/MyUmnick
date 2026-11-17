@@ -9,6 +9,7 @@ mod companion;
 mod desktop;
 mod launcher;
 mod system_audio;
+mod uia;
 
 #[cfg(not(debug_assertions))]
 mod core_process {
@@ -126,6 +127,7 @@ pub fn run() {
             companion::companion_hit,
             companion::companion_attach,
             companion::companion_world,
+            companion::companion_targets,
             launcher::launcher_load,
             launcher::launcher_save,
             system_audio::system_audio_start,

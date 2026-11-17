@@ -205,6 +205,17 @@ const FIGURES: Record<Pose, Figure> = {
       [275, 1000],
     ],
   },
+  poke: {
+    ...STAND,
+    elbows: [
+      [200, 420],
+      [380, 400],
+    ],
+    hands: [
+      [180, 560],
+      [450, 430],
+    ],
+  },
   float: {
     ...STAND,
     elbows: [

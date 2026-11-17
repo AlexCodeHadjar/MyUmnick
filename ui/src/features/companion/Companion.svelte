@@ -12,6 +12,7 @@
   import { Brain } from "./brain";
   import { bubbleText, followSpot, hostOf, release, velocityOf } from "./control";
   import {
+    COMPANION_KEY,
     HEIGHTS,
     loadSettings,
     saveSettings,
@@ -19,6 +20,7 @@
     type CompanionBehavior,
     type CompanionSettings,
   } from "./settings";
+  import { choosePoke, nextPause, remark, topicOf, type RemarkTopic, type Target } from "./remarks";
   import { CompanionStage } from "./stage";
   import { rectToCss, worldToCss, type Focus, type Rect, type World } from "./world";
 
@@ -32,7 +34,7 @@
 
   const HOLD_MS = 150;
   const MOVE_PX = 6;
-  const FOLLOW_DELAY_MS = 400;
+  const FOLLOW_DELAY_MS = 250;
 
   let canvas: HTMLCanvasElement | undefined = $state();
   let settings = $state<CompanionSettings>(loadSettings(window.localStorage));
@@ -45,6 +47,8 @@
   let scale = devicePixelRatio || 1;
   let mainShown = true;
   let mainRect: Rect | null = null;
+  /** Монитор слоя в физических пикселях: окно приложения приходит в них же. */
+  let monitor: Rect | null = null;
   let shown = false;
   let lastFocus = "";
   let followTimer: ReturnType<typeof setTimeout> | undefined;
@@ -53,6 +57,12 @@
   let replyText = "";
   let bubbleUntil = 0;
   let listening = false;
+  // Инициатива: сам говорит что-нибудь к месту (remarks.ts).
+  let remarkAt = performance.now() + (40 + Math.random() * 50) * 1000;
+  let lastRemark = "";
+  let lastRemarkTime = 0;
+  let topic: RemarkTopic = "other";
+  let poking = false;
   // Мышь: удержание — молния, движение сразу — «держат», как у Capri.
   let press: { x: number; y: number; t: number } | null = null;
   let gesture: "none" | "held" | "aim" = "none";
@@ -65,7 +75,9 @@
   }
 
   function applyBehavior(): void {
-    brain.wander = settings.behavior === "wander";
+    // «Следовать» тоже иногда прогуливается сам (инициатива), «Сидеть здесь» — нет.
+    brain.wander = settings.behavior !== "stay";
+    brain.calm = settings.behavior === "follow";
     brain.chest = settings.height * 0.55;
   }
 
@@ -85,19 +97,31 @@
     brain.portalIn();
   }
 
-  /** Окно свернули: выходим из портала там, где было окно; иначе — сразу на место у активного окна. */
+  /** Окно хоть частью на мониторе слоя (физические пиксели экрана). */
+  function onScreen(rect: Rect): boolean {
+    const m = monitor;
+    if (m === null) return rect.x > -10000 && rect.y > -10000;
+    return (
+      rect.x + rect.w > m.x && rect.y + rect.h > m.y && rect.x < m.x + m.w && rect.y < m.y + m.h
+    );
+  }
+
+  /** Ушли из окна: выходим из портала там, где было окно (внутри экрана); иначе — сразу на место. */
   function arrive(): void {
     if (world === null) return;
     const surfaceList = brain.surfaceList;
+    const m = world.monitor;
     if (mainRect !== null && !mainShown) {
-      const rect = rectToCss(mainRect, world.monitor, scale);
-      brain.portalOut(rect.x + rect.w * 0.75, rect.y + rect.h * 0.5);
+      const rect = rectToCss(mainRect, monitor ?? { x: 0, y: 0, w: 0, h: 0 }, scale);
+      const x = Math.min(m.x + m.w - 80, Math.max(m.x + 80, rect.x + rect.w * 0.75));
+      const y = Math.min(m.y + m.h - 80, Math.max(m.y + 260, rect.y + rect.h * 0.5));
+      brain.portalOut(x, y);
       return;
     }
     const spot =
       followSpot(world, surfaceList, world.focus) ??
       followSpot(world, surfaceList, { kind: "desktop" });
-    if (spot !== null) brain.place(spot);
+    if (spot !== null) brain.portalOut(spot.x, spot.y - 20);
   }
 
   function refresh(): void {
@@ -106,19 +130,23 @@
   }
 
   function onWorld(raw: World): void {
+    monitor = raw.monitor;
     world = css(raw);
     brain.setWorld(world);
     refresh();
+    // Показали раньше, чем пришла картина окон: выйти сейчас (иначе персонаж так и не появлялся).
+    if (shown && brain.phase === "hidden") arrive();
     const key = JSON.stringify(raw.focus);
     if (key !== lastFocus) {
       lastFocus = key;
       scheduleFollow(world.focus);
+      noticeTopic(world.focus);
     }
   }
 
   function scheduleFollow(focus: Focus): void {
     clearTimeout(followTimer);
-    // Быстрый Alt+Tab не дёргает спутника: переход — если окно осталось активным 0,4 с.
+    // Быстрый Alt+Tab не дёргает спутника: переход — если окно осталось активным 0,25 с.
     followTimer = setTimeout(() => {
       if (world === null || settings.behavior !== "follow" || gesture !== "none") return;
       if (brain.phase !== "rest") return;
@@ -169,6 +197,76 @@
     void invoke("companion_attach", { host });
   }
 
+  /** Перешли в программу другого рода — иногда сразу прокомментировать, но не чаще раза в 45 с. */
+  function noticeTopic(focus: Focus): void {
+    const app = focus.kind === "desktop" ? "" : focus.app;
+    const next = topicOf(app, focus.kind === "desktop");
+    if (next === topic) return;
+    topic = next;
+    const now = performance.now();
+    if (now - lastRemarkTime > 45_000 && Math.random() < 0.35) remarkAt = now + 1500;
+  }
+
+  function say(text: string, now: number): void {
+    listening = false;
+    replyText = text;
+    bubbleUntil = now + 6000;
+    lastRemark = text;
+    lastRemarkTime = now;
+  }
+
+  function maybeRemark(now: number): void {
+    const busy = look.speaking || listening || now < bubbleUntil || gesture !== "none";
+    if (!shown || brain.phase !== "rest" || busy || poking || now < remarkAt) return;
+    remarkAt = now + nextPause(Math.random) * 1000;
+    // Примерно каждая третья выходка — «потыкать» в кнопку или значок (ADR-0048).
+    if (Math.random() < 0.35) {
+      void poke(now);
+      return;
+    }
+    const hour = new Date().getHours();
+    say(remark(locale.t, { topic, hour, idleS: brain.idleSeconds }, Math.random, lastRemark), now);
+  }
+
+  /** Подлететь к элементу экрана, ткнуть, сказать его название и вернуться. Нечего тыкать — фраза. */
+  async function poke(now: number): Promise<void> {
+    if (world === null || monitor === null) return;
+    poking = true;
+    const origin = monitor;
+    const found = await invoke<Target[]>("companion_targets").catch(() => []);
+    const near = choosePoke(
+      found.map((one) => ({ ...one, rect: rectToCss(one.rect, origin, scale) })),
+      world.monitor,
+    );
+    if (near === null || brain.phase !== "rest" || !shown) {
+      poking = false;
+      say(
+        remark(
+          locale.t,
+          { topic, hour: new Date().getHours(), idleS: brain.idleSeconds },
+          Math.random,
+          lastRemark,
+        ),
+        now,
+      );
+      return;
+    }
+    const back = brain.spot;
+    brain.visit(near.x, near.y, "poke", near.facing);
+    const lines = locale.t.companion.poke;
+    const line = lines[Math.floor(Math.random() * lines.length)];
+    setTimeout(() => {
+      if (line !== undefined) say(line(near.name), performance.now());
+    }, 700);
+    setTimeout(() => {
+      poking = false;
+      if (brain.phase !== "rest" || gesture !== "none") return;
+      const home =
+        back ?? (world === null ? null : followSpot(world, brain.surfaceList, { kind: "desktop" }));
+      if (home !== null) brain.goTo(home);
+    }, 5200);
+  }
+
   function updateBubble(now: number): void {
     const box = stage?.bounds;
     const text = listening ? locale.t.companion.listening : bubbleText(replyText);
@@ -180,6 +278,7 @@
   }
 
   function frame(dt: number, now: number): void {
+    maybeRemark(now);
     if (press !== null && gesture === "none" && now - press.t >= HOLD_MS) {
       gesture = "aim";
       aim = { x: press.x, y: press.y, ghost: null };
@@ -294,9 +393,12 @@
         if (world !== null)
           brain.hostMoved(id, rect === null ? null : rectToCss(rect, world.monitor, scale));
       }),
-      listen<{ shown: boolean; rect: Rect }>("companion-main", (event) => {
-        mainShown = event.payload.shown;
-        mainRect = event.payload.rect;
+      listen<{ shown: boolean; focused: boolean; rect: Rect }>("companion-main", (event) => {
+        // «Ушли» из окна — свернули его или переключились на другую программу: спутник выходит.
+        mainShown = event.payload.shown && event.payload.focused;
+        // Свёрнутое окно Windows уносит к (−32000, −32000): портал там не открыть — помним последнее
+        // видимое место окна (из-за этого персонаж иногда «не появлялся», падая из-за края экрана).
+        if (event.payload.shown && onScreen(event.payload.rect)) mainRect = event.payload.rect;
         refresh();
       }),
       listen("companion-called", onCalled),
@@ -307,9 +409,14 @@
     void invoke<World | null>("companion_world").then((raw) => {
       if (raw !== null) onWorld(raw);
     });
-    const onStorage = (): void => {
-      settings = loadSettings(window.localStorage);
-      void stage?.load(settings.height);
+    // Только своя настройка: тема, раскладка и прочее главного окна кадры не перезагружают (это и
+    // была заметная задержка — 48 картинок заново на каждое сохранение).
+    const onStorage = (event: StorageEvent): void => {
+      if (event.key !== COMPANION_KEY) return;
+      const next = loadSettings(window.localStorage);
+      const resized = next.height !== settings.height;
+      settings = next;
+      if (resized) void stage?.load(settings.height);
       refresh();
     };
     const onPack = (): void => {

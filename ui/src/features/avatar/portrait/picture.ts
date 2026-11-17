@@ -14,7 +14,8 @@ export const PICTURE_TYPES: readonly string[] = [
 ];
 export const MAX_PICTURE_BYTES = 20 * 1024 * 1024;
 
-export type PictureFit = "contain" | "cover";
+/** Целиком, заполнить окошко или «мордашка в углу» (по умолчанию, просьба пользователя 2026-11-17). */
+export type PictureFit = "corner" | "contain" | "cover";
 
 /** Причина отказа на языке интерфейса или `null`, если файл подходит. */
 export function pictureProblem(
@@ -27,9 +28,9 @@ export function pictureProblem(
   return null;
 }
 
-/** Способ вписать картинку: битое или чужое значение — «вписать целиком». */
+/** Способ вписать картинку: битое, чужое или не выбранное — «мордашка в углу». */
 export function parseFit(value: string | null): PictureFit {
-  return value === "cover" ? "cover" : "contain";
+  return value === "cover" || value === "contain" ? value : "corner";
 }
 
 const FIT_KEY = "vtuber.character.fit";
@@ -38,7 +39,7 @@ export function loadFit(storage: Storage | undefined): PictureFit {
   try {
     return parseFit(storage?.getItem(FIT_KEY) ?? null);
   } catch {
-    return "contain";
+    return "corner";
   }
 }
 

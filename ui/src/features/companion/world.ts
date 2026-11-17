@@ -16,7 +16,10 @@ export interface Seat {
 }
 
 export type Focus =
-  { kind: "window"; id: number } | { kind: "maximized" } | { kind: "desktop" } | { kind: "other" };
+  | { kind: "window"; id: number; app: string }
+  | { kind: "maximized"; app: string }
+  | { kind: "desktop" }
+  | { kind: "other"; app: string };
 
 export interface World {
   monitor: Rect;

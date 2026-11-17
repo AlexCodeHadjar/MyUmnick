@@ -169,6 +169,14 @@
       <button
         type="button"
         role="menuitemradio"
+        aria-checked={fit === "corner"}
+        onclick={() => {
+          choose("corner");
+        }}>{fit === "corner" ? "● " : "○ "}{locale.t.character.fitCorner}</button
+      >
+      <button
+        type="button"
+        role="menuitemradio"
         aria-checked={fit === "contain"}
         onclick={() => {
           choose("contain");
