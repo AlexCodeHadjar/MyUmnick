@@ -618,8 +618,10 @@ export class Brain {
     this.y += this.#vy * dt;
     this.#vx *= 1 - Math.min(1, 0.6 * dt);
     const { x, w, y } = this.#bounds;
-    if (this.x < x + 30 || this.x > x + w - 30) {
-      this.x = Math.min(x + w - 30, Math.max(x + 30, this.x));
+    // Отскок от края — на полширины фигуры, а не на 30 px (критик: обрезало у края экрана).
+    const edge = Math.max(30, this.figure * 0.22);
+    if (this.x < x + edge || this.x > x + w - edge) {
+      this.x = Math.min(x + w - edge, Math.max(x + edge, this.x));
       this.#vx = -this.#vx * WALL_BOUNCE;
     }
     if (this.y < y + 200 && this.#vy < 0) this.#vy = -this.#vy * WALL_BOUNCE;

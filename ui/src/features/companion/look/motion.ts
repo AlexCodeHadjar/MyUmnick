@@ -3,6 +3,7 @@
  * упругая посадка, растворение при смене кадра. Только состояние и числа — рисует `stage.ts`.
  */
 import type { Body } from "../body";
+import type { Pose } from "../space";
 
 /** Разворот — за 0,16 с; растворение кадра — 150 мс; упругость посадки — 0,22 с. */
 const TURN_RATE = 1 / 0.16;
@@ -26,9 +27,14 @@ export class Motion {
   #lastX: number | null = null;
   #lastPhase = "";
   #fade = 1;
-  /** Прошлый кадр, который растворяется поверх нового. */
+  /** Прошлый кадр, который растворяется поверх нового, и его поза (своя точка опоры). */
   previous: ImageBitmap | null = null;
+  previousPose: Pose | null = null;
   #current: ImageBitmap | null = null;
+  #currentPose: Pose | null = null;
+  #fadeS = FADE_S;
+  /** Сменилась поза (а не кадр цикла): честное перекрёстное растворение обоих кадров. */
+  poseChange = false;
 
   /** Идёт переход — нужно 60 кадров/с. */
   get busy(): boolean {
@@ -42,16 +48,23 @@ export class Motion {
     return this.previous === null ? 0 : 1 - this.#fade;
   }
 
-  /** Кадр этого шага: сменился — начать растворение прошлого. */
-  frame(image: ImageBitmap | null): void {
+  /**
+   * Кадр этого шага: сменился — начать растворение прошлого. `loopS` — длительность кадра цикла: внутри
+   * цикла растворение не длиннее половины кадра (критик: иначе ноги «мажутся»); 0 — без растворения.
+   */
+  frame(image: ImageBitmap | null, pose: Pose, loopS: number): void {
     if (image === this.#current) return;
+    this.poseChange = pose !== this.#currentPose;
     this.previous = this.#current;
+    this.previousPose = this.#currentPose;
     this.#current = image;
-    this.#fade = this.previous === null ? 1 : 0;
+    this.#currentPose = pose;
+    this.#fadeS = this.poseChange ? FADE_S : Math.min(FADE_S, loopS / 2);
+    this.#fade = this.previous === null || this.#fadeS <= 0 ? 1 : 0;
   }
 
   step(body: Body, dt: number): Pose2D {
-    this.#fade = Math.min(1, this.#fade + dt / FADE_S);
+    this.#fade = this.#fadeS <= 0 ? 1 : Math.min(1, this.#fade + dt / this.#fadeS);
     if (this.#fade >= 1) this.previous = null;
     this.#turn(body.facing, dt);
     this.#tilt(body, dt);
@@ -59,8 +72,9 @@ export class Motion {
     const squash = Math.sin(Math.PI * this.#land) * (1 - this.#land);
     const ease = Math.sin((Math.PI / 2) * Math.abs(this.#facing));
     return {
-      scaleX: Math.sign(this.#facing || 1) * Math.max(0.08, ease) * (1 + squash * 0.5),
-      scaleY: 1 - squash * 0.35,
+      // Мягче (критик: ×0,35 при смене позы — грубо).
+      scaleX: Math.sign(this.#facing || 1) * Math.max(0.08, ease) * (1 + squash * 0.25),
+      scaleY: 1 - squash * 0.2,
       lean: this.#lean,
     };
   }

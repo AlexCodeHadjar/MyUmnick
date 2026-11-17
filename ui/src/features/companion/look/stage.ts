@@ -6,7 +6,7 @@
 import type { Pose } from "../space";
 import type { Body } from "../body";
 import { drawEffects } from "./effects";
-import { ANCHORS, CANVAS_RATIO, FALLBACK, loadPoses, pickFrame } from "./pack";
+import { ANCHORS, CANVAS_RATIO, FALLBACK, LOOP_FPS, loadPoses, pickFrame, RING } from "./pack";
 import { Motion } from "./motion";
 import { drawPanel, panelRect } from "./panel";
 import { placeholderPose } from "./placeholder";
@@ -115,6 +115,8 @@ export class CompanionStage {
   }
 
   #lastDt = 0;
+  /** Показанное свечение — плавно догоняет `look.attention`. */
+  #glow = 0;
 
   draw(body: Body, look: Look, dt: number): void {
     this.#time += dt;
@@ -170,25 +172,36 @@ export class CompanionStage {
     const lift = (look.speaking && !CALM.has(body.pose) ? look.mouth * 5 : 0) + hop;
     const ctx = this.#ctx;
     ctx.save();
-    this.#motion.frame(image);
+    const loopS = RING.has(body.pose) ? 0 : 1 / (LOOP_FPS[body.pose] ?? 6);
+    this.#motion.frame(image, body.pose, loopS);
     const smooth = this.#motion.step(body, this.#lastDt);
     ctx.translate(body.x, body.y - lift);
     ctx.rotate(smooth.lean);
     ctx.scale(smooth.scaleX, smooth.scaleY + breath);
-    if (look.attention > 0.01) {
-      ctx.shadowColor = `hsla(${String(look.hue)}, 95%, 70%, ${String(look.attention)})`;
-      ctx.shadowBlur = 30 * look.attention;
+    // Свечение нарастает за ~150 мс, а не включается разом (критик: скачок на первом кадре).
+    this.#glow +=
+      (look.attention - this.#glow) *
+      Math.min(1, this.#lastDt * (look.attention > this.#glow ? 7 : 3));
+    if (this.#glow > 0.01) {
+      ctx.shadowColor = `hsla(${String(look.hue)}, 95%, 70%, ${String(this.#glow)})`;
+      ctx.shadowBlur = 30 * this.#glow;
     }
-    ctx.drawImage(image, cx - w / 2, cy - h / 2, w, h);
-    // Прошлый кадр растворяется поверх нового: смена позы и кадра цикла — мягкая.
     const previous = this.#motion.previous;
-    const left = this.#motion.fadeLeft;
+    const left = previous === null ? 0 : this.#motion.fadeLeft;
+    // Смена позы — честное растворение: новый проявляется, старый тает, каждый со своей точкой опоры.
+    // Кадр цикла — новый сразу, прошлый коротко поверх (та же точка опоры — без двоения).
+    ctx.globalAlpha = this.#motion.poseChange ? 1 - left : 1;
+    ctx.drawImage(image, cx - w / 2, cy - h / 2, w, h);
     if (previous !== null && left > 0.01) {
       ctx.globalAlpha = left;
-      const pw = (previous.width / previous.height) * h;
-      ctx.drawImage(previous, cx - pw / 2, cy - h / 2, pw, h);
-      ctx.globalAlpha = 1;
+      const pose = this.#motion.previousPose ?? body.pose;
+      const pw = (previous.width / previous.height) * H * body.scale;
+      const [px, py] = ANCHORS[pose];
+      const pcx = (0.5 - px) * (previous.width / previous.height) * H;
+      const pcy = (0.5 - py) * H;
+      ctx.drawImage(previous, pcx - pw / 2, pcy - h / 2, pw, h);
     }
+    ctx.globalAlpha = 1;
     ctx.restore();
     const box = {
       x: body.x + body.facing * cx - w / 2,

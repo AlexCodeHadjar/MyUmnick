@@ -234,7 +234,7 @@ async function userPoses(height: number): Promise<Map<string, ImageBitmap>> {
 }
 
 /** Циклы с направлением (походка, лазанье, танец) — кольцом; спокойные — «туда-обратно» (ANIMATION.md). */
-const RING: ReadonlySet<Pose> = new Set(["walk", "climb", "dance"]);
+export const RING: ReadonlySet<Pose> = new Set(["walk", "climb", "dance"]);
 
 /**
  * Номер кадра цикла. «Туда-обратно» (1-2-3-4-3-2): нет скачка с последнего кадра на первый, и из
