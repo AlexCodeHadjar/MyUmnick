@@ -2,7 +2,7 @@
  * Стимулы (MIND §3.3, «разрешители» Блумберга): событие не командует действием, а на время поднимает
  * оценку подходящих. Сила затухает линейно за `lifeS`; память короткая — старое не влияет.
  */
-export type Stimulus = "focus" | "desktop" | "pet" | "comeback" | "browser";
+export type Stimulus = "focus" | "desktop" | "pet" | "comeback" | "browser" | "play";
 
 const MEMORY = 8;
 

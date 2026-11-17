@@ -117,6 +117,7 @@ export class Mind {
       focus: this.#stimuli.level("focus", now),
       canChat: this.voice.canChat(now),
       calm: senses.calm,
+      play: this.#stimuli.level("play", now),
     };
     const choice = this.#arbiter.choose(context, now);
     if (!choice.changed || !isActivity(choice.id)) return null;
@@ -128,5 +129,6 @@ export class Mind {
     const satisfies = SATISFIES[id];
     if (satisfies !== undefined) this.drives.satisfy(...satisfies);
     if (id === "follow" || id === "chat") this.#stimuli.consume("focus");
+    if (id === "play") this.drives.satisfy("social", 0.3);
   }
 }

@@ -159,6 +159,8 @@ export const en: Messages = {
       (name: string) => `Look, there's "${name}"!`,
     ],
     triggers: {
+      play: ["I'll catch you!", "Oh, a game!", "You won't escape!", "I'm faster!"],
+      caught: ["Caught you!", "Gotcha!", "Got it! My mouse!", "Hehe, caught!"],
       dizzy: [
         "I'm dizzy!",
         "Whoa, everything's spinning…",

@@ -6,7 +6,7 @@ import type { Activity } from "./arbiter";
 import { need } from "./curves";
 
 export type ActivityId =
-  "idle" | "sing" | "watch" | "hush" | "follow" | "chat" | "poke" | "hop" | "wander";
+  "idle" | "sing" | "watch" | "hush" | "follow" | "chat" | "poke" | "hop" | "wander" | "play";
 
 /** Что арбитр знает о мире в момент оценки (сглаженное, MIND §3.1–3.3). */
 export interface MindContext {
@@ -30,6 +30,8 @@ export interface MindContext {
   canChat: boolean;
   /** «Спокойнее»: не тычет и не прыгает по значкам. */
   calm: boolean;
+  /** Стимул «с ним играют» 0…1. */
+  play: number;
 }
 
 type Spec = Omit<Activity<MindContext>, "id"> & { id: ActivityId };
@@ -124,5 +126,14 @@ export const ACTIVITIES: readonly Spec[] = [
     boredom: 0,
     oneShot: true,
     score: (c) => (c.behavior === "stay" ? 0 : free(c) * need(c.restless) * (0.3 + c.energy * 0.5)),
+  },
+  {
+    id: "play",
+    band: 1,
+    minS: 3,
+    cooldownS: 4,
+    boredom: 0,
+    oneShot: true,
+    score: (c) => free(c) * c.play * 0.95,
   },
 ];

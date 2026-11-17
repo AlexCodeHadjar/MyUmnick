@@ -154,3 +154,14 @@ describe("спокойный режим", () => {
     expect(quiet.total * 2).toBeLessThan(normal.total);
   });
 });
+
+describe("игра с курсором", () => {
+  it("кружат курсором рядом — «Разум» выбирает поиграть", () => {
+    const mind = new Mind(() => 0.5);
+    for (let t = 0; t < 5; t += 0.1) mind.update(t, calm);
+    mind.feel("play", 5, 1, 6);
+    let played = false;
+    for (let t = 5; t < 7; t += 0.1) played = mind.update(t, calm)?.id === "play" || played;
+    expect(played).toBe(true);
+  });
+});

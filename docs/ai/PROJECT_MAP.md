@@ -676,7 +676,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:498` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:500` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).
@@ -911,8 +911,8 @@
 - `ConductorParts` — `ui/src/features/companion/controller/conductor.ts:19` — —
 - `Situation` — `ui/src/features/companion/controller/conductor.ts:28` — Что от контроллера нужно для картины кадра.
 - `Conductor` — `ui/src/features/companion/controller/conductor.ts:43` — —
-- `Feed` — `ui/src/features/companion/controller/controller.ts:24` — Подача главного окна (`companion-feed`, ADR-0045, ADR-0049).
-- `CompanionController` — `ui/src/features/companion/controller/controller.ts:48` — —
+- `Feed` — `ui/src/features/companion/controller/controller.ts:25` — Подача главного окна (`companion-feed`, ADR-0045, ADR-0049).
+- `CompanionController` — `ui/src/features/companion/controller/controller.ts:49` — —
 - `Gesture` — `ui/src/features/companion/controller/gestures.ts:11` — —
 - `GestureHooks` — `ui/src/features/companion/controller/gestures.ts:19` — —
 - `Gestures` — `ui/src/features/companion/controller/gestures.ts:28` — —
@@ -965,7 +965,7 @@
 
 - `ActivityId` — `ui/src/features/companion/mind/activities.ts:8` — —
 - `MindContext` — `ui/src/features/companion/mind/activities.ts:12` — Что арбитр знает о мире в момент оценки (сглаженное, MIND §3.1–3.3).
-- `ACTIVITIES` — `ui/src/features/companion/mind/activities.ts:45` — —
+- `ACTIVITIES` — `ui/src/features/companion/mind/activities.ts:47` — —
 - `Band` — `ui/src/features/companion/mind/arbiter.ts:6` — Арбитр действий (MIND §3.4): utility AI с защитой от метаний — группы важности, минимальная длительность,
 - `Activity` — `ui/src/features/companion/mind/arbiter.ts:8` — —
 - `Choice` — `ui/src/features/companion/mind/arbiter.ts:23` — —

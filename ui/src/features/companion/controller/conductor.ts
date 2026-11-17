@@ -106,6 +106,7 @@ export class Conductor {
     else if (id === "poke") void this.poke();
     else if (id === "hop") void this.#hop();
     else if (id === "wander") this.#p.brain.stroll();
+    else if (id === "play") this.#play();
   }
 
   /** Выйти из режима: досмотрели — реплика и домой к активному окну. */
@@ -135,6 +136,13 @@ export class Conductor {
     this.#watchLineAt = now + (240 + Math.random() * 180) * 1000;
     if (id === "watch") this.#speak(pickOne(watchPhrases(locale.lang).start), "reaction", true);
     else if (Math.random() < 0.5) this.#speak(pickOne(locale.t.companion.watch.quiet), "reaction");
+  }
+
+  /** Игра: бежит за курсором с репликой. */
+  #play(): void {
+    const { brain } = this.#p;
+    if (brain.cursorX !== null) brain.chase(brain.cursorX);
+    this.#speak(pickOne(locale.t.companion.triggers.play), "reaction");
   }
 
   /** К активному окну; `always` — даже если уже на нём (вернуться из угла). */

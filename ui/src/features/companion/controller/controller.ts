@@ -11,6 +11,7 @@ import { Brain } from "../body";
 import { CANVAS_RATIO, type CompanionStage, type Look } from "../look";
 import { Mind, Sanity, type Fix, type VoiceKind } from "../mind";
 import { watchPhrases } from "../phrases";
+import { caught, PlayWatch } from "../senses";
 import { hostOf, ICONS, type Pose, type Rect, type World } from "../space";
 import { shouldShow, type CompanionSettings } from "../settings";
 import { Conductor } from "./conductor";
@@ -77,6 +78,8 @@ export class CompanionController {
   #lastHit = "";
   #lastPhase = "hidden";
   #emotion = "neutral";
+  readonly #play = new PlayWatch();
+  #caughtAt = 0;
 
   constructor(ports: Ports, storage: Storage, settings: CompanionSettings) {
     this.#ports = ports;
@@ -175,6 +178,22 @@ export class CompanionController {
     this.#cursorFedAt = performance.now();
     this.#movedAt = this.#cursorFedAt;
     this.reactions.cursor(x, y, this.#cursorFedAt / 1000, this.presence.shown);
+    this.#playWith(x, y, this.#cursorFedAt);
+  }
+
+  /** Игра с курсором (этап 4): кружат рядом — стимул «Разуму»; курсор у груди во время игры — «Поймал!». */
+  #playWith(x: number, y: number, now: number): void {
+    const brain = this.brain;
+    const chest =
+      this.presence.shown && brain.phase !== "hidden"
+        ? { x: brain.x, y: brain.y - brain.chest }
+        : null;
+    if (this.#play.feed(x, y, now, chest)) this.mind.feel("play", now / 1000, 1, 6);
+    const playing = this.mind.activity === "play" || now - this.#caughtAt < 8000;
+    if (chest === null || !playing || !caught(x, y, chest) || now - this.#caughtAt < 3000) return;
+    this.#caughtAt = now;
+    this.speak(pickOne(locale.t.companion.triggers.caught), "direct");
+    brain.emote("dance", 1.2);
   }
 
   onFeed(feed: Feed): void {

@@ -201,6 +201,14 @@ export class Brain {
     else this.y = b.y + b.h / 2;
   }
 
+  /** Игра: побежать за курсором по своей опоре (COMPANION.md, этап 4). */
+  chase(x: number): void {
+    const surface = this.#spot?.surface;
+    if (this.phase !== "rest" || surface === undefined) return;
+    if (surface.kind !== "edge" && surface.kind !== "floor") return;
+    this.goTo(spotOn(surface, x, this.y));
+  }
+
   /** Прогулка по своей опоре — когда, решает «Разум» (MIND §4, действие «прогулка»). */
   stroll(): void {
     const surface = this.#spot?.surface;
