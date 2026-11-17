@@ -15,7 +15,10 @@ const PET_SERIES_S = 3;
 /** После тряски / возвращения гладят «по-особому» столько секунд. */
 const AFTER_S = 30;
 
-type Say = (text: string) => void;
+/** Прямой ответ на действие пользователя или реакция на событие — голосу «Разума» (MIND §3.5). */
+type Say = (text: string, kind: "direct" | "reaction") => void;
+/** Ответы на то, что пользователь сделал с персонажем, — без очереди. */
+const DIRECT: ReadonlySet<Trigger> = new Set(["dizzy", "toss"]);
 
 export class Reactions {
   readonly #brain: Brain;
@@ -43,14 +46,14 @@ export class Reactions {
   /** Сработать с перезарядкой: фраза из словаря; `false` — ещё рано. */
   fire(kind: Exclude<Trigger, "greet">, now: number): boolean {
     if (!this.#cool.ready(kind, now)) return false;
-    this.#speak(locale.t.companion.triggers[kind]);
+    this.#speak(locale.t.companion.triggers[kind], DIRECT.has(kind) ? "direct" : "reaction");
     return true;
   }
 
   /** Спутник появился (T6): приветствие по времени суток и взмах рукой. */
   greet(now: number): void {
     if (!this.#cool.ready("greet", now)) return;
-    this.#speak(locale.t.companion.triggers.greet[timeOfDay(new Date().getHours())]);
+    this.#speak(locale.t.companion.triggers.greet[timeOfDay(new Date().getHours())], "reaction");
     this.#brain.emote("wave", 2);
   }
 
@@ -117,7 +120,7 @@ export class Reactions {
       this.#random,
     );
     if (section !== null)
-      this.#say(petLine(petPhrases(locale.lang)[section], this.#recent, this.#random));
+      this.#say(petLine(petPhrases(locale.lang)[section], this.#recent, this.#random), "direct");
   }
 
   /** Раз в кадр: отложенная «кружится», ночь (T16) — раз в минуту проверка часа. */
@@ -136,11 +139,11 @@ export class Reactions {
 
   /** Начал лезть по стене — иногда комментирует. */
   climbing(): void {
-    if (this.#random() < 0.4) this.#speak(locale.t.companion.triggers.climb);
+    if (this.#random() < 0.4) this.#speak(locale.t.companion.triggers.climb, "reaction");
   }
 
-  #speak(list: readonly string[]): void {
+  #speak(list: readonly string[], kind: "direct" | "reaction"): void {
     const line = petLine(list, this.#recent, this.#random);
-    if (line !== "") this.#say(line);
+    if (line !== "") this.#say(line, kind);
   }
 }

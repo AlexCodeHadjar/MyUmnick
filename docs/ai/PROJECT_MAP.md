@@ -923,7 +923,7 @@
 - `DEFAULT_PACK` — `ui/src/features/companion/pack.ts:177` — Встроенный персонаж (`ui/public/characters/default/`; подгонка — `docs/character/README.md`).
 - `loadPoses` — `ui/src/features/companion/pack.ts:210` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
 - `placeholderPose` — `ui/src/features/companion/placeholder.ts:259` — Силуэт позы: широкие линии с градиентом палитры окна, круг головы, подпись с именем позы.
-- `Reactions` — `ui/src/features/companion/reactions.ts:20` — —
+- `Reactions` — `ui/src/features/companion/reactions.ts:23` — —
 - `RemarkTopic` — `ui/src/features/companion/remarks.ts:9` — —
 - `topicOf` — `ui/src/features/companion/remarks.ts:74` — —
 - `TimeOfDay` — `ui/src/features/companion/remarks.ts:79` — —
@@ -962,6 +962,31 @@
 - `World` — `ui/src/features/companion/world.ts:24` — —
 - `rectToCss` — `ui/src/features/companion/world.ts:32` — —
 - `worldToCss` — `ui/src/features/companion/world.ts:42` — Вся картина в CSS-пикселях слоя.
+
+## ui/src/features/companion/mind
+«Разум» спутника (MIND.md, ADR-0051): картина мира со сглаживанием, потребности, стимулы, арбитр
+
+- `ActivityId` — `ui/src/features/companion/mind/activities.ts:8` — —
+- `MindContext` — `ui/src/features/companion/mind/activities.ts:12` — Что арбитр знает о мире в момент оценки (сглаженное, MIND §3.1–3.3).
+- `ACTIVITIES` — `ui/src/features/companion/mind/activities.ts:43` — —
+- `Band` — `ui/src/features/companion/mind/arbiter.ts:6` — Арбитр действий (MIND §3.4): utility AI с защитой от метаний — группы важности, минимальная длительность,
+- `Activity` — `ui/src/features/companion/mind/arbiter.ts:8` — —
+- `Choice` — `ui/src/features/companion/mind/arbiter.ts:23` — —
+- `Arbiter` — `ui/src/features/companion/mind/arbiter.ts:35` — —
+- `clamp01` — `ui/src/features/companion/mind/curves.ts:2` — Кривые отклика utility AI (MIND §2, §4): вход 0…1 → оценка 0…1.
+- `smoothstep` — `ui/src/features/companion/mind/curves.ts:7` — Сглаженная ступень между `from` и `to`: ниже — 0, выше — 1, между — плавно.
+- `need` — `ui/src/features/companion/mind/curves.ts:13` — Потребность: до 0,4 почти не тянет, к 0,9 — тянет сильно.
+- `Drive` — `ui/src/features/companion/mind/drives.ts:7` — —
+- `DriveContext` — `ui/src/features/companion/mind/drives.ts:12` — —
+- `Drives` — `ui/src/features/companion/mind/drives.ts:20` — —
+- `Fact` — `ui/src/features/companion/mind/fact.ts:6` — Сглаженный факт картины мира (MIND §3.1): становится правдой, если сырой сигнал продержался
+- `Senses` — `ui/src/features/companion/mind/index.ts:19` — Сырые наблюдения кадра: сглаживает их сам «Разум».
+- `Mind` — `ui/src/features/companion/mind/index.ts:44` — —
+- `Stimulus` — `ui/src/features/companion/mind/stimuli.ts:5` — Стимулы (MIND §3.3, «разрешители» Блумберга): событие не командует действием, а на время поднимает
+- `Stimuli` — `ui/src/features/companion/mind/stimuli.ts:16` — —
+- `VoiceKind` — `ui/src/features/companion/mind/voice.ts:7` — Голос спутника (MIND §3.5): все его фразы — через один регулятор. Прямые ответы (гладят, трясут) —
+- `VoiceState` — `ui/src/features/companion/mind/voice.ts:22` — —
+- `Voice` — `ui/src/features/companion/mind/voice.ts:29` — —
 
 ## ui/src/features/companion/phrases
 Выбор фразы поглаживания (BEHAVIOR §7): раздел — по номеру клика в серии и по состоянию спутника,

@@ -220,6 +220,15 @@ export class Brain {
     this.#rest(spot);
   }
 
+  /** Прогулка по своей опоре — когда, решает «Разум» (MIND §4, действие «прогулка»). */
+  stroll(): void {
+    const surface = this.#spot?.surface;
+    if (this.phase !== "rest" || surface === undefined) return;
+    if (surface.kind !== "edge" && surface.kind !== "floor") return;
+    const reach = this.calm ? 320 : 500;
+    this.goTo(spotOn(surface, this.x + (this.#random() - 0.5) * reach, this.y));
+  }
+
   /** Перейти на место: близко — пешком или прыжком, далеко — молнией. */
   goTo(spot: Spot): void {
     if (this.phase === "held" || this.phase === "hidden") return;

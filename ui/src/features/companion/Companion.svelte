@@ -30,7 +30,8 @@
     type CompanionSettings,
   } from "./settings";
   import { CANVAS_RATIO } from "./pack";
-  import { choosePoke, nextPause, remark, topicOf, type RemarkTopic, type Target } from "./remarks";
+  import { choosePoke, remark, topicOf, type RemarkTopic, type Target } from "./remarks";
+  import { Mind, type ActivityId, type Senses, type VoiceKind } from "./mind";
   import { sendRadioCommand, type RadioFeed, type RadioMode } from "../radio";
   import { Reactions } from "./reactions";
   import { watching } from "./watch";
@@ -48,7 +49,6 @@
 
   const HOLD_MS = 150;
   const MOVE_PX = 6;
-  const FOLLOW_DELAY_MS = 250;
 
   let canvas: HTMLCanvasElement | undefined = $state();
   let settings = $state<CompanionSettings>(loadSettings(window.localStorage));
@@ -71,26 +71,29 @@
   let monitor: Rect | null = null;
   let shown = false;
   let lastFocus = "";
-  let followTimer: ReturnType<typeof setTimeout> | undefined;
   let attachedHost: number | null = null;
   const look = { mouth: 0, speaking: false, hue: EMOTION_HUE.neutral, attention: 0 };
   let replyText = "";
   let bubbleUntil = 0;
   let listening = false;
-  // Инициатива: сам говорит что-нибудь к месту (remarks.ts).
-  let remarkAt = performance.now() + (40 + Math.random() * 50) * 1000;
+  // «Разум» (MIND.md, ADR-0051): одно место, где решается, что делать и когда говорить.
+  const mind = new Mind();
+  let assistant = false;
+  /** Фраза о программе (привычка дня, «мечешься») для ближайшего «поговорить». */
+  let topicLine: string | null = null;
+  let watchLineAt = 0;
+  /** Когда последний раз двигалась мышь: пользователь занят — общаться хочется меньше. */
+  let movedAt = 0;
   let lastRemark = "";
-  let lastRemarkTime = 0;
   let topic: RemarkTopic = "other";
   let poking = false;
   /** Куда закрепится при отпускании перетаскиваемого персонажа. */
   let drop: Spot | null = null;
   let onDesktop = false;
   let icons: Target[] = [];
-  let desktopAt = Infinity;
   // Триггеры и реакции (BEHAVIOR §3): тряска, бросок, возвращение, ночь, поглаживания.
-  const reactions = new Reactions(brain, (text) => {
-    say(text, performance.now());
+  const reactions = new Reactions(brain, (text, kind) => {
+    speak(text, kind);
   });
   // Настроение, привычки, сайты, любимый значок (BEHAVIOR §2, §4.4, §5, §6).
   const life = new Life(brain, window.localStorage);
@@ -100,8 +103,6 @@
   // «Смотрим вместе» (BEHAVIOR §11): выбранная вкладка браузера, проверка раз в секунду.
   let tab: string | null = null;
   let tabAt = 0;
-  let watchAt = 0;
-  let watchOff = 0;
   let cornerPending = false;
   let cursor: { x: number; y: number } | null = null;
   let cursorFedAt = 0;
@@ -119,8 +120,8 @@
   }
 
   function applyBehavior(): void {
-    // «Следовать» тоже иногда прогуливается сам (инициатива), «Сидеть здесь» — нет.
-    brain.wander = settings.behavior !== "stay";
+    // Когда гулять, решает «Разум» (MIND §4), а не таймер тела.
+    brain.wander = false;
     brain.calm = settings.behavior === "follow";
     brain.chest = settings.height * 0.55;
     brain.figure = settings.height * CANVAS_RATIO;
@@ -206,22 +207,9 @@
     const key = JSON.stringify(raw.focus);
     if (key !== lastFocus) {
       lastFocus = key;
-      scheduleFollow(world.focus);
       noticeTopic(world.focus);
       void enterDesktop(world.focus.kind === "desktop");
     }
-  }
-
-  function scheduleFollow(focus: Focus): void {
-    clearTimeout(followTimer);
-    // Быстрый Alt+Tab не дёргает спутника: переход — если окно осталось активным 0,25 с.
-    followTimer = setTimeout(() => {
-      if (world === null || settings.behavior !== "follow" || gesture !== "none") return;
-      if (brain.watching || brain.quiet) return;
-      if (brain.phase !== "rest") return;
-      const spot = followSpot(world, brain.surfaceList, focus);
-      if (spot !== null && hostOf(spot) !== hostOf(brain.spot)) brain.goTo(spot);
-    }, FOLLOW_DELAY_MS);
   }
 
   /** Радио сменило состояние: поёт или слушает, фраза на включение, смену станции, паузу, выключение. */
@@ -241,7 +229,7 @@
               ? lines.switch
               : null;
     const line = list?.[Math.floor(Math.random() * list.length)];
-    if (line !== undefined && shown) say(line, performance.now());
+    if (line !== undefined && shown) speak(line, "reaction");
     radio = mode === "off" ? null : next;
     // Поёт: рот — по громкости потока, «говорит» — значит, не комментирует и не гуляет.
     if (mode === "playing" && next !== null && !speaking) {
@@ -254,6 +242,7 @@
     if (isLang(feed.lang) && locale.lang !== feed.lang) locale.set(feed.lang);
     look.mouth = feed.mouth;
     look.speaking = feed.speaking;
+    assistant = feed.speaking;
     onRadio(feed.radio ?? null, feed.speaking);
     const hue = new Map<string, number>(Object.entries(EMOTION_HUE)).get(feed.emotion);
     look.hue = hue ?? EMOTION_HUE.neutral;
@@ -311,7 +300,6 @@
     void invoke("companion_attach", { host });
   }
 
-  /** Перешли в программу другого рода — иногда сразу прокомментировать, но не чаще раза в 45 с. */
   /** Рабочий стол: значки — опоры и цели; спутник садится на них и иногда перепрыгивает или тычет. */
   async function enterDesktop(desktop: boolean): Promise<void> {
     onDesktop = desktop;
@@ -321,7 +309,6 @@
       return;
     }
     await refreshIcons();
-    desktopAt = performance.now() + 1200;
   }
 
   async function refreshIcons(): Promise<void> {
@@ -335,14 +322,13 @@
     brain.setIcons(icons.map((one) => one.rect));
   }
 
-  /** Перепрыгнуть на значок (с репликой) или ткнуть в него. */
-  async function desktopAct(now: number): Promise<void> {
-    desktopAt = now + (25 + Math.random() * 35) * 1000;
+  /** «Прыжок по значкам» (MIND §4): перепрыгнуть на значок с репликой или ткнуть в него. */
+  async function hop(): Promise<void> {
     await refreshIcons();
     const chosen = life.icon(icons);
     if (chosen === undefined || brain.phase !== "rest" || gesture !== "none") return;
     if (Math.random() < 0.4) {
-      void poke(now);
+      void poke();
       return;
     }
     const spot = snap(brain.surfaceList, chosen.rect.x + chosen.rect.w / 2, chosen.rect.y + 6, 30);
@@ -351,37 +337,34 @@
     const lines = locale.t.companion.perch;
     const perch = lines[Math.floor(Math.random() * lines.length)];
     const line = life.iconLine(chosen.name, icons.length) ?? perch?.(chosen.name);
-    if (line !== undefined)
-      setTimeout(() => {
-        say(line, performance.now());
-      }, 900);
+    if (line !== undefined) speak(line, "reaction");
   }
 
+  /** Сменилась программа — стимул «Разуму» (MIND §3.3): сам решит, идти ли к окну и что сказать. */
   function noticeTopic(focus: Focus): void {
     const app = focus.kind === "desktop" ? "" : focus.app;
     const next = topicOf(app, focus.kind === "desktop");
+    const now = performance.now() / 1000;
+    mind.feel("focus", now);
     if (next === topic) return;
     topic = next;
     tab = null;
     tabAt = 0;
-    const now = performance.now();
-    // Первый раз за день в программе или мечется между окнами — сразу к месту (BEHAVIOR §4.4).
-    const habit = life.focus(next, now / 1000);
-    if (habit !== null) {
-      setTimeout(() => {
-        if (canSpeak(performance.now())) say(habit, performance.now());
-      }, 1500);
-      return;
-    }
-    if (now - lastRemarkTime > 45_000 && Math.random() < 0.35) remarkAt = now + 1500;
+    // Первый раз за день в программе или мечется — фраза для ближайшего «поговорить» (BEHAVIOR §4.4).
+    topicLine = life.focus(next, now) ?? topicLine;
   }
 
-  function say(text: string, now: number): void {
+  /** Предложить фразу голосу «Разума» (MIND §3.5): когда сказать — решает он. */
+  function speak(text: string, kind: VoiceKind): void {
+    if (text !== "") mind.voice.offer(text, kind, performance.now() / 1000);
+  }
+
+  /** Показать фразу в облачке (её отпустил голос). */
+  function show(text: string, now: number): void {
     listening = false;
     replyText = text;
     bubbleUntil = now + 6000;
     lastRemark = text;
-    lastRemarkTime = now;
   }
 
   function pickOne(list: readonly string[]): string {
@@ -400,94 +383,104 @@
     tab = found.find((one) => one.kind === "tab" && one.selected === true)?.name ?? null;
   }
 
-  /**
-   * Раз в секунду: идёт ли видео — садится в угол смотреть с попкорном; полный экран без видео — тихо
-   * сидит в углу. Видео кончилось — встаёт через 3 с (короткие паузы и переключения не считаются).
-   */
-  function updateWatch(now: number): void {
-    if (now < watchAt || world === null) return;
-    watchAt = now + 1000;
+  /** Что видит спутник в этом кадре — сырьё для «Разума» (сглаживает он сам). */
+  function senses(now: number): Senses {
     if (topic === "browser" && now >= tabAt) {
       tabAt = now + 15_000;
       void refreshTab();
     }
-    const fullscreen = world.fullscreen;
-    const want = shown && watching({ app: appName(), topic, fullscreen, tab });
-    if (want && !brain.watching) {
-      brain.watching = true;
-      cornerPending = true;
-      setTimeout(() => {
-        if (brain.watching && shown)
-          say(pickOne(locale.t.companion.watch.start), performance.now());
-      }, 1500);
-    }
-    watchOff = !want && brain.watching ? watchOff || now + 3000 : 0;
-    if (watchOff !== 0 && now >= watchOff) {
-      watchOff = 0;
+    const fullscreen = shown && (world?.fullscreen ?? false);
+    return {
+      resting: shown && brain.phase === "rest" && gesture === "none" && !poking,
+      listening: assistant || listening,
+      singing: shown && brain.music === "playing",
+      video: shown && watching({ app: appName(), topic, fullscreen, tab }),
+      fullscreen,
+      desktop: onDesktop,
+      behavior: settings.behavior,
+      energy: life.mood.energy,
+      userBusy: now - movedAt < 60_000,
+      hour: new Date().getHours(),
+    };
+  }
+
+  /** Исполнить действие, выбранное «Разумом» (MIND §4), и выйти из прежнего. */
+  function act(id: ActivityId, previous: string, now: number): void {
+    if (previous === "watch") {
       brain.watching = false;
-      say(pickOne(locale.t.companion.watch.end), now);
+      speak(pickOne(locale.t.companion.watch.end), "reaction");
+    }
+    if (previous === "hush") brain.quiet = false;
+    if ((previous === "watch" || previous === "hush") && world !== null && gesture === "none") {
       const home = followSpot(world, brain.surfaceList, world.focus);
-      if (home !== null && gesture === "none") brain.goTo(home);
+      if (home !== null) brain.goTo(home);
     }
-    const quiet = shown && fullscreen && !want;
-    if (quiet && !brain.quiet) {
+    if (id === "watch" || id === "hush") {
+      brain.watching = id === "watch";
+      brain.quiet = id === "hush";
       cornerPending = true;
-      if (Math.random() < 0.5) say(pickOne(locale.t.companion.watch.quiet), now);
+      watchLineAt = now + (240 + Math.random() * 180) * 1000;
+      const lines = locale.t.companion.watch;
+      if (id === "watch") speak(pickOne(lines.start), "reaction");
+      else if (Math.random() < 0.5) speak(pickOne(lines.quiet), "reaction");
+    } else if (id === "follow") goFollow();
+    else if (id === "chat") void chat();
+    else if (id === "poke") void poke();
+    else if (id === "hop") void hop();
+    else if (id === "wander") brain.stroll();
+  }
+
+  function goFollow(): void {
+    if (world === null) return;
+    const spot = followSpot(world, brain.surfaceList, world.focus);
+    if (spot !== null && hostOf(spot) !== hostOf(brain.spot)) brain.goTo(spot);
+  }
+
+  /** «Поговорить»: фраза о программе, привычке, сайте или по настроению. */
+  async function chat(): Promise<void> {
+    const ready = topicLine ?? life.remark(topic);
+    topicLine = null;
+    if (ready !== null) {
+      speak(ready, "ambient");
+      return;
     }
-    brain.quiet = quiet;
+    const hour = new Date().getHours();
+    let line: string | null = null;
+    if (topic === "browser") {
+      const found = await invoke<Target[]>("companion_targets").catch(() => []);
+      line = life.browser(found.filter((one) => one.kind === "tab").map((one) => one.name));
+    }
+    line ??= remark(locale.t, { topic, hour, idleS: brain.idleSeconds }, Math.random, lastRemark);
+    speak(line, "ambient");
+  }
+
+  /** Раз в кадр: решение «Разума», режимы в углу, голос. */
+  function think(now: number): void {
+    const choice = mind.update(now / 1000, senses(now));
+    if (choice !== null) act(choice.id, choice.previous, now);
     if (cornerPending && brain.phase === "rest" && gesture === "none") {
       cornerPending = false;
       const corner = floorSpot(brain.surfaceList, true);
       if (corner !== null) brain.goTo(corner);
     }
-  }
-
-  /** Можно ли сейчас сказать фразу: на экране, стоит, не говорит и не держат. */
-  function canSpeak(now: number): boolean {
-    const busy = look.speaking || listening || now < bubbleUntil || gesture !== "none";
-    return shown && brain.phase === "rest" && !busy && !poking;
-  }
-
-  /** Про браузер — по названиям вкладок; ничего не узнал — обычная фраза о браузере. */
-  async function browserRemark(now: number): Promise<void> {
-    const found = await invoke<Target[]>("companion_targets").catch(() => []);
-    const tabs = found.filter((one) => one.kind === "tab").map((one) => one.name);
-    const line =
-      life.browser(tabs) ??
-      remark(locale.t, { topic, hour: new Date().getHours(), idleS: 0 }, Math.random, lastRemark);
-    if (canSpeak(performance.now())) say(line, now);
-  }
-
-  function maybeRemark(now: number): void {
-    const busy = look.speaking || listening || now < bubbleUntil || gesture !== "none";
-    if (!shown || brain.phase !== "rest" || busy || poking || now < remarkAt || brain.quiet) return;
-    if (brain.watching) {
-      // Смотрим вместе: редкие тихие реплики, без «тыканья».
-      remarkAt = now + (240 + Math.random() * 180) * 1000;
-      say(pickOne(locale.t.companion.watch.during), now);
-      return;
+    // Смотрим вместе: редкая тихая реплика, если голос разрешит.
+    if (brain.watching && now >= watchLineAt) {
+      watchLineAt = now + (240 + Math.random() * 180) * 1000;
+      speak(pickOne(locale.t.companion.watch.during), "ambient");
     }
-    remarkAt = now + nextPause(Math.random) * 1000;
-    // Примерно каждая третья выходка — «потыкать» в кнопку или значок (ADR-0048).
-    if (Math.random() < 0.35) {
-      void poke(now);
-      return;
+    // Дошёл, допрыгнул, долез — 2–4 с «осматривается», выходки не начинаются (MIND §3.4).
+    if (brain.phase === "rest" && lastPhase !== "rest" && lastPhase !== "hidden") {
+      mind.settle(now / 1000, 2 + Math.random() * 2);
     }
-    const hour = new Date().getHours();
-    const own = life.remark(topic);
-    if (own !== null) {
-      say(own, now);
-      return;
-    }
-    if (topic === "browser" && Math.random() < 0.5) {
-      void browserRemark(now);
-      return;
-    }
-    say(remark(locale.t, { topic, hour, idleS: brain.idleSeconds }, Math.random, lastRemark), now);
+    const line = mind.voice.next(now / 1000, {
+      blocked: !shown || assistant || listening || gesture !== "none",
+      bubble: now < bubbleUntil,
+    });
+    if (line !== null) show(line, now);
   }
 
   /** Подлететь к элементу экрана, ткнуть, сказать его название и вернуться. Нечего тыкать — фраза. */
-  async function poke(now: number): Promise<void> {
+  async function poke(): Promise<void> {
     if (world === null || monitor === null) return;
     poking = true;
     const origin = monitor;
@@ -498,24 +491,16 @@
     );
     if (near === null || brain.phase !== "rest" || !shown) {
       poking = false;
-      say(
-        remark(
-          locale.t,
-          { topic, hour: new Date().getHours(), idleS: brain.idleSeconds },
-          Math.random,
-          lastRemark,
-        ),
-        now,
-      );
+      const hour = new Date().getHours();
+      const idleS = brain.idleSeconds;
+      speak(remark(locale.t, { topic, hour, idleS }, Math.random, lastRemark), "ambient");
       return;
     }
     const back = brain.spot;
     brain.visit(near.x, near.y, "poke", near.facing);
     const lines = locale.t.companion.poke;
     const line = lines[Math.floor(Math.random() * lines.length)];
-    setTimeout(() => {
-      if (line !== undefined) say(line(near.name), performance.now());
-    }, 700);
+    if (line !== undefined) speak(line(near.name), "reaction");
     setTimeout(() => {
       poking = false;
       if (brain.phase !== "rest" || gesture !== "none") return;
@@ -547,17 +532,7 @@
   }
 
   function frame(dt: number, now: number): void {
-    maybeRemark(now);
-    updateWatch(now);
-    const free =
-      shown &&
-      brain.phase === "rest" &&
-      gesture === "none" &&
-      !poking &&
-      !look.speaking &&
-      !brain.watching &&
-      !brain.quiet;
-    if (onDesktop && free && settings.behavior !== "stay" && now >= desktopAt) void desktopAct(now);
+    think(now);
     // Своя инициатива — фраза в облачке или «тыканье»: на мышь в это время не смотрит.
     brain.busy = poking || (!listening && now < bubbleUntil && replyText === lastRemark);
     if (press !== null && gesture === "none" && now - press.t >= HOLD_MS) {
@@ -567,7 +542,7 @@
     brain.tick(dt);
     reactions.tick(now / 1000);
     const long = life.tick(now / 1000);
-    if (long !== null && canSpeak(now)) say(long, now);
+    if (long !== null) speak(long, "ambient");
     if (brain.phase === "climb" && lastPhase !== "climb") reactions.climbing();
     lastPhase = brain.phase;
     // Курсор стоит — событий нет, а «что смотришь?» (T8) ждёт 4 с: подкармливаем 4 раза в секунду.
@@ -728,6 +703,7 @@
         brain.cursorX = event.payload[0];
         cursor = { x: event.payload[0], y: event.payload[1] };
         cursorFedAt = performance.now();
+        movedAt = cursorFedAt;
         reactions.cursor(cursor.x, cursor.y, cursorFedAt / 1000, shown);
       }),
       listen<Feed>("companion-feed", (event) => {
