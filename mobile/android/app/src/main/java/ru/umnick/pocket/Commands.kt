@@ -7,8 +7,8 @@ object Commands {
         data class Write(val text: String) : Command
     }
 
-    private val NAME = Regex("^(умник|умничка)[,!.\s]*")
-    private val WRITE = Regex("^(запиши|записать|добавь|заметка|в блокнот)(\s+(в блокнот|в заметки|заметку))?[:,\s]*")
+    private val NAME = Regex("""^(умник|умничка)[,!.\s]*""")
+    private val WRITE = Regex("""^(запиши|записать|добавь|заметка|в блокнот)(\s+(в блокнот|в заметки|заметку))?[:,\s]*""")
     private val READ = Regex("(прочитай|прочти|какие|покажи).*(замет|блокнот)")
 
     fun stripName(text: String): String = text.trim().lowercase().replace(NAME, "").trim()
