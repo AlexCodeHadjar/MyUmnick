@@ -133,6 +133,9 @@ describe("поведение", () => {
     expect(brain.body().pose).toBe("laydown");
     brain.wake();
     brain.tick(0.016);
+    // Разбудили — сначала потягивается, потом садится как сидел.
+    expect(brain.body().pose).toBe("yawn");
+    for (let t = 0; t < 2.5; t += 0.05) brain.tick(0.05);
     expect(brain.body().pose).toBe("sit_edge");
   });
 });

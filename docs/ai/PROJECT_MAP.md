@@ -676,7 +676,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:484` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:498` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).
@@ -862,13 +862,21 @@
 ## ui/src/features/companion/behavior
 Подпакет «behavior» спутника: импорт снаружи — только через этот файл (R-06).
 
+- `Bond` — `ui/src/features/companion/behavior/bond.ts:6` — Привязанность спутника к пользователю (COMPANION.md, этап 3): поглаживания, разговоры и проведённое
+- `BondEvent` — `ui/src/features/companion/behavior/bond.ts:13` — —
+- `BondTone` — `ui/src/features/companion/behavior/bond.ts:14` — —
+- `BOND_KEY` — `ui/src/features/companion/behavior/bond.ts:16` — —
+- `settle` — `ui/src/features/companion/behavior/bond.ts:22` — Забывание: без внимания привязанность тает к стартовой с полураспадом в неделю.
+- `grow` — `ui/src/features/companion/behavior/bond.ts:28` — Событие внимания: чем выше привязанность, тем медленнее она растёт дальше.
+- `bondTone` — `ui/src/features/companion/behavior/bond.ts:33` — —
+- `parseBond` — `ui/src/features/companion/behavior/bond.ts:39` — —
 - `Habit` — `ui/src/features/companion/behavior/habits.ts:8` — —
 - `AppWatch` — `ui/src/features/companion/behavior/habits.ts:25` — —
 - `FAVORITES_KEY` — `ui/src/features/companion/behavior/habits.ts:67` — —
 - `pickIcon` — `ui/src/features/companion/behavior/habits.ts:70` — Значок, на который садиться: чаще тот, где чаще гладили (вес 1 + число поглаживаний).
 - `isRecycleBin` — `ui/src/features/companion/behavior/habits.ts:84` — —
 - `parseFavorites` — `ui/src/features/companion/behavior/habits.ts:88` — —
-- `Life` — `ui/src/features/companion/behavior/life.ts:33` — —
+- `Life` — `ui/src/features/companion/behavior/life.ts:34` — —
 - `Mood` — `ui/src/features/companion/behavior/mood.ts:6` — Настроение спутника (BEHAVIOR §2): бодрость и радость 0…1. Меняются медленно, определяют, когда он
 - `MoodEvent` — `ui/src/features/companion/behavior/mood.ts:13` — —
 - `MoodTone` — `ui/src/features/companion/behavior/mood.ts:14` — —
@@ -904,7 +912,7 @@
 - `Situation` — `ui/src/features/companion/controller/conductor.ts:28` — Что от контроллера нужно для картины кадра.
 - `Conductor` — `ui/src/features/companion/controller/conductor.ts:43` — —
 - `Feed` — `ui/src/features/companion/controller/controller.ts:24` — Подача главного окна (`companion-feed`, ADR-0045, ADR-0049).
-- `CompanionController` — `ui/src/features/companion/controller/controller.ts:41` — —
+- `CompanionController` — `ui/src/features/companion/controller/controller.ts:48` — —
 - `Gesture` — `ui/src/features/companion/controller/gestures.ts:11` — —
 - `GestureHooks` — `ui/src/features/companion/controller/gestures.ts:19` — —
 - `Gestures` — `ui/src/features/companion/controller/gestures.ts:28` — —
@@ -1037,7 +1045,8 @@
 - `floorSpot` — `ui/src/features/companion/space/anchors.ts:228` — Место на «полу» у правого края — рабочий стол или развёрнутое окно.
 - `sameSurface` — `ui/src/features/companion/space/anchors.ts:237` — Та же опора в новой картине (окно сдвинули): по хозяину и виду.
 - `Climb` — `ui/src/features/companion/space/climb.ts:12` — —
-- `climbRoute` — `ui/src/features/companion/space/climb.ts:25` — Маршрут с места `from` на верх окна `to` или `null` (прыгать). `bottom` — низ окна-цели: окно должно
+- `climbRoute` — `ui/src/features/companion/space/climb.ts:27` — Маршрут с места `from` на верх окна `to` или `null` (прыгать). `bottom` — низ окна-цели: окно должно
+- `descendRoute` — `ui/src/features/companion/space/climb.ts:59` — Маршрут спуска с крыши окна `from` вниз на опору `to` или `null` (прыгать): дойти по крыше до края над
 - `followSpot` — `ui/src/features/companion/space/control.ts:9` — Место для активного окна (раздел 4.1): край окна, «пол» у правого края или угол экрана.
 - `hostOf` — `ui/src/features/companion/space/control.ts:20` — Хозяин места (окно) или `null` для «пола».
 - `Release` — `ui/src/features/companion/space/control.ts:24` — —

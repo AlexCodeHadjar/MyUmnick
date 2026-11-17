@@ -11,7 +11,7 @@ import { Brain } from "../body";
 import { CANVAS_RATIO, type CompanionStage, type Look } from "../look";
 import { Mind, Sanity, type Fix, type VoiceKind } from "../mind";
 import { watchPhrases } from "../phrases";
-import { hostOf, ICONS, type Rect, type World } from "../space";
+import { hostOf, ICONS, type Pose, type Rect, type World } from "../space";
 import { shouldShow, type CompanionSettings } from "../settings";
 import { Conductor } from "./conductor";
 import { Gestures } from "./gestures";
@@ -31,6 +31,13 @@ export interface Feed {
 }
 
 const GREET_DELAY_MS = 900;
+/** Эмоция → короткая поза тела и её длительность (с); кадры уже есть (FRAMES-2). */
+const EMOTION_POSE: ReadonlyMap<string, readonly [Pose, number]> = new Map([
+  ["happy", ["wave", 1.6]],
+  ["embarrassed", ["wave", 1.2]],
+  ["sad", ["sit_corner", 3]],
+  ["surprised", ["float", 0.8]],
+] as const);
 const CURSOR_FEED_MS = 250;
 const BUSY_MS = 60_000;
 
@@ -69,6 +76,7 @@ export class CompanionController {
   #attached: number | null = null;
   #lastHit = "";
   #lastPhase = "hidden";
+  #emotion = "neutral";
 
   constructor(ports: Ports, storage: Storage, settings: CompanionSettings) {
     this.#ports = ports;
@@ -127,7 +135,7 @@ export class CompanionController {
       // Вышел из портала — поздоровался (T6).
       if (arrived)
         setTimeout(() => {
-          this.reactions.greet(performance.now() / 1000);
+          this.#greet();
         }, GREET_DELAY_MS);
     });
   }
@@ -178,10 +186,30 @@ export class CompanionController {
     this.#onRadio(feed.radio ?? null, feed.speaking);
     look.hue =
       new Map<string, number>(Object.entries(EMOTION_HUE)).get(feed.emotion) ?? EMOTION_HUE.neutral;
+    this.#feel(feed.emotion);
     if (!feed.speaking) return;
     this.brain.wake();
     // Новый ответ ассистента — с ним говорят, радость чуть растёт (BEHAVIOR §2).
     if (this.speech.reply(feed.text, performance.now())) this.life.event("talk");
+  }
+
+  /** Вышел из портала — поздоровался (T6): по привязанности тепло или сдержанно, иначе обычно. */
+  #greet(): void {
+    const special = this.life.greeting();
+    if (special === null) {
+      this.reactions.greet(performance.now() / 1000);
+      return;
+    }
+    this.speak(special, "reaction");
+    this.brain.emote("wave", 2);
+  }
+
+  /** Эмоция ответа ассистента сменилась — показать её телом коротко (COMPANION.md, этап 2). */
+  #feel(emotion: string): void {
+    if (emotion === this.#emotion) return;
+    this.#emotion = emotion;
+    const pose = EMOTION_POSE.get(emotion);
+    if (pose !== undefined && !this.brain.watching) this.brain.emote(pose[0], pose[1]);
   }
 
   /** Зов «Умник», пока спутник на экране: облачко вместо окна. */

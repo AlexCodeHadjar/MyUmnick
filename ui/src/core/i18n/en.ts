@@ -195,6 +195,20 @@ export const en: Messages = {
       ],
       climb: ["Let me climb up!", "Climbing!", "Whoa, that's high!"],
     },
+    bond: {
+      warm: [
+        "You're back! I'm so happy to see you!",
+        "My favorite human is here again!",
+        "Yay, it's you! I missed you.",
+        "Hi-hi! It's a good day if you're here.",
+      ],
+      cool: [
+        "Oh, hi.",
+        "Well, hello. Long time no see.",
+        "Hi… I'm here if you need me.",
+        "Oh, it's you. Hi.",
+      ],
+    },
     mood: {
       low: [
         "I'm a bit sad…",

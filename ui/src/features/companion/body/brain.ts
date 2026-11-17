@@ -15,7 +15,7 @@ import {
   type Spot,
   type Surface,
 } from "../space";
-import { climbRoute, type Climb } from "../space";
+import { climbRoute, descendRoute, type Climb } from "../space";
 import { fitScreen } from "../space";
 import type { Rect, World } from "../space";
 import { poseOf } from "./pose";
@@ -212,7 +212,7 @@ export class Brain {
     if (this.phase === "held" || this.phase === "hidden") return;
     const distance = Math.hypot(spot.x - this.x, spot.y - this.y);
     if (distance < 4) return;
-    if (this.#tryClimb(spot)) return;
+    if (this.#tryClimb(spot) || this.#tryDescend(spot)) return;
     if (distance >= WALK_LIMIT) {
       this.bolt(spot, [spot.x, spot.y]);
       return;
@@ -229,7 +229,19 @@ export class Brain {
     const seat = this.#world?.seats.find((one) => one.id === host);
     if (seat === undefined) return false;
     const route = climbRoute(this.#surfaces, from, spot, seat.rect.y + seat.rect.h);
-    if (route === null) return false;
+    return route !== null && this.#follow(route);
+  }
+
+  /** С крыши окна вниз — сползает по стене, а не прыгает с высоты (COMPANION.md, этап 2). */
+  #tryDescend(spot: Spot): boolean {
+    const from = this.#spot;
+    if (this.phase !== "rest" || from === null) return false;
+    const route = descendRoute(this.#surfaces, from, spot);
+    return route !== null && this.#follow(route);
+  }
+
+  /** Пойти по маршруту: к началу стены пешком, потом — лезть. */
+  #follow(route: Climb): boolean {
     this.#climb = route;
     if (Math.abs(route.foot.x - this.x) < 4) this.#startClimb();
     else this.#start("walk", route.foot);
@@ -246,6 +258,12 @@ export class Brain {
     // Стена справа от персонажа (`left` — левый бок окна) — лицом к ней, вправо.
     this.facing = climb.side.side === "left" ? 1 : -1;
     this.#climbBase = climb.side.x;
+    if (climb.down === true) {
+      // Перелез через край крыши на стену: середина тела чуть ниже края.
+      this.x = climb.target.x;
+      this.y += this.figure * 0.25;
+      return;
+    }
     // Точка опоры «лезет» — середина тела, а не ступни: поднять её на полроста.
     this.y -= this.figure * 0.45;
   }
@@ -254,6 +272,14 @@ export class Brain {
     const climb = this.#climb;
     if (climb === null) {
       this.#fall();
+      return;
+    }
+    if (climb.down === true) {
+      // Спуск: ноги дошли до опоры внизу — спрыгнул на неё.
+      this.y += CLIMB_SPEED * 1.4 * dt;
+      if (this.y < climb.target.y - this.figure * 0.5) return;
+      this.#climb = null;
+      this.#start("jump", climb.target);
       return;
     }
     this.y -= CLIMB_SPEED * dt;
@@ -276,7 +302,8 @@ export class Brain {
     this.#climbBase = base;
     this.x += dx;
     const target = climb.target;
-    this.#climb = { ...climb, target: { ...target, x: target.x + dx, y: rect.y } };
+    const y = climb.down === true ? target.y : rect.y;
+    this.#climb = { ...climb, target: { ...target, x: target.x + dx, y } };
   }
 
   /** Перенос молнией: разряд бежит по молнии, персонаж собирается в цели (или падает, если опоры нет). */
@@ -369,7 +396,10 @@ export class Brain {
 
   /** Разговор, зов, движение мыши рядом: сон и лежание сбрасываются. */
   wake(): void {
+    // Разбудили — сначала потягивается (COMPANION.md, этап 2).
+    const sleepy = this.phase === "rest" && this.#idle > this.layAfter;
     this.#idle = 0;
+    if (sleepy) this.emote("yawn", 2);
   }
 
   tick(dt: number): void {

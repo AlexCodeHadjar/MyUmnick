@@ -25,6 +25,7 @@ import {
   type MoodEvent,
 } from "./mood";
 import { petLine } from "../phrases";
+import { BOND_KEY, bondTone, grow, parseBond, type Bond } from "./bond";
 import type { RemarkTopic } from "../senses";
 import { browserTopic } from "../senses";
 
@@ -39,6 +40,8 @@ export class Life {
   #mood: Mood;
   #favorites: Map<string, number>;
   #tickAt = 0;
+  #bond: Bond;
+  #together = 0;
   #savedAt = 0;
 
   constructor(brain: Brain, storage: Storage | undefined, random: () => number = Math.random) {
@@ -47,6 +50,7 @@ export class Life {
     this.#random = random;
     this.#mood = loadMood(storage, Date.now());
     this.#favorites = parseFavorites(read(storage, FAVORITES_KEY));
+    this.#bond = parseBond(read(storage, BOND_KEY), Date.now());
     this.#apply();
   }
 
@@ -56,6 +60,18 @@ export class Life {
 
   event(event: MoodEvent): void {
     this.#mood = nudge(this.#mood, event);
+    // Внимание растит привязанность (этап 3): поглаживания и разговоры.
+    if (event === "pet" || event === "talk") this.#bond = grow(this.#bond, event, Date.now());
+  }
+
+  get bond(): Bond {
+    return this.#bond;
+  }
+
+  /** Приветствие по привязанности: тёплое или сдержанное; обычная — `null` (общая фраза). */
+  greeting(): string | null {
+    const tone = bondTone(this.#bond);
+    return tone === "plain" ? null : this.#line(locale.t.companion.bond[tone]);
   }
 
   /** Раз в секунду: течение настроения, «долго в программе». Возвращает фразу или `null`. */
@@ -66,10 +82,17 @@ export class Life {
     const context = { hour: new Date().getHours(), idleS: this.#brain.idleSeconds };
     this.#mood = drift(this.#mood, dt, context);
     if (this.#brain.music === "playing") this.event("song");
+    // Минута рядом (спутник на экране) — капля привязанности.
+    this.#together += dt;
+    if (this.#together >= 60) {
+      this.#together = 0;
+      this.#bond = grow(this.#bond, "together", Date.now());
+    }
     this.#apply();
     if (now - this.#savedAt > SAVE_EVERY_S) {
       this.#savedAt = now;
       saveMood(this.#storage, this.#mood, Date.now());
+      write(this.#storage, BOND_KEY, JSON.stringify(this.#bond));
     }
     const habit = this.#apps.tick(now);
     return habit === null ? null : this.#habitLine(habit, null);
@@ -153,5 +176,13 @@ function read(storage: Storage | undefined, key: string): string | null {
     return storage?.getItem(key) ?? null;
   } catch {
     return null;
+  }
+}
+
+function write(storage: Storage | undefined, key: string, value: string): void {
+  try {
+    storage?.setItem(key, value);
+  } catch {
+    // Не запомнится — привязанность начнётся заново.
   }
 }

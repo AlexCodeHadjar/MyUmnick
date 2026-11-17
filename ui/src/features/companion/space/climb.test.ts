@@ -95,3 +95,24 @@ describe("бросок", () => {
     expect(brain.x).toBeGreaterThan(0);
   });
 });
+
+describe("спуск по стене", () => {
+  it("с крыши окна на пол — идёт к краю, сползает по боку лицом к стене, встаёт внизу", () => {
+    const brain = new Brain(() => 0.5);
+    brain.setWorld(WORLD);
+    const top = snap(brain.surfaceList, 800, 500, 30);
+    const floor = snap(brain.surfaceList, 450, 1040, 30);
+    if (top === null || floor === null) throw new Error("нет опор");
+    brain.place(top);
+    brain.goTo(floor);
+    let climbed = false;
+    ticks(brain, 15, (b) => {
+      if (b.phase === "climb") {
+        climbed = true;
+        expect(b.facing).toBe(1);
+      }
+    });
+    expect(climbed).toBe(true);
+    expect([brain.phase, brain.y]).toEqual(["rest", 1040]);
+  });
+});

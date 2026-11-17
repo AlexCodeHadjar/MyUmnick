@@ -3,3 +3,4 @@ export * from "./reactions";
 export * from "./life";
 export * from "./mood";
 export * from "./habits";
+export * from "./bond";

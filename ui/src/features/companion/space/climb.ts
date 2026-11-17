@@ -14,8 +14,10 @@ export interface Climb {
   foot: Spot;
   /** Бок окна, по которому лезет. */
   side: Extract<Surface, { kind: "side" }>;
-  /** Куда сесть наверху. */
+  /** Куда сесть наверху (или встать внизу, если `down`). */
   target: Spot;
+  /** Спуск: сползает по боку с крыши окна вниз (COMPANION.md, этап 2). */
+  down?: boolean;
 }
 
 /**
@@ -42,6 +44,32 @@ export function climbRoute(
     if (Math.abs(foot.x - x) > 4) continue;
     if (best === null || Math.abs(x - from.x) < Math.abs(best.foot.x - from.x)) {
       best = { foot, side, target: to };
+    }
+  }
+  return best;
+}
+
+/** Спуск ниже — хотя бы на столько; ближе — прыжок. */
+const MIN_DROP = 150;
+
+/**
+ * Маршрут спуска с крыши окна `from` вниз на опору `to` или `null` (прыгать): дойти по крыше до края над
+ * боком и сползти по стене. Бок должен быть над опорой-целью, иначе внизу не на что встать.
+ */
+export function descendRoute(surfaces: readonly Surface[], from: Spot, to: Spot): Climb | null {
+  const top = from.surface;
+  const floor = to.surface;
+  if (top.kind !== "edge" || top.host < 0) return null;
+  if (floor.kind !== "edge" && floor.kind !== "floor") return null;
+  if (to.y - from.y < MIN_DROP) return null;
+  let best: Climb | null = null;
+  for (const side of surfaces) {
+    if (side.kind !== "side" || side.host !== top.host) continue;
+    const x = wallX(side);
+    if (x < floor.x0 || x > floor.x1) continue;
+    const foot = spotOn(top, side.x, from.y);
+    if (best === null || Math.abs(foot.x - from.x) < Math.abs(best.foot.x - from.x)) {
+      best = { foot, side, target: spotOn(floor, x, to.y), down: true };
     }
   }
   return best;
