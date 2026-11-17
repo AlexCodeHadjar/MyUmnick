@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.graphics.RectF
 import android.os.SystemClock
 import android.text.Layout
@@ -41,6 +42,10 @@ class StageView(context: Context, private val host: Host) : View(context) {
     private var targetX = 0
     private var vy = 0f
     private var vx = 0f
+    private var perch: Rect? = null
+    private var jumpFrom = 0 to 0
+    private var jumpTo = 0 to 0
+    private var jumpStart = 0L
     private var grabX = 0f
     private var grabY = 0f
     private var velocity: VelocityTracker? = null
@@ -106,6 +111,9 @@ class StageView(context: Context, private val host: Host) : View(context) {
         when (mode) {
             Mode.WALK -> stepWalk()
             Mode.FALL -> stepFall()
+            Mode.JUMP -> stepJump(now)
+            Mode.CLING -> stepCling(now)
+            Mode.PERCH -> if (now > modeUntil || perch?.let(Perches::stillThere) == false) drop()
             Mode.HELD, Mode.GONE -> Unit
             else -> if (now > modeUntil) decide(now)
         }
@@ -119,6 +127,8 @@ class StageView(context: Context, private val host: Host) : View(context) {
         when {
             idle > SLEEP_AFTER && mode == Mode.YAWN -> setMode(Mode.SLEEP, 60_000)
             idle > SLEEP_AFTER -> setMode(Mode.YAWN, 2500)
+            Math.random() < 0.35 && Perches.pick(screen.widthPixels) != null ->
+                jumpTo(Perches.pick(screen.widthPixels)!!)
             Math.random() < 0.45 -> walkTo((Math.random() * (screen.widthPixels - WIDTH)).toInt())
             Math.random() < 0.5 -> setMode(Mode.SIT, 8000 + (Math.random() * 8000).toLong())
             Math.random() < 0.5 -> setMode(Mode.LAY, 10_000)
@@ -154,6 +164,7 @@ class StageView(context: Context, private val host: Host) : View(context) {
         val right = screen.widthPixels - WIDTH
         if (params.x < 0 || params.x > right) {
             params.x = params.x.coerceIn(0, right)
+            if (abs(vx) > CLING_SPEED) return cling(params.x == 0)
             vx = -vx * BOUNCE
         }
         if (params.y >= floor) land()
@@ -170,12 +181,68 @@ class StageView(context: Context, private val host: Host) : View(context) {
         setMode(Mode.IDLE, 2000)
     }
 
+    /** Бросили в бок экрана — цепляется за край и медленно сползает (поза hang_side). */
+    private fun cling(left: Boolean) {
+        facingLeft = left
+        vx = 0f
+        vy = 0f
+        setMode(Mode.CLING, 5000 + (Math.random() * 4000).toLong())
+        host.move(this, params)
+    }
+
+    private fun stepCling(now: Long) {
+        if (now > modeUntil || params.y >= floor) return drop()
+        params.y += 1
+        host.move(this, params)
+    }
+
+    /** Прыжок на опору (иконку, кнопку): дуга за JUMP_MS, потом сидит на её верхнем крае. */
+    private fun jumpTo(spot: Rect) {
+        perch = spot
+        jumpFrom = params.x to params.y
+        jumpTo = (spot.centerX() - WIDTH / 2).coerceIn(0, screen.widthPixels - WIDTH) to
+            (spot.top - HEIGHT + SEAT_FROM_BOTTOM)
+        jumpStart = SystemClock.uptimeMillis()
+        facingLeft = jumpTo.first < params.x
+        setMode(Mode.JUMP, 0)
+    }
+
+    private fun stepJump(now: Long) {
+        val t = ((now - jumpStart).toFloat() / JUMP_MS).coerceAtMost(1f)
+        val arc = JUMP_HEIGHT * 4 * t * (1 - t)
+        params.x = (jumpFrom.first + (jumpTo.first - jumpFrom.first) * t).toInt()
+        params.y = (jumpFrom.second + (jumpTo.second - jumpFrom.second) * t - arc).toInt()
+        host.move(this, params)
+        if (t >= 1f) setMode(Mode.PERCH, 8000 + (Math.random() * 10_000).toLong())
+    }
+
+    /** Опора пропала (листнули экран, сменилось приложение) или надоело — падает вниз. */
+    private fun drop() {
+        perch = null
+        vx = 0f
+        vy = 0f
+        setMode(Mode.FALL, 0)
+    }
+
+    /** Поворот экрана: ширина и высота меняются — возвращаем персонажа в пределы экрана. */
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        post {
+            params.x = params.x.coerceIn(0, maxOf(0, screen.widthPixels - WIDTH))
+            params.y = params.y.coerceIn(0, maxOf(0, floor))
+            host.move(this, params)
+            if (mode != Mode.HELD && mode != Mode.GONE) drop()
+        }
+    }
+
     private fun setMode(next: Mode, ms: Long) {
         mode = next
         modeUntil = SystemClock.uptimeMillis() + ms
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        // Касание мимо персонажа — не наше (на экране блокировки его ждёт LockActivity).
+        if (event.actionMasked == MotionEvent.ACTION_OUTSIDE) return false
         lastTouch = SystemClock.uptimeMillis()
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> touchDown(event)
@@ -287,6 +354,7 @@ class StageView(context: Context, private val host: Host) : View(context) {
     private enum class Mode(val pose: String) {
         IDLE("stand"), WALK("walk"), SIT("sit_edge"), LAY("laydown"), SLEEP("sleep"), HELD("held"),
         FALL("float"), POKE("poke"), PET("pet"), DIZZY("dizzy"), REACT("stand"),
+        JUMP("float"), CLING("hang_side"), PERCH("sit_edge"),
         WAVE("wave"), YAWN("yawn"), DANCE("dance"), GONE("stand"),
     }
 
@@ -303,6 +371,10 @@ class StageView(context: Context, private val host: Host) : View(context) {
         const val AIR_DRAG = 0.985f
         const val BOUNCE = 0.45f
         const val MIN_BOUNCE = 9f
+        const val CLING_SPEED = 14f
+        const val JUMP_MS = 700f
+        const val JUMP_HEIGHT = 220f
+        const val SEAT_FROM_BOTTOM = 198 // SPRITE_H × (1 − 0.62): сиденье позы sit_edge, как ANCHORS в pack.ts
         const val EDGE = 12
         const val LONG_PRESS = 450L
         const val PET_SERIES = 3000L

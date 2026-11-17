@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="perches_description">Умник видит, где на экране иконки и кнопки, чтобы садиться на них. Читаются только их рамки, не текст.</string>
+</resources>

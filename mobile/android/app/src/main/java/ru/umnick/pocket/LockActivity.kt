@@ -1,11 +1,13 @@
 package ru.umnick.pocket
 
 import android.app.Activity
+import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.view.MotionEvent
 import android.view.WindowManager
 
 /**
@@ -23,7 +25,8 @@ class LockActivity : Activity() {
         super.onCreate(savedInstanceState)
         setShowWhenLocked(true)
         window.addFlags(
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
         )
         window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
         stage = StageView(this, LockHost(this)).also {
@@ -31,6 +34,26 @@ class LockActivity : Activity() {
             Stages.lock = it
         }
         registerReceiver(unlocked, IntentFilter(Intent.ACTION_USER_PRESENT))
+    }
+
+    /**
+     * Пока окно на экране блокировки, Android считает блокировку «перекрытой» и не показывает ввод
+     * пароля и не слушает отпечаток (баг 0.3). Любое касание мимо спутника или «назад» — просим
+     * систему показать разблокировку и уходим.
+     */
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_OUTSIDE) unlock()
+        return super.onTouchEvent(event)
+    }
+
+    @Deprecated("Activity back")
+    override fun onBackPressed() = unlock()
+
+    private fun unlock() {
+        if (isFinishing) return
+        val keyguard = getSystemService(KeyguardManager::class.java)
+        keyguard.requestDismissKeyguard(this, null)
+        finish()
     }
 
     override fun onDestroy() {
@@ -41,7 +64,14 @@ class LockActivity : Activity() {
     }
 
     companion object {
+        fun enabled(context: Context): Boolean =
+            context.getSharedPreferences("settings", 0).getBoolean("on_lock", true)
+
+        fun setEnabled(context: Context, on: Boolean) =
+            context.getSharedPreferences("settings", 0).edit().putBoolean("on_lock", on).apply()
+
         fun show(context: Context) {
+            if (!enabled(context)) return
             val intent = Intent(context, LockActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION)
             context.startActivity(intent)

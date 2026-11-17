@@ -28,6 +28,14 @@ class SetupActivity : Activity() {
         root.addView(button("2. Микрофон и уведомления") { askRuntime() })
         root.addView(button("3. Не выключать в фоне") { askBattery() })
         root.addView(button("4. Папка для обмена с ПК") { NotesFolder.pick(this) })
+        root.addView(button("5. Видеть иконки и кнопки (спец. возможности)") {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        })
+        root.addView(android.widget.Switch(this).apply {
+            text = "Показывать на экране блокировки"
+            isChecked = LockActivity.enabled(this@SetupActivity)
+            setOnCheckedChangeListener { _, on -> LockActivity.setEnabled(this@SetupActivity, on) }
+        })
         root.addView(button("Запустить Умника") { launch() })
         setContentView(root)
     }
