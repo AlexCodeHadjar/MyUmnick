@@ -83,8 +83,46 @@ export async function clearPoses(): Promise<void> {
   characterChannel?.postMessage("pack");
 }
 
-/** Картинки поз пользователя как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка). */
+/** Встроенный персонаж (`ui/public/characters/default/`; подгонка — `docs/character/README.md`). */
+export const DEFAULT_PACK = "/characters/default";
+
+function bitmap(blob: Blob, height: number): Promise<ImageBitmap> {
+  return createImageBitmap(blob, {
+    resizeHeight: Math.round(height * CANVAS_RATIO * devicePixelRatio),
+    resizeQuality: "high",
+  });
+}
+
+/** Позы встроенного персонажа; файлов нет (вкладка без сборки) — пусто, будут силуэты. */
+async function defaultPoses(height: number): Promise<Map<string, ImageBitmap>> {
+  const poses = new Map<string, ImageBitmap>();
+  try {
+    const list: unknown = await (await fetch(`${DEFAULT_PACK}/index.json`)).json();
+    if (!Array.isArray(list)) return poses;
+    const names: unknown[] = list;
+    await Promise.all(
+      names.map(async (name) => {
+        if (typeof name !== "string" || poseName(`${name}.webp`) === null) return;
+        const response = await fetch(`${DEFAULT_PACK}/${name}.webp`);
+        if (response.ok) poses.set(name, await bitmap(await response.blob(), height));
+      }),
+    );
+  } catch {
+    // Нет пакета — временные силуэты.
+  }
+  return poses;
+}
+
+/**
+ * Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
+ * пользователем папкой, а если их нет — встроенный персонаж.
+ */
 export async function loadPoses(height: number): Promise<Map<string, ImageBitmap>> {
+  const own = await userPoses(height);
+  return own.size > 0 ? own : defaultPoses(height);
+}
+
+async function userPoses(height: number): Promise<Map<string, ImageBitmap>> {
   const poses = new Map<string, ImageBitmap>();
   try {
     const keys = await run("readonly", (store) => store.getAllKeys());
@@ -92,11 +130,7 @@ export async function loadPoses(height: number): Promise<Map<string, ImageBitmap
       if (typeof key !== "string" || !key.startsWith(PREFIX)) continue;
       const blob: unknown = await run("readonly", (store) => store.get(key));
       if (!(blob instanceof Blob)) continue;
-      const bitmap = await createImageBitmap(blob, {
-        resizeHeight: Math.round(height * CANVAS_RATIO * devicePixelRatio),
-        resizeQuality: "high",
-      });
-      poses.set(key.slice(PREFIX.length), bitmap);
+      poses.set(key.slice(PREFIX.length), await bitmap(blob, height));
     }
   } catch {
     // Хранилище недоступно — будут временные силуэты.

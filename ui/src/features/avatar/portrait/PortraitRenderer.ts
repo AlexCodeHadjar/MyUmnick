@@ -10,6 +10,9 @@ import { EMOTION_HUE, mixHue } from "../orb/palette";
 import { loadFit, loadPicture, pictureChanged, windowStorage, type PictureFit } from "./picture";
 import silhouette from "./silhouette.svg";
 
+/** Персонаж по умолчанию — поза «стоит» встроенного персонажа (Этап 23); не загрузилась — силуэт. */
+const DEFAULT_PICTURE = "/characters/default/stand.webp";
+
 const BREATH_PERIOD_S = 3.5;
 const BREATH_SCALE = 0.012;
 const SWAY_DEG = 0.6;
@@ -105,7 +108,7 @@ export class PortraitRenderer implements AvatarRenderer {
         this.#image.src = silhouette;
         resolve();
       };
-      this.#image.src = next ?? silhouette;
+      this.#image.src = next ?? DEFAULT_PICTURE;
     });
     if (this.#url !== null) URL.revokeObjectURL(this.#url);
     this.#url = next;

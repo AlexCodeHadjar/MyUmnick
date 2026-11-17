@@ -782,8 +782,8 @@
 - `clearPicture` — `ui/src/features/avatar/portrait/picture.ts:118` — —
 - `pictureChanged` — `ui/src/features/avatar/portrait/picture.ts:124` — Картинку сменили: рендер окошка перечитывает её без перезапуска сцены.
 - `characterChannel` — `ui/src/features/avatar/portrait/picture.ts:127` — Между окнами (главное и спутник): одно происхождение — общий канал.
-- `portraitPose` — `ui/src/features/avatar/portrait/PortraitRenderer.ts:24` — Поза кадра: чистая функция времени и состояния — проверяется тестами.
-- `PortraitRenderer` — `ui/src/features/avatar/portrait/PortraitRenderer.ts:41` — —
+- `portraitPose` — `ui/src/features/avatar/portrait/PortraitRenderer.ts:27` — Поза кадра: чистая функция времени и состояния — проверяется тестами.
+- `PortraitRenderer` — `ui/src/features/avatar/portrait/PortraitRenderer.ts:44` — —
 
 ## ui/src/features/chat
 Публичный API фичи чата: приложение монтирует только панель (R-63).
@@ -883,7 +883,8 @@
 - `poseName` — `ui/src/features/companion/pack.ts:57` — Имя позы из имени файла: `Sit_Edge.PNG` → `sit_edge`; не картинка — `null`.
 - `savePoses` — `ui/src/features/companion/pack.ts:64` — Сохранить позы из выбранной папки; вернёт, сколько картинок принято.
 - `clearPoses` — `ui/src/features/companion/pack.ts:76` — —
-- `loadPoses` — `ui/src/features/companion/pack.ts:87` — Картинки поз пользователя как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка).
+- `DEFAULT_PACK` — `ui/src/features/companion/pack.ts:87` — Встроенный персонаж (`ui/public/characters/default/`; подгонка — `docs/character/README.md`).
+- `loadPoses` — `ui/src/features/companion/pack.ts:120` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
 - `placeholderPose` — `ui/src/features/companion/placeholder.ts:238` — Силуэт позы: широкие линии с градиентом палитры окна, круг головы, подпись с именем позы.
 - `CompanionWhen` — `ui/src/features/companion/settings.ts:5` — Настройки «Сопровождения» (Этап 23, ADR-0045): общие для главного окна и слоя спутника через
 - `CompanionBehavior` — `ui/src/features/companion/settings.ts:6` — —

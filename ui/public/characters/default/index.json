@@ -1,0 +1,19 @@
+[
+  "float",
+  "hang_side",
+  "held",
+  "laydown",
+  "laydown_blink",
+  "laydown_talk",
+  "lean_side",
+  "perch_corner",
+  "sit_corner",
+  "sit_edge",
+  "sit_edge_blink",
+  "sit_edge_talk",
+  "sleep",
+  "stand",
+  "stand_blink",
+  "stand_talk",
+  "walk"
+]
