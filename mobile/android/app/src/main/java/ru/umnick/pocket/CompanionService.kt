@@ -12,6 +12,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
 
 /**
  * Служба переднего плана (S-24.2): держит оверлей со спутником и слух. HiOS убивает фон —
@@ -30,12 +31,22 @@ class CompanionService : Service() {
         override fun onReceive(context: Context, intent: Intent) {
             val locked = getSystemService(KeyguardManager::class.java).isKeyguardLocked
             when (intent.action) {
-                Intent.ACTION_SCREEN_OFF -> showOnLock()
+                Intent.ACTION_SCREEN_OFF -> {
+                    screenOffAt = SystemClock.elapsedRealtime()
+                    showOnLock()
+                }
                 Intent.ACTION_SCREEN_ON -> if (locked && Stages.lock == null) showOnLock()
                 Intent.ACTION_USER_PRESENT -> Stages.overlay?.visibility = android.view.View.VISIBLE
+                else -> Unit
+            }
+            // T7 «С возвращением»: сколько экран был выключен.
+            if (intent.action == Intent.ACTION_SCREEN_ON && screenOffAt > 0) {
+                Stages.current()?.life?.screenOn(SystemClock.elapsedRealtime() - screenOffAt)
             }
         }
     }
+
+    private var screenOffAt = 0L
 
     private fun showOnLock() {
         Stages.overlay?.visibility = android.view.View.INVISIBLE
@@ -51,9 +62,8 @@ class CompanionService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         goForeground()
-        if (stage == null) attachStage()
+        if (stage == null && !loading) loadThenAttach()
         syncFolder()
-        if (ears == null && Permissions.microphone(this)) ears = Ears(this, Notebook(this), stage!!).also { it.start() }
         return START_STICKY
     }
 
@@ -63,6 +73,26 @@ class CompanionService : Service() {
         shake?.stop()
         stage?.detach()
         super.onDestroy()
+    }
+
+    private var loading = false
+
+    /**
+     * 122 кадра персонажа декодируются секунды: в главном потоке это «Приложение не отвечает» (ANR
+     * на эмуляторе). Грузим пакет в фоне, окно и слух поднимаем, когда он готов.
+     */
+    private fun loadThenAttach() {
+        loading = true
+        val main = android.os.Handler(mainLooper)
+        Thread {
+            runCatching { Pack.get(this) }.onFailure { CrashLog.write(this, "pack", it) }
+            main.post {
+                loading = false
+                if (stage == null) attachStage()
+                val view = stage ?: return@post
+                if (ears == null && Permissions.microphone(this)) ears = Ears(this, Notebook(this), view).also { it.start() }
+            }
+        }.start()
     }
 
     private fun attachStage() {

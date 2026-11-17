@@ -1,5 +1,6 @@
 package ru.umnick.pocket
 
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Calendar
 import kotlin.random.Random
@@ -8,16 +9,29 @@ import kotlin.random.Random
 class Phrases(private val all: JSONObject) {
     private val recent = ArrayDeque<String>()
 
-    fun pick(section: String): String? {
-        // «pet.раздел» — фразы поглаживания, остальное — реплики болванчика верхнего уровня.
-        val list = (if (section.startsWith("pet.")) all.getJSONObject("pet").optJSONArray(section.removePrefix("pet."))
-        else all.optJSONArray(section)) ?: return null
-        val options = (0 until list.length()).map { list.getString(it) }
+    /**
+     * Фраза по пути: `poke`, `pet.first`, `pc.triggers.toss` (фразы спутника ПК). В конце пути — список
+     * или одна строка; `{0}` заменяется на `arg` (имя иконки, программы).
+     */
+    fun pick(section: String, arg: String = ""): String? {
+        val options = options(section).ifEmpty { return null }
         val fresh = options.filter { it !in recent }.ifEmpty { options }
         val choice = fresh[Random.nextInt(fresh.size)]
         recent.addLast(choice)
         if (recent.size > MEMORY) recent.removeFirst()
-        return choice
+        return choice.replace("{0}", arg)
+    }
+
+    fun has(section: String): Boolean = options(section).isNotEmpty()
+
+    private fun options(section: String): List<String> {
+        var node: Any = all
+        for (key in section.split('.')) node = (node as? JSONObject)?.opt(key) ?: return emptyList()
+        return when (node) {
+            is JSONArray -> (0 until node.length()).mapNotNull { node.optString(it).ifEmpty { null } }
+            is String -> listOf(node)
+            else -> emptyList()
+        }
     }
 
     /** Раздел поглаживания (`pet.…`) по номеру клика серии и состоянию; `null` — на этом клике молчит. */

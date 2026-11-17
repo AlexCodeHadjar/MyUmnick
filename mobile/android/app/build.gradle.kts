@@ -11,8 +11,8 @@ android {
         applicationId = "ru.umnick.pocket"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.4"
+        versionCode = 6
+        versionName = "0.6"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

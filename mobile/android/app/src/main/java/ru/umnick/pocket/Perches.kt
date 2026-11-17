@@ -7,23 +7,47 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 
 /**
- * Опоры на экране телефона — аналог окон и значков рабочего стола на ПК (`anchors.ts`): верхние края
- * иконок, кнопок и карточек активного окна. Узнать их можно только через службу специальных
- * возможностей; текст и содержимое не читаем и не храним — только прямоугольники.
+ * Опоры на экране телефона — аналог окон и значков рабочего стола на ПК (`anchors.ts`, BEHAVIOR §4, §6):
+ * рамки иконок, кнопок и карточек активного окна с их короткой подписью («YouTube») и имя активного
+ * приложения (T12). Узнать это можно только через службу специальных возможностей; содержимое экрана
+ * (тексты переписки и т.п.) не читаем и не храним — только рамки, подписи элементов до 24 знаков и пакет.
  */
 object Perches {
-    @Volatile var spots: List<Rect> = emptyList()
+    data class Spot(val box: Rect, val label: String)
+
+    @Volatile var spots: List<Spot> = emptyList()
         private set
 
-    fun update(found: List<Rect>) {
+    /** Растёт при смене экрана: листнули страницу, открыли приложение. Сидящий на иконке спрыгивает. */
+    @Volatile var scene = 0
+        private set
+
+    /** Пакет активного приложения (`com.google.android.youtube`) и когда он сменился. */
+    @Volatile var app = ""
+        private set
+    @Volatile var appSince = 0L
+        private set
+
+    fun update(found: List<Spot>) {
         spots = found
     }
 
-    /** Случайная опора, на которую персонаж поместится, или `null`. */
-    fun pick(screenWidth: Int): Rect? =
-        spots.filter { it.width() in MIN_WIDTH..(screenWidth * 9 / 10) && it.top > MIN_TOP }.randomOrNull()
+    fun sceneChanged() {
+        scene++
+    }
 
-    fun stillThere(spot: Rect): Boolean = spots.any { abs(it.top - spot.top) < 8 && abs(it.centerX() - spot.centerX()) < 8 }
+    fun appChanged(name: String) {
+        if (name == app || name.isEmpty()) return
+        app = name
+        appSince = SystemClock.uptimeMillis()
+    }
+
+    /** Случайная опора, на которую персонаж поместится, или `null`. */
+    fun pick(screenWidth: Int): Spot? =
+        spots.filter { it.box.width() in MIN_WIDTH..(screenWidth * 9 / 10) && it.box.top > MIN_TOP }.randomOrNull()
+
+    fun stillThere(spot: Spot): Boolean =
+        spots.any { abs(it.box.top - spot.box.top) < 8 && abs(it.box.centerX() - spot.box.centerX()) < 8 }
 
     private fun abs(value: Int) = if (value < 0) -value else value
 
@@ -35,22 +59,36 @@ class PerchService : AccessibilityService() {
     private var lastScan = 0L
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
+        val type = event.eventType
+        // Свайп страницы рабочего стола и смена окна — иконки под ним другие, даже если клетки те же.
+        if (type == AccessibilityEvent.TYPE_VIEW_SCROLLED || type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            Perches.sceneChanged()
+        }
+        if (type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && event.packageName != packageName) {
+            Perches.appChanged(event.packageName?.toString().orEmpty())
+        }
         val now = SystemClock.uptimeMillis()
         if (now - lastScan < SCAN_EVERY_MS) return
         lastScan = now
         val root = rootInActiveWindow ?: return
-        val found = mutableListOf<Rect>()
+        val found = mutableListOf<Perches.Spot>()
         collect(root, found, 0)
-        Perches.update(found.take(MAX_SPOTS))
+        Perches.update(found)
     }
 
-    private fun collect(node: AccessibilityNodeInfo, out: MutableList<Rect>, depth: Int) {
+    private fun collect(node: AccessibilityNodeInfo, out: MutableList<Perches.Spot>, depth: Int) {
         if (depth > MAX_DEPTH || out.size >= MAX_SPOTS) return
         if (node.isVisibleToUser && (node.isClickable || node.contentDescription != null)) {
             val box = Rect().also { node.getBoundsInScreen(it) }
-            if (box.height() in MIN_HEIGHT..MAX_HEIGHT) out += box
+            if (box.height() in MIN_HEIGHT..MAX_HEIGHT) out += Perches.Spot(box, label(node))
         }
         for (i in 0 until node.childCount) node.getChild(i)?.let { collect(it, out, depth + 1) }
+    }
+
+    /** Короткая подпись элемента (имя иконки): длинный текст — это содержимое, его не берём. */
+    private fun label(node: AccessibilityNodeInfo): String {
+        val text = (node.contentDescription ?: node.text)?.toString()?.trim().orEmpty()
+        return if (text.length in 1..MAX_LABEL) text else ""
     }
 
     override fun onInterrupt() = Unit
@@ -61,5 +99,6 @@ class PerchService : AccessibilityService() {
         const val MAX_SPOTS = 80
         const val MIN_HEIGHT = 60
         const val MAX_HEIGHT = 900
+        const val MAX_LABEL = 24
     }
 }

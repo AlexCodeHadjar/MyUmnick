@@ -80,6 +80,7 @@ class Ears(
 
     private fun save(text: String) {
         notebook.add(text)
+        stage.noteSaved()
         val reply = stage.phrases.pick("saved") ?: "Записал."
         stage.say("$reply «$text»", "happy")
         speak(reply)
