@@ -60,6 +60,8 @@ export const LOOP_FPS: Partial<Record<Pose, number>> = {
   poke: 6,
   pet: 8,
   laydown: 4,
+  lean_side: 4,
+  sit_corner: 4,
   sleep: 3,
 };
 

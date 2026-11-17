@@ -352,18 +352,23 @@ describe("значки рабочего стола", () => {
     const brain = new Brain(() => 0.5);
     brain.setWorld({ ...WORLD, seats: [] });
     brain.setIcons([
-      { x: 0, y: 100, w: 75, h: 70 },
-      { x: 0, y: 190, w: 75, h: 70 },
+      { x: 0, y: 20, w: 75, h: 70 },
+      { x: 0, y: 300, w: 75, h: 70 },
+      { x: 0, y: 390, w: 75, h: 70 },
     ]);
-    const first = snap(brain.surfaceList, 37, 106, 30);
+    // У верхнего края на значок не садится: голова ушла бы за экран.
+    expect(snap(brain.surfaceList, 37, 26, 30)).toBeNull();
+    const first = snap(brain.surfaceList, 37, 306, 50);
     expect(first?.pose).toBe("sit_edge");
     if (first === null) throw new Error("нет значка");
+    // Значок у левого края — садится со сдвигом внутрь, чтобы не уйти наполовину за экран.
+    expect(first.x).toBeGreaterThanOrEqual(70);
     brain.place(first);
-    const second = snap(brain.surfaceList, 37, 196, 30);
+    const second = snap(brain.surfaceList, 37, 396, 50);
     if (second === null) throw new Error("нет значка");
     brain.goTo(second);
     settle(brain, 2);
-    expect([brain.phase, brain.y]).toEqual(["rest", 196]);
+    expect([brain.phase, brain.y]).toEqual(["rest", 396]);
     brain.setIcons([]);
     settle(brain, 3);
     // Значки у левого края: упав у самого угла экрана, садится в угол.

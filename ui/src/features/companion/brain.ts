@@ -15,6 +15,7 @@ import {
   type Spot,
   type Surface,
 } from "./anchors";
+import { fitScreen } from "./room";
 import type { Rect, World } from "./world";
 
 export type Phase =
@@ -99,6 +100,8 @@ export class Brain {
   #icons: Surface[] = [];
   /** Высота груди над точкой опоры: отсюда выходит молния и искры (рост × 0,55). */
   chest = 150;
+  /** Рост холста позы в CSS-пикселях: сколько места нужно над сиденьем (`fitScreen`). */
+  figure = 300;
 
   constructor(random: Random = Math.random) {
     this.#random = random;
@@ -126,7 +129,8 @@ export class Brain {
 
   setWorld(world: World): void {
     this.#world = world;
-    this.#surfaces = [...surfaces(world), ...this.#icons];
+    // Только опоры, где персонаж виден целиком: не за верхом и не за боками экрана.
+    this.#surfaces = fitScreen([...surfaces(world), ...this.#icons], world.monitor, this.figure);
     this.#bounds = world.monitor;
     const spot = this.#spot;
     if (this.phase !== "rest" || spot === null) return;
@@ -155,7 +159,10 @@ export class Brain {
     const surface = spot.surface;
     const base = surface.kind === "side" && surface.side === "right" ? rect.x + rect.w : rect.x;
     this.x = base + this.#rel;
-    if (spot.surface.kind === "edge") this.y = rect.y;
+    if (spot.surface.kind !== "edge") return;
+    this.y = rect.y;
+    // Окно утащили к верху экрана: сидя, голова ушла бы за край — спрыгивает.
+    if (rect.y - this.figure * 0.6 < this.#bounds.y) this.#fall();
   }
 
   /** Встать на место сразу (первый показ, Shift + отпустить). */

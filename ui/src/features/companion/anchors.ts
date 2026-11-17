@@ -142,7 +142,7 @@ export function iconSurfaces(
 }
 
 /** Где стоит персонаж у бока: на полкорпуса от стены, внутри экрана и вне окна. */
-function wallX(surface: Extract<Surface, { kind: "side" }>): number {
+export function wallX(surface: Extract<Surface, { kind: "side" }>): number {
   const away = surface.side === "left" ? -1 : 1;
   return surface.x + away * (surface.host === SCREEN ? WALL_GAP_SCREEN : WALL_GAP);
 }

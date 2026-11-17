@@ -7,6 +7,7 @@
 import type { Emotion } from "../../../core";
 import type { AvatarReaction, AvatarRenderer } from "../AvatarRenderer";
 import { EMOTION_HUE, mixHue } from "../orb/palette";
+import { HEAD_FRAMES, headFrame } from "./head";
 import { loadFit, loadPicture, pictureChanged, windowStorage, type PictureFit } from "./picture";
 import silhouette from "./silhouette.svg";
 
@@ -15,14 +16,10 @@ import silhouette from "./silhouette.svg";
  * речи; в режимах «целиком» и «заполнить» — поза «стоит». Не загрузилась — силуэт.
  */
 const PACK = "/characters/default";
-const HEAD = {
-  base: `${PACK}/head.webp`,
-  blink: `${PACK}/head_blink.webp`,
-  talk: `${PACK}/head_talk.webp`,
-};
 const FULL_BODY = `${PACK}/stand.webp`;
 const BLINK_EVERY_S = 4.2;
-const BLINK_S = 0.16;
+/** С полуприкрытыми кадрами моргание чуть дольше: 0,2 с. */
+const BLINK_S = 0.2;
 
 const BREATH_PERIOD_S = 3.5;
 const BREATH_SCALE = 0.012;
@@ -72,6 +69,8 @@ export class PortraitRenderer implements AvatarRenderer {
   /** Своя картинка пользователя — кадры моргания и речи встроенного персонажа к ней не подходят. */
   #own = false;
   #frame = "";
+  #emotion: Emotion = "neutral";
+  #intensity = 0;
   readonly #onChange = (): void => {
     void this.load();
   };
@@ -116,7 +115,7 @@ export class PortraitRenderer implements AvatarRenderer {
     this.#own = next !== null;
     if (!this.#own) {
       // Кадры мордашки — в кэш заранее: смена `src` при моргании не мигает.
-      for (const url of Object.values(HEAD)) new Image().src = url;
+      for (const url of HEAD_FRAMES) new Image().src = url;
     }
     await new Promise<void>((resolve) => {
       this.#image.onload = () => {
@@ -135,7 +134,7 @@ export class PortraitRenderer implements AvatarRenderer {
   }
 
   #defaultPicture(): string {
-    return this.#fit === "corner" ? HEAD.base : FULL_BODY;
+    return this.#fit === "corner" ? (HEAD_FRAMES[0] ?? FULL_BODY) : FULL_BODY;
   }
 
   /** «Мордашка в углу», «вписать целиком» или «заполнить окошко». */
@@ -168,6 +167,8 @@ export class PortraitRenderer implements AvatarRenderer {
   }
 
   setEmotion(emotion: Emotion, intensity: number): void {
+    this.#emotion = emotion;
+    this.#intensity = intensity;
     this.#targetHue = mixHue(EMOTION_HUE.neutral, EMOTION_HUE[emotion], intensity);
   }
 
@@ -243,9 +244,14 @@ export class PortraitRenderer implements AvatarRenderer {
   /** Мордашка встроенного персонажа: моргает и открывает рот по громкости речи. */
   #headFrame(): void {
     if (this.#own || this.#fit !== "corner") return;
-    const blinking = this.#time % BLINK_EVERY_S < BLINK_S;
-    const frame =
-      this.#speaking && this.#mouth > 0.25 ? HEAD.talk : blinking ? HEAD.blink : HEAD.base;
+    const phase = this.#time % BLINK_EVERY_S;
+    const frame = headFrame({
+      speaking: this.#speaking,
+      mouth: this.#mouth,
+      blink: phase < BLINK_S ? phase / BLINK_S : null,
+      emotion: this.#emotion,
+      intensity: this.#intensity,
+    });
     if (frame !== this.#frame) {
       this.#frame = frame;
       this.#image.src = frame;

@@ -28,6 +28,7 @@
     type CompanionBehavior,
     type CompanionSettings,
   } from "./settings";
+  import { CANVAS_RATIO } from "./pack";
   import { choosePoke, nextPause, remark, topicOf, type RemarkTopic, type Target } from "./remarks";
   import { CompanionStage } from "./stage";
   import { rectToCss, worldToCss, type Focus, type Rect, type World } from "./world";
@@ -96,6 +97,7 @@
     brain.wander = settings.behavior !== "stay";
     brain.calm = settings.behavior === "follow";
     brain.chest = settings.height * 0.55;
+    brain.figure = settings.height * CANVAS_RATIO;
   }
 
   async function setShown(next: boolean): Promise<void> {
