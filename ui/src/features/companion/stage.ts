@@ -6,7 +6,7 @@
 import type { Pose } from "./anchors";
 import type { Body } from "./brain";
 import { drawEffects } from "./effects";
-import { ANCHORS, CANVAS_RATIO, FALLBACK, loadPoses, resolve, type Variant } from "./pack";
+import { ANCHORS, CANVAS_RATIO, FALLBACK, loadPoses, pickFrame } from "./pack";
 import { placeholderPose } from "./placeholder";
 import type { Rect } from "./world";
 
@@ -24,7 +24,8 @@ const POSES: readonly Pose[] = [
   "float",
 ];
 const BLINK_EVERY_S = 4.2;
-const BLINK_S = 0.14;
+/** Моргание с полуприкрытыми кадрами чуть дольше: 0,2 с. */
+const BLINK_S = 0.2;
 
 export interface Look {
   mouth: number;
@@ -38,6 +39,8 @@ export class CompanionStage {
   readonly #ctx: CanvasRenderingContext2D;
   readonly #canvas: HTMLCanvasElement;
   #poses = new Map<string, ImageBitmap>();
+  /** Имена загруженных кадров: выбор кадра — по ним, без пересоздания множества каждый кадр. */
+  #keys: ReadonlySet<string> = new Set<string>();
   #placeholders = new Map<string, ImageBitmap>();
   #height = 280;
   #time = 0;
@@ -61,6 +64,7 @@ export class CompanionStage {
       Promise.all(POSES.map(async (pose) => [pose, await placeholderPose(pose, height)] as const)),
     ]);
     this.#poses = poses;
+    this.#keys = new Set(poses.keys());
     this.#placeholders = new Map(placeholders);
   }
 
@@ -72,17 +76,19 @@ export class CompanionStage {
     this.#dirty = null;
   }
 
-  #image(pose: Pose, variant: Variant): ImageBitmap | null {
-    const key = resolve(pose, variant, new Set(this.#poses.keys()));
+  #image(pose: Pose, look: Look): ImageBitmap | null {
+    const sleeping = pose === "sleep";
+    const phase = this.#time % BLINK_EVERY_S;
+    const state = {
+      time: this.#time,
+      mouth: look.mouth,
+      speaking: look.speaking && !sleeping,
+      blink: phase < BLINK_S && !sleeping ? phase / BLINK_S : null,
+    };
+    const key = pickFrame(pose, state, this.#keys);
     if (key !== null) return this.#poses.get(key) ?? null;
     const fallback = [pose, ...FALLBACK[pose]].find((one) => this.#placeholders.has(one));
     return fallback === undefined ? null : (this.#placeholders.get(fallback) ?? null);
-  }
-
-  #variant(look: Look, pose: Pose): Variant {
-    if (pose === "sleep") return "_blink";
-    if (look.speaking && look.mouth > 0.25) return "_talk";
-    return this.#time % BLINK_EVERY_S < BLINK_S ? "_blink" : "";
   }
 
   draw(body: Body, look: Look, dt: number): void {
@@ -102,7 +108,7 @@ export class CompanionStage {
   }
 
   #figure(body: Body, look: Look): Rect | null {
-    const image = this.#image(body.pose, this.#variant(look, body.pose));
+    const image = this.#image(body.pose, look);
     if (image === null) return null;
     const h = this.#height * CANVAS_RATIO * body.scale;
     const w = (image.width / image.height) * h;

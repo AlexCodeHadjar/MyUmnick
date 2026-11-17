@@ -4,7 +4,7 @@ import { below, floorSpot, seatSpot, snap, surfaces } from "./anchors";
 import { Brain, WALK_LIMIT } from "./brain";
 import { bubbleText, followSpot, release, velocityOf } from "./control";
 import { along, lightning, seeded } from "./effects";
-import { poseName, resolve } from "./pack";
+import { pickFrame, poseName, sequence } from "./pack";
 import { DEFAULT_SETTINGS, parseSettings, shouldShow } from "./settings";
 import { worldToCss, type World } from "./world";
 
@@ -167,14 +167,38 @@ describe("молния, позы, настройки", () => {
     expect(lightning([0, 0], [400, 0], seeded(7))).toEqual(points);
   });
 
-  it("поза: вариант, без варианта, замена, `stand`", () => {
-    const have = new Set(["stand", "sit_edge", "sit_edge_talk"]);
-    expect(resolve("sit_edge", "_talk", have)).toBe("sit_edge_talk");
-    expect(resolve("sit_edge", "_blink", have)).toBe("sit_edge");
-    expect(resolve("perch_corner", "", have)).toBe("sit_edge");
-    expect(resolve("held", "", have)).toBe("stand");
-    expect(resolve("held", "", new Set())).toBeNull();
+  it("кадр: речь по громкости, моргание, цикл позы, замены", () => {
+    const quiet = { time: 0, mouth: 0, speaking: false, blink: null };
+    const have = new Set([
+      "stand",
+      "sit_edge",
+      "sit_edge_talk",
+      "sit_edge_blink",
+      "sit_edge_blink_1",
+    ]);
+    expect(pickFrame("sit_edge", { ...quiet, speaking: true, mouth: 0.6 }, have)).toBe(
+      "sit_edge_talk",
+    );
+    expect(pickFrame("sit_edge", { ...quiet, blink: 0.5 }, have)).toBe("sit_edge_blink");
+    expect(pickFrame("sit_edge", { ...quiet, blink: 0.1 }, have)).toBe("sit_edge_blink_1");
+    expect(pickFrame("perch_corner", quiet, have)).toBe("sit_edge");
+    expect(pickFrame("held", quiet, have)).toBe("stand");
+    expect(pickFrame("held", quiet, new Set())).toBeNull();
+
+    const walk = new Set(["stand", "walk_1", "walk_2", "walk_3", "walk_4"]);
+    expect(sequence("walk", walk)).toEqual(["walk_1", "walk_2", "walk_3", "walk_4"]);
+    expect(pickFrame("walk", { ...quiet, time: 0 }, walk)).toBe("walk_1");
+    expect(pickFrame("walk", { ...quiet, time: 0.25 }, walk)).toBe("walk_3"); // 10 кадров/с
+
+    const talk = new Set(["stand", "stand_talk_1", "stand_talk_2", "stand_talk_3"]);
+    expect(pickFrame("stand", { ...quiet, speaking: true, mouth: 0.1 }, talk)).toBe("stand_talk_1");
+    expect(pickFrame("stand", { ...quiet, speaking: true, mouth: 0.95 }, talk)).toBe(
+      "stand_talk_3",
+    );
+    expect(pickFrame("sleep", quiet, new Set(["laydown", "laydown_blink"]))).toBe("laydown_blink");
     expect(poseName("Sit_Edge.PNG")).toBe("sit_edge");
+    expect(poseName("walk_3.png")).toBe("walk_3");
+    expect(poseName("stand_talk_2.webp")).toBe("stand_talk_2");
     expect(poseName("notes.txt")).toBeNull();
   });
 

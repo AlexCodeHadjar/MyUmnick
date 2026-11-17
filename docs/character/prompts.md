@@ -152,3 +152,113 @@ but with the mouth open as if speaking. Transparent background. PNG, 1024x1536.
 
 Если вариант «съехал» относительно позы (персонаж сдвинулся или изменился в размере), лучше обойтись без
 него: программа покажет моргание и речь как сможет и без этих картинок.
+
+---
+
+## Шаг 4 — промежуточные кадры для плавной анимации (по желанию)
+
+Программа уже умеет проигрывать кадры. Как это работает:
+- **Цикл позы.** Кадры `<поза>_1.png`, `<поза>_2.png`, … крутятся по кругу. Частота: ходьба 10 кадров в секунду,
+  болтание в руке и полёт 8, ожидание и сидение на краю 5, лёжа 4, сон 3.
+- **Рот.** Кадры `<поза>_talk_1…_N` выбираются по громкости голоса: `_1` приоткрыт … `_N` открыт широко.
+  Закрытый рот — сама поза.
+- **Моргание.** Кадр `<поза>_blink_1` — полуприкрытые глаза, он встаёт до и после закрытых (`<поза>_blink`).
+
+Нет кадров — показывается одна картинка позы, как сейчас. Можно делать по одной группе за раз.
+
+**Главное правило для GPT:** генерируйте кадры **в том же чате, сразу после картинки позы**, и каждый раз
+требуйте тот же холст, масштаб и положение. В конце каждого промпта ниже уже стоит общий хвост:
+
+```
+Keep the exact same canvas (1024x1536), the same character scale and the same position in the frame as the
+reference pose image; only the described parts move. Same style, same top-left lighting, same colors.
+Transparent background, no shadow, no text, no motion lines. PNG, 1024x1536.
+```
+
+Порядок — от самого заметного к менее заметному.
+
+### 1. Ходьба — `walk_1.png … walk_8.png` (8 кадров, цикл)
+Сначала пришлите GPT готовую `walk.png` и попросите кадр 1, затем каждый следующий — «next frame».
+```
+Using the walking pose image as the reference, draw frame {N} of 8 of a seamless walk cycle to the RIGHT,
+side view. Frame 1: right foot forward touching the ground, left foot back (contact). Frame 2: body lowest,
+weight on the right foot (down). Frame 3: left leg passing the right one (passing). Frame 4: body highest,
+right foot pushing off (up). Frames 5–8: the same four phases with the legs swapped. Arms swing opposite to
+the legs, the cloak and the blue flame horns trail slightly behind. The soles of the supporting foot stay on
+the same ground line in every frame.
+Keep the exact same canvas (1024x1536), the same character scale and the same position in the frame as the
+reference pose image; only the described parts move. Same style, same top-left lighting, same colors.
+Transparent background, no shadow, no text, no motion lines. PNG, 1024x1536.
+```
+Замените `{N}` на 1…8 — восемь отдельных сообщений.
+
+### 2. Сидит на краю, болтает ногами — `sit_edge_1.png … sit_edge_4.png` (4 кадра, цикл)
+```
+Using the sit_edge image as the reference, draw frame {N} of 4 of a gentle looping idle: sitting on the
+invisible ledge, legs swinging slowly back and forth (frame 1 legs back, 2 middle, 3 legs forward, 4 middle),
+the cloak hem and the flame horns flicker softly. The seat, the hands on the ledge, the head and the body stay
+exactly in place.
+Keep the exact same canvas (1024x1536), the same character scale and the same position in the frame as the
+reference pose image; only the described parts move. Same style, same top-left lighting, same colors.
+Transparent background, no shadow, no text, no motion lines. PNG, 1024x1536.
+```
+
+### 3. Стоит, «дышит» — `stand_1.png … stand_4.png` (4 кадра, цикл)
+```
+Using the stand image as the reference, draw frame {N} of 4 of a subtle looping idle animation: a slow
+breath (frame 1 neutral, 2 chest and hood slightly up, 3 neutral, 4 slightly down), the cloak hem sways a
+little, the blue flame horns flicker (different flame shapes in each frame). Feet stay exactly in place.
+Keep the exact same canvas (1024x1536), the same character scale and the same position in the frame as the
+reference pose image; only the described parts move. Same style, same top-left lighting, same colors.
+Transparent background, no shadow, no text, no motion lines. PNG, 1024x1536.
+```
+
+### 4. Рот при речи — `stand_talk_1…3`, `sit_edge_talk_1…3`, `laydown_talk_1…3`
+Для каждой из трёх поз — три кадра, сразу после картинки этой позы:
+```
+Exactly the same image as the {pose} reference — identical pose, framing, scale and position of every
+pixel — but the mouth is {mouth}. Nothing else changes.
+Transparent background. PNG, 1024x1536.
+```
+Вместо `{mouth}`: кадр 1 — `slightly open`, кадр 2 — `open as if saying "ah"`, кадр 3 — `wide open, excited`.
+
+### 5. Полуприкрытые глаза — `stand_blink_1`, `sit_edge_blink_1`, `laydown_blink_1`
+```
+Exactly the same image as the {pose} reference — identical pose, framing, scale and position of every
+pixel — but the eyes are half closed (halfway through a blink). Nothing else changes.
+Transparent background. PNG, 1024x1536.
+```
+
+### 6. Болтается в руке — `held_1.png … held_4.png` (4 кадра, цикл)
+```
+Using the held image as the reference, draw frame {N} of 4 of a looping dangle: the character hangs by the
+tip of the hood, the body swings slightly like a pendulum (frame 1 left, 2 center, 3 right, 4 center), legs
+and arms trail the swing, small comic struggle. The tip of the hood stays exactly at the same point.
+Keep the exact same canvas (1024x1536), the same character scale and the same position in the frame as the
+reference pose image; only the described parts move. Same style, same top-left lighting, same colors.
+Transparent background, no shadow, no text, no motion lines. PNG, 1024x1536.
+```
+
+### 7. Сон — `sleep_1.png … sleep_3.png` (3 кадра, цикл)
+```
+Using the sleep image as the reference, draw frame {N} of 3 of a calm sleeping loop: slow breathing (the
+back rises a little in frame 2), the flame horns flicker softly, a small "z" floats up and fades
+(frame 1 none, 2 small, 3 higher and fainter). The body stays in place on the same line.
+Keep the exact same canvas (1024x1536), the same character scale and the same position in the frame as the
+reference pose image; only the described parts move. Same style, same top-left lighting, same colors.
+Transparent background, no shadow, no text, no motion lines. PNG, 1024x1536.
+```
+
+### 8. Полёт — `float_1.png … float_3.png` и 9. Висит — `hang_side_1.png … hang_side_4.png`
+```
+Using the {pose} image as the reference, draw frame {N} of {count} of a looping animation: for float — the
+cloak and flames flutter upward, legs kick gently; for hang_side — the body sways slightly under the
+hands, legs swing. The {anchor} stays exactly at the same point.
+Keep the exact same canvas (1024x1536), the same character scale and the same position in the frame as the
+reference pose image; only the described parts move. Same style, same top-left lighting, same colors.
+Transparent background, no shadow, no text, no motion lines. PNG, 1024x1536.
+```
+Вместо `{anchor}`: для `float` — `center of the body`, для `hang_side` — `fists`.
+
+**Куда класть:** в ту же папку, что и позы, с этими именами. Потом напишите мне: я подгоню кадры так же, как
+позы (`README.md`), и добавлю их во встроенный пакет. Если кадр «съехал» и дёргает анимацию, я его выброшу.

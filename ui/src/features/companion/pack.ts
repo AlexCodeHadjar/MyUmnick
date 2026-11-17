@@ -6,8 +6,6 @@
 import { characterChannel, run } from "../avatar/portrait/picture";
 import type { Pose } from "./anchors";
 
-export type Variant = "" | "_blink" | "_talk";
-
 /** Замены отсутствующей позы, в порядке предпочтения; всё кончается позой `stand`. */
 export const FALLBACK: Record<Pose, readonly Pose[]> = {
   stand: [],
@@ -42,13 +40,70 @@ export const ANCHORS: Record<Pose, readonly [number, number]> = {
 export const CANVAS_RATIO = 1024 / 960;
 
 const PREFIX = "pose:";
-const NAME = /^[a-z_]+$/;
+/** Имя позы, варианта или кадра: `walk`, `stand_talk`, `walk_3`, `stand_talk_2`. */
+const NAME = /^[a-z]+(?:_[a-z]+)*(?:_\d{1,2})?$/;
 
-/** Какой ключ рисовать: поза с вариантом, без варианта, затем замены. */
-export function resolve(pose: Pose, variant: Variant, have: ReadonlySet<string>): string | null {
+/** Частота кадров зацикленной позы (`<поза>_1…N`), кадров в секунду. */
+export const LOOP_FPS: Partial<Record<Pose, number>> = {
+  walk: 10,
+  stand: 5,
+  sit_edge: 5,
+  perch_corner: 5,
+  held: 8,
+  hang_side: 6,
+  float: 8,
+  laydown: 4,
+  sleep: 3,
+};
+
+/** Что сейчас с персонажем: для выбора кадра. `blink` — доля моргания 0…1 или `null`. */
+export interface FrameState {
+  time: number;
+  mouth: number;
+  speaking: boolean;
+  blink: number | null;
+}
+
+/** Кадры `<имя>_1`, `<имя>_2` … подряд, пока есть. */
+export function sequence(name: string, have: ReadonlySet<string>): string[] {
+  const list: string[] = [];
+  while (have.has(`${name}_${String(list.length + 1)}`))
+    list.push(`${name}_${String(list.length + 1)}`);
+  return list;
+}
+
+function frameOf(name: string, pose: Pose, state: FrameState, have: ReadonlySet<string>): string {
+  // Спит, а позы сна нет: замена с закрытыми глазами.
+  if (pose === "sleep" && name !== "sleep" && have.has(`${name}_blink`)) return `${name}_blink`;
+  if (state.speaking && state.mouth > 0.08) {
+    // Рот по громкости: `_talk_1` приоткрыт … `_talk_N` открыт широко; без них — один `_talk`.
+    const talk = sequence(`${name}_talk`, have);
+    const level = Math.min(talk.length - 1, Math.floor(state.mouth * talk.length));
+    const open = talk[level];
+    if (open !== undefined) return open;
+    if (state.mouth > 0.25 && have.has(`${name}_talk`)) return `${name}_talk`;
+  }
+  if (state.blink !== null && have.has(`${name}_blink`)) {
+    // Полуприкрытые глаза до и после закрытых — моргание мягче.
+    const half = `${name}_blink_1`;
+    const edge = state.blink < 0.3 || state.blink > 0.7;
+    return edge && have.has(half) ? half : `${name}_blink`;
+  }
+  const loop = sequence(name, have);
+  if (loop.length > 0) {
+    const frame = loop[Math.floor(state.time * (LOOP_FPS[pose] ?? 6)) % loop.length];
+    if (frame !== undefined) return frame;
+  }
+  return have.has(name) ? name : `${name}_1`;
+}
+
+/**
+ * Кадр для позы с учётом замен: речь (кадры рта по громкости), моргание, зацикленные кадры позы,
+ * одна картинка. Ничего нет — `null` (временный силуэт).
+ */
+export function pickFrame(pose: Pose, state: FrameState, have: ReadonlySet<string>): string | null {
   for (const name of [pose, ...FALLBACK[pose], "stand"]) {
-    if (variant !== "" && have.has(name + variant)) return name + variant;
-    if (have.has(name)) return name;
+    if (have.has(name) || have.has(`${name}_1`)) return frameOf(name, pose, state, have);
   }
   return null;
 }

@@ -875,16 +875,18 @@
 - `drawBolt` — `ui/src/features/companion/effects.ts:97` — Молния тремя проходами: широкое свечение, мягкая линия, яркая сердцевина.
 - `drawEffects` — `ui/src/features/companion/effects.ts:189` — Нарисовать эффекты тела; `seed` меняется 30 раз в секунду — молния «живёт».
 - `startFeed` — `ui/src/features/companion/feed.ts:16` — Запустить передачу; `mouth(dt)` — громкость голоса 0…1. Возвращает остановку.
-- `Variant` — `ui/src/features/companion/pack.ts:9` — —
-- `FALLBACK` — `ui/src/features/companion/pack.ts:12` — Замены отсутствующей позы, в порядке предпочтения; всё кончается позой `stand`.
-- `ANCHORS` — `ui/src/features/companion/pack.ts:27` — Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот».
-- `CANVAS_RATIO` — `ui/src/features/companion/pack.ts:42` — Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз.
-- `resolve` — `ui/src/features/companion/pack.ts:48` — Какой ключ рисовать: поза с вариантом, без варианта, затем замены.
-- `poseName` — `ui/src/features/companion/pack.ts:57` — Имя позы из имени файла: `Sit_Edge.PNG` → `sit_edge`; не картинка — `null`.
-- `savePoses` — `ui/src/features/companion/pack.ts:64` — Сохранить позы из выбранной папки; вернёт, сколько картинок принято.
-- `clearPoses` — `ui/src/features/companion/pack.ts:76` — —
-- `DEFAULT_PACK` — `ui/src/features/companion/pack.ts:87` — Встроенный персонаж (`ui/public/characters/default/`; подгонка — `docs/character/README.md`).
-- `loadPoses` — `ui/src/features/companion/pack.ts:120` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
+- `FALLBACK` — `ui/src/features/companion/pack.ts:10` — Замены отсутствующей позы, в порядке предпочтения; всё кончается позой `stand`.
+- `ANCHORS` — `ui/src/features/companion/pack.ts:25` — Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот».
+- `CANVAS_RATIO` — `ui/src/features/companion/pack.ts:40` — Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз.
+- `LOOP_FPS` — `ui/src/features/companion/pack.ts:47` — Частота кадров зацикленной позы (`<поза>_1…N`), кадров в секунду.
+- `FrameState` — `ui/src/features/companion/pack.ts:60` — Что сейчас с персонажем: для выбора кадра. `blink` — доля моргания 0…1 или `null`.
+- `sequence` — `ui/src/features/companion/pack.ts:68` — Кадры `<имя>_1`, `<имя>_2` … подряд, пока есть.
+- `pickFrame` — `ui/src/features/companion/pack.ts:104` — Кадр для позы с учётом замен: речь (кадры рта по громкости), моргание, зацикленные кадры позы,
+- `poseName` — `ui/src/features/companion/pack.ts:112` — Имя позы из имени файла: `Sit_Edge.PNG` → `sit_edge`; не картинка — `null`.
+- `savePoses` — `ui/src/features/companion/pack.ts:119` — Сохранить позы из выбранной папки; вернёт, сколько картинок принято.
+- `clearPoses` — `ui/src/features/companion/pack.ts:131` — —
+- `DEFAULT_PACK` — `ui/src/features/companion/pack.ts:142` — Встроенный персонаж (`ui/public/characters/default/`; подгонка — `docs/character/README.md`).
+- `loadPoses` — `ui/src/features/companion/pack.ts:175` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
 - `placeholderPose` — `ui/src/features/companion/placeholder.ts:238` — Силуэт позы: широкие линии с градиентом палитры окна, круг головы, подпись с именем позы.
 - `CompanionWhen` — `ui/src/features/companion/settings.ts:5` — Настройки «Сопровождения» (Этап 23, ADR-0045): общие для главного окна и слоя спутника через
 - `CompanionBehavior` — `ui/src/features/companion/settings.ts:6` — —
@@ -896,8 +898,8 @@
 - `loadSettings` — `ui/src/features/companion/settings.ts:58` — —
 - `saveSettings` — `ui/src/features/companion/settings.ts:66` — —
 - `shouldShow` — `ui/src/features/companion/settings.ts:75` — Виден ли спутник: полный экран прячет его всегда.
-- `Look` — `ui/src/features/companion/stage.ts:29` — —
-- `CompanionStage` — `ui/src/features/companion/stage.ts:37` — —
+- `Look` — `ui/src/features/companion/stage.ts:30` — —
+- `CompanionStage` — `ui/src/features/companion/stage.ts:38` — —
 - `Rect` — `ui/src/features/companion/world.ts:5` — Картина рабочего стола от оболочки (`desktop.rs`, физические пиксели экрана) → CSS-пиксели слоя спутника.
 - `Seat` — `ui/src/features/companion/world.ts:12` — —
 - `Focus` — `ui/src/features/companion/world.ts:18` — —
