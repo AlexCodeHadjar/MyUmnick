@@ -1,0 +1,13 @@
+[project]
+name = "vtuber-phone-sync"
+version = "0.1.0"
+description = "Плагин: обмен блокнотом с карманным Умником по USB (MTP), Этап 24."
+requires-python = ">=3.12,<3.13"
+dependencies = ["vtuber"]
+
+[project.entry-points."vtuber.plugins"]
+phone_sync = "vtuber_phone_sync:PhoneSyncPlugin"
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14.0"]
+build-backend = "uv_build"
