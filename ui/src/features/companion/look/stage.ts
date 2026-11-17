@@ -146,6 +146,16 @@ export class CompanionStage {
     this.#dirty = area === null ? null : grow(area, 40);
   }
 
+  /** Нарисовать кадр позы `pose` высотой `h` относительно уже сдвинутой в точку опоры системы. */
+  #drawAt(image: ImageBitmap, pose: Pose, h: number): void {
+    const H = this.#height * CANVAS_RATIO;
+    const aspect = image.width / image.height;
+    const [ax, ay] = ANCHORS[pose];
+    const cx = (0.5 - ax) * aspect * H;
+    const cy = (0.5 - ay) * H;
+    this.#ctx.drawImage(image, cx - (aspect * h) / 2, cy - h / 2, aspect * h, h);
+  }
+
   /** Центр фигуры в полный рост (CSS-пиксели): из него растёт персонаж в портале. */
   #centerOf(body: Body, look: Look): [number, number] {
     const image = this.#image(body.pose, look, body.petting);
@@ -187,19 +197,25 @@ export class CompanionStage {
       ctx.shadowBlur = 30 * this.#glow;
     }
     const previous = this.#motion.previous;
-    const left = previous === null ? 0 : this.#motion.fadeLeft;
-    // Смена позы — честное растворение: новый проявляется, старый тает, каждый со своей точкой опоры.
-    // Кадр цикла — новый сразу, прошлый коротко поверх (та же точка опоры — без двоения).
-    ctx.globalAlpha = this.#motion.poseChange ? 1 - left : 1;
-    ctx.drawImage(image, cx - w / 2, cy - h / 2, w, h);
-    if (previous !== null && left > 0.01) {
-      ctx.globalAlpha = left;
-      const pose = this.#motion.previousPose ?? body.pose;
-      const pw = (previous.width / previous.height) * H * body.scale;
-      const [px, py] = ANCHORS[pose];
-      const pcx = (0.5 - px) * (previous.width / previous.height) * H;
-      const pcy = (0.5 - py) * H;
-      ctx.drawImage(previous, pcx - pw / 2, pcy - h / 2, pw, h);
+    const swap = this.#motion.swap;
+    if (swap?.phase === "out" && previous !== null) {
+      // Смена позы, «выдох»: старая поза приседает и гаснет (своя точка опоры), новой ещё нет.
+      ctx.globalAlpha = 1 - swap.k;
+      ctx.scale(1, 1 - 0.1 * swap.k);
+      this.#drawAt(previous, this.#motion.previousPose ?? body.pose, H * body.scale);
+    } else {
+      // «Вдох»: новая поза проявляется с лёгкой растяжкой; иначе — обычный кадр.
+      if (swap?.phase === "in") {
+        ctx.globalAlpha = swap.k;
+        ctx.scale(1, 1.08 - 0.08 * swap.k);
+      }
+      ctx.drawImage(image, cx - w / 2, cy - h / 2, w, h);
+      // Кадр «телесного» цикла: прошлый коротко поверх (та же точка опоры — без двоения).
+      const left = previous === null || swap !== null ? 0 : this.#motion.fadeLeft;
+      if (previous !== null && left > 0.01) {
+        ctx.globalAlpha = left;
+        this.#drawAt(previous, body.pose, H * body.scale);
+      }
     }
     ctx.globalAlpha = 1;
     ctx.restore();

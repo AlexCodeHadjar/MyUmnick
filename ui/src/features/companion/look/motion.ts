@@ -10,6 +10,40 @@ const TURN_RATE = 1 / 0.16;
 const FADE_S = 0.15;
 const LAND_S = 0.22;
 const MAX_LEAN = 0.09;
+/** Смена позы — «выдох-вдох» (критик, раунд 2): старая гаснет со сжатием, потом новая с растяжкой. */
+const OUT_S = 0.06;
+const IN_S = 0.08;
+/** Широкие позы — разворот не уже 0,6: иначе лежащая фигура сплющивается в полоску. */
+const WIDE: ReadonlySet<Pose> = new Set([
+  "laydown",
+  "sleep",
+  "sit_corner",
+  "sit_edge",
+  "perch_corner",
+  "watch",
+  "jukebox",
+]);
+/** Циклы, где кадры отличаются только телом: в них растворение уместно. Лицо меняется — резко. */
+export const SOFT_LOOPS: ReadonlySet<Pose> = new Set([
+  "stand",
+  "sit_edge",
+  "perch_corner",
+  "lean_side",
+  "hang_side",
+  "sit_corner",
+  "laydown",
+  "sleep",
+  "held",
+  "float",
+  "watch",
+  "radio_idle",
+]);
+
+/** Этап смены позы: старая уходит (`out`) или новая приходит (`in`), `k` — 0…1. */
+export interface Swap {
+  phase: "out" | "in";
+  k: number;
+}
 
 export interface Pose2D {
   /** Показанное направление: от −1 до 1 (в середине разворота — узкая фигура). */
@@ -33,14 +67,24 @@ export class Motion {
   #current: ImageBitmap | null = null;
   #currentPose: Pose | null = null;
   #fadeS = FADE_S;
-  /** Сменилась поза (а не кадр цикла): честное перекрёстное растворение обоих кадров. */
+  /** Сменилась поза (а не кадр цикла). */
   poseChange = false;
+  #swapT = Infinity;
+  #snapTurn = false;
 
   /** Идёт переход — нужно 60 кадров/с. */
   get busy(): boolean {
     // Растворение кадров плавно и при 20 кадрах/с (стресс-прогон 2026-11-17: иначе цикл дыхания
     // держал 60 кадров/с постоянно) — 60 нужны только развороту и посадке.
-    return this.#land < 1 || Math.abs(this.#facing) < 0.999;
+    return this.#land < 1 || Math.abs(this.#facing) < 0.999 || this.swap !== null;
+  }
+
+  /** Идёт смена позы «выдох-вдох» — что рисовать. */
+  get swap(): Swap | null {
+    if (this.previous === null || !this.poseChange) return null;
+    if (this.#swapT < OUT_S) return { phase: "out", k: this.#swapT / OUT_S };
+    if (this.#swapT < OUT_S + IN_S) return { phase: "in", k: (this.#swapT - OUT_S) / IN_S };
+    return null;
   }
 
   /** Сколько осталось от прошлого кадра (0 — растворился). */
@@ -59,13 +103,18 @@ export class Motion {
     this.previousPose = this.#currentPose;
     this.#current = image;
     this.#currentPose = pose;
-    this.#fadeS = this.poseChange ? FADE_S : Math.min(FADE_S, loopS / 2);
+    // Смена позы: последовательно (`swap`), без наложения; разворот в этот же миг — мгновенно, его
+    // маскирует смена позы. Кадр цикла: короткое растворение только у «телесных» циклов.
+    this.#swapT = this.poseChange && this.previous !== null ? 0 : Infinity;
+    this.#snapTurn = this.poseChange;
+    this.#fadeS = this.poseChange || !SOFT_LOOPS.has(pose) ? 0 : Math.min(FADE_S, loopS / 2);
     this.#fade = this.previous === null || this.#fadeS <= 0 ? 1 : 0;
   }
 
   step(body: Body, dt: number): Pose2D {
     this.#fade = this.#fadeS <= 0 ? 1 : Math.min(1, this.#fade + dt / this.#fadeS);
-    if (this.#fade >= 1) this.previous = null;
+    this.#swapT += dt;
+    if (this.#fade >= 1 && this.swap === null) this.previous = null;
     this.#turn(body.facing, dt);
     this.#tilt(body, dt);
     this.#landing(body.phase, dt);
@@ -73,14 +122,24 @@ export class Motion {
     const ease = Math.sin((Math.PI / 2) * Math.abs(this.#facing));
     return {
       // Мягче (критик: ×0,35 при смене позы — грубо).
-      scaleX: Math.sign(this.#facing || 1) * Math.max(0.08, ease) * (1 + squash * 0.25),
+      scaleX:
+        Math.sign(this.#facing || 1) * Math.max(this.#narrowest(), ease) * (1 + squash * 0.25),
       scaleY: 1 - squash * 0.2,
       lean: this.#lean,
     };
   }
 
+  #narrowest(): number {
+    return this.#currentPose !== null && WIDE.has(this.#currentPose) ? 0.6 : 0.08;
+  }
+
   /** Разворот с замедлением — через узкую фигуру, как поворот, а не зеркало. */
   #turn(target: 1 | -1, dt: number): void {
+    if (this.#snapTurn) {
+      this.#snapTurn = false;
+      this.#facing = target;
+      return;
+    }
     const step = TURN_RATE * 2 * dt;
     const delta = target - this.#facing;
     this.#facing = Math.abs(delta) <= step ? target : this.#facing + Math.sign(delta) * step;
