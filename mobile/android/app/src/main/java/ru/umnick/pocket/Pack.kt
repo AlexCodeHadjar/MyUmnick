@@ -29,14 +29,15 @@ class Pack(context: Context) {
     fun frame(pose: String, step: Int, blink: Boolean): Bitmap {
         val base = resolve(pose)
         if (blink) frames["${base}_blink"]?.let { return it }
-        val cycle = listOf(base) + (1..4).map { "${base}_$it" }.filter { it in frames }
+        // У части поз нет базового кадра, только `_1…_4` (например, dance).
+        val cycle = (listOf(base) + (1..4).map { "${base}_$it" }).filter { it in frames }
         return frames.getValue(cycle[step % cycle.size])
     }
 
     fun head(emotion: String): Bitmap? = frames["head_$emotion"] ?: frames["head"]
 
     private fun resolve(pose: String): String =
-        (listOf(pose) + (FALLBACK[pose] ?: emptyList()) + "stand").first { it in frames }
+        (listOf(pose) + (FALLBACK[pose] ?: emptyList()) + "stand").first { it in frames || "${it}_1" in frames }
 
     companion object {
         private val FALLBACK = mapOf(
@@ -47,6 +48,9 @@ class Pack(context: Context) {
             "float" to listOf("held"),
             "dizzy" to listOf("float"),
             "poke" to listOf("lean_side"),
+            "wave" to listOf("stand"),
+            "yawn" to listOf("sit_edge"),
+            "dance" to listOf("stand"),
         )
     }
 }

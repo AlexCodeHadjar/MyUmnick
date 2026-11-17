@@ -59,6 +59,7 @@ class StageView(context: Context) : View(context) {
         params.x = screen.widthPixels - WIDTH
         params.y = floor
         windows.addView(this, params)
+        setMode(Mode.WAVE, 2500)
         say(phrases.pick(greeting()) ?: "Привет!", "happy")
         postOnAnimation(::tick)
     }
@@ -112,10 +113,12 @@ class StageView(context: Context) : View(context) {
     private fun decide(now: Long) {
         val idle = now - lastTouch
         when {
-            idle > SLEEP_AFTER -> setMode(Mode.SLEEP, 60_000)
+            idle > SLEEP_AFTER && mode == Mode.YAWN -> setMode(Mode.SLEEP, 60_000)
+            idle > SLEEP_AFTER -> setMode(Mode.YAWN, 2500)
             Math.random() < 0.45 -> walkTo((Math.random() * (screen.widthPixels - WIDTH)).toInt())
             Math.random() < 0.5 -> setMode(Mode.SIT, 8000 + (Math.random() * 8000).toLong())
             Math.random() < 0.5 -> setMode(Mode.LAY, 10_000)
+            Math.random() < 0.15 -> setMode(Mode.DANCE, 6000)
             else -> idleRemark()
         }
     }
@@ -252,7 +255,8 @@ class StageView(context: Context) : View(context) {
 
     private enum class Mode(val pose: String) {
         IDLE("stand"), WALK("walk"), SIT("sit_edge"), LAY("laydown"), SLEEP("sleep"), HELD("held"),
-        FALL("float"), POKE("poke"), PET("pet"), DIZZY("dizzy"), REACT("stand"), GONE("stand"),
+        FALL("float"), POKE("poke"), PET("pet"), DIZZY("dizzy"), REACT("stand"),
+        WAVE("wave"), YAWN("yawn"), DANCE("dance"), GONE("stand"),
     }
 
     private companion object {
