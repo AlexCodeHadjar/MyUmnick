@@ -42,6 +42,15 @@
     tauriPorts.showMain();
   }
 
+  /** Отпускания мыши: частые клики — это поглаживание, а не двойной клик «открыть окно». */
+  let ups: number[] = [];
+
+  function dblclick(): void {
+    const now = performance.now();
+    if (ups.filter((t) => now - t < 1500).length > 2) return;
+    openMain();
+  }
+
   function change(next: Partial<CompanionSettings>): void {
     const resized = next.height !== undefined && next.height !== settings.height;
     settings = { ...settings, ...next };
@@ -104,6 +113,7 @@
   }
 
   function up(event: PointerEvent): void {
+    ups = [...ups.filter((t) => performance.now() - t < 1500), performance.now()];
     const point = {
       x: event.clientX,
       y: event.clientY,
@@ -207,7 +217,7 @@
   onpointerdown={down}
   onpointermove={move}
   onpointerup={up}
-  ondblclick={openMain}
+  ondblclick={dblclick}
   oncontextmenu={(event) => {
     event.preventDefault();
     menu = { x: event.clientX, y: event.clientY };
