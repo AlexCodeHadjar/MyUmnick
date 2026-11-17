@@ -20,6 +20,11 @@ function Find-UmNick {
     return $null
 }
 
+# Проводник прячет известные расширения: `Name` у notes.jsonl — «notes». Сравниваем полное имя файла.
+function Find-Item($Folder, [string]$FileName) {
+    $Folder.Items() | Where-Object { $_.ExtendedProperty('System.FileName') -eq $FileName } | Select-Object -First 1
+}
+
 function Wait-File([string]$Path) {
     for ($i = 0; $i -lt 100 -and -not (Test-Path $Path); $i++) { Start-Sleep -Milliseconds 100 }
 }
@@ -29,7 +34,7 @@ if (-not $found) { exit 3 }
 switch ($Op) {
     'find' { Write-Output $found.Device }
     'pull' {
-        $item = $found.Folder.Items() | Where-Object { $_.Name -eq 'notes.jsonl' }
+        $item = Find-Item $found.Folder 'notes.jsonl'
         if (-not $item) { exit 4 }
         $shell.Namespace($Temp).CopyHere($item, 4 + 16 + 1024)
         Wait-File (Join-Path $Temp 'notes.jsonl')
@@ -37,7 +42,7 @@ switch ($Op) {
     }
     'push' {
         # Перезапись на MTP спрашивает пользователя — старый файл сначала уносим к себе.
-        $old = $found.Folder.Items() | Where-Object { $_.Name -eq 'from_pc.jsonl' }
+        $old = Find-Item $found.Folder 'from_pc.jsonl'
         if ($old) {
             $trash = Join-Path $Temp 'old'
             New-Item -ItemType Directory -Force $trash | Out-Null

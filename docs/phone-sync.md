@@ -13,6 +13,8 @@
 `id` телефона — UUID; `id` ПК — `pc-` + 16 знаков SHA-1 текста строки (стабилен, повторов нет).
 
 ## ПК — плагин `phone_sync`
+Включение: `uv pip install -e plugins/phone_sync` и `[plugins] enabled = ["phone_sync"]` в `config/user.toml`.
+Проводник прячет расширения (`notes.jsonl` виден как «notes») — `mtp.ps1` сравнивает `System.FileName`.
 - Раз в `poll_s` (5 с) `mtp.ps1 find` ищет портативное устройство с `Documents/UmNick`.
 - При подключении и далее раз в ~2 мин: забрать `notes.jsonl` → новые `id` дописать в `data/notes.txt` →
   запомнить в `data/phone_sync.json` → положить `from_pc.jsonl`.
