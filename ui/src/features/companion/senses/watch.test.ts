@@ -4,7 +4,7 @@ import { floorSpot, surfaces } from "../space";
 import { Brain } from "../body";
 import { pickFrame } from "../look";
 import { watchPhrases } from "../phrases";
-import { keepWatching, mediaVideo, pickMedia, watching } from "./watch";
+import { keepWatching, mediaVideo, musicPlaying, pickMedia, watching } from "./watch";
 import type { World } from "../space";
 
 const WORLD: World = {
@@ -120,5 +120,13 @@ describe("выбор источника", () => {
     expect(pickMedia([{ state: "playing" as const, app: "msedgewebview2" }], null).state).toBe(
       "none",
     );
+  });
+});
+
+describe("музыка в плеере", () => {
+  it("играет музыкальная программа — да; браузер или пауза — нет", () => {
+    expect(musicPlaying([{ state: "playing", app: "spotify.exe" }])).toBe(true);
+    expect(musicPlaying([{ state: "paused", app: "spotify.exe" }])).toBe(false);
+    expect(musicPlaying([{ state: "playing", app: "chrome.exe" }])).toBe(false);
   });
 });

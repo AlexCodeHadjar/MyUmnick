@@ -159,6 +159,12 @@ export const en: Messages = {
       (name: string) => `Look, there's "${name}"!`,
     ],
     triggers: {
+      music: [
+        "Ooh, music! Let's dance!",
+        "My favorite! Well, almost.",
+        "Music — I love it!",
+        "Dancing along!",
+      ],
       play: ["I'll catch you!", "Oh, a game!", "You won't escape!", "I'm faster!"],
       caught: ["Caught you!", "Gotcha!", "Got it! My mouse!", "Hehe, caught!"],
       dizzy: [

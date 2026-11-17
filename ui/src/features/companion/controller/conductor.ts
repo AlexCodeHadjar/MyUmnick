@@ -131,7 +131,13 @@ export class Conductor {
     brain.watching = id === "watch";
     brain.quiet = id === "hush";
     this.#watchSince = now;
-    this.#cornerPending = true;
+    // Полный экран без видео (этап 6): не сидит в углу, а выглядывает из-за правого края экрана.
+    const screen = this.#p.presence.world?.monitor;
+    if (id === "hush" && screen !== undefined) {
+      brain.visit(screen.x + screen.w, screen.y + screen.h * 0.62, "peek", -1);
+    } else {
+      this.#cornerPending = true;
+    }
     // Первая тихая реплика — через 4–7 мин, дальше реже (BEHAVIOR §11.2).
     this.#watchLineAt = now + (240 + Math.random() * 180) * 1000;
     if (id === "watch") this.#speak(pickOne(watchPhrases(locale.lang).start), "reaction", true);

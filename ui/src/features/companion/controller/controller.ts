@@ -223,6 +223,14 @@ export class CompanionController {
     this.brain.emote("wave", 2);
   }
 
+  /** Заиграла музыка в плеере: «О, музыка!» и танец, если не смотрит фильм и не на радио. */
+  #dance(): void {
+    const brain = this.brain;
+    if (brain.watching || brain.music !== "off" || brain.phase !== "rest") return;
+    this.speak(pickOne(locale.t.companion.triggers.music), "reaction");
+    brain.emote("dance", 4);
+  }
+
   /** Эмоция ответа ассистента сменилась — показать её телом коротко (COMPANION.md, этап 2). */
   #feel(emotion: string): void {
     if (emotion === this.#emotion) return;
@@ -291,6 +299,10 @@ export class CompanionController {
       lastLine: this.speech.last,
     });
     this.scout.pollMedia(now, (change) => {
+      if (change === "music") {
+        this.#dance();
+        return;
+      }
       if (!this.brain.watching || change === null) return;
       const lines = watchPhrases(locale.lang);
       this.speak(pickOne(change === "paused" ? lines.pause : lines.resume), "reaction", true);

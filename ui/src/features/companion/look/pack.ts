@@ -31,6 +31,7 @@ export const FALLBACK: Record<Pose, readonly Pose[]> = {
   dance: ["stand"],
   watch: ["sit_corner", "sit_edge", "stand"],
   jukebox: ["sing", "radio_idle", "stand"],
+  peek: ["sit_corner", "stand"],
 };
 
 /** Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот». */
@@ -58,6 +59,8 @@ export const ANCHORS: Record<Pose, readonly [number, number]> = {
   dance: [0.5, 0.97],
   watch: [0.5, 0.95],
   jukebox: [0.5, 0.97],
+  // Левый край кадра — край экрана; голова посередине высоты.
+  peek: [0, 0.5],
 };
 
 /** Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз. */

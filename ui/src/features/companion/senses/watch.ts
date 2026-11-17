@@ -80,6 +80,13 @@ const BROWSERS = [
   "arc",
 ];
 
+/** Музыка играет в музыкальной программе (Spotify, Яндекс Музыка, AIMP…) — для «потанцевать». */
+export function musicPlaying(list: readonly Media[]): boolean {
+  return list.some(
+    (one) => one.state === "playing" && MUSIC_APPS.some((name) => one.app.includes(name)),
+  );
+}
+
 /** Пауза — часть просмотра: столько секунд на паузе он ещё «смотрит». */
 export const PAUSE_KEEP_S = 90;
 

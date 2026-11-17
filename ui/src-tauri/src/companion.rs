@@ -30,6 +30,8 @@ const CURSOR_EVERY: u32 = 4;
 /// Раз в 0,5 с (и сразу при смене активного окна) слой снова встаёт поверх всех: другие окна «поверх всех» не прячут облачко
 /// (просьба пользователя 2026-11-17).
 const TOPMOST_EVERY: u32 = 30;
+/// Видимость, масштаб и угол слоя — раз в 0,25 с.
+const LAYER_EVERY: u32 = 15;
 
 /// Прямоугольник персонажа в CSS-пикселях окна спутника.
 #[derive(Deserialize, Clone, Copy, Debug)]
@@ -133,16 +135,22 @@ fn watch(app: &AppHandle, state: &CompanionState) {
     let mut last_host = None;
     let mut last_main = None;
     let mut last_cursor = (f64::NAN, f64::NAN);
+    let mut layer = Layer::default();
     loop {
         thread::sleep(TICK);
         tick = tick.wrapping_add(1);
         let Some(window) = app.get_webview_window(LABEL) else {
             continue;
         };
-        if window.is_visible().unwrap_or(false) {
-            passing = hit_test(&window, state, passing);
+        // Видимость, масштаб и угол слоя — раз в 0,25 с, а не 60 раз в секунду: каждый такой вопрос
+        // окну — переход в главный поток (COMPANION.md, часть IV; замер 2026-11-17).
+        if tick % LAYER_EVERY == 0 {
+            layer = Layer::of(&window);
+        }
+        if layer.visible {
+            passing = hit_test(&window, &layer, state, passing);
             if tick % CURSOR_EVERY == 0 {
-                last_cursor = publish_cursor(app, &window, last_cursor);
+                last_cursor = publish_cursor(app, &layer, last_cursor);
             }
             if tick % TOPMOST_EVERY == 0 {
                 raise(&window);
@@ -152,7 +160,7 @@ fn watch(app: &AppHandle, state: &CompanionState) {
             let fg = desktop::foreground(own).map(|h| h as isize);
             if fg != last_fg || tick % SCAN_EVERY == 0 {
                 // Новое активное окно могло встать поверх всех — поднимаемся над ним сразу.
-                if fg != last_fg && window.is_visible().unwrap_or(false) {
+                if fg != last_fg && layer.visible {
                     raise(&window);
                 }
                 last_fg = fg;
@@ -160,26 +168,55 @@ fn watch(app: &AppHandle, state: &CompanionState) {
             }
             // Раз в секунду — и без изменений: слой, загрузившийся позже события (перезапуск окна, ожидание
             // сборки), иначе считал бы главное окно открытым и не появлялся (проверено вживую 2026-11-17).
-            let again = if tick % SCAN_EVERY == 0 {
-                None
-            } else {
-                last_main
-            };
-            last_main = publish_main(app, again);
+            // Главное окно — 4 раза в секунду (каждый вопрос окну — переход в главный поток); раз в
+            // секунду — и без изменений.
+            if tick % LAYER_EVERY == 0 {
+                let again = if tick % SCAN_EVERY == 0 {
+                    None
+                } else {
+                    last_main.take()
+                };
+                last_main = publish_main(app, again);
+            }
         }
         last_host = publish_host(app, state, own, last_host);
     }
 }
 
+/// Слой, каким он был при последнем вопросе: показан ли, масштаб, левый верхний угол на экране.
+#[derive(Default, Clone, Copy)]
+struct Layer {
+    visible: bool,
+    scale: f64,
+    x: i32,
+    y: i32,
+}
+
+impl Layer {
+    fn of(window: &WebviewWindow) -> Self {
+        let origin = window.outer_position().unwrap_or_default();
+        Self {
+            visible: window.is_visible().unwrap_or(false),
+            scale: window.scale_factor().unwrap_or(1.0),
+            x: origin.x,
+            y: origin.y,
+        }
+    }
+
+    /// Курсор в CSS-пикселях слоя.
+    fn cursor(&self) -> (f64, f64) {
+        let (cx, cy) = desktop::cursor();
+        let scale = if self.scale > 0.0 { self.scale } else { 1.0 };
+        (
+            f64::from(cx - self.x) / scale,
+            f64::from(cy - self.y) / scale,
+        )
+    }
+}
+
 /// Курсор в CSS-пикселях слоя; шлётся, только если сдвинулся заметно (больше 3 px).
-fn publish_cursor(app: &AppHandle, window: &WebviewWindow, last: (f64, f64)) -> (f64, f64) {
-    let scale = window.scale_factor().unwrap_or(1.0);
-    let origin = window.outer_position().unwrap_or_default();
-    let (cx, cy) = desktop::cursor();
-    let now = (
-        f64::from(cx - origin.x) / scale,
-        f64::from(cy - origin.y) / scale,
-    );
+fn publish_cursor(app: &AppHandle, layer: &Layer, last: (f64, f64)) -> (f64, f64) {
+    let now = layer.cursor();
     let moved = (now.0 - last.0).abs() > 3.0 || (now.1 - last.1).abs() > 3.0 || last.0.is_nan();
     if !moved {
         return last;
@@ -188,16 +225,12 @@ fn publish_cursor(app: &AppHandle, window: &WebviewWindow, last: (f64, f64)) -> 
     now
 }
 
-fn hit_test(window: &WebviewWindow, state: &CompanionState, passing: bool) -> bool {
+fn hit_test(window: &WebviewWindow, layer: &Layer, state: &CompanionState, passing: bool) -> bool {
     let (hit, capture) = match state.0.lock() {
         Ok(shared) => (shared.hit, shared.capture),
         Err(_) => return passing,
     };
-    let scale = window.scale_factor().unwrap_or(1.0);
-    let origin = window.outer_position().unwrap_or_default();
-    let (cx, cy) = desktop::cursor();
-    let x = f64::from(cx - origin.x) / scale;
-    let y = f64::from(cy - origin.y) / scale;
+    let (x, y) = layer.cursor();
     let over = hit.is_some_and(|h| x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
     let pass = !(over || capture);
     if pass != passing {

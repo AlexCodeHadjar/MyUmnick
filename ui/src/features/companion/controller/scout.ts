@@ -6,6 +6,7 @@ import type { Brain } from "../body";
 import {
   keepWatching,
   mediaVideo,
+  musicPlaying,
   pickMedia,
   topicOf,
   watching,
@@ -21,7 +22,7 @@ const MEDIA_EVERY_MS = 2000;
 const NONE: Media = { state: "none", app: "" };
 
 /** Смена состояния того, что играет: для реплик «пауза» / «продолжаем». */
-export type MediaChange = "paused" | "resumed" | null;
+export type MediaChange = "paused" | "resumed" | "music" | null;
 
 export class Scout {
   readonly #ports: Ports;
@@ -37,6 +38,7 @@ export class Scout {
   #mediaAt = 0;
   #mediaBusy = false;
   #pausedSince = 0;
+  #music = false;
 
   /** `toCss` — физические пиксели экрана → CSS-пиксели слоя (монитор и масштаб знает присутствие). */
   constructor(ports: Ports, brain: Brain, toCss: (rect: Rect) => Rect) {
@@ -111,6 +113,10 @@ export class Scout {
       this.#mediaBusy = false;
       const before = this.#media.state;
       this.#media = pickMedia(list, this.#tab);
+      // Заиграла музыка в плеере (этап 5) — сказать «музыка!» и потанцевать.
+      const music = musicPlaying(list);
+      if (music && !this.#music) onChange("music");
+      this.#music = music;
       const state = this.#media.state;
       if (state === "paused" && before !== "paused") this.#pausedSince = performance.now();
       if (before === "playing" && state === "paused") onChange("paused");
