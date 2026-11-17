@@ -916,12 +916,12 @@
 - `LOOP_FPS` — `ui/src/features/companion/pack.ts:69` — Частота кадров зацикленной позы (`<поза>_1…N`), кадров в секунду.
 - `FrameState` — `ui/src/features/companion/pack.ts:93` — Что сейчас с персонажем: для выбора кадра. `blink` — доля моргания 0…1 или `null`.
 - `sequence` — `ui/src/features/companion/pack.ts:101` — Кадры `<имя>_1`, `<имя>_2` … подряд, пока есть.
-- `pickFrame` — `ui/src/features/companion/pack.ts:137` — Кадр для позы с учётом замен: речь (кадры рта по громкости), моргание, зацикленные кадры позы,
-- `poseName` — `ui/src/features/companion/pack.ts:145` — Имя позы из имени файла: `Sit_Edge.PNG` → `sit_edge`; не картинка — `null`.
-- `savePoses` — `ui/src/features/companion/pack.ts:152` — Сохранить позы из выбранной папки; вернёт, сколько картинок принято.
-- `clearPoses` — `ui/src/features/companion/pack.ts:164` — —
-- `DEFAULT_PACK` — `ui/src/features/companion/pack.ts:175` — Встроенный персонаж (`ui/public/characters/default/`; подгонка — `docs/character/README.md`).
-- `loadPoses` — `ui/src/features/companion/pack.ts:208` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
+- `pickFrame` — `ui/src/features/companion/pack.ts:139` — Кадр для позы с учётом замен: речь (кадры рта по громкости), моргание, зацикленные кадры позы,
+- `poseName` — `ui/src/features/companion/pack.ts:147` — Имя позы из имени файла: `Sit_Edge.PNG` → `sit_edge`; не картинка — `null`.
+- `savePoses` — `ui/src/features/companion/pack.ts:154` — Сохранить позы из выбранной папки; вернёт, сколько картинок принято.
+- `clearPoses` — `ui/src/features/companion/pack.ts:166` — —
+- `DEFAULT_PACK` — `ui/src/features/companion/pack.ts:177` — Встроенный персонаж (`ui/public/characters/default/`; подгонка — `docs/character/README.md`).
+- `loadPoses` — `ui/src/features/companion/pack.ts:210` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
 - `placeholderPose` — `ui/src/features/companion/placeholder.ts:259` — Силуэт позы: широкие линии с градиентом палитры окна, круг головы, подпись с именем позы.
 - `Reactions` — `ui/src/features/companion/reactions.ts:20` — —
 - `RemarkTopic` — `ui/src/features/companion/remarks.ts:9` — —

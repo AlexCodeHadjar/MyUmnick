@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { floorSpot, surfaces } from "./anchors";
 import { Brain } from "./brain";
+import { pickFrame } from "./pack";
 import { watching } from "./watch";
 import type { World } from "./world";
 
@@ -55,5 +56,23 @@ describe("смотрим вместе", () => {
     brain.quiet = true;
     for (let t = 0; t < 120; t += 0.05) brain.tick(0.05);
     expect([brain.phase, brain.x]).toEqual(["rest", corner.x]);
+  });
+});
+
+describe("кадры пения", () => {
+  it("поёт — цикл покачивания; кадры рта только на громких местах", () => {
+    const have = new Set([
+      "stand",
+      "sing",
+      "sing_1",
+      "sing_2",
+      "sing_talk_1",
+      "sing_talk_2",
+      "sing_talk_3",
+    ]);
+    const state = { time: 0, mouth: 0.5, speaking: true, blink: null };
+    expect(pickFrame("sing", state, have)).toBe("sing_1");
+    expect(pickFrame("sing", { ...state, mouth: 0.95 }, have)).toBe("sing_talk_3");
+    expect(pickFrame("radio_idle", state, new Set(["stand", "stand_talk_1"]))).toBe("stand_talk_1");
   });
 });

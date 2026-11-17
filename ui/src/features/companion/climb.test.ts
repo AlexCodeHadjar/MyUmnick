@@ -42,6 +42,22 @@ describe("лазанье по стенам", () => {
     expect([brain.phase, brain.y]).toEqual(["rest", 500]);
   });
 
+  it("по правому боку окна — зеркально: лезет лицом влево, к стене", () => {
+    const brain = new Brain(() => 0.5);
+    brain.setWorld(WORLD);
+    const floor = snap(brain.surfaceList, 1330, 1040, 30);
+    const top = snap(brain.surfaceList, 1000, 500, 30);
+    if (floor === null || top === null) throw new Error("нет опор");
+    brain.place(floor);
+    brain.goTo(top);
+    const facings = new Set<number>();
+    ticks(brain, 12, (b) => {
+      if (b.phase === "climb") facings.add(b.body().facing);
+    });
+    expect(facings).toEqual(new Set([-1]));
+    expect([brain.phase, brain.y]).toEqual(["rest", 500]);
+  });
+
   it("низкое окно или окно в воздухе — без лазанья", () => {
     const list = surfaces(WORLD);
     const floor = snap(list, 450, 1040, 30);

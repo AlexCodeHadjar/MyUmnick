@@ -81,7 +81,7 @@ export const LOOP_FPS: Partial<Record<Pose, number>> = {
   climb: 6,
   dizzy: 4,
   wave: 6,
-  yawn: 2,
+  yawn: 0.8,
   dance: 6,
   watch: 3,
   lean_side: 4,
@@ -108,7 +108,9 @@ export function sequence(name: string, have: ReadonlySet<string>): string[] {
 function frameOf(name: string, pose: Pose, state: FrameState, have: ReadonlySet<string>): string {
   // Спит, а позы сна нет: замена с закрытыми глазами.
   if (pose === "sleep" && name !== "sleep" && have.has(`${name}_blink`)) return `${name}_blink`;
-  if (state.speaking && state.mouth > 0.08) {
+  // Поёт: тело качается циклом `sing_1…4` (рот там уже открыт), кадры рта — только на громких местах.
+  const threshold = pose === "sing" ? 0.75 : 0.08;
+  if (state.speaking && state.mouth > threshold) {
     // Рот по громкости: `_talk_1` приоткрыт … `_talk_N` открыт широко; без них — один `_talk`.
     const talk = sequence(`${name}_talk`, have);
     const level = Math.min(talk.length - 1, Math.floor(state.mouth * talk.length));
