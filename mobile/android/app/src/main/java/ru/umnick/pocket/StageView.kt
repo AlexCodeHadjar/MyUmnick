@@ -44,7 +44,9 @@ class StageView(context: Context, private val host: Host) : View(context) {
             layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
     }
-    val screen get() = Screen.of(context)
+    /** Размер экрана — один запрос к системе на кадр, а не десятки (было ~24% CPU главного потока). */
+    var screen = Screen.of(context)
+        private set
     /** «Пол» — над панелью навигации, ступни на её верхнем крае. */
     val floor get() = screen.let { it.heightPixels - it.bottomInset - HEIGHT }
     val x get() = params.x
@@ -64,6 +66,10 @@ class StageView(context: Context, private val host: Host) : View(context) {
     private var arcPose = "sit_edge"
     private var arcHold = 0L
     private var climbLeft = false
+    private var tracedMode: Mode? = null
+    private var tracedPose = ""
+    private var drawnKey = ""
+    private var screenAt = 0L
     var facingLeft = false
     private var grabX = 0f
     private var grabY = 0f
@@ -162,6 +168,7 @@ class StageView(context: Context, private val host: Host) : View(context) {
     /** Реплика в облачке над головой и эмоция на значке лица. */
     fun say(text: String?, face: String = emotion, ms: Long = 4500) {
         text ?: return
+        Trace.say(text)
         bubble = text
         emotion = face
         bubbleUntil = SystemClock.uptimeMillis() + ms
@@ -190,6 +197,9 @@ class StageView(context: Context, private val host: Host) : View(context) {
     /** Окно: y, при котором сиденье позы (доля высоты кадра) оказывается на линии `edgeY`. */
     fun seatY(edgeY: Int, seat: Float): Int = (edgeY - HEIGHT + SPRITE_H * (1 - seat)).toInt()
 
+    /** Окно в верхнем углу: голова сразу под строкой состояния, персонаж виден целиком. */
+    fun topY(): Int = TOP_INSET - (HEIGHT - SPRITE_H).toInt()
+
     fun minX() = -WIDTH / 4
     fun maxX() = screen.widthPixels - WIDTH * 3 / 4
 
@@ -197,6 +207,10 @@ class StageView(context: Context, private val host: Host) : View(context) {
 
     private fun tick() {
         val now = SystemClock.uptimeMillis()
+        if (now - screenAt > SCREEN_MS) {
+            screen = Screen.of(context)
+            screenAt = now
+        }
         when (mode) {
             Mode.WALK -> stepWalk()
             Mode.FALL -> stepFall()
@@ -206,8 +220,20 @@ class StageView(context: Context, private val host: Host) : View(context) {
             else -> Unit
         }
         life.tick(now)
+        if (mode != tracedMode || pose != tracedPose) {
+            tracedMode = mode
+            tracedPose = pose
+            Trace.state(mode.name, pose, params.x, params.y)
+        }
         if (bubble != null && now > bubbleUntil) bubble = null
-        invalidate()
+        // Перерисовка только когда кадр мог измениться: на месте — 10 раз в секунду (дыхание, кадры позы),
+        // в движении — каждый кадр. Было 60 раз в секунду всегда: ~55% CPU эмулятора во сне.
+        // Окно двигается само (updateViewLayout) — содержимое перерисовываем, только когда сменился кадр.
+        val key = "$pose|${now / DRAW_MS}|${bubble.hashCode()}|$emotion|$facingLeft"
+        if (key != drawnKey) {
+            drawnKey = key
+            invalidate()
+        }
         postOnAnimation(::tick)
     }
 
@@ -262,8 +288,7 @@ class StageView(context: Context, private val host: Host) : View(context) {
     }
 
     private fun stepClimb() {
-        val top = seatY(screen.let { it.heightPixels / 30 + TOP_LEDGE }, 0.62f)
-        if (params.y <= top) return life.reachedTop(climbLeft)
+        if (params.y <= topY()) return life.reachedTop(climbLeft)
         place(params.x, params.y - CLIMB_SPEED)
     }
 
@@ -276,6 +301,7 @@ class StageView(context: Context, private val host: Host) : View(context) {
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
         post {
+            screen = Screen.of(context)
             place(params.x.coerceIn(minX(), maxX()), params.y.coerceIn(0, maxOf(0, floor)))
             if (mode != Mode.HELD && mode != Mode.GONE) fall()
             life.rotated()
@@ -285,7 +311,7 @@ class StageView(context: Context, private val host: Host) : View(context) {
     // ——— касания ———
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        // Касание мимо персонажа — не наше (на экране блокировки его ждёт LockActivity).
+        // Касание мимо персонажа — не наше.
         if (event.actionMasked == MotionEvent.ACTION_OUTSIDE || mode == Mode.GONE) return false
         lastTouch = SystemClock.uptimeMillis()
         when (event.actionMasked) {
@@ -311,7 +337,10 @@ class StageView(context: Context, private val host: Host) : View(context) {
     private fun touchMove(event: MotionEvent) {
         if (mode != Mode.HELD && abs(event.rawX - downX) + abs(event.rawY - downY) < DRAG_SLOP) return
         velocity?.addMovement(event)
-        if (mode != Mode.HELD) life.grabbed()
+        if (mode != Mode.HELD) {
+            Trace.event("grab")
+            life.grabbed()
+        }
         mode = Mode.HELD
         pose = "held"
         place((event.rawX - grabX).toInt(), (event.rawY - grabY).toInt())
@@ -324,7 +353,13 @@ class StageView(context: Context, private val host: Host) : View(context) {
 
     private fun touchUp(event: MotionEvent) {
         if (mode == Mode.HELD) return release(event)
-        if (event.eventTime - downAt > LONG_PRESS) life.poked() else life.petted()
+        if (event.eventTime - downAt > LONG_PRESS) {
+            Trace.event("poke")
+            life.poked()
+        } else {
+            Trace.event("pet")
+            life.petted()
+        }
     }
 
     private fun release(event: MotionEvent) {
@@ -347,6 +382,15 @@ class StageView(context: Context, private val host: Host) : View(context) {
     // ——— отрисовка ———
 
     override fun onDraw(canvas: Canvas) {
+        // Ошибка отрисовки не должна ронять приложение: пишем в журнал сбоев и пропускаем кадр.
+        try {
+            drawFrame(canvas)
+        } catch (error: RuntimeException) {
+            CrashLog.write(context, "draw", error)
+        }
+    }
+
+    private fun drawFrame(canvas: Canvas) {
         val now = SystemClock.uptimeMillis()
         val step = (now / FRAME_MS).toInt()
         val blink = pose != "sleep" && (now / 100) % BLINK_EVERY == 0L
@@ -375,22 +419,26 @@ class StageView(context: Context, private val host: Host) : View(context) {
         canvas.drawBitmap(head, null, RectF(cx - 44f, cy - 44f, cx + 44f, cy + 44f), null)
     }
 
+    /**
+     * Облачко — в видимой части окна: у края экрана окно частично за ним, в верхнем углу — выше экрана.
+     * Ширина не меньше MIN_BUBBLE: узкая видимая полоса давала отрицательную ширину текста и падение
+     * (4 падения за 20-минутный прогон на эмуляторе).
+     */
     private fun drawBubble(canvas: Canvas, text: String) {
-        // Окно у края частично за экраном — облачко рисуем только в видимой его части.
         val visibleLeft = maxOf(8, -params.x + 8)
         val visibleRight = minOf(WIDTH - 8, screen.widthPixels - params.x - 8)
-        var left = visibleLeft.toFloat()
-        var right = visibleRight.toFloat()
-        if (right - left < MIN_BUBBLE) {
-            if (visibleLeft > 8) right = minOf(WIDTH - 8f, left + MIN_BUBBLE) else left = maxOf(8f, right - MIN_BUBBLE)
-        }
-        val layout = StaticLayout.Builder.obtain(text, 0, text.length, textPaint, (right - left - 140).toInt())
+        val left = if (visibleRight - visibleLeft >= MIN_BUBBLE) visibleLeft.toFloat()
+        else (visibleRight - MIN_BUBBLE).coerceIn(8f, WIDTH - 8f - MIN_BUBBLE)
+        val right = maxOf(visibleRight.toFloat(), left + MIN_BUBBLE).coerceAtMost(WIDTH - 8f)
+        val top = (-params.y + 8).coerceIn(8, HEIGHT - 180).toFloat()
+        val textWidth = (right - left - 140).toInt().coerceAtLeast(MIN_TEXT)
+        val layout = StaticLayout.Builder.obtain(text, 0, text.length, textPaint, textWidth)
             .setAlignment(Layout.Alignment.ALIGN_NORMAL).build()
-        val box = RectF(left, 8f, right, 40f + maxOf(layout.height, 96).toFloat())
+        val box = RectF(left, top, right, top + 32f + maxOf(layout.height, 96).toFloat())
         canvas.drawRoundRect(box, 28f, 28f, bubblePaint)
-        pack.head(emotion)?.let { canvas.drawBitmap(it, null, RectF(left + 12f, 20f, left + 108f, 116f), null) }
+        pack.head(emotion)?.let { canvas.drawBitmap(it, null, RectF(left + 12f, top + 12f, left + 108f, top + 108f), null) }
         canvas.save()
-        canvas.translate(left + 122f, 24f)
+        canvas.translate(left + 122f, top + 16f)
         layout.draw(canvas)
         canvas.restore()
     }
@@ -403,7 +451,7 @@ class StageView(context: Context, private val host: Host) : View(context) {
         const val SPRITE_H = 520f
         private const val WALK_SPEED = 4
         private const val CLIMB_SPEED = 3
-        private const val TOP_LEDGE = 60
+        private const val TOP_INSET = 150
         private const val GRAVITY = 2.2f
         private const val DRAG_SLOP = 10f
         private const val FRAME_UNITS = 16 // скорость пальца в пикселях за кадр (~60 Гц)
@@ -418,6 +466,9 @@ class StageView(context: Context, private val host: Host) : View(context) {
         private const val JUMP_HEIGHT = 220f
         private const val EDGE = 12
         private const val MIN_BUBBLE = 330f
+        private const val MIN_TEXT = 120
+        private const val DRAW_MS = 100L
+        private const val SCREEN_MS = 500L
         private const val LONG_PRESS = 450L
         private const val FRAME_MS = 160L
         private const val BLINK_EVERY = 45L

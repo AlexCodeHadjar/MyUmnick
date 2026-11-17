@@ -18,8 +18,18 @@ const EXTRA = {
   wake: ["Слушаю.", "Да-да?", "Я тут. Что записать?"],
   saved: ["Записал.", "Готово, в блокноте.", "Запомнил!"],
   empty: ["Блокнот пуст."],
+  keyboard: [
+    "Печатай, я не мешаю!",
+    "Уступаю место клавиатуре.",
+    "Оп, отпрыгнул. Пиши!",
+    "Я наверху посижу.",
+  ],
   peek: ["Ку-ку!", "А я тут!", "Подглядываю…", "Тсс, меня нет."],
-  low_battery: ["Батарейка садится… Покорми телефон?", "Мало заряда, мне тревожно.", "Зарядку бы нам."],
+  low_battery: [
+    "Батарейка садится… Покорми телефон?",
+    "Мало заряда, мне тревожно.",
+    "Зарядку бы нам.",
+  ],
   lonely: ["Ты про меня забыл?", "Скучно одному…", "Погладь, а?", "Эй, я тут вообще-то."],
   idle: ["Скучаю немного.", "Может, что-нибудь записать?", "Хорошо тут, в кармане."],
   morning: ["Доброе утро!", "Утро. Кофе уже был?"],
@@ -38,7 +48,10 @@ const pc = Object.fromEntries(
 // Фразы-функции («Посижу на «${name}»») уходят шаблонами с `{0}` — телефон подставляет сам.
 const template = (_key: string, value: unknown): unknown =>
   typeof value === "function" ? (value as (arg: string) => string)("{0}") : value;
-writeFileSync(join(OUT, "phrases.json"), JSON.stringify({ pet: PET_RU, pc, ...EXTRA }, template, 1));
+writeFileSync(
+  join(OUT, "phrases.json"),
+  JSON.stringify({ pet: PET_RU, pc, ...EXTRA }, template, 1),
+);
 writeFileSync(
   join(OUT, "index.json"),
   JSON.stringify(frames.map((name) => name.replace(".webp", ""))),

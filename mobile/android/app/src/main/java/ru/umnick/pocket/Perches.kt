@@ -5,6 +5,7 @@ import android.graphics.Rect
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 
 /**
  * Опоры на экране телефона — аналог окон и значков рабочего стола на ПК (`anchors.ts`, BEHAVIOR §4, §6):
@@ -27,6 +28,14 @@ object Perches {
         private set
     @Volatile var appSince = 0L
         private set
+
+    /** Рамка экранной клавиатуры или `null` — спрятана (триггер «не мешать», просьба пользователя). */
+    @Volatile var keyboard: Rect? = null
+        private set
+
+    fun keyboardChanged(box: Rect?) {
+        keyboard = box
+    }
 
     fun update(found: List<Spot>) {
         spots = found
@@ -60,6 +69,9 @@ class PerchService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         val type = event.eventType
+        if (type == AccessibilityEvent.TYPE_WINDOWS_CHANGED || type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            checkKeyboard()
+        }
         // Свайп страницы рабочего стола и смена окна — иконки под ним другие, даже если клетки те же.
         if (type == AccessibilityEvent.TYPE_VIEW_SCROLLED || type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             Perches.sceneChanged()
@@ -74,6 +86,15 @@ class PerchService : AccessibilityService() {
         val found = mutableListOf<Perches.Spot>()
         collect(root, found, 0)
         Perches.update(found)
+    }
+
+    /** Окно клавиатуры среди окон экрана (нужен flagRetrieveInteractiveWindows). */
+    private fun checkKeyboard() {
+        val all = windows
+        val ime = all.firstOrNull { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
+        val shown = ime != null
+        if (shown != (Perches.keyboard != null)) Trace.event("keyboard-window:$shown of ${all.size}")
+        Perches.keyboardChanged(ime?.let { Rect().also(it::getBoundsInScreen) }?.takeIf { it.height() > 0 })
     }
 
     private fun collect(node: AccessibilityNodeInfo, out: MutableList<Perches.Spot>, depth: Int) {

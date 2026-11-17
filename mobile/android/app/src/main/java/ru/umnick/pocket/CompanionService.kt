@@ -3,7 +3,6 @@ package ru.umnick.pocket
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.KeyguardManager
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.IntentFilter
@@ -23,35 +22,19 @@ class CompanionService : Service() {
     private var ears: Ears? = null
     private var shake: Shake? = null
 
-    /**
-     * Экран погас — заранее поднимаем окно на экране блокировки, чтобы при включении спутник уже был
-     * там; разблокировали — LockActivity закрывается сама, оверлей снова виден.
-     */
+    /** Экран погас и включился: T7 «С возвращением», если перерыв был долгим. */
     private val screen = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val locked = getSystemService(KeyguardManager::class.java).isKeyguardLocked
             when (intent.action) {
-                Intent.ACTION_SCREEN_OFF -> {
-                    screenOffAt = SystemClock.elapsedRealtime()
-                    showOnLock()
+                Intent.ACTION_SCREEN_OFF -> screenOffAt = SystemClock.elapsedRealtime()
+                Intent.ACTION_USER_PRESENT -> if (screenOffAt > 0) {
+                    Stages.current()?.life?.screenOn(SystemClock.elapsedRealtime() - screenOffAt)
                 }
-                Intent.ACTION_SCREEN_ON -> if (locked && Stages.lock == null) showOnLock()
-                Intent.ACTION_USER_PRESENT -> Stages.overlay?.visibility = android.view.View.VISIBLE
-                else -> Unit
-            }
-            // T7 «С возвращением»: сколько экран был выключен.
-            if (intent.action == Intent.ACTION_SCREEN_ON && screenOffAt > 0) {
-                Stages.current()?.life?.screenOn(SystemClock.elapsedRealtime() - screenOffAt)
             }
         }
     }
 
     private var screenOffAt = 0L
-
-    private fun showOnLock() {
-        Stages.overlay?.visibility = android.view.View.INVISIBLE
-        runCatching { LockActivity.show(this) }.onFailure { CrashLog.write(this, "lock", it) }
-    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -101,7 +84,6 @@ class CompanionService : Service() {
         Stages.overlay = view
         registerReceiver(screen, IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
-            addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_USER_PRESENT)
         })
         shake = Shake(this) { view.dizzy() }.also { it.start() }

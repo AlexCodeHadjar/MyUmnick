@@ -31,17 +31,14 @@ class SetupActivity : Activity() {
         root.addView(button("5. Видеть иконки и кнопки (спец. возможности)") {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         })
-        root.addView(android.widget.Switch(this).apply {
-            text = "Показывать на экране блокировки"
-            isChecked = LockActivity.enabled(this@SetupActivity)
-            setOnCheckedChangeListener { _, on -> LockActivity.setEnabled(this@SetupActivity, on) }
-        })
         root.addView(button("Запустить Умника") { launch() })
         setContentView(root)
     }
 
     override fun onResume() {
         super.onResume()
+        // Разрешения уже есть — открытие приложения само поднимает Умника (без кнопки «Запустить»).
+        if (Permissions.ready(this)) CompanionService.start(this)
         status.text = buildString {
             appendLine("Оверлей: " + mark(Permissions.overlay(this@SetupActivity)))
             appendLine("Микрофон: " + mark(Permissions.microphone(this@SetupActivity)))

@@ -37,6 +37,8 @@ class Life(private val stage: StageView, context: Context) {
     private var activeSince = SystemClock.uptimeMillis()
     private var climbAfterWalk: Boolean? = null
     private var onTop = false
+    private var dodging = false
+    private var sleptAt = 0L
 
     // ——— события от тела и службы ———
 
@@ -120,9 +122,9 @@ class Life(private val stage: StageView, context: Context) {
 
     /** §9: долез до верха — садится на верхний край экрана в углу. */
     fun reachedTop(left: Boolean) {
-        val y = stage.seatY(stage.screen.heightPixels / 30 + 60, CORNER_SEAT)
+        val y = stage.topY()
         stage.facingLeft = !left
-        stage.act("perch_corner", 8000 + Random.nextLong(8000), stage.wallX("perch_corner", left, 0.15f), y)
+        stage.act("perch_corner", 8000 + Random.nextLong(8000), stage.wallX("perch_corner", left, CORNER_CONTACT), y)
         onTop = true
     }
 
@@ -139,6 +141,7 @@ class Life(private val stage: StageView, context: Context) {
 
     fun tick(now: Long) {
         checkPerch()
+        checkKeyboard()
         if (now - lastCheck >= CHECK_MS) {
             lastCheck = now
             checkTriggers(now)
@@ -156,6 +159,32 @@ class Life(private val stage: StageView, context: Context) {
         if (ready("homeless", MIN)) say(phrases.pick("pc.triggers.homeless"), "surprised")
     }
 
+    /**
+     * Клавиатура появилась и персонаж в её зоне (или ниже её верха) — отпрыгивает в верхний угол, чтобы
+     * не закрывать поле ввода; клавиатура ушла — спрыгивает вниз.
+     */
+    private fun checkKeyboard() {
+        val box = Perches.keyboard
+        if (box == null) {
+            if (dodging) {
+                dodging = false
+                if (!stage.moving) stage.fall()
+            }
+            return
+        }
+        if (dodging || stage.mode == StageView.Mode.HELD || stage.mode == StageView.Mode.GONE) return
+        val feet = stage.y + StageView.HEIGHT
+        if (feet < box.top) return
+        dodging = true
+        perch = null
+        climbAfterWalk = null
+        val left = stage.x < stage.screen.widthPixels / 2 - StageView.WIDTH / 2
+        stage.facingLeft = !left
+        stage.leap(stage.wallX("perch_corner", left, CORNER_CONTACT), stage.topY(), "perch_corner", KEYBOARD_HOLD)
+        Trace.event("keyboard")
+        if (ready("keyboard", MIN)) say(phrases.pick("keyboard"))
+    }
+
     private fun checkTriggers(now: Long) {
         if (stage.mode == StageView.Mode.HELD || stage.mode == StageView.Mode.GONE) return
         checkMusic()
@@ -169,6 +198,7 @@ class Life(private val stage: StageView, context: Context) {
         val playing = audio.isMusicActive && !watching
         if (playing == singing) return
         singing = playing
+        Trace.event("music:$playing")
         if (!playing || stage.moving) return
         stage.act(if (Random.nextBoolean()) "sing" else "radio_idle", 20_000)
         if (ready("music", 5 * MIN)) say(phrases.pick("pc.remarks.music"), "happy")
@@ -180,6 +210,7 @@ class Life(private val stage: StageView, context: Context) {
         val video = screen.widthPixels > screen.heightPixels && Topics.of(Perches.app) == "video"
         if (video == watching) return
         watching = video
+        Trace.event("watch:$video")
         perch = null
         if (video) {
             stage.facingLeft = true
@@ -196,6 +227,7 @@ class Life(private val stage: StageView, context: Context) {
         val app = Perches.app
         if (app.isEmpty() || app == seenApp) return checkLongApp(now)
         seenApp = app
+        Trace.event("app:$app")
         appSwitches.addLast(now)
         while (appSwitches.isNotEmpty() && now - appSwitches.first() > MIN) appSwitches.removeFirst()
         val topic = Topics.of(app)
@@ -236,10 +268,21 @@ class Life(private val stage: StageView, context: Context) {
         if (singing) return stage.act(if (Random.nextFloat() < 0.2f) "dance" else "sing", 15_000)
         if (watching) return watchMore()
         val idle = now - stage.lastTouch
-        val sleepAfter = if (mood.tired) SLEEP_AFTER / 3 else SLEEP_AFTER
+        // Спит недолго и не подряд: в 20-минутном прогоне без касаний он спал 70% времени (засыпал снова
+        // сразу после пробуждения). Теперь: сон 1–2 мин, потом не меньше SLEEP_GAP бодрствует.
+        val night = Calendar.getInstance().get(Calendar.HOUR_OF_DAY).let { it >= 23 || it < 6 }
+        val sleepAfter = when {
+            night -> SLEEP_AFTER / 5
+            mood.tired -> SLEEP_AFTER / 2
+            else -> SLEEP_AFTER
+        }
+        val rested = now - sleptAt > SLEEP_GAP
         when {
-            idle > sleepAfter && stage.pose == "yawn" -> stage.act("sleep", 60_000, atY = stage.floor)
-            idle > sleepAfter -> stage.act("yawn", 2500)
+            idle > sleepAfter && rested && stage.pose == "yawn" -> {
+                sleptAt = now
+                stage.act("sleep", 60_000 + Random.nextLong(60_000), atY = stage.floor)
+            }
+            idle > sleepAfter && rested -> stage.act("yawn", 2500)
             onTop -> comeDown()
             else -> stage.act(pickActivity())
         }
@@ -364,6 +407,7 @@ class Life(private val stage: StageView, context: Context) {
         val now = SystemClock.uptimeMillis()
         if (cooldowns[key]?.let { now - it < cooldown } == true) return false
         cooldowns[key] = now
+        Trace.event("trigger:$key")
         return true
     }
 
@@ -383,10 +427,13 @@ class Life(private val stage: StageView, context: Context) {
 
     private companion object {
         const val MIN = 60_000L
+        /** Сидит наверху, пока клавиатура открыта; потом сам слезет (`checkKeyboard`). */
+        const val KEYBOARD_HOLD = 10 * 60_000L
         const val CHECK_MS = 1000L
         const val PET_SERIES = 3000L
         const val SHAKE_MEMORY = 20_000L
-        const val SLEEP_AFTER = 180_000L
+        const val SLEEP_AFTER = 5 * MIN
+        const val SLEEP_GAP = 4 * MIN
         const val COMEBACK_MS = 10 * MIN
         const val STRETCH_AFTER = 50 * MIN
         const val LONG_APP = 40 * MIN
@@ -395,7 +442,8 @@ class Life(private val stage: StageView, context: Context) {
         const val TOSS_FAST = 30f
         /** Сиденье позы sit_edge — доля высоты кадра от верха (ANCHORS в pack.ts). */
         const val EDGE_SEAT = 0.62f
-        const val CORNER_SEAT = 0.62f
+        /** Край кадра perch_corner, прижатый к боку экрана (bbox 501 из 526). */
+        const val CORNER_CONTACT = 0.95f
         /** Спина у стены в кадре lean_side — доля ширины (bbox 531 из 536). */
         const val LEAN_CONTACT = 0.97f
     }
