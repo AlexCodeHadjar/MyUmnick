@@ -39,6 +39,7 @@ class Life(private val stage: StageView, context: Context) {
     private var onTop = false
     private var dodging = false
     private var sleptAt = 0L
+    private var lookedAt = 0L
 
     // ——— события от тела и службы ———
 
@@ -142,6 +143,7 @@ class Life(private val stage: StageView, context: Context) {
     fun tick(now: Long) {
         checkPerch()
         checkKeyboard()
+        lookAtTouch()
         if (now - lastCheck >= CHECK_MS) {
             lastCheck = now
             checkTriggers(now)
@@ -183,6 +185,19 @@ class Life(private val stage: StageView, context: Context) {
         stage.leap(stage.wallX("perch_corner", left, CORNER_CONTACT), stage.topY(), "perch_corner", KEYBOARD_HOLD)
         Trace.event("keyboard")
         if (ready("keyboard", MIN)) say(phrases.pick("keyboard"))
+    }
+
+    /** Нажали где-то на экране — поворачивается туда (если стоит, сидит или лежит, а не лезет и не летит). */
+    private fun lookAtTouch() {
+        val at = Perches.touchAt
+        if (at == lookedAt) return
+        lookedAt = at
+        if (stage.moving || stage.pose !in TURNABLE) return
+        val left = Perches.touchX < stage.x + StageView.WIDTH / 2
+        if (left == stage.facingLeft) return
+        stage.facingLeft = left
+        Trace.event("look:${if (left) "left" else "right"}")
+        if (stage.pose == "sleep" && Random.nextFloat() < 0.3f) stage.act("yawn", 2000)
     }
 
     private fun checkTriggers(now: Long) {
@@ -427,6 +442,8 @@ class Life(private val stage: StageView, context: Context) {
 
     private companion object {
         const val MIN = 60_000L
+        /** Позы, в которых можно повернуться к касанию: у стены и в полёте разворот выглядел бы сломанным. */
+        val TURNABLE = setOf("stand", "sit_edge", "sit_corner", "laydown", "sleep", "dance", "sing", "radio_idle", "watch", "wave", "yawn")
         /** Сидит наверху, пока клавиатура открыта; потом сам слезет (`checkKeyboard`). */
         const val KEYBOARD_HOLD = 10 * 60_000L
         const val CHECK_MS = 1000L

@@ -33,6 +33,18 @@ object Perches {
     @Volatile var keyboard: Rect? = null
         private set
 
+    /** Где последний раз нажали на элемент экрана (центр его рамки) и когда — персонаж смотрит туда. */
+    @Volatile var touchX = 0
+        private set
+    @Volatile var touchAt = 0L
+        private set
+
+    fun touched(x: Int) {
+        touchX = x
+        touchAt = SystemClock.uptimeMillis()
+        Trace.event("touch:$x")
+    }
+
     fun keyboardChanged(box: Rect?) {
         keyboard = box
     }
@@ -69,6 +81,10 @@ class PerchService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         val type = event.eventType
+        // Касание чужого приложения система не сообщает, но нажатие на элемент — да, с его рамкой.
+        if (type == AccessibilityEvent.TYPE_VIEW_CLICKED || type == AccessibilityEvent.TYPE_VIEW_LONG_CLICKED) {
+            event.source?.let { node -> Perches.touched(Rect().also(node::getBoundsInScreen).centerX()) }
+        }
         if (type == AccessibilityEvent.TYPE_WINDOWS_CHANGED || type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             checkKeyboard()
         }
