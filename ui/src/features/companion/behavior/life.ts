@@ -3,8 +3,8 @@
  * привычки пользователя, сайты браузера, любимый значок. Здесь выбор фразы; когда говорить — решает
  * `Companion.svelte`. Время — секунды.
  */
-import { locale } from "../../core";
-import type { Brain } from "./brain";
+import { locale } from "../../../core";
+import type { Brain } from "../body";
 import {
   AppWatch,
   FAVORITES_KEY,
@@ -24,9 +24,9 @@ import {
   type Mood,
   type MoodEvent,
 } from "./mood";
-import { petLine } from "./phrases";
-import type { RemarkTopic } from "./remarks";
-import { browserTopic } from "./sites";
+import { petLine } from "../phrases";
+import type { RemarkTopic } from "../senses";
+import { browserTopic } from "../senses";
 
 const SAVE_EVERY_S = 30;
 

@@ -3,8 +3,8 @@
  * Картинки пользователь загружает папкой из меню окошка; хранятся в IndexedDB окна (`pose:<имя>`), поэтому
  * их видит и слой спутника. Нет позы — цепочка замен, нет ничего — временные силуэты (`placeholder.ts`).
  */
-import { characterChannel, run } from "../avatar/portrait/picture";
-import type { Pose } from "./anchors";
+import { characterChannel, run } from "../../avatar/portrait/picture";
+import type { Pose } from "../space";
 
 /** Замены отсутствующей позы, в порядке предпочтения; всё кончается позой `stand`. */
 export const FALLBACK: Record<Pose, readonly Pose[]> = {

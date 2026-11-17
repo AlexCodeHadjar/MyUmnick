@@ -3,12 +3,12 @@
  * `triggers.ts`, фразы поглаживания — `phrases/`, тексты триггеров — словари (`companion.triggers`).
  * Время — секунды (`performance.now() / 1000`).
  */
-import { locale } from "../../core";
-import type { Brain } from "./brain";
+import { locale } from "../../../core";
+import type { Brain } from "../body";
 import type { MoodEvent } from "./mood";
-import { petLine, petPhrases, petSection } from "./phrases";
-import { timeOfDay } from "./remarks";
-import { Cooldowns, CursorWatch, dragged, lateNight, shaken, type Trigger } from "./triggers";
+import { petLine, petPhrases, petSection } from "../phrases";
+import { timeOfDay } from "../senses";
+import { Cooldowns, CursorWatch, dragged, lateNight, shaken, type Trigger } from "../senses";
 
 /** Серия поглаживаний: клики не дальше 3 с друг от друга. */
 const PET_SERIES_S = 3;

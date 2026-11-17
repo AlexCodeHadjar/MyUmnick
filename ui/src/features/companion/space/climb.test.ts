@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { snap, surfaces } from "./anchors";
-import { Brain } from "./brain";
+import { Brain } from "../body";
 import { climbRoute } from "./climb";
 import type { World } from "./world";
 

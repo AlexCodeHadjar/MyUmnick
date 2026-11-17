@@ -3,7 +3,7 @@
  * видеокарта отдана LLM (приоритет 1). Форма молнии — чистая функция с заданным генератором случайных
  * чисел, проверяется тестами.
  */
-import type { Effect } from "./brain";
+import type { Effect } from "../body";
 
 export type Point = [number, number];
 export type Random = () => number;

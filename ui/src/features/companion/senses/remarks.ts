@@ -3,8 +3,8 @@
  * в облачке — к месту (какая программа активна, время суток, долгий простой). Тексты — в словарях
  * интерфейса (`companion.remarks`), здесь только выбор: мгновенно и без LLM, офлайн.
  */
-import type { Messages } from "../../core";
-import type { Rect } from "./world";
+import type { Messages } from "../../../core";
+import type { Rect } from "../space";
 
 export type RemarkTopic =
   | "browser"

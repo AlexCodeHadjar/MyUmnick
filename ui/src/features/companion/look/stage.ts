@@ -3,13 +3,13 @@
  * дыхание, подскок в такт речи, «сплющивание» при приземлении, — моргание и речь вариантами `_blink`,
  * `_talk`, затем эффекты. Чистится только прошлый прямоугольник, а не весь экран (раздел 8).
  */
-import type { Pose } from "./anchors";
-import type { Body } from "./brain";
+import type { Pose } from "../space";
+import type { Body } from "../body";
 import { drawEffects } from "./effects";
 import { ANCHORS, CANVAS_RATIO, FALLBACK, loadPoses, pickFrame } from "./pack";
 import { drawPanel, panelRect } from "./panel";
 import { placeholderPose } from "./placeholder";
-import type { Rect } from "./world";
+import type { Rect } from "../space";
 
 const POSES: readonly Pose[] = [
   "stand",

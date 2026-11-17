@@ -1,7 +1,7 @@
 <script lang="ts">
   import { locale } from "../../core";
   // Пункты «Сопровождения» в меню окошка персонажа (Этап 23): когда спутник на экране и его позы.
-  import { clearPoses, savePoses } from "./pack";
+  import { clearPoses, savePoses } from "./look";
   import { loadSettings, saveSettings, type CompanionWhen } from "./settings";
 
   const { onclose, onnote }: { onclose: () => void; onnote: (text: string) => void } = $props();

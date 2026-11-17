@@ -14,50 +14,14 @@ import {
   type Pose,
   type Spot,
   type Surface,
-} from "./anchors";
-import { climbRoute, type Climb } from "./climb";
-import { fitScreen } from "./room";
-import type { Rect, World } from "./world";
+} from "../space";
+import { climbRoute, type Climb } from "../space";
+import { fitScreen } from "../space";
+import type { Rect, World } from "../space";
+import { poseOf } from "./pose";
+import type { Body, Effect, Music, Phase } from "./types";
 
-export type Phase =
-  | "hidden"
-  | "rest"
-  | "walk"
-  | "jump"
-  | "fall"
-  | "held"
-  | "bolt"
-  | "portal_out"
-  | "portal_in"
-  /** Лезет по боку окна вверх (BEHAVIOR §9). */
-  | "climb";
-
-/** Радио (BEHAVIOR §8): играет — поёт стоя и не гуляет; пауза — слушает в наушниках. */
-export type Music = "off" | "playing" | "paused";
-
-export type Effect =
-  | { kind: "bolt"; from: [number, number]; to: [number, number]; t: number }
-  | { kind: "portal"; x: number; y: number; t: number; opening: boolean }
-  | { kind: "sparks"; x: number; y: number; t: number }
-  /** Сердечки над головой: погладили. */
-  | { kind: "hearts"; x: number; y: number; t: number }
-  /** Кольцо «закрепится здесь» при перетаскивании и прицеливании; рисуется кадр, не хранится. */
-  | { kind: "mark"; x: number; y: number; t: number }
-  /** Зёрнышко попкорна вылетает из ведёрка: «смотрим вместе». */
-  | { kind: "popcorn"; x: number; y: number; t: number };
-
-export interface Body {
-  phase: Phase;
-  x: number;
-  y: number;
-  pose: Pose;
-  facing: 1 | -1;
-  /** 0…1: портал «вытягивает» персонажа из точки и втягивает обратно. */
-  scale: number;
-  /** 1 → 0 после поглаживания: зажмуренные глаза, подскок. */
-  petting: number;
-  effects: Effect[];
-}
+export type { Body, Effect, Music, Phase } from "./types";
 
 /** Ближе — пешком или прыжком, дальше — молнией (решение пользователя, раздел 9.1). */
 export const WALK_LIMIT = 300;
@@ -446,29 +410,18 @@ export class Brain {
   }
 
   #pose(): Pose {
-    if (this.#pinned !== null) return this.#pinned;
-    if (this.phase === "held") return "held";
-    if (this.phase === "walk") return "walk";
-    if (this.phase === "climb") return "climb";
-    if (this.phase === "jump" || this.phase === "fall" || this.phase.startsWith("portal"))
-      return "float";
-    const pose = this.#spot?.pose ?? "float";
-    if (this.#emote !== null) return this.#emote.pose;
-    if (this.watching && pose === "sit_corner") return "watch";
-    // Радио: стоя — поёт (на паузе слушает), сидя — сидит как сидел.
-    if (this.music !== "off" && pose === "stand" && this.#petting === 0) {
-      return this.music === "playing" ? "jukebox" : "radio_idle";
-    }
-    // Гладят стоящего — отдельный кадр «довольный»; нет его — «стоит» с закрытыми глазами (stage.ts).
-    if (this.#petting > 0 && pose === "stand") return "pet";
-    if (
-      this.#idle > this.sleepAfter &&
-      (pose === "sit_edge" || pose === "stand" || pose === "sit_corner")
-    ) {
-      return "sleep";
-    }
-    if (this.#idle > this.layAfter && (pose === "sit_edge" || pose === "stand")) return "laydown";
-    return pose;
+    return poseOf({
+      pinned: this.#pinned,
+      phase: this.phase,
+      spot: this.#spot?.pose ?? null,
+      emote: this.#emote?.pose ?? null,
+      watching: this.watching,
+      music: this.music,
+      petting: this.#petting > 0,
+      idle: this.#idle,
+      layAfter: this.layAfter,
+      sleepAfter: this.sleepAfter,
+    });
   }
 
   #rest(spot: Spot): void {

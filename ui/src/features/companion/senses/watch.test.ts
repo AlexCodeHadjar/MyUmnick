@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { floorSpot, surfaces } from "./anchors";
-import { Brain } from "./brain";
-import { pickFrame } from "./pack";
-import { watchPhrases } from "./phrases";
+import { floorSpot, surfaces } from "../space";
+import { Brain } from "../body";
+import { pickFrame } from "../look";
+import { watchPhrases } from "../phrases";
 import { keepWatching, mediaVideo, pickMedia, watching } from "./watch";
-import type { World } from "./world";
+import type { World } from "../space";
 
 const WORLD: World = {
   monitor: { x: 0, y: 0, w: 1920, h: 1080 },

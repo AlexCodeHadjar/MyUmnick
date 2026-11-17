@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import { messagesFor } from "../../core";
 
-import { below, floorSpot, seatSpot, snap, surfaces } from "./anchors";
-import { Brain, WALK_LIMIT } from "./brain";
-import { bubbleText, followSpot, placeBubble, release, velocityOf } from "./control";
-import { along, lightning, seeded } from "./effects";
-import { pickFrame, poseName, sequence } from "./pack";
-import { choosePoke, remark, topicOf } from "./remarks";
+import { below, floorSpot, seatSpot, snap, surfaces } from "./space";
+import { Brain, WALK_LIMIT } from "./body";
+import { bubbleText, followSpot, placeBubble, release, velocityOf } from "./space";
+import { along, lightning, seeded } from "./look";
+import { pickFrame, poseName, sequence } from "./look";
+import { choosePoke, remark, topicOf } from "./senses";
 import { DEFAULT_SETTINGS, parseSettings, shouldShow } from "./settings";
-import { worldToCss, type World } from "./world";
+import { worldToCss, type World } from "./space";
 
 const WORLD: World = {
   monitor: { x: 0, y: 0, w: 1920, h: 1080 },

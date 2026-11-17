@@ -8,4 +8,4 @@ export {
   type CompanionSettings,
   type CompanionWhen,
 } from "./settings";
-export { clearPoses, savePoses } from "./pack";
+export { clearPoses, savePoses } from "./look";

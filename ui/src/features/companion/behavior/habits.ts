@@ -3,7 +3,7 @@
  * долгая работа в одной программе, частые переключения, любимый значок. Только имя программы и
  * названия значков — то, что спутник и так видит. Чистые классы — проверяются тестами.
  */
-import type { RemarkTopic } from "./remarks";
+import type { RemarkTopic } from "../senses";
 
 export type Habit = "first" | "long" | "switching";
 

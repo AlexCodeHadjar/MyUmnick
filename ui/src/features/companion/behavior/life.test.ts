@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { AppWatch, isRecycleBin, parseFavorites, pickIcon } from "./habits";
 import { drift, neutralMood, nudge, pace, parseMood, restTimes, tone } from "./mood";
-import { browserTopic, siteOf } from "./sites";
+import { browserTopic, siteOf } from "../senses";
 
 describe("настроение", () => {
   it("поглаживания радуют, тряска огорчает, всё в пределах 0…1", () => {

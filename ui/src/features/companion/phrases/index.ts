@@ -9,6 +9,7 @@ import { WATCH_EN } from "./watch.en";
 import { WATCH_RU } from "./watch.ru";
 
 export type { PetPhrases, WatchPhrases } from "./types";
+export { PET_EN, PET_RU, WATCH_EN, WATCH_RU };
 
 export function watchPhrases(lang: string): WatchPhrases {
   return lang === "en" ? WATCH_EN : WATCH_RU;

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { PET_EN } from "./phrases/pet.en";
-import { PET_RU } from "./phrases/pet.ru";
-import { petLine, petSection, type PetPhrases } from "./phrases";
+import { PET_EN } from "../phrases";
+import { PET_RU } from "../phrases";
+import { petLine, petSection, type PetPhrases } from "../phrases";
 import { Cooldowns, CursorWatch, dragged, lateNight, shaken } from "./triggers";
 
 const calm = {
