@@ -21,6 +21,11 @@ class CompanionService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    override fun onCreate() {
+        super.onCreate()
+        CrashLog.install(this)
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         goForeground()
         if (stage == null) attachStage()

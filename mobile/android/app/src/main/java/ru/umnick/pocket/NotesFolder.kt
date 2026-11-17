@@ -33,12 +33,13 @@ object NotesFolder {
     fun ready(context: Context): Boolean = folder(context) != null
 
     /** Записать весь блокнот в общую папку: ПК перечитывает его целиком при подключении. */
-    fun mirror(context: Context, notebook: Notebook) {
+    fun mirror(context: Context, notebook: Notebook) =
+        writeText(context, "notes.jsonl", notebook.all().joinToString("") { it.toJson() + "\n" })
+
+    fun writeText(context: Context, name: String, text: String) {
         val dir = folder(context) ?: return
-        val file = dir.findFile("notes.jsonl") ?: dir.createFile("application/octet-stream", "notes.jsonl") ?: return
-        context.contentResolver.openOutputStream(file.uri, "wt")?.use { out ->
-            out.write(notebook.all().joinToString("") { it.toJson() + "\n" }.toByteArray())
-        }
+        val file = dir.findFile(name) ?: dir.createFile("application/octet-stream", name) ?: return
+        context.contentResolver.openOutputStream(file.uri, "wt")?.use { it.write(text.toByteArray()) }
     }
 
     /** Забрать заметки, которые ПК положил в `from_pc.jsonl`. */

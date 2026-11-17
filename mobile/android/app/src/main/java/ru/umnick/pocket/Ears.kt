@@ -3,6 +3,7 @@ package ru.umnick.pocket
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.speech.tts.TextToSpeech
 import org.json.JSONObject
 import org.vosk.Model
@@ -13,9 +14,10 @@ import org.vosk.android.StorageService
 import java.util.Locale
 
 /**
- * Слух (S-24.5, ADR-0050): Vosk офлайн. Пока не позвали — распознаватель с узкой грамматикой
- * (только имя и «[unk]»), это дёшево для батареи. Услышал «Умник» — полная диктовка на одну фразу.
- * Команды: «запиши …», «прочитай заметки»; одно имя → следующая фраза — заметка (как ADR-0040, 8 с).
+ * Слух (S-24.5, ADR-0050): Vosk офлайн, **один** распознаватель на всё время работы. Перезапуск
+ * `SpeechService` на каждое имя ронял приложение: старый `AudioRecord` ещё держал микрофон, новый
+ * не открывался (исключение в конструкторе). Теперь имя ищется в тексте полной фразы:
+ * «Умник, запиши молоко» — сразу заметка; одно «Умник» — следующая фраза в течение 8 с (как ADR-0040).
  */
 class Ears(
     private val context: Context,
@@ -25,58 +27,53 @@ class Ears(
     private val main = Handler(Looper.getMainLooper())
     private var model: Model? = null
     private var service: SpeechService? = null
-    private var dictating = false
+    private var waitUntil = 0L
     private var tts: TextToSpeech? = null
 
     fun start() {
         tts = TextToSpeech(context) { tts?.language = Locale("ru") }
-        StorageService.unpack(context, "model", "model", { loaded ->
-            model = loaded
-            listenForName()
-        }, { error -> stage.say("Не слышу: нет модели речи (${error.message})", "sad") })
+        StorageService.unpack(context, "model", "model", ::listen) { error ->
+            CrashLog.write(context, "vosk unpack", error)
+            stage.say("Не слышу: нет модели речи", "sad")
+        }
     }
 
     fun stop() {
         service?.shutdown()
+        model?.close()
         tts?.shutdown()
     }
 
-    private fun listenForName() {
-        dictating = false
-        restart(Recognizer(model, RATE, NAME_GRAMMAR))
-    }
-
-    private fun listenForDictation() {
-        dictating = true
-        restart(Recognizer(model, RATE))
-        main.postDelayed({ if (dictating) listenForName() }, FOLLOW_UP_MS)
-    }
-
-    private fun restart(recognizer: Recognizer) {
-        service?.shutdown()
-        service = SpeechService(recognizer, RATE).also { it.startListening(this) }
+    private fun listen(loaded: Model) {
+        model = loaded
+        try {
+            service = SpeechService(Recognizer(loaded, RATE), RATE).also { it.startListening(this) }
+        } catch (error: Exception) {
+            CrashLog.write(context, "mic", error)
+            stage.say("Микрофон занят другим приложением", "sad")
+        }
     }
 
     override fun onResult(hypothesis: String) {
-        val text = JSONObject(hypothesis).optString("text").trim().lowercase()
-        if (text.isEmpty()) return
-        main.post { if (dictating) onDictation(text) else onNameHeard(text) }
+        val text = runCatching { JSONObject(hypothesis).optString("text") }.getOrDefault("").trim().lowercase()
+        if (text.isNotEmpty()) main.post { safely { hear(text) } }
     }
 
-    private fun onNameHeard(text: String) {
-        if (NAMES.none { text.contains(it) }) return
-        stage.attend()
-        listenForDictation()
-    }
-
-    private fun onDictation(text: String) {
+    private fun hear(text: String) {
+        val named = Commands.hasName(text)
+        val waiting = SystemClock.uptimeMillis() < waitUntil
+        if (!named && !waiting) return
         val request = Commands.stripName(text)
-        if (request.isEmpty()) return
+        if (request.isEmpty()) {
+            waitUntil = SystemClock.uptimeMillis() + FOLLOW_UP_MS
+            stage.attend()
+            return
+        }
+        waitUntil = 0
         when (val command = Commands.parse(request)) {
             is Commands.Command.Read -> readNotes()
             is Commands.Command.Write -> save(command.text)
         }
-        listenForName()
     }
 
     private fun save(text: String) {
@@ -88,7 +85,8 @@ class Ears(
 
     private fun readNotes() {
         val last = notebook.all().takeLast(READ_LIMIT).map { it.text }
-        val reply = if (last.isEmpty()) stage.phrases.pick("empty") ?: "Блокнот пуст." else "Заметки: " + last.joinToString("; ")
+        val reply = if (last.isEmpty()) stage.phrases.pick("empty") ?: "Блокнот пуст."
+        else "Заметки: " + last.joinToString("; ")
         stage.say(reply, "thinking", 9000)
         speak(reply)
     }
@@ -97,16 +95,25 @@ class Ears(
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "umnick")
     }
 
+    private fun safely(block: () -> Unit) {
+        try {
+            block()
+        } catch (error: Exception) {
+            CrashLog.write(context, "ears", error)
+            stage.say("Ой, что-то сломалось, но я тут.", "sad")
+        }
+    }
+
     override fun onPartialResult(hypothesis: String) = Unit
     override fun onFinalResult(hypothesis: String) = onResult(hypothesis)
-    override fun onError(exception: Exception) = main.post { stage.say("Слух сломался: ${exception.message}", "sad") }.let { }
-    override fun onTimeout() = listenForName()
+    override fun onError(exception: Exception) {
+        CrashLog.write(context, "vosk", exception)
+    }
+    override fun onTimeout() = Unit
 
     private companion object {
         const val RATE = 16000f
         const val FOLLOW_UP_MS = 8000L
         const val READ_LIMIT = 5
-        val NAMES = listOf("умник", "умничка")
-        const val NAME_GRAMMAR = "[\"умник\", \"умничка\", \"[unk]\"]"
     }
 }

@@ -10,6 +10,14 @@ class CommandsTest {
         assertEquals(Commands.Command.Write("забрать посылку"), Commands.parse("забрать посылку"))
     }
 
+    @Test fun findsNameAnywhere() {
+        assertEquals(true, Commands.hasName("эй умник запиши хлеб"))
+        assertEquals("запиши хлеб", Commands.stripName("эй умник запиши хлеб"))
+        assertEquals("", Commands.stripName("умничка"))
+        assertEquals(false, Commands.hasName("умный дом"))
+        assertEquals(false, Commands.hasName("безумник пришёл"))
+    }
+
     @Test fun readsNotes() {
         assertEquals(Commands.Command.Read, Commands.parse("прочитай заметки"))
         assertEquals(Commands.Command.Read, Commands.parse("какие у меня заметки"))
