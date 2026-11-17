@@ -26,9 +26,14 @@ class CompanionService : Service() {
     private val screen = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
-                Intent.ACTION_SCREEN_OFF -> screenOffAt = SystemClock.elapsedRealtime()
-                Intent.ACTION_USER_PRESENT -> if (screenOffAt > 0) {
-                    Stages.current()?.life?.screenOn(SystemClock.elapsedRealtime() - screenOffAt)
+                // На экране блокировки Умник — только на живых обоях: оверлей прячем, иначе их двое.
+                Intent.ACTION_SCREEN_OFF -> {
+                    screenOffAt = SystemClock.elapsedRealtime()
+                    Stages.current()?.visibility = android.view.View.INVISIBLE
+                }
+                Intent.ACTION_USER_PRESENT -> {
+                    Stages.current()?.visibility = android.view.View.VISIBLE
+                    if (screenOffAt > 0) Stages.current()?.life?.screenOn(SystemClock.elapsedRealtime() - screenOffAt)
                 }
             }
         }

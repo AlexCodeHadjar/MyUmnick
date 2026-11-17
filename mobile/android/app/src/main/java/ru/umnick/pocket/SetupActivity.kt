@@ -2,6 +2,8 @@ package ru.umnick.pocket
 
 import android.Manifest
 import android.app.Activity
+import android.app.WallpaperManager
+import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -31,6 +33,8 @@ class SetupActivity : Activity() {
         root.addView(button("5. Видеть иконки и кнопки (спец. возможности)") {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         })
+        root.addView(button("6. Живые обои: Умник на экране блокировки") { setWallpaper() })
+        root.addView(button("7. Фото для фона обоев") { pickBackground() })
         root.addView(button("Запустить Умника") { launch() })
         setContentView(root)
     }
@@ -50,6 +54,24 @@ class SetupActivity : Activity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         NotesFolder.onPicked(this, requestCode, data)
+        val uri = data?.data
+        if (requestCode == PICK_BACKGROUND && uri != null) {
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            WallpaperBackground.save(this, uri)
+        }
+    }
+
+    private fun setWallpaper() {
+        val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).putExtra(
+            WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
+            ComponentName(this, UmnickWallpaper::class.java),
+        )
+        runCatching { startActivity(intent) }.onFailure { startActivity(Intent(WallpaperManager.ACTION_LIVE_WALLPAPER_CHOOSER)) }
+    }
+
+    private fun pickBackground() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*")
+        startActivityForResult(intent, PICK_BACKGROUND)
     }
 
     private fun button(text: String, action: () -> Unit) =
@@ -77,5 +99,9 @@ class SetupActivity : Activity() {
         if (!Permissions.ready(this)) return openOverlaySettings()
         CompanionService.start(this)
         finish()
+    }
+
+    private companion object {
+        const val PICK_BACKGROUND = 43
     }
 }

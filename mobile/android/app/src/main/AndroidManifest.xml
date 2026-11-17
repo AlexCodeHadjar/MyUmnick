@@ -42,6 +42,16 @@
             </intent-filter>
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/perches" />
         </service>
+        <service
+            android:name=".UmnickWallpaper"
+            android:exported="true"
+            android:label="Умник"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data android:name="android.service.wallpaper" android:resource="@xml/wallpaper" />
+        </service>
         <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

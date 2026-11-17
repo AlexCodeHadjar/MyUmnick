@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="perches_description">Умник видит рамки иконок и кнопок и их короткие подписи («YouTube»), чтобы садиться на них и говорить о том, что открыто. Тексты и переписку не читает.</string>
+    <string name="wallpaper_description">Умник на экране блокировки: гуляет, сидит, машет при включении экрана.</string>
 </resources>
