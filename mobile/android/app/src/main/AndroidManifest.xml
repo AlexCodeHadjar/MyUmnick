@@ -23,6 +23,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".LockActivity"
+            android:exported="false"
+            android:theme="@style/Lock"
+            android:showWhenLocked="true"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:taskAffinity="ru.umnick.pocket.lock"
+            android:noHistory="false" />
         <service
             android:name=".CompanionService"
             android:exported="false"

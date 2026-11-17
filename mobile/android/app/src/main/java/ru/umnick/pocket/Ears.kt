@@ -22,8 +22,10 @@ import java.util.Locale
 class Ears(
     private val context: Context,
     private val notebook: Notebook,
-    private val stage: StageView,
+    private val fallback: StageView,
 ) : RecognitionListener {
+    /** Говорим через того спутника, что на виду: на экране блокировки — через окно блокировки. */
+    private val stage: StageView get() = Stages.current() ?: fallback
     private val main = Handler(Looper.getMainLooper())
     private var model: Model? = null
     private var service: SpeechService? = null

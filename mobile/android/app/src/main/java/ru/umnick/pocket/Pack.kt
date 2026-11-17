@@ -10,7 +10,7 @@ import org.json.JSONObject
  * Пакет персонажа из assets (`ui/scripts/export-mobile-pack.ts`): кадры поз `поза`, `поза_1…_4`,
  * `поза_blink` и фразы. Нет позы — цепочка замен, как `FALLBACK` в `ui/src/features/companion/pack.ts`.
  */
-class Pack(context: Context) {
+class Pack private constructor(context: Context) {
     private val frames: Map<String, Bitmap>
     val phrases: JSONObject
 
@@ -40,6 +40,12 @@ class Pack(context: Context) {
         (listOf(pose) + (FALLBACK[pose] ?: emptyList()) + "stand").first { it in frames || "${it}_1" in frames }
 
     companion object {
+        @Volatile private var shared: Pack? = null
+
+        /** Один пакет на процесс: оверлей и окно блокировки не грузят 122 кадра дважды. */
+        fun get(context: Context): Pack =
+            shared ?: synchronized(this) { shared ?: Pack(context.applicationContext).also { shared = it } }
+
         private val FALLBACK = mapOf(
             "walk" to listOf("stand"),
             "sleep" to listOf("laydown", "sit_edge"),

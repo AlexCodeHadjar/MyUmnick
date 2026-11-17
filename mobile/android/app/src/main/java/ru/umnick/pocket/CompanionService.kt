@@ -3,7 +3,10 @@ package ru.umnick.pocket
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.KeyguardManager
 import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -18,6 +21,26 @@ class CompanionService : Service() {
     private var stage: StageView? = null
     private var ears: Ears? = null
     private var shake: Shake? = null
+
+    /**
+     * Экран погас — заранее поднимаем окно на экране блокировки, чтобы при включении спутник уже был
+     * там; разблокировали — LockActivity закрывается сама, оверлей снова виден.
+     */
+    private val screen = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val locked = getSystemService(KeyguardManager::class.java).isKeyguardLocked
+            when (intent.action) {
+                Intent.ACTION_SCREEN_OFF -> showOnLock()
+                Intent.ACTION_SCREEN_ON -> if (locked && Stages.lock == null) showOnLock()
+                Intent.ACTION_USER_PRESENT -> Stages.overlay?.visibility = android.view.View.VISIBLE
+            }
+        }
+    }
+
+    private fun showOnLock() {
+        Stages.overlay?.visibility = android.view.View.INVISIBLE
+        runCatching { LockActivity.show(this) }.onFailure { CrashLog.write(this, "lock", it) }
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -36,14 +59,21 @@ class CompanionService : Service() {
 
     override fun onDestroy() {
         ears?.stop()
+        runCatching { unregisterReceiver(screen) }
         shake?.stop()
         stage?.detach()
         super.onDestroy()
     }
 
     private fun attachStage() {
-        val view = StageView(this)
+        val view = StageView(this, OverlayHost(getSystemService(android.view.WindowManager::class.java)))
         view.attach()
+        Stages.overlay = view
+        registerReceiver(screen, IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_USER_PRESENT)
+        })
         shake = Shake(this) { view.dizzy() }.also { it.start() }
         stage = view
     }

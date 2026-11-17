@@ -13,6 +13,7 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import android.view.Gravity
 import android.view.MotionEvent
+import android.view.VelocityTracker
 import android.view.View
 import android.view.WindowManager
 import kotlin.math.abs
@@ -24,10 +25,9 @@ import kotlin.math.sin
  * гуляет, садится, ложится, засыпает; тап — поглаживание сериями, долгий тап — тык, перетаскивание — held,
  * отпустил — падает. Перетащили за правый край — перебежка на ПК (S-24.11, `onEdgeExit`).
  */
-class StageView(context: Context) : View(context) {
-    private val pack = Pack(context)
+class StageView(context: Context, private val host: Host) : View(context) {
+    private val pack = Pack.get(context)
     val phrases = Phrases(pack.phrases)
-    private val windows = context.getSystemService(WindowManager::class.java)
     private val params = WindowManager.LayoutParams(
         WIDTH, HEIGHT, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
@@ -40,6 +40,10 @@ class StageView(context: Context) : View(context) {
     private var modeUntil = 0L
     private var targetX = 0
     private var vy = 0f
+    private var vx = 0f
+    private var grabX = 0f
+    private var grabY = 0f
+    private var velocity: VelocityTracker? = null
     private var facingLeft = false
     private var lastTouch = SystemClock.uptimeMillis()
     private var shakenAt = 0L
@@ -58,13 +62,13 @@ class StageView(context: Context) : View(context) {
     fun attach() {
         params.x = screen.widthPixels - WIDTH
         params.y = floor
-        windows.addView(this, params)
+        host.add(this, params)
         setMode(Mode.WAVE, 2500)
         say(phrases.pick(greeting()) ?: "Привет!", "happy")
         postOnAnimation(::tick)
     }
 
-    fun detach() = windows.removeView(this)
+    fun detach() = host.remove(this)
 
     /** Реплика в облачке над головой и эмоция на значке лица. */
     fun say(text: String, mood: String = emotion, ms: Long = 4500) {
@@ -91,7 +95,7 @@ class StageView(context: Context) : View(context) {
     fun arrive() {
         params.x = screen.widthPixels
         params.y = floor
-        windows.updateViewLayout(this, params)
+        host.move(this, params)
         visibility = VISIBLE
         walkTo(screen.widthPixels - WIDTH * 2)
         say(phrases.pick("handoff_in") ?: "Я тут!", "happy")
@@ -138,17 +142,32 @@ class StageView(context: Context) : View(context) {
         val delta = targetX - params.x
         if (abs(delta) <= WALK_SPEED) return setMode(Mode.IDLE, 3000)
         params.x += if (delta > 0) WALK_SPEED else -WALK_SPEED
-        windows.updateViewLayout(this, params)
+        host.move(this, params)
     }
 
+    /** Полёт после броска: инерция, отскок от боков и от «пола» (затухает). */
     private fun stepFall() {
         vy += GRAVITY
+        vx *= AIR_DRAG
+        params.x = (params.x + vx).toInt()
         params.y = (params.y + vy).toInt()
-        if (params.y >= floor) {
-            params.y = floor
-            setMode(Mode.IDLE, 2000)
+        val right = screen.widthPixels - WIDTH
+        if (params.x < 0 || params.x > right) {
+            params.x = params.x.coerceIn(0, right)
+            vx = -vx * BOUNCE
         }
-        windows.updateViewLayout(this, params)
+        if (params.y >= floor) land()
+        host.move(this, params)
+    }
+
+    private fun land() {
+        params.y = floor
+        if (vy > MIN_BOUNCE) {
+            vy = -vy * BOUNCE
+            return
+        }
+        vx = 0f
+        setMode(Mode.IDLE, 2000)
     }
 
     private fun setMode(next: Mode, ms: Long) {
@@ -170,26 +189,38 @@ class StageView(context: Context) : View(context) {
         downAt = event.eventTime
         downX = event.rawX
         downY = event.rawY
+        // Держим за то место, где взяли, — без рывка окна под палец.
+        grabX = event.rawX - params.x
+        grabY = event.rawY - params.y
+        velocity?.recycle()
+        velocity = VelocityTracker.obtain().also { it.addMovement(event) }
     }
 
     private fun touchMove(event: MotionEvent) {
         if (mode == Mode.GONE) return
         if (mode != Mode.HELD && abs(event.rawX - downX) + abs(event.rawY - downY) < DRAG_SLOP) return
+        velocity?.addMovement(event)
         if (mode != Mode.HELD) say(phrases.pick("thrown") ?: "Ой!", "surprised")
         setMode(Mode.HELD, 0)
-        params.x = (event.rawX - WIDTH / 2).toInt()
-        params.y = (event.rawY - HEIGHT * 0.25f).toInt()
-        windows.updateViewLayout(this, params)
+        params.x = (event.rawX - grabX).toInt()
+        params.y = (event.rawY - grabY).toInt()
+        host.move(this, params)
         if (event.rawX > screen.widthPixels - EDGE && onEdgeExit?.invoke() == true) leave()
     }
 
     private fun touchUp(event: MotionEvent) {
         if (mode == Mode.GONE) return
-        if (mode == Mode.HELD) {
-            vy = 0f
-            return setMode(Mode.FALL, 0)
-        }
+        if (mode == Mode.HELD) return throwFrom(event)
         if (event.eventTime - downAt > LONG_PRESS) poke() else pet()
+    }
+
+    private fun throwFrom(event: MotionEvent) {
+        val tracker = velocity ?: return setMode(Mode.FALL, 0)
+        tracker.addMovement(event)
+        tracker.computeCurrentVelocity(FRAME_UNITS, MAX_THROW)
+        vx = tracker.xVelocity * THROW_POWER
+        vy = tracker.yVelocity * THROW_POWER
+        setMode(Mode.FALL, 0)
     }
 
     private fun leave() {
@@ -265,7 +296,13 @@ class StageView(context: Context) : View(context) {
         const val SPRITE_H = 520f
         const val WALK_SPEED = 4
         const val GRAVITY = 2.2f
-        const val DRAG_SLOP = 24f
+        const val DRAG_SLOP = 10f
+        const val FRAME_UNITS = 16 // скорость пальца в пикселях за кадр (~60 Гц)
+        const val MAX_THROW = 90f
+        const val THROW_POWER = 1.35f
+        const val AIR_DRAG = 0.985f
+        const val BOUNCE = 0.45f
+        const val MIN_BOUNCE = 9f
         const val EDGE = 12
         const val LONG_PRESS = 450L
         const val PET_SERIES = 3000L
