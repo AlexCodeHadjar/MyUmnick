@@ -627,6 +627,12 @@ export class Brain {
     }
     if (this.y < y + 200 && this.#vy < 0) this.#vy = -this.#vy * WALL_BOUNCE;
     if (this.#vy <= 0) return;
+    // Страховка: улетел ниже экрана (картина окон устарела) — на пол, а не в пустоту.
+    if (this.y > y + this.#bounds.h + 200) {
+      const floor = below(this.#surfaces, this.x, y);
+      if (floor !== null) this.#rest(floor);
+      return;
+    }
     const landing = below(this.#surfaces, this.x, previous);
     if (landing === null || landing.y > this.y) return;
     if (this.#vy > 900) {

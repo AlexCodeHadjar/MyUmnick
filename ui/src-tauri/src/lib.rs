@@ -8,6 +8,7 @@ mod background;
 mod companion;
 mod desktop;
 mod launcher;
+mod media;
 mod system_audio;
 mod uia;
 
@@ -128,6 +129,7 @@ pub fn run() {
             companion::companion_attach,
             companion::companion_world,
             companion::companion_targets,
+            companion::companion_media,
             launcher::launcher_load,
             launcher::launcher_save,
             system_audio::system_audio_start,

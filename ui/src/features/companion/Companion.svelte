@@ -34,7 +34,8 @@
   import { Mind, type ActivityId, type Senses, type VoiceKind } from "./mind";
   import { sendRadioCommand, type RadioFeed, type RadioMode } from "../radio";
   import { Reactions } from "./reactions";
-  import { watching } from "./watch";
+  import { keepWatching, mediaVideo, pickMedia, watching, type Media } from "./watch";
+  import { watchPhrases } from "./phrases";
   import { CompanionStage } from "./stage";
   import { rectToCss, worldToCss, type Focus, type Rect, type World } from "./world";
 
@@ -104,6 +105,11 @@
   let tab: string | null = null;
   let tabAt = 0;
   let cornerPending = false;
+  // Что играет в системе (ADR-0052): опрос раз в 2 с; пауза — часть просмотра.
+  let media: Media = { state: "none", app: "" };
+  let mediaAt = 0;
+  let mediaBusy = false;
+  let pausedSince = 0;
   let cursor: { x: number; y: number } | null = null;
   let cursorFedAt = 0;
   let lastPhase = brain.phase;
@@ -346,9 +352,13 @@
     topicLine = life.focus(next, now) ?? topicLine;
   }
 
-  /** Предложить фразу голосу «Разума» (MIND §3.5): когда сказать — решает он. */
-  function speak(text: string, kind: VoiceKind): void {
-    if (text !== "") mind.voice.offer(text, kind, performance.now() / 1000);
+  /**
+   * Предложить фразу голосу «Разума» (MIND §3.5): когда сказать — решает он. Смотрим фильм — только
+   * ответы на ваши действия и фразы самого просмотра (`watchLine`): ни тычков, ни реакций на мышь.
+   */
+  function speak(text: string, kind: VoiceKind, watchLine = false): void {
+    if (text === "" || (brain.watching && kind !== "direct" && !watchLine)) return;
+    mind.voice.offer(text, kind, performance.now() / 1000);
   }
 
   /** Показать фразу в облачке (её отпустил голос). */
@@ -385,25 +395,59 @@
     // редактор, офис (панель задач скрыта) — обычные окна, а не «тихо в углу» (проверено вживую 2026-11-17).
     const wide = topic === "browser" || topic === "video" || topic === "game" || topic === "other";
     const fullscreen = shown && wide && (world?.fullscreen ?? false);
+    pollMedia(now);
+    const focusVideo = watching({ app: appName(), topic, fullscreen, tab });
+    const playing = keepWatching({
+      media,
+      pausedS: media.state === "paused" ? (now - pausedSince) / 1000 : 0,
+      tab,
+      focusVideo:
+        focusVideo || (mediaVideo(media, tab) && (topic === "browser" || topic === "video")),
+      already: brain.watching,
+    });
     return {
       resting: shown && brain.phase === "rest" && gesture === "none" && !poking,
       listening: assistant || listening,
       singing: shown && brain.music === "playing",
-      video: shown && watching({ app: appName(), topic, fullscreen, tab }),
+      // Видео: признаки в фокусе (плеер, видеосайт, полный экран) или то, что играет в системе.
+      video: shown && (focusVideo || playing),
       fullscreen,
       desktop: onDesktop,
       behavior: settings.behavior,
       energy: life.mood.energy,
       userBusy: now - movedAt < 60_000,
       hour: new Date().getHours(),
+      calm: settings.calm || brain.watching,
     };
+  }
+
+  /** Раз в 2 с — что играет в системе; пауза и продолжение во время просмотра — реплика. */
+  function pollMedia(now: number): void {
+    if (mediaBusy || now < mediaAt) return;
+    mediaAt = now + 2000;
+    mediaBusy = true;
+    void invoke<Media[]>("companion_media")
+      .catch((): Media[] => [])
+      .then((list) => {
+        const next = pickMedia(list, tab);
+        mediaBusy = false;
+        const before = media.state;
+        media = next;
+        if (next.state === "paused" && before !== "paused") pausedSince = performance.now();
+        if (!brain.watching) return;
+        const lines = watchPhrases(locale.lang);
+        if (before === "playing" && next.state === "paused")
+          speak(pickOne(lines.pause), "reaction", true);
+        if (before === "paused" && next.state === "playing")
+          speak(pickOne(lines.resume), "reaction", true);
+      });
   }
 
   /** Исполнить действие, выбранное «Разумом» (MIND §4), и выйти из прежнего. */
   function act(id: ActivityId, previous: string, now: number): void {
     if (previous === "watch") {
       brain.watching = false;
-      speak(pickOne(locale.t.companion.watch.end), "reaction");
+      speak(pickOne(watchPhrases(locale.lang).end), "reaction");
     }
     if (previous === "hush") {
       brain.quiet = false;
@@ -418,10 +462,10 @@
       brain.watching = id === "watch";
       brain.quiet = id === "hush";
       cornerPending = true;
+      // Первая тихая реплика — через 4–7 мин, дальше реже (BEHAVIOR §11.2).
       watchLineAt = now + (240 + Math.random() * 180) * 1000;
-      const lines = locale.t.companion.watch;
-      if (id === "watch") speak(pickOne(lines.start), "reaction");
-      else if (Math.random() < 0.5) speak(pickOne(lines.quiet), "reaction");
+      if (id === "watch") speak(pickOne(watchPhrases(locale.lang).start), "reaction", true);
+      else if (Math.random() < 0.5) speak(pickOne(locale.t.companion.watch.quiet), "reaction");
     } else if (id === "follow") goFollow();
     else if (id === "chat") void chat();
     else if (id === "poke") void poke();
@@ -464,8 +508,8 @@
     }
     // Смотрим вместе: редкая тихая реплика, если голос разрешит.
     if (brain.watching && now >= watchLineAt) {
-      watchLineAt = now + (240 + Math.random() * 180) * 1000;
-      speak(pickOne(locale.t.companion.watch.during), "ambient");
+      watchLineAt = now + (480 + Math.random() * 360) * 1000;
+      speak(pickOne(watchPhrases(locale.lang).during), "ambient", true);
     }
     // Дошёл, допрыгнул, долез — 2–4 с «осматривается», выходки не начинаются (MIND §3.4).
     if (brain.phase === "rest" && lastPhase !== "rest" && lastPhase !== "hidden") {
@@ -673,6 +717,14 @@
 
   onMount(() => {
     document.documentElement.classList.add("companion-layer");
+    // Живая отладка в режиме разработки: состояние тела и «Разума» через консоль WebView2.
+    if (import.meta.env.DEV) {
+      Reflect.set(window, "companionDebug", {
+        brain,
+        mind,
+        state: () => ({ shown, mainShown, world, phase: brain.phase, x: brain.x, y: brain.y }),
+      });
+    }
     if (canvas === undefined) return;
     const created = new CompanionStage(canvas);
     stage = created;
@@ -857,6 +909,15 @@
         change({ hologram: !settings.hologram });
         menu = null;
       }}>{settings.hologram ? "☑ " : "☐ "}{locale.t.companion.hologram}</button
+    >
+    <button
+      type="button"
+      role="menuitemcheckbox"
+      aria-checked={settings.calm}
+      onclick={() => {
+        change({ calm: !settings.calm });
+        menu = null;
+      }}>{settings.calm ? "☑ " : "☐ "}{locale.t.companion.calm}</button
     >
     <hr />
     <button

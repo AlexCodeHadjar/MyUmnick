@@ -31,6 +31,13 @@ windows-sys = { version = "0.61", features = [
 ] }
 # «Потыкать» в кнопки и значки (ADR-0048): UI Automation. Та же версия, что у Tauri — второй копии нет.
 windows = { version = "0.62", features = [
+  # Что играет в системе — «смотрим вместе» (ADR-0052): сеансы мультимедиа Windows (WinRT).
+  "Foundation",
+  "Media_Control",
+  # …и у кого реально звучит звук: аудиосеансы Windows (Core Audio), если источник не сообщает о себе.
+  "Win32_Media_Audio",
+  "Win32_System_Com_StructuredStorage",
+  "Win32_System_Variant",
   "Win32_Foundation",
   "Win32_System_Com",
   "Win32_UI_Accessibility",

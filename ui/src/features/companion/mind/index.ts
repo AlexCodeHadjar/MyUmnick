@@ -27,6 +27,8 @@ export interface Senses {
   energy: number;
   userBusy: boolean;
   hour: number;
+  /** «Спокойнее» или смотрим фильм: потребности растут втрое медленнее, тычков нет (ADR-0052). */
+  calm: boolean;
 }
 
 /** Что утоляет каждое действие, когда начинается. */
@@ -90,7 +92,12 @@ export class Mind {
     const fullscreen = this.#fullscreen.update(senses.fullscreen, now);
     this.#desktop.update(senses.desktop, now);
     const night = senses.hour >= 23 || senses.hour < 6;
-    this.drives.tick(dt, { energy: senses.energy, userBusy: senses.userBusy, night });
+    this.drives.tick(senses.calm ? dt / 3 : dt, {
+      energy: senses.energy,
+      userBusy: senses.userBusy,
+      night,
+    });
+    this.voice.calm = senses.calm;
     if (now < this.#decideAt) return null;
     this.#decideAt = now + DECIDE_EVERY_S;
     const context: MindContext = {
@@ -107,6 +114,7 @@ export class Mind {
       restless: this.drives.get("restless"),
       focus: this.#stimuli.level("focus", now),
       canChat: this.voice.canChat(now),
+      calm: senses.calm,
     };
     const choice = this.#arbiter.choose(context, now);
     if (!choice.changed || !isActivity(choice.id)) return null;

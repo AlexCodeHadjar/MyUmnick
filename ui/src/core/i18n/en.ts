@@ -137,6 +137,7 @@ export const en: Messages = {
     wander: "Wander",
     size: "Height",
     hologram: "Let clicks through",
+    calm: "Calmer: walks and talks less",
     openWindow: "Open the window",
     hide: "Hide",
     title: "Companion",
@@ -268,27 +269,6 @@ export const en: Messages = {
       favorite: (name: string) => `«${name}» is my favorite icon!`,
     },
     watch: {
-      start: [
-        "Watching together! I've got popcorn.",
-        "Ooh, a movie! I'll sit in the corner.",
-        "Dibs on the popcorn!",
-        "Play it, I'm ready!",
-      ],
-      during: [
-        "Munch-munch…",
-        "Whoa!",
-        "What a twist!",
-        "Shh, this is the best part!",
-        "What happens next?",
-        "Nice moment.",
-        "I couldn't do that.",
-      ],
-      end: [
-        "That was a good one!",
-        "Popcorn ran out just in time.",
-        "One more episode?",
-        "I liked it!",
-      ],
       quiet: ["I won't bother you — I'll sit in the corner.", "Quietly here."],
     },
     remarks: {

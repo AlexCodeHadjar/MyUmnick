@@ -54,6 +54,10 @@ pub struct Rect {
 }
 
 impl Rect {
+    pub fn contains(&self, x: i32, y: i32) -> bool {
+        x >= self.x && x < self.x + self.w && y >= self.y && y < self.y + self.h
+    }
+
     fn of(r: RECT) -> Self {
         Self {
             x: r.left,
@@ -198,6 +202,21 @@ fn top_level() -> Vec<HWND> {
     list
 }
 
+/// Рамки окон выше окна `hwnd` по z-порядку, а для рабочего стола (`None`) — всех окон: то, что заслоняет
+/// его элементы. Спутник не «видит сквозь окна» (просьба пользователя 2026-11-17, ADR-0052).
+pub fn covering(hwnd: Option<isize>, own: u32) -> Vec<Rect> {
+    let mut out = Vec::new();
+    for h in top_level() {
+        if Some(h as isize) == hwnd {
+            break;
+        }
+        if let Some(one) = seen(h, own) {
+            out.push(one.rect);
+        }
+    }
+    out
+}
+
 /// Участки `[x0, x1)`, оставшиеся от `span` после вычитания `cuts`.
 pub fn subtract(span: (i32, i32), cuts: &[(i32, i32)]) -> Vec<(i32, i32)> {
     let mut parts = vec![span];
@@ -283,7 +302,11 @@ pub fn foreground(own: u32) -> Option<HWND> {
 /// Имя программы окна без пути и расширения, в нижнем регистре («chrome», «code»): спутнику — для
 /// комментариев к месту. Заголовок окна не берётся: в нём бывает личное.
 fn app_of(hwnd: HWND) -> String {
-    let pid = pid_of(hwnd);
+    exe_of(pid_of(hwnd))
+}
+
+/// Имя программы процесса `pid` без пути и `.exe`, в нижнем регистре; не открылся — пустая строка.
+pub fn exe_of(pid: u32) -> String {
     // SAFETY: открываем процесс только на чтение имени; дескриптор закрывается ниже.
     let process = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid) };
     if process.is_null() {

@@ -13,6 +13,8 @@ export interface CompanionSettings {
   height: number;
   /** «Не мешать кликам»: клики всегда проходят сквозь персонажа. */
   hologram: boolean;
+  /** «Спокойнее» (ADR-0052): реже гуляет и говорит, не тычет — просто рядом. */
+  calm: boolean;
 }
 
 export const COMPANION_KEY = "vtuber.companion";
@@ -22,6 +24,7 @@ export const DEFAULT_SETTINGS: CompanionSettings = {
   behavior: "follow",
   height: 280,
   hologram: false,
+  calm: false,
 };
 
 function field(raw: object, key: string): unknown {
@@ -52,6 +55,7 @@ export function parseSettings(text: string | null): CompanionSettings {
         ? height
         : DEFAULT_SETTINGS.height,
     hologram: field(raw, "hologram") === true,
+    calm: field(raw, "calm") === true,
   };
 }
 

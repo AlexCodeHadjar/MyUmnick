@@ -16,6 +16,7 @@ const calm: Senses = {
   energy: 0.6,
   userBusy: false,
   hour: 14,
+  calm: false,
 };
 
 function activity(
@@ -130,5 +131,26 @@ describe("разум целиком", () => {
     expect(busy.length).toBeGreaterThanOrEqual(2);
     expect(total).toBeLessThan(120);
     expect(total).toBeGreaterThan(10);
+  });
+});
+
+describe("спокойный режим", () => {
+  it("спокойнее — втрое меньше выходок и ни одного тычка", () => {
+    const count = (calmMode: boolean): { total: number; pokes: number } => {
+      const mind = new Mind(() => 0.5);
+      let total = 0;
+      let pokes = 0;
+      for (let t = 0; t < 3600; t += 0.1) {
+        const choice = mind.update(t, { ...calm, calm: calmMode });
+        if (choice === null || choice.id === "idle") continue;
+        total += 1;
+        if (choice.id === "poke" || choice.id === "hop") pokes += 1;
+      }
+      return { total, pokes };
+    };
+    const normal = count(false);
+    const quiet = count(true);
+    expect(quiet.pokes).toBe(0);
+    expect(quiet.total * 2).toBeLessThan(normal.total);
   });
 });

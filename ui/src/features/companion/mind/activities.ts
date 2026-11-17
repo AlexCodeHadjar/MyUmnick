@@ -28,6 +28,8 @@ export interface MindContext {
   focus: number;
   /** Можно сказать фразу «сам по себе» (жетон голоса). */
   canChat: boolean;
+  /** «Спокойнее»: не тычет и не прыгает по значкам. */
+  calm: boolean;
 }
 
 type Spec = Omit<Activity<MindContext>, "id"> & { id: ActivityId };
@@ -102,7 +104,7 @@ export const ACTIVITIES: readonly Spec[] = [
     cooldownS: 180,
     boredom: 0,
     oneShot: true,
-    score: (c) => (c.desktop ? 0 : free(c) * need(c.curiosity) * 0.65),
+    score: (c) => (c.desktop || c.calm ? 0 : free(c) * need(c.curiosity) * 0.65),
   },
   {
     id: "hop",
@@ -111,7 +113,8 @@ export const ACTIVITIES: readonly Spec[] = [
     cooldownS: 20,
     boredom: 0,
     oneShot: true,
-    score: (c) => (c.desktop && c.behavior !== "stay" ? free(c) * need(c.curiosity) * 0.7 : 0),
+    score: (c) =>
+      c.desktop && !c.calm && c.behavior !== "stay" ? free(c) * need(c.curiosity) * 0.7 : 0,
   },
   {
     id: "wander",

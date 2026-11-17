@@ -196,14 +196,10 @@ export function snap(
 export function below(list: readonly Surface[], px: number, py: number): Spot | null {
   let best: Extract<Surface, { kind: "edge" | "floor" }> | null = null;
   for (const surface of list) {
-    if (
-      surface.kind === "side" ||
-      surface.kind === "ceiling" ||
-      px < surface.x0 ||
-      px > surface.x1 ||
-      surface.y < py
-    )
-      continue;
+    // «Пол» ловит в любой точке по ширине: его отрезок сужен до места, где персонаж виден целиком
+    // (`room.ts`), а падение у самого края иначе не находило опоры и уходило за экран (баг 2026-11-17).
+    if (surface.kind === "side" || surface.kind === "ceiling" || surface.y < py) continue;
+    if (surface.kind === "edge" && (px < surface.x0 || px > surface.x1)) continue;
     if (best === null || surface.y < best.y) best = surface;
   }
   return best === null ? null : spotOn(best, px, py);

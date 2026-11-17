@@ -131,8 +131,9 @@ fn desktop_icons() -> Option<HWND> {
     }
 }
 
-/// Цели в окне `hwnd` (0 — значки рабочего стола). Вызывать не из потока окна: обход блокирует.
-pub fn targets(hwnd: isize) -> Vec<Target> {
+/// Цели в окне `hwnd` (0 — значки рабочего стола), видимые на экране: центр цели не закрыт ни одним из
+/// окон `covers` (окна выше по z-порядку). Вызывать не из потока окна: обход блокирует.
+pub fn targets(hwnd: isize, covers: &[Rect]) -> Vec<Target> {
     // SAFETY: COM в этом потоке; повторная инициализация безвредна (S_FALSE).
     let _ = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) };
     let window = if hwnd == 0 {
@@ -154,7 +155,11 @@ pub fn targets(hwnd: isize) -> Vec<Target> {
     }) else {
         return Vec::new();
     };
-    walk(&walker, root)
+    let visible = |one: &Target| {
+        let (cx, cy) = (one.rect.x + one.rect.w / 2, one.rect.y + one.rect.h / 2);
+        !covers.iter().any(|r| r.contains(cx, cy))
+    };
+    walk(&walker, root).into_iter().filter(visible).collect()
 }
 
 #[cfg(test)]
@@ -162,7 +167,7 @@ mod live {
     #[test]
     #[ignore = "смотрит на настоящий рабочий стол этой машины"]
     fn print_desktop_targets() {
-        let found = super::targets(0);
+        let found = super::targets(0, &[]);
         println!("{} targets", found.len());
         for one in found.iter().take(8) {
             println!("{one:?}");

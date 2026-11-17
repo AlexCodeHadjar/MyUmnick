@@ -82,3 +82,16 @@ describe("лазанье по стенам", () => {
     expect(brain.x).toBe(x + 50);
   });
 });
+
+describe("бросок", () => {
+  it("брошенный к самому краю экрана не проваливается сквозь пол", () => {
+    const brain = new Brain(() => 0.5);
+    brain.setWorld({ ...WORLD, seats: [] });
+    brain.hold(20, 300);
+    brain.toss(-2500, 400);
+    ticks(brain, 6);
+    expect(brain.phase).toBe("rest");
+    expect(brain.y).toBe(1040);
+    expect(brain.x).toBeGreaterThan(0);
+  });
+});

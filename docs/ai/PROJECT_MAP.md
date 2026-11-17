@@ -676,7 +676,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:504` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:484` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).
@@ -858,9 +858,9 @@
 - `wallX` — `ui/src/features/companion/anchors.ts:161` — Где стоит персонаж у бока: на полкорпуса от стены, внутри экрана и вне окна.
 - `snap` — `ui/src/features/companion/anchors.ts:177` — Ближайшее место в радиусе `radius` или `null` — тогда спутник «парит» и опускается сам.
 - `below` — `ui/src/features/companion/anchors.ts:196` — Горизонтальная опора под точкой (падение): ближайшая сверху вниз, иначе «пол».
-- `seatSpot` — `ui/src/features/companion/anchors.ts:213` — Куда сесть, когда активным стало окно: правая треть верхнего края, на открытом участке.
-- `floorSpot` — `ui/src/features/companion/anchors.ts:230` — Место на «полу» у правого края — рабочий стол или развёрнутое окно.
-- `sameSurface` — `ui/src/features/companion/anchors.ts:239` — Та же опора в новой картине (окно сдвинули): по хозяину и виду.
+- `seatSpot` — `ui/src/features/companion/anchors.ts:209` — Куда сесть, когда активным стало окно: правая треть верхнего края, на открытом участке.
+- `floorSpot` — `ui/src/features/companion/anchors.ts:226` — Место на «полу» у правого края — рабочий стол или развёрнутое окно.
+- `sameSurface` — `ui/src/features/companion/anchors.ts:235` — Та же опора в новой картине (окно сдвинули): по хозяину и виду.
 - `Phase` — `ui/src/features/companion/brain.ts:22` — —
 - `Music` — `ui/src/features/companion/brain.ts:36` — Радио (BEHAVIOR §8): играет — поёт стоя и не гуляет; пауза — слушает в наушниках.
 - `Effect` — `ui/src/features/companion/brain.ts:38` — —
@@ -936,13 +936,13 @@
 - `CompanionWhen` — `ui/src/features/companion/settings.ts:5` — Настройки «Сопровождения» (Этап 23, ADR-0045): общие для главного окна и слоя спутника через
 - `CompanionBehavior` — `ui/src/features/companion/settings.ts:6` — —
 - `CompanionSettings` — `ui/src/features/companion/settings.ts:8` — —
-- `COMPANION_KEY` — `ui/src/features/companion/settings.ts:18` — —
-- `HEIGHTS` — `ui/src/features/companion/settings.ts:19` — —
-- `DEFAULT_SETTINGS` — `ui/src/features/companion/settings.ts:20` — —
-- `parseSettings` — `ui/src/features/companion/settings.ts:32` — Разбор сохранённого: чужое или битое — умолчания.
-- `loadSettings` — `ui/src/features/companion/settings.ts:58` — —
-- `saveSettings` — `ui/src/features/companion/settings.ts:66` — —
-- `shouldShow` — `ui/src/features/companion/settings.ts:78` — Виден ли спутник. Полный экран его больше не прячет (просьба пользователя 2026-11-17: виден всегда, в
+- `COMPANION_KEY` — `ui/src/features/companion/settings.ts:20` — —
+- `HEIGHTS` — `ui/src/features/companion/settings.ts:21` — —
+- `DEFAULT_SETTINGS` — `ui/src/features/companion/settings.ts:22` — —
+- `parseSettings` — `ui/src/features/companion/settings.ts:35` — Разбор сохранённого: чужое или битое — умолчания.
+- `loadSettings` — `ui/src/features/companion/settings.ts:62` — —
+- `saveSettings` — `ui/src/features/companion/settings.ts:70` — —
+- `shouldShow` — `ui/src/features/companion/settings.ts:82` — Виден ли спутник. Полный экран его больше не прячет (просьба пользователя 2026-11-17: виден всегда, в
 - `SiteTopic` — `ui/src/features/companion/sites.ts:5` — Сайты в браузере (BEHAVIOR §5): тема — по названию вкладки, которое и так видно на экране (UI
 - `siteOf` — `ui/src/features/companion/sites.ts:36` — —
 - `browserTopic` — `ui/src/features/companion/sites.ts:48` — Что сказать про браузер по названиям вкладок: «много вкладок», тема узнанного сайта или `null` (тогда
@@ -956,6 +956,11 @@
 - `lateNight` — `ui/src/features/companion/triggers.ts:125` — Ночь (T16): с часа до пяти.
 - `WatchContext` — `ui/src/features/companion/watch.ts:24` — —
 - `watching` — `ui/src/features/companion/watch.ts:32` — —
+- `Media` — `ui/src/features/companion/watch.ts:39` — Что играет в системе (`companion_media`, ADR-0052).
+- `PAUSE_KEEP_S` — `ui/src/features/companion/watch.ts:84` — Пауза — часть просмотра: столько секунд на паузе он ещё «смотрит».
+- `mediaVideo` — `ui/src/features/companion/watch.ts:90` — Видео по сеансам мультимедиа Windows (ADR-0052): играет (или недавно встал на паузу) браузер или
+- `pickMedia` — `ui/src/features/companion/watch.ts:104` — Из всех источников звука (`companion_media`) — видео: играющее важнее стоящего на паузе; нет —
+- `keepWatching` — `ui/src/features/companion/watch.ts:116` — Начать смотреть — видео в фокусе или на весь экран; уже смотрим — держимся, пока фильм идёт или стоит
 - `Rect` — `ui/src/features/companion/world.ts:5` — Картина рабочего стола от оболочки (`desktop.rs`, физические пиксели экрана) → CSS-пиксели слоя спутника.
 - `Seat` — `ui/src/features/companion/world.ts:12` — —
 - `Focus` — `ui/src/features/companion/world.ts:18` — —
@@ -968,7 +973,7 @@
 
 - `ActivityId` — `ui/src/features/companion/mind/activities.ts:8` — —
 - `MindContext` — `ui/src/features/companion/mind/activities.ts:12` — Что арбитр знает о мире в момент оценки (сглаженное, MIND §3.1–3.3).
-- `ACTIVITIES` — `ui/src/features/companion/mind/activities.ts:43` — —
+- `ACTIVITIES` — `ui/src/features/companion/mind/activities.ts:45` — —
 - `Band` — `ui/src/features/companion/mind/arbiter.ts:6` — Арбитр действий (MIND §3.4): utility AI с защитой от метаний — группы важности, минимальная длительность,
 - `Activity` — `ui/src/features/companion/mind/arbiter.ts:8` — —
 - `Choice` — `ui/src/features/companion/mind/arbiter.ts:23` — —
@@ -981,7 +986,7 @@
 - `Drives` — `ui/src/features/companion/mind/drives.ts:20` — —
 - `Fact` — `ui/src/features/companion/mind/fact.ts:6` — Сглаженный факт картины мира (MIND §3.1): становится правдой, если сырой сигнал продержался
 - `Senses` — `ui/src/features/companion/mind/index.ts:19` — Сырые наблюдения кадра: сглаживает их сам «Разум».
-- `Mind` — `ui/src/features/companion/mind/index.ts:44` — —
+- `Mind` — `ui/src/features/companion/mind/index.ts:46` — —
 - `Stimulus` — `ui/src/features/companion/mind/stimuli.ts:5` — Стимулы (MIND §3.3, «разрешители» Блумберга): событие не командует действием, а на время поднимает
 - `Stimuli` — `ui/src/features/companion/mind/stimuli.ts:16` — —
 - `VoiceKind` — `ui/src/features/companion/mind/voice.ts:7` — Голос спутника (MIND §3.5): все его фразы — через один регулятор. Прямые ответы (гладят, трясут) —
@@ -991,13 +996,17 @@
 ## ui/src/features/companion/phrases
 Выбор фразы поглаживания (BEHAVIOR §7): раздел — по номеру клика в серии и по состоянию спутника,
 
-- `PetContext` — `ui/src/features/companion/phrases/index.ts:21` — —
-- `petPhrases` — `ui/src/features/companion/phrases/index.ts:33` — —
-- `petSection` — `ui/src/features/companion/phrases/index.ts:38` — Раздел для фразы или `null` — на этом клике молчит. Первое касание окрашено состоянием.
-- `petLine` — `ui/src/features/companion/phrases/index.ts:52` — Фраза раздела без повтора недавних; `recent` дополняется сказанной.
+- `watchPhrases` — `ui/src/features/companion/phrases/index.ts:13` — —
+- `PetContext` — `ui/src/features/companion/phrases/index.ts:27` — —
+- `petPhrases` — `ui/src/features/companion/phrases/index.ts:39` — —
+- `petSection` — `ui/src/features/companion/phrases/index.ts:44` — Раздел для фразы или `null` — на этом клике молчит. Первое касание окрашено состоянием.
+- `petLine` — `ui/src/features/companion/phrases/index.ts:58` — Фраза раздела без повтора недавних; `recent` дополняется сказанной.
 - `PET_EN` — `ui/src/features/companion/phrases/pet.en.ts:4` — —
 - `PET_RU` — `ui/src/features/companion/phrases/pet.ru.ts:4` — —
 - `PetPhrases` — `ui/src/features/companion/phrases/types.ts:2` — Разделы фраз поглаживания (BEHAVIOR §7).
+- `WatchPhrases` — `ui/src/features/companion/phrases/types.ts:26` — Фразы «смотрим вместе» (BEHAVIOR §11.2): универсальные, к любому фильму.
+- `WATCH_EN` — `ui/src/features/companion/phrases/watch.en.ts:8` — —
+- `WATCH_RU` — `ui/src/features/companion/phrases/watch.ru.ts:8` — —
 
 ## ui/src/features/desktop
 Публичный API режима «персонаж поверх рабочего стола» (S-15.2).

@@ -21,3 +21,15 @@ export interface PetPhrases {
   /** Гладят вскоре после долгого отсутствия пользователя. */
   comeback: readonly string[];
 }
+
+/** Фразы «смотрим вместе» (BEHAVIOR §11.2): универсальные, к любому фильму. */
+export interface WatchPhrases {
+  start: readonly string[];
+  /** Редкие тихие реплики во время просмотра. */
+  during: readonly string[];
+  /** Видео встало на паузу. */
+  pause: readonly string[];
+  /** Продолжили после паузы. */
+  resume: readonly string[];
+  end: readonly string[];
+}

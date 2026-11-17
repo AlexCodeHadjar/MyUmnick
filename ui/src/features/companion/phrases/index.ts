@@ -4,9 +4,15 @@
  */
 import { PET_EN } from "./pet.en";
 import { PET_RU } from "./pet.ru";
-import type { PetPhrases } from "./types";
+import type { PetPhrases, WatchPhrases } from "./types";
+import { WATCH_EN } from "./watch.en";
+import { WATCH_RU } from "./watch.ru";
 
-export type { PetPhrases } from "./types";
+export type { PetPhrases, WatchPhrases } from "./types";
+
+export function watchPhrases(lang: string): WatchPhrases {
+  return lang === "en" ? WATCH_EN : WATCH_RU;
+}
 
 /** Клики серии, на которых спутник отвечает фразой: чаще — надоест. */
 const SPOKEN: ReadonlyMap<number, keyof PetPhrases> = new Map([

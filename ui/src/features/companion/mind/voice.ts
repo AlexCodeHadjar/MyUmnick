@@ -27,6 +27,8 @@ export interface VoiceState {
 }
 
 export class Voice {
+  /** «Спокойнее»: жетоны «сам по себе» копятся втрое дольше, реакции — вдвое реже. */
+  calm = false;
   #queue: Line[] = [];
   #lastAt = -Infinity;
   readonly #lastKind = new Map<VoiceKind, number>();
@@ -69,15 +71,16 @@ export class Voice {
     const sinceKind = now - (this.#lastKind.get(line.kind) ?? -Infinity);
     if (line.kind === "direct") return sinceKind >= GAP_S.direct;
     if (bubble || now - this.#lastAt < 4) return false;
-    if (line.kind === "reaction") return sinceKind >= GAP_S.reaction;
+    if (line.kind === "reaction") return sinceKind >= GAP_S.reaction * (this.calm ? 2 : 1);
     // «Сам по себе» — после любой фразы не раньше 25 с и только с жетоном.
     return now - this.#lastAt >= GAP_S.ambient && this.#tokens >= 1;
   }
 
   #refill(now: number): void {
-    const steps = Math.floor((now - this.#refilledAt) / REFILL_S);
+    const every = REFILL_S * (this.calm ? 3 : 1);
+    const steps = Math.floor((now - this.#refilledAt) / every);
     if (steps <= 0) return;
     this.#tokens = Math.min(TOKENS, this.#tokens + steps);
-    this.#refilledAt += steps * REFILL_S;
+    this.#refilledAt += steps * every;
   }
 }

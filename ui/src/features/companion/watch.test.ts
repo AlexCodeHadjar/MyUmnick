@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import { floorSpot, surfaces } from "./anchors";
 import { Brain } from "./brain";
 import { pickFrame } from "./pack";
-import { watching } from "./watch";
+import { watchPhrases } from "./phrases";
+import { keepWatching, mediaVideo, pickMedia, watching } from "./watch";
 import type { World } from "./world";
 
 const WORLD: World = {
@@ -74,5 +75,52 @@ describe("кадры пения", () => {
     expect(pickFrame("sing", state, have)).toBe("sing_1");
     expect(pickFrame("sing", { ...state, mouth: 0.95 }, have)).toBe("sing_talk_3");
     expect(pickFrame("radio_idle", state, new Set(["stand", "stand_talk_1"]))).toBe("stand_talk_1");
+  });
+});
+
+describe("что играет в системе", () => {
+  const base = { pausedS: 0, tab: null, focusVideo: false, already: false };
+
+  it("браузер или плеер — видео, музыкальная программа или вкладка — нет", () => {
+    expect(mediaVideo({ state: "playing", app: "chrome.exe" }, null)).toBe(true);
+    expect(mediaVideo({ state: "playing", app: "vlc.exe" }, null)).toBe(true);
+    expect(mediaVideo({ state: "playing", app: "spotify.exe" }, null)).toBe(false);
+    expect(mediaVideo({ state: "playing", app: "msedge" }, "Яндекс Музыка — плейлист")).toBe(false);
+    expect(mediaVideo({ state: "none", app: "" }, null)).toBe(false);
+  });
+
+  it("начинает, только если видео в фокусе; уже смотрим — держится, пока фильм идёт", () => {
+    const playing = { state: "playing" as const, app: "chrome.exe" };
+    expect(keepWatching({ ...base, media: playing })).toBe(false);
+    expect(keepWatching({ ...base, media: playing, focusVideo: true })).toBe(true);
+    expect(keepWatching({ ...base, media: playing, already: true })).toBe(true);
+    const paused = { state: "paused" as const, app: "chrome.exe" };
+    expect(keepWatching({ ...base, media: paused, already: true, pausedS: 30 })).toBe(true);
+    expect(keepWatching({ ...base, media: paused, already: true, pausedS: 120 })).toBe(false);
+  });
+
+  it("фразы просмотра: большой универсальный набор на обоих языках", () => {
+    for (const lang of ["ru", "en"]) {
+      const lines = watchPhrases(lang);
+      expect(lines.during.length).toBeGreaterThanOrEqual(50);
+      expect(
+        [lines.start, lines.pause, lines.resume, lines.end].every((one) => one.length >= 6),
+      ).toBe(true);
+    }
+  });
+});
+
+describe("выбор источника", () => {
+  it("видео — браузер, а не встроенный веб-движок или мессенджер; играющее важнее паузы", () => {
+    const list = [
+      { state: "playing" as const, app: "msedgewebview2" },
+      { state: "paused" as const, app: "telegram" },
+      { state: "paused" as const, app: "browser" },
+    ];
+    expect(pickMedia(list, null)).toEqual({ state: "paused", app: "browser" });
+    expect(pickMedia([...list, { state: "playing" as const, app: "vlc" }], null).app).toBe("vlc");
+    expect(pickMedia([{ state: "playing" as const, app: "msedgewebview2" }], null).state).toBe(
+      "none",
+    );
   });
 });

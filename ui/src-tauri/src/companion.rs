@@ -158,7 +158,14 @@ fn watch(app: &AppHandle, state: &CompanionState) {
                 last_fg = fg;
                 publish_world(app, &window, state, own);
             }
-            last_main = publish_main(app, last_main);
+            // Раз в секунду — и без изменений: слой, загрузившийся позже события (перезапуск окна, ожидание
+            // сборки), иначе считал бы главное окно открытым и не появлялся (проверено вживую 2026-11-17).
+            let again = if tick % SCAN_EVERY == 0 {
+                None
+            } else {
+                last_main
+            };
+            last_main = publish_main(app, again);
         }
         last_host = publish_host(app, state, own, last_host);
     }
@@ -297,6 +304,14 @@ pub fn companion_world(state: tauri::State<'_, CompanionState>) -> Option<World>
     state.0.lock().ok().and_then(|shared| shared.world.clone())
 }
 
+/// Что играет в системе (ADR-0052) — в отдельном потоке: ожидание WinRT блокирует.
+#[tauri::command]
+pub async fn companion_media() -> Vec<crate::media::Media> {
+    tauri::async_runtime::spawn_blocking(crate::media::now)
+        .await
+        .unwrap_or_default()
+}
+
 /// Что можно «потыкать» в активном окне или на рабочем столе (ADR-0048). Обход UI Automation —
 /// в отдельном потоке: он блокирует, а окно и поток слежения не должны ждать.
 #[tauri::command]
@@ -311,7 +326,9 @@ pub async fn companion_targets() -> Vec<crate::uia::Target> {
             None => return Vec::new(),
         },
     };
-    tauri::async_runtime::spawn_blocking(move || crate::uia::targets(hwnd))
+    // Только видимое: элементы, закрытые окнами выше, спутник не «видит» (ADR-0052).
+    let covers = desktop::covering((hwnd != 0).then_some(hwnd), own);
+    tauri::async_runtime::spawn_blocking(move || crate::uia::targets(hwnd, &covers))
         .await
         .unwrap_or_default()
 }
