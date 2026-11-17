@@ -9,7 +9,7 @@ import type { RadioFeed, RadioMode } from "../../radio";
 import { Life, Reactions } from "../behavior";
 import { Brain } from "../body";
 import { CANVAS_RATIO, type CompanionStage, type Look } from "../look";
-import { Mind, type VoiceKind } from "../mind";
+import { Mind, Sanity, type Fix, type VoiceKind } from "../mind";
 import { watchPhrases } from "../phrases";
 import { hostOf, ICONS, type Rect, type World } from "../space";
 import { shouldShow, type CompanionSettings } from "../settings";
@@ -42,6 +42,8 @@ export class CompanionController {
   readonly brain = new Brain();
   readonly mind = new Mind();
   readonly speech = new Speech();
+  /** Сторож: не даёт телу и «Разуму» «сойти с ума» (COMPANION.md, часть III). */
+  readonly sanity = new Sanity();
   readonly look: Look = {
     mouth: 0,
     speaking: false,
@@ -203,6 +205,14 @@ export class CompanionController {
     if (under !== undefined) this.life.petOn(under.name);
   }
 
+  /** Сколько кадров в секунду нужно сейчас: 60 в движении и с эффектами, 20 в покое, 8 во сне. */
+  fps(): number {
+    const body = this.brain.body();
+    const still = this.brain.phase === "rest" && body.effects.length === 0 && !this.gestures.active;
+    if (!still || this.look.speaking || this.look.attention > 0.01) return 60;
+    return body.pose === "sleep" ? 8 : 20;
+  }
+
   /** Один кадр: решение, тело, реакции, голос, отрисовка, область кликов. */
   frame(dt: number, now: number, view: { menuOpen: boolean; card: Rect | null }): void {
     this.#think(now);
@@ -228,7 +238,7 @@ export class CompanionController {
       listening: this.#assistant || this.speech.listening,
       holding: this.gestures.active,
       behavior: this.settings.behavior,
-      calm: this.settings.calm,
+      calm: this.settings.calm || this.sanity.calm(now / 1000),
       userBusy: now - this.#movedAt < BUSY_MS,
       lastLine: this.speech.last,
     });
@@ -244,7 +254,45 @@ export class CompanionController {
         !this.presence.shown || this.#assistant || this.speech.listening || this.gestures.active,
       bubble: this.speech.visible(now),
     });
-    if (line !== null) this.speech.say(line, now);
+    if (line !== null) {
+      this.speech.say(line, now);
+      this.sanity.noteLine(now / 1000);
+    }
+    this.#guard(now);
+  }
+
+  /** Сторож раз в секунду: нарушено правило — чинит и пишет в консоль. */
+  #guard(now: number): void {
+    const brain = this.brain;
+    const screen = this.presence.world?.monitor ?? { x: 0, y: 0, w: innerWidth, h: innerHeight };
+    const fixes = this.sanity.observe(
+      {
+        phase: brain.phase,
+        x: brain.x,
+        y: brain.y,
+        screen,
+        shown: this.presence.shown,
+        holding: this.gestures.active,
+        activity: this.mind.activity,
+      },
+      now / 1000,
+    );
+    this.mind.voice.hushed = this.sanity.hushed(now / 1000);
+    for (const fix of fixes) this.#repair(fix);
+  }
+
+  #repair(fix: Fix): void {
+    console.warn(
+      "[companion] sanity",
+      fix,
+      this.brain.phase,
+      Math.round(this.brain.x),
+      Math.round(this.brain.y),
+    );
+    if (fix === "land") this.brain.rescue();
+    else if (fix === "release") this.brain.toss(0, 0);
+    else if (fix === "arrive") this.presence.arrive();
+    else if (fix === "hide") this.brain.hide();
   }
 
   /** Курсор стоит — событий нет, а «что смотришь?» (T8) ждёт 4 с: подкармливаем 4 раза в секунду. */

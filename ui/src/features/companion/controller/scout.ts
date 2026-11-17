@@ -87,16 +87,19 @@ export class Scout {
     const topic = this.topic;
     const wide = topic === "browser" || topic === "video" || topic === "game" || topic === "other";
     const fullscreen = wide && fullscreenRaw;
-    const focusVideo = watching({ app: this.#app, topic, fullscreen, tab: this.#tab });
-    const inFocus = topic === "browser" || topic === "video";
+    // Начать — только по сильному признаку (живой тест 2026-11-17: звук фоновой вкладки браузера
+    // сажал смотреть «фильм» на Википедии): плеер, полный экран или видеосайт, где правда играет.
+    const sign = watching({ app: this.#app, topic, fullscreen, tab: this.#tab });
+    const sounding = mediaVideo(this.#media, this.#tab) && this.#media.state === "playing";
+    const start = sign && (topic !== "browser" || fullscreen || sounding);
     const playing = keepWatching({
       media: this.#media,
       pausedS: this.#media.state === "paused" ? (now - this.#pausedSince) / 1000 : 0,
       tab: this.#tab,
-      focusVideo: focusVideo || (mediaVideo(this.#media, this.#tab) && inFocus),
+      focusVideo: start,
       already: this.#brain.watching,
     });
-    return { video: focusVideo || playing, fullscreen };
+    return { video: start || playing, fullscreen };
   }
 
   /** Раз в 2 с — что играет в системе; `onChange` — пауза или продолжение. */

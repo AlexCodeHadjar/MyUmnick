@@ -8,7 +8,7 @@ export type VoiceKind = "direct" | "reaction" | "ambient";
 
 const RANK: Record<VoiceKind, number> = { direct: 0, reaction: 1, ambient: 2 };
 const TTL_S: Record<VoiceKind, number> = { direct: 3, reaction: 6, ambient: 20 };
-const GAP_S: Record<VoiceKind, number> = { direct: 1.5, reaction: 12, ambient: 25 };
+const GAP_S: Record<VoiceKind, number> = { direct: 2, reaction: 12, ambient: 25 };
 const TOKENS = 2;
 const REFILL_S = 90;
 const QUEUE = 3;
@@ -29,6 +29,8 @@ export interface VoiceState {
 export class Voice {
   /** «Спокойнее»: жетоны «сам по себе» копятся втрое дольше, реакции — вдвое реже. */
   calm = false;
+  /** Заглушён сторожем (болтливость, `sanity.ts`): говорят только прямые ответы. */
+  hushed = false;
   #queue: Line[] = [];
   #lastAt = -Infinity;
   readonly #lastKind = new Map<VoiceKind, number>();
@@ -70,6 +72,7 @@ export class Voice {
   #allowed(line: Line, now: number, bubble: boolean): boolean {
     const sinceKind = now - (this.#lastKind.get(line.kind) ?? -Infinity);
     if (line.kind === "direct") return sinceKind >= GAP_S.direct;
+    if (this.hushed) return false;
     if (bubble || now - this.#lastAt < 4) return false;
     if (line.kind === "reaction") return sinceKind >= GAP_S.reaction * (this.calm ? 2 : 1);
     // «Сам по себе» — после любой фразы не раньше 25 с и только с жетоном.

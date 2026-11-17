@@ -177,6 +177,8 @@
     let handle = requestAnimationFrame(function loop(now) {
       // Ошибка одного кадра не должна останавливать спутника навсегда: следующий кадр — всё равно.
       handle = requestAnimationFrame(loop);
+      // Ресурсы (COMPANION.md, часть IV): не по частоте монитора (до 144), а сколько нужно.
+      if (now - last < 1000 / controller.fps()) return;
       try {
         frame((now - last) / 1000, now);
       } catch (error) {

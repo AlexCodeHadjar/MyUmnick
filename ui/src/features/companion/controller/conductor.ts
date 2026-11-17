@@ -50,6 +50,7 @@ export class Conductor {
   #watchLineAt = 0;
   #lastPhase = "hidden";
   #lastLine = "";
+  #watchSince = 0;
 
   constructor(parts: ConductorParts, speak: Speak) {
     this.#p = parts;
@@ -112,7 +113,9 @@ export class Conductor {
     const { brain } = this.#p;
     if (previous === "watch") {
       brain.watching = false;
-      this.#speak(pickOne(watchPhrases(locale.lang).end), "reaction", true);
+      if (performance.now() - this.#watchSince > 60_000) {
+        this.#speak(pickOne(watchPhrases(locale.lang).end), "reaction", true);
+      }
     }
     if (previous === "hush") {
       brain.quiet = false;
@@ -126,6 +129,7 @@ export class Conductor {
     const { brain } = this.#p;
     brain.watching = id === "watch";
     brain.quiet = id === "hush";
+    this.#watchSince = now;
     this.#cornerPending = true;
     // Первая тихая реплика — через 4–7 мин, дальше реже (BEHAVIOR §11.2).
     this.#watchLineAt = now + (240 + Math.random() * 180) * 1000;

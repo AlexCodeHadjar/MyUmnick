@@ -184,6 +184,20 @@ export class Brain {
     this.#rest(spot);
   }
 
+  /** Сторож (`mind/sanity.ts`): поставить на опору под собой или на «пол», в пределах экрана. */
+  rescue(): void {
+    const b = this.#bounds;
+    const fallback = b.x + b.w / 2;
+    const x = Math.min(
+      b.x + b.w - 40,
+      Math.max(b.x + 40, Number.isFinite(this.x) ? this.x : fallback),
+    );
+    const landing = below(this.#surfaces, x, b.y);
+    this.x = x;
+    if (landing !== null) this.#rest(landing);
+    else this.y = b.y + b.h / 2;
+  }
+
   /** Прогулка по своей опоре — когда, решает «Разум» (MIND §4, действие «прогулка»). */
   stroll(): void {
     const surface = this.#spot?.surface;

@@ -963,8 +963,11 @@
 - `DriveContext` — `ui/src/features/companion/mind/drives.ts:12` — —
 - `Drives` — `ui/src/features/companion/mind/drives.ts:20` — —
 - `Fact` — `ui/src/features/companion/mind/fact.ts:6` — Сглаженный факт картины мира (MIND §3.1): становится правдой, если сырой сигнал продержался
-- `Senses` — `ui/src/features/companion/mind/index.ts:19` — Сырые наблюдения кадра: сглаживает их сам «Разум».
-- `Mind` — `ui/src/features/companion/mind/index.ts:46` — —
+- `Senses` — `ui/src/features/companion/mind/index.ts:20` — Сырые наблюдения кадра: сглаживает их сам «Разум».
+- `Mind` — `ui/src/features/companion/mind/index.ts:47` — —
+- `Fix` — `ui/src/features/companion/mind/sanity.ts:7` — Сторож «Разума» (COMPANION.md, часть III): раз в секунду сверяет состояние тела и решений с правилами
+- `Snapshot` — `ui/src/features/companion/mind/sanity.ts:10` — Что сторож видит в кадре.
+- `Sanity` — `ui/src/features/companion/mind/sanity.ts:42` — —
 - `Stimulus` — `ui/src/features/companion/mind/stimuli.ts:5` — Стимулы (MIND §3.3, «разрешители» Блумберга): событие не командует действием, а на время поднимает
 - `Stimuli` — `ui/src/features/companion/mind/stimuli.ts:16` — —
 - `VoiceKind` — `ui/src/features/companion/mind/voice.ts:7` — Голос спутника (MIND §3.5): все его фразы — через один регулятор. Прямые ответы (гладят, трясут) —

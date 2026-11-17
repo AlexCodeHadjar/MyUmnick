@@ -12,6 +12,7 @@ import { Voice } from "./voice";
 
 export type { ActivityId } from "./activities";
 export type { VoiceKind } from "./voice";
+export { Sanity, type Fix, type Snapshot } from "./sanity";
 
 const DECIDE_EVERY_S = 0.5;
 
@@ -49,7 +50,8 @@ export class Mind {
   readonly #stimuli = new Stimuli();
   readonly #arbiter: Arbiter<MindContext>;
   // Сглаживание (MIND §3.1): видео — 2 с на «началось», 4 с на «кончилось».
-  readonly #video = new Fact(2, 4);
+  // Конец фильма — 10 с без признаков: смена окна или тихая сцена не поднимают из кресла.
+  readonly #video = new Fact(2, 10);
   readonly #fullscreen = new Fact(1, 3);
   readonly #desktop = new Fact(1.5, 1);
   #decideAt = -Infinity;
