@@ -9,7 +9,9 @@ import svelteConfig from "./svelte.config.js";
 export default defineConfig(
   {
     // Сгенерированное не правится руками (R-64); сборки и Rust-часть — не исходники UI.
-    ignores: ["dist/", "node_modules/", "src-tauri/", "src/core/protocol.gen.ts"],
+    // `scripts/` — node-скрипты разработки вне tsconfig приложения: без типов Node строгий разбор с типами
+    // к ним неприменим (новая зависимость @types/node — только через ADR). Prettier их проверяет.
+    ignores: ["dist/", "node_modules/", "src-tauri/", "src/core/protocol.gen.ts", "scripts/"],
   },
   js.configs.recommended,
   ts.configs.strictTypeChecked,

@@ -28,5 +28,8 @@ mkdirSync(OUT, { recursive: true });
 const frames = readdirSync(SRC).filter((name) => name.endsWith(".webp"));
 for (const name of frames) copyFileSync(join(SRC, name), join(OUT, name));
 writeFileSync(join(OUT, "phrases.json"), JSON.stringify({ pet: PET_RU, ...EXTRA }, null, 1));
-writeFileSync(join(OUT, "index.json"), JSON.stringify(frames.map((name) => name.replace(".webp", ""))));
+writeFileSync(
+  join(OUT, "index.json"),
+  JSON.stringify(frames.map((name) => name.replace(".webp", ""))),
+);
 console.log(`кадров: ${frames.length}, фразы: phrases.json → ${OUT}`);
