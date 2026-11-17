@@ -6,6 +6,7 @@
 import { emitTo } from "@tauri-apps/api/event";
 
 import { locale, type CoreClient } from "../../core";
+import type { RadioFeed } from "../radio";
 import { loadSettings } from "./settings";
 
 const EVERY_MS = 50;
@@ -13,7 +14,11 @@ const EVERY_MS = 50;
 const SPEAKING_HOLD_MS = 600;
 
 /** Запустить передачу; `mouth(dt)` — громкость голоса 0…1. Возвращает остановку. */
-export function startFeed(client: CoreClient, mouth: (deltaMs: number) => number): () => void {
+export function startFeed(
+  client: CoreClient,
+  mouth: (deltaMs: number) => number,
+  radio: (time: number) => RadioFeed,
+): () => void {
   let emotion = "neutral";
   let text = "";
   let lastVoice = 0;
@@ -36,6 +41,8 @@ export function startFeed(client: CoreClient, mouth: (deltaMs: number) => number
       emotion,
       text,
       lang: locale.lang,
+      // Радио (ADR-0049): табличка над головой и пение спутника.
+      radio: radio(now / 1000),
     }).catch(() => undefined);
   }, EVERY_MS);
   return () => {

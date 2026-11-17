@@ -21,6 +21,14 @@ export const FALLBACK: Record<Pose, readonly Pose[]> = {
   float: ["held", "stand"],
   poke: ["lean_side", "stand"],
   pet: ["stand"],
+  // Кадров BEHAVIOR §10 пока нет (FRAMES-2.md): спутник не пропадает, рисуется ближайшая поза.
+  sing: ["radio_idle", "stand"],
+  radio_idle: ["stand"],
+  climb: ["hang_side", "held", "float", "stand"],
+  dizzy: ["float", "stand"],
+  wave: ["stand"],
+  yawn: ["stand"],
+  dance: ["stand"],
 };
 
 /** Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот». */
@@ -39,6 +47,13 @@ export const ANCHORS: Record<Pose, readonly [number, number]> = {
   // Кончик вытянутого вперёд пальца — справа на уровне груди (кадр poke, раздел 7.2).
   poke: [0.88, 0.42],
   pet: [0.5, 0.97],
+  sing: [0.5, 0.97],
+  radio_idle: [0.5, 0.97],
+  climb: [0.5, 0.5],
+  dizzy: [0.5, 0.97],
+  wave: [0.5, 0.97],
+  yawn: [0.5, 0.97],
+  dance: [0.5, 0.97],
 };
 
 /** Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз. */
@@ -60,6 +75,12 @@ export const LOOP_FPS: Partial<Record<Pose, number>> = {
   poke: 6,
   pet: 8,
   laydown: 4,
+  sing: 6,
+  climb: 6,
+  dizzy: 4,
+  wave: 6,
+  yawn: 2,
+  dance: 6,
   lean_side: 4,
   sit_corner: 4,
   sleep: 3,

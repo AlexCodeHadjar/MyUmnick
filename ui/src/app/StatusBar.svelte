@@ -12,7 +12,14 @@
     hints,
     children,
     panels,
-  }: { store: AppStore; hints: readonly string[]; children?: Snippet; panels?: Snippet } = $props();
+    radio,
+  }: {
+    store: AppStore;
+    hints: readonly string[];
+    children?: Snippet;
+    panels?: Snippet;
+    radio?: Snippet;
+  } = $props();
 
   // Связь хоть раз была: потерю показываем как «нет связи», а не как первое «подключение…».
   let everOpen = $state(false);
@@ -60,6 +67,12 @@
     <h3>{locale.t.app.controls}</h3>
     <div class="row">{@render children?.()}</div>
   </section>
+  {#if radio !== undefined}
+    <section>
+      <h3>{locale.t.radio.title}</h3>
+      {@render radio()}
+    </section>
+  {/if}
   {#if panels !== undefined}
     <section>
       <h3>{locale.t.app.panels}</h3>

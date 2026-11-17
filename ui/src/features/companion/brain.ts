@@ -15,11 +15,25 @@ import {
   type Spot,
   type Surface,
 } from "./anchors";
+import { climbRoute, type Climb } from "./climb";
 import { fitScreen } from "./room";
 import type { Rect, World } from "./world";
 
 export type Phase =
-  "hidden" | "rest" | "walk" | "jump" | "fall" | "held" | "bolt" | "portal_out" | "portal_in";
+  | "hidden"
+  | "rest"
+  | "walk"
+  | "jump"
+  | "fall"
+  | "held"
+  | "bolt"
+  | "portal_out"
+  | "portal_in"
+  /** Лезет по боку окна вверх (BEHAVIOR §9). */
+  | "climb";
+
+/** Радио (BEHAVIOR §8): играет — поёт стоя и не гуляет; пауза — слушает в наушниках. */
+export type Music = "off" | "playing" | "paused";
 
 export type Effect =
   | { kind: "bolt"; from: [number, number]; to: [number, number]; t: number }
@@ -60,6 +74,8 @@ const LOOK_DEADZONE = 40;
 const HEARTS_S = 1.4;
 /** Сколько держится «довольная мордочка» после поглаживания. */
 const PET_S = 1.2;
+/** Скорость лазанья: медленнее ходьбы — видно, что тяжело. */
+const CLIMB_SPEED = 90;
 
 type Random = () => number;
 
@@ -102,6 +118,12 @@ export class Brain {
   chest = 150;
   /** Рост холста позы в CSS-пикселях: сколько места нужно над сиденьем (`fitScreen`). */
   figure = 300;
+  music: Music = "off";
+  #climb: Climb | null = null;
+  /** Окно, по которому лезет: его левый/правый край в момент прошлого сдвига. */
+  #climbBase = 0;
+  /** Короткая поза-эмоция в покое (кружится, машет, зевает), секунды до конца. */
+  #emote: { pose: Pose; left: number } | null = null;
 
   constructor(random: Random = Math.random) {
     this.#random = random;
@@ -110,6 +132,18 @@ export class Brain {
   /** Сколько секунд стоит на месте без дела: для комментариев «мне скучно». */
   get idleSeconds(): number {
     return this.#idle;
+  }
+
+  /** Лежит или спит: гладят — фразы «сонные». */
+  get drowsy(): boolean {
+    return this.phase === "rest" && this.#idle > LAY_AFTER_S;
+  }
+
+  /** Показать позу-эмоцию на `seconds` секунд, если стоит или сидит (T4, T6, T7, T16). */
+  emote(pose: Pose, seconds: number): void {
+    if (this.phase !== "rest") return;
+    this.#emote = { pose, left: seconds };
+    this.#idle = 0;
   }
 
   get spot(): Spot | null {
@@ -149,6 +183,10 @@ export class Brain {
 
   /** Окно-хозяин сдвинулось (`companion-host`, быстро) или исчезло. */
   hostMoved(id: number, rect: Rect | null): void {
+    if (this.phase === "climb" && this.#climb?.side.host === id) {
+      this.#climbMoved(rect);
+      return;
+    }
     const spot = this.#spot;
     if (this.phase !== "rest" || spot === null || hostId(spot.surface) !== id) return;
     if (spot.surface.kind !== "edge" && spot.surface.kind !== "side") return;
@@ -175,12 +213,71 @@ export class Brain {
     if (this.phase === "held" || this.phase === "hidden") return;
     const distance = Math.hypot(spot.x - this.x, spot.y - this.y);
     if (distance < 4) return;
+    if (this.#tryClimb(spot)) return;
     if (distance >= WALK_LIMIT) {
       this.bolt(spot, [spot.x, spot.y]);
       return;
     }
     const level = this.#spot !== null && sameSurface(this.#spot.surface, spot.surface);
     this.#start(level ? "walk" : "jump", spot);
+  }
+
+  /** На окно выше — по его боку, если до стены можно дойти (BEHAVIOR §9). */
+  #tryClimb(spot: Spot): boolean {
+    const from = this.#spot;
+    if (this.phase !== "rest" || from === null || spot.surface.kind !== "edge") return false;
+    const host = spot.surface.host;
+    const seat = this.#world?.seats.find((one) => one.id === host);
+    if (seat === undefined) return false;
+    const route = climbRoute(this.#surfaces, from, spot, seat.rect.y + seat.rect.h);
+    if (route === null) return false;
+    this.#climb = route;
+    if (Math.abs(route.foot.x - this.x) < 4) this.#startClimb();
+    else this.#start("walk", route.foot);
+    return true;
+  }
+
+  #startClimb(): void {
+    const climb = this.#climb;
+    if (climb === null) return;
+    this.phase = "climb";
+    this.#spot = null;
+    this.#pinned = null;
+    this.#t = 0;
+    // Стена справа от персонажа (`left` — левый бок окна) — лицом к ней, вправо.
+    this.facing = climb.side.side === "left" ? 1 : -1;
+    this.#climbBase = climb.side.x;
+    // Точка опоры «лезет» — середина тела, а не ступни: поднять её на полроста.
+    this.y -= this.figure * 0.45;
+  }
+
+  #tickClimb(dt: number): void {
+    const climb = this.#climb;
+    if (climb === null) {
+      this.#fall();
+      return;
+    }
+    this.y -= CLIMB_SPEED * dt;
+    // Середина тела дошла до крыши — перевалился наверх коротким прыжком.
+    if (this.y > climb.target.y + this.figure * 0.15) return;
+    this.#climb = null;
+    this.#start("jump", climb.target);
+  }
+
+  /** Окно, по которому лезет, двигают: лезет вместе с ним; закрыли — падает. */
+  #climbMoved(rect: Rect | null): void {
+    const climb = this.#climb;
+    if (climb === null) return;
+    if (rect === null) {
+      this.#fall();
+      return;
+    }
+    const base = climb.side.side === "right" ? rect.x + rect.w : rect.x;
+    const dx = base - this.#climbBase;
+    this.#climbBase = base;
+    this.x += dx;
+    const target = climb.target;
+    this.#climb = { ...climb, target: { ...target, x: target.x + dx, y: rect.y } };
   }
 
   /** Перенос молнией: разряд бежит по молнии, персонаж собирается в цели (или падает, если опоры нет). */
@@ -213,6 +310,8 @@ export class Brain {
 
   /** Персонажа взяли мышью: висит за «шиворот» у курсора. */
   hold(px: number, py: number): void {
+    this.#climb = null;
+    this.#emote = null;
     this.phase = "held";
     this.#spot = null;
     this.#pinned = null;
@@ -278,6 +377,10 @@ export class Brain {
     const step = Math.min(dt, 0.05);
     this.#t += step;
     this.#petting = Math.max(0, this.#petting - step);
+    if (this.#emote !== null) {
+      this.#emote.left -= step;
+      if (this.#emote.left <= 0 || this.phase !== "rest") this.#emote = null;
+    }
     this.#effects = this.#effects
       .map((effect) => ({ ...effect, t: effect.t + step / this.#effectLength(effect) }))
       .filter((effect) => effect.t < 1);
@@ -286,6 +389,7 @@ export class Brain {
     else if (this.phase === "jump") this.#tickJump();
     else if (this.phase === "fall") this.#tickFall(step);
     else if (this.phase === "bolt") this.#tickBolt();
+    else if (this.phase === "climb") this.#tickClimb(step);
     else if (this.phase === "portal_out" && this.#t >= PORTAL_S) this.#fall();
     else if (this.phase === "portal_in" && this.#t >= PORTAL_S) this.hide();
   }
@@ -323,9 +427,15 @@ export class Brain {
     if (this.#pinned !== null) return this.#pinned;
     if (this.phase === "held") return "held";
     if (this.phase === "walk") return "walk";
+    if (this.phase === "climb") return "climb";
     if (this.phase === "jump" || this.phase === "fall" || this.phase.startsWith("portal"))
       return "float";
     const pose = this.#spot?.pose ?? "float";
+    if (this.#emote !== null) return this.#emote.pose;
+    // Радио: стоя — поёт (на паузе слушает), сидя — сидит как сидел.
+    if (this.music !== "off" && pose === "stand" && this.#petting === 0) {
+      return this.music === "playing" ? "sing" : "radio_idle";
+    }
     // Гладят стоящего — отдельный кадр «довольный»; нет его — «стоит» с закрытыми глазами (stage.ts).
     if (this.#petting > 0 && pose === "stand") return "pet";
     if (
@@ -339,6 +449,7 @@ export class Brain {
   }
 
   #rest(spot: Spot): void {
+    this.#climb = null;
     this.phase = "rest";
     this.#spot = spot;
     this.#pinned = null;
@@ -377,6 +488,7 @@ export class Brain {
   }
 
   #fall(): void {
+    this.#climb = null;
     this.phase = "fall";
     this.#spot = null;
     this.#pinned = null;
@@ -385,6 +497,11 @@ export class Brain {
   }
 
   #tickRest(dt: number): void {
+    // Поёт — не скучает и не засыпает.
+    if (this.music === "playing") {
+      this.#idle = 0;
+      return;
+    }
     this.#idle += dt;
     const surface = this.#spot?.surface;
     if (surface === undefined || this.#pinned !== null) return;
@@ -411,8 +528,17 @@ export class Brain {
     if (target === null) return;
     const dx = target.x - this.x;
     const move = WALK_SPEED * dt;
-    if (Math.abs(dx) <= move) this.#rest(target);
-    else this.x += Math.sign(dx) * move;
+    if (Math.abs(dx) > move) {
+      this.x += Math.sign(dx) * move;
+      return;
+    }
+    // Дошёл до стены — дальше лезет (маршрут `#tryClimb`).
+    if (this.#climb !== null && target === this.#climb.foot) {
+      this.x = target.x;
+      this.#startClimb();
+      return;
+    }
+    this.#rest(target);
   }
 
   #tickJump(): void {

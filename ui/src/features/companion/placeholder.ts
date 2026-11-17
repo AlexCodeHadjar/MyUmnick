@@ -206,6 +206,14 @@ const FIGURES: Record<Pose, Figure> = {
     ],
   },
   pet: STAND,
+  sing: STAND,
+  radio_idle: STAND,
+  dizzy: STAND,
+  wave: STAND,
+  yawn: STAND,
+  dance: STAND,
+  // Силуэт «лезет» не рисуется: пока нет кадров, берётся силуэт `hang_side` (FALLBACK).
+  climb: STAND,
   poke: {
     ...STAND,
     elbows: [

@@ -30,6 +30,8 @@
   } from "./settings";
   import { CANVAS_RATIO } from "./pack";
   import { choosePoke, nextPause, remark, topicOf, type RemarkTopic, type Target } from "./remarks";
+  import { sendRadioCommand, type RadioFeed, type RadioMode } from "../radio";
+  import { Reactions } from "./reactions";
   import { CompanionStage } from "./stage";
   import { rectToCss, worldToCss, type Focus, type Rect, type World } from "./world";
 
@@ -39,6 +41,7 @@
     emotion: string;
     text: string;
     lang: string;
+    radio?: RadioFeed;
   }
 
   const HOLD_MS = 150;
@@ -51,6 +54,10 @@
   /** Облачко на экране: его размер прошлого кадра держит текст в пределах экрана. */
   let bubbleEl = $state<HTMLParagraphElement | null>(null);
   let menu = $state<{ x: number; y: number } | null>(null);
+  // Радио (ADR-0049): табличка над головой — станция и ⏮ ⏯ ⏭; кнопки шлют команды главному окну.
+  let radio = $state<RadioFeed | null>(null);
+  let radioAt = $state<{ x: number; y: number } | null>(null);
+  let radioEl = $state<HTMLDivElement | null>(null);
 
   const brain = new Brain();
   let stage: CompanionStage | null = null;
@@ -79,8 +86,14 @@
   let onDesktop = false;
   let icons: Target[] = [];
   let desktopAt = Infinity;
-  /** Времена поглаживаний за последние 3 с. */
-  let pets: number[] = [];
+  // Триггеры и реакции (BEHAVIOR §3): тряска, бросок, возвращение, ночь, поглаживания.
+  const reactions = new Reactions(brain, (text) => {
+    say(text, performance.now());
+  });
+  let cursor: { x: number; y: number } | null = null;
+  let cursorFedAt = 0;
+  let lastPhase = brain.phase;
+  let wasFullscreen = false;
   // Мышь: удержание — молния, движение сразу — «держат», как у Capri.
   let press: { x: number; y: number; t: number } | null = null;
   let gesture: "none" | "held" | "aim" = "none";
@@ -106,6 +119,10 @@
     if (next) {
       await invoke("companion_set", { visible: true });
       arrive();
+      // Вышел из портала — поздоровался (T6).
+      setTimeout(() => {
+        reactions.greet(performance.now() / 1000);
+      }, 900);
       return;
     }
     if (world?.fullscreen) {
@@ -152,6 +169,13 @@
     monitor = raw.monitor;
     world = css(raw);
     brain.setWorld(world);
+    // Вышли из полного экрана (T14): «Ну как, интересно было?» — когда снова появится.
+    if (wasFullscreen && !world.fullscreen) {
+      setTimeout(() => {
+        if (shown) reactions.fire("back", performance.now() / 1000);
+      }, 1500);
+    }
+    wasFullscreen = world.fullscreen;
     refresh();
     // Показали раньше, чем пришла картина окон: выйти сейчас (иначе персонаж так и не появлялся).
     if (shown && brain.phase === "hidden") arrive();
@@ -175,10 +199,37 @@
     }, FOLLOW_DELAY_MS);
   }
 
+  /** Радио сменило состояние: поёт или слушает, фраза на включение, смену станции, паузу, выключение. */
+  function onRadio(next: RadioFeed | null, speaking: boolean): void {
+    const before: RadioMode = radio?.mode ?? "off";
+    const mode: RadioMode = next?.mode ?? "off";
+    brain.music = mode === "playing" ? "playing" : mode === "off" ? "off" : "paused";
+    const lines = locale.t.radio.lines;
+    const list =
+      before === "off" && mode !== "off"
+        ? lines.start
+        : before !== "off" && mode === "off"
+          ? lines.stop
+          : before === "playing" && mode === "paused"
+            ? lines.pause
+            : next !== null && radio !== null && next.title !== radio.title
+              ? lines.switch
+              : null;
+    const line = list?.[Math.floor(Math.random() * list.length)];
+    if (line !== undefined && shown) say(line, performance.now());
+    radio = mode === "off" ? null : next;
+    // Поёт: рот — по громкости потока, «говорит» — значит, не комментирует и не гуляет.
+    if (mode === "playing" && next !== null && !speaking) {
+      look.mouth = next.level;
+      look.speaking = true;
+    }
+  }
+
   function onFeed(feed: Feed): void {
     if (isLang(feed.lang) && locale.lang !== feed.lang) locale.set(feed.lang);
     look.mouth = feed.mouth;
     look.speaking = feed.speaking;
+    onRadio(feed.radio ?? null, feed.speaking);
     const hue = new Map<string, number>(Object.entries(EMOTION_HUE)).get(feed.emotion);
     look.hue = hue ?? EMOTION_HUE.neutral;
     if (feed.speaking) {
@@ -200,7 +251,7 @@
   function sendHit(): void {
     const box = stage?.bounds ?? null;
     const capture = gesture !== "none" || menu !== null;
-    const hit = settings.hologram || box === null ? null : box;
+    const hit = settings.hologram || box === null ? null : withCard(box);
     const key = JSON.stringify([
       hit && [Math.round(hit.x), Math.round(hit.y), Math.round(hit.w)],
       capture,
@@ -208,6 +259,17 @@
     if (key === lastHit) return;
     lastHit = key;
     void invoke("companion_hit", { hit, capture });
+  }
+
+  /** Табличка радио — тоже область кликов слоя (её кнопки нажимаются). */
+  function withCard(box: Rect): Rect {
+    if (radioEl === null) return box;
+    const card = radioEl.getBoundingClientRect();
+    const x = Math.min(box.x, card.left);
+    const y = Math.min(box.y, card.top);
+    const w = Math.max(box.x + box.w, card.right) - x;
+    const h = Math.max(box.y + box.h, card.bottom) - y;
+    return { x, y, w, h };
   }
 
   function syncHost(): void {
@@ -332,7 +394,15 @@
   }
 
   function updateBubble(now: number): void {
-    const box = stage?.bounds;
+    let box = stage?.bounds;
+    radioAt = null;
+    if (box !== null && box !== undefined && radio !== null) {
+      // Табличка — над головой; облачко — над табличкой.
+      const card =
+        radioEl === null ? { w: 230, h: 58 } : { w: radioEl.offsetWidth, h: radioEl.offsetHeight };
+      radioAt = placeBubble(box, card, { w: innerWidth, h: innerHeight });
+      box = { ...box, y: radioAt.y - 6 - box.h * 0.08 };
+    }
     const text = listening ? locale.t.companion.listening : bubbleText(replyText);
     if (box === null || box === undefined || now > bubbleUntil || text === "") {
       bubble = null;
@@ -355,6 +425,14 @@
       aim = { x: press.x, y: press.y, ghost: null };
     }
     brain.tick(dt);
+    reactions.tick(now / 1000);
+    if (brain.phase === "climb" && lastPhase !== "climb") reactions.climbing();
+    lastPhase = brain.phase;
+    // Курсор стоит — событий нет, а «что смотришь?» (T8) ждёт 4 с: подкармливаем 4 раза в секунду.
+    if (cursor !== null && now - cursorFedAt > 250) {
+      cursorFedAt = now;
+      reactions.cursor(cursor.x, cursor.y, now / 1000, shown);
+    }
     look.attention = Math.max(0, look.attention - dt * 0.8);
     const body = brain.body();
     // Где закрепится, если отпустить: кольцо у опоры (перетаскивание и молния).
@@ -401,6 +479,7 @@
     }
     if (gesture === "held") {
       brain.moveHeld(event.clientX, event.clientY);
+      reactions.held(event.clientX, event.clientY, now / 1000);
       drop = dropTarget(brain.surfaceList, event.clientX, event.clientY);
     }
     if (gesture === "aim") {
@@ -418,7 +497,9 @@
         shift: event.shiftKey,
         ctrl: event.ctrlKey,
       };
-      const done = release(brain.surfaceList, point, velocityOf(trail));
+      const velocity = velocityOf(trail);
+      reactions.released(Math.hypot(velocity.vx, velocity.vy), performance.now() / 1000);
+      const done = release(brain.surfaceList, point, velocity);
       if (done.kind === "place") brain.place(done.spot);
       else if (done.kind === "hang") brain.hang(done.x, done.y);
       else brain.toss(done.vx, done.vy);
@@ -439,15 +520,9 @@
 
   /** Погладили: сердечки, прыжок радости; чем чаще гладят подряд — тем довольнее реплика. */
   function petNow(now: number): void {
-    pets = [...pets.filter((t) => now - t < 3000), now];
     brain.pet();
     look.attention = Math.max(look.attention, 0.5);
-    const lines = locale.t.companion.pet;
-    const list = pets.length >= 6 ? lines.lots : pets.length >= 3 ? lines.more : lines.first;
-    const line = list[Math.floor(Math.random() * list.length)];
-    if (line !== undefined && (pets.length === 1 || pets.length === 3 || pets.length === 6)) {
-      say(line, now);
-    }
+    reactions.pet(now / 1000);
   }
 
   function cancelAim(event: KeyboardEvent): void {
@@ -485,8 +560,10 @@
       }),
       listen<[number, Rect | null]>("companion-host", (event) => {
         const [id, rect] = event.payload;
-        if (world !== null)
-          brain.hostMoved(id, rect === null ? null : rectToCss(rect, world.monitor, scale));
+        if (world === null) return;
+        const css = rect === null ? null : rectToCss(rect, world.monitor, scale);
+        brain.hostMoved(id, css);
+        if (id === attachedHost) reactions.host(css, performance.now() / 1000);
       }),
       listen<{ shown: boolean; focused: boolean; rect: Rect }>("companion-main", (event) => {
         // «Ушли» из окна — свернули его или переключились на другую программу: спутник выходит.
@@ -499,6 +576,9 @@
       listen("companion-called", onCalled),
       listen<[number, number]>("companion-cursor", (event) => {
         brain.cursorX = event.payload[0];
+        cursor = { x: event.payload[0], y: event.payload[1] };
+        cursorFedAt = performance.now();
+        reactions.cursor(cursor.x, cursor.y, cursorFedAt / 1000, shown);
       }),
       listen<Feed>("companion-feed", (event) => {
         onFeed(event.payload);
@@ -570,6 +650,48 @@
   >
     {bubble.text}
   </p>
+{/if}
+
+{#if radio !== null && radioAt !== null}
+  <div
+    class="radio-card"
+    bind:this={radioEl}
+    style:left={`${String(radioAt.x)}px`}
+    style:top={`${String(radioAt.y)}px`}
+  >
+    <span class="station" class:long={radio.title.length > 24} title={radio.title}>
+      <span
+        >♪ {radio.mode === "loading"
+          ? locale.t.radio.loading
+          : radio.mode === "failed"
+            ? locale.t.radio.failed
+            : radio.title}</span
+      >
+    </span>
+    <span class="buttons">
+      <button
+        type="button"
+        title={locale.t.radio.prev}
+        onclick={() => {
+          sendRadioCommand("prev");
+        }}>⏮</button
+      >
+      <button
+        type="button"
+        title={radio.mode === "playing" ? locale.t.radio.pause : locale.t.radio.play}
+        onclick={() => {
+          sendRadioCommand("toggle");
+        }}>{radio.mode === "playing" || radio.mode === "loading" ? "⏸" : "▶"}</button
+      >
+      <button
+        type="button"
+        title={locale.t.radio.next}
+        onclick={() => {
+          sendRadioCommand("next");
+        }}>⏭</button
+      >
+    </span>
+  </div>
 {/if}
 
 {#if menu !== null}
@@ -667,6 +789,59 @@
     user-select: none;
     -webkit-user-select: none;
     overflow-wrap: anywhere;
+  }
+
+  .radio-card {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    width: 230px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    background: var(--panel);
+    box-shadow: inset 0 0 0 1px var(--accent);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .station {
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* Длинное название — бегущей строкой. */
+  .station.long > span {
+    display: inline-block;
+    padding-left: 100%;
+    animation: marquee 9s linear infinite;
+  }
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-100%);
+    }
+  }
+
+  .buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .buttons button {
+    min-width: 34px;
+    padding: 2px 8px;
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    background: var(--plate);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
   }
 
   .menu {

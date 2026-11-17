@@ -33,6 +33,7 @@
   import { CompanionMenu, startFeed } from "../features/companion";
   import { Onboarding } from "../features/onboarding";
   import { PrivacyControl } from "../features/privacy";
+  import { listenRadioCommands, RadioControl, RadioPlayer } from "../features/radio";
   import { isResourcesHotkey, ResourcesPanel } from "../features/resources";
   import SplitLayout from "./SplitLayout.svelte";
   import StatusBar from "./StatusBar.svelte";
@@ -49,6 +50,8 @@
   let setupClosed = $state(false);
   // Звук компьютера для сферы: один на окно, читается циклом аватара каждый кадр (ADR-0039).
   const systemAudio = new SystemAudio();
+  // Радио (ADR-0049): играет главное окно — оно живо и в трее; спутник показывает и шлёт команды.
+  const radioPlayer = new RadioPlayer(layoutStorage());
 
   // Вид показа справа (Этап 23): картинка персонажа или сфера — выбор в меню по правой кнопке.
   let avatarView = $state(loadView(layoutStorage()));
@@ -95,10 +98,26 @@
       });
     // Спутнику — речь и эмоция (Этап 23): к ядру он не подключается.
     const stopFeed =
-      desktopPort === null ? null : startFeed(client, (dt) => player?.mouth(dt) ?? 0);
+      desktopPort === null
+        ? null
+        : startFeed(
+            client,
+            (dt) => player?.mouth(dt) ?? 0,
+            (time) => radioPlayer.feed(time),
+          );
+    const stopCommands =
+      desktopPort === null
+        ? null
+        : listenRadioCommands((command) => {
+            radioPlayer.command(command);
+          });
     return () => {
       disposed = true;
       stopFeed?.();
+      void stopCommands?.then((stop) => {
+        stop();
+      });
+      radioPlayer.dispose();
       void player?.dispose();
       player = null;
     };
@@ -253,6 +272,9 @@
               <AmbientControl audio={systemAudio} storage={layoutStorage()} />
               <MicControl {client} storage={layoutStorage()} {background} />
               <PrivacyControl {client} />
+              {#snippet radio()}
+                <RadioControl player={radioPlayer} />
+              {/snippet}
               {#snippet panels()}
                 {#each panelButtons as panel (panel.id)}
                   <button
