@@ -104,6 +104,54 @@
     };
   });
 
+  const hints = $derived([
+    locale.t.metrics.hotkey,
+    locale.t.resources.hotkey,
+    locale.t.memory.hotkey,
+    locale.t.skills.hotkey,
+    locale.t.theme.hotkey,
+    ...(desktopPort === null ? [] : [locale.t.desktop.hotkey]),
+  ]);
+
+  /** Кнопки панелей в окне настроек: те же панели, что по горячим клавишам. */
+  const panelButtons = $derived([
+    {
+      id: "skills",
+      label: `🧩 ${locale.t.skills.open}`,
+      hint: locale.t.skills.openHint,
+      shown: showSkills,
+      toggle: () => (showSkills = !showSkills),
+    },
+    {
+      id: "theme",
+      label: `🎨 ${locale.t.theme.open}`,
+      hint: locale.t.theme.openHint,
+      shown: showTheme,
+      toggle: () => (showTheme = !showTheme),
+    },
+    {
+      id: "memory",
+      label: `🧠 ${locale.t.memory.title}`,
+      hint: locale.t.memory.hotkey,
+      shown: showMemory,
+      toggle: () => (showMemory = !showMemory),
+    },
+    {
+      id: "metrics",
+      label: `⏱ ${locale.t.metrics.region}`,
+      hint: locale.t.metrics.hotkey,
+      shown: showMetrics,
+      toggle: () => (showMetrics = !showMetrics),
+    },
+    {
+      id: "resources",
+      label: `📊 ${locale.t.resources.title}`,
+      hint: locale.t.resources.hotkey,
+      shown: showResources,
+      toggle: () => (showResources = !showResources),
+    },
+  ]);
+
   /** Браузер запускает звук только после жеста пользователя — первое нажатие его и даёт. */
   function unlockAudio(): void {
     void player?.resume();
@@ -167,34 +215,58 @@
         <Chat {client} storage={layoutStorage()} />
       {/snippet}
       {#snippet right()}
-        <section class="stage" aria-label={locale.t.app.stage} bind:this={stageHost}>
-          <!-- Смена вида пересоздаёт сцену: у каждого вида свой рендер. -->
-          {#key avatarView}
-            <AvatarStage
-              onhittest={(contains: HitTest) => {
-                overModel = contains;
-              }}
+        <!-- Справа два окошка (просьба пользователя 2026-11-17): мордашка сверху, настройки под ней. -->
+        <div class="side" class:overlay>
+          <section class="stage card" aria-label={locale.t.app.stage} bind:this={stageHost}>
+            <!-- Смена вида пересоздаёт сцену: у каждого вида свой рендер. -->
+            {#key avatarView}
+              <AvatarStage
+                onhittest={(contains: HitTest) => {
+                  overModel = contains;
+                }}
+                view={avatarView}
+                store={client.store}
+                mouth={(deltaMs: number) => player?.mouth(deltaMs) ?? 0}
+                mouthForm={() => player?.mouthForm() ?? 0}
+                ambient={() => systemAudio.bands}
+              />
+            {/key}
+            <CharacterControls
+              host={stageHost}
               view={avatarView}
-              store={client.store}
-              mouth={(deltaMs: number) => player?.mouth(deltaMs) ?? 0}
-              mouthForm={() => player?.mouthForm() ?? 0}
-              ambient={() => systemAudio.bands}
-            />
-          {/key}
-          <CharacterControls
-            host={stageHost}
-            view={avatarView}
-            onview={(next: AvatarView) => {
-              avatarView = next;
-              saveView(layoutStorage(), next);
-            }}
-          >
-            {#snippet extra(close: () => void, note: (text: string) => void)}
-              {#if desktopPort !== null}
-                <CompanionMenu onclose={close} onnote={note} />
-              {/if}
-            {/snippet}
-          </CharacterControls>
+              onview={(next: AvatarView) => {
+                avatarView = next;
+                saveView(layoutStorage(), next);
+              }}
+            >
+              {#snippet extra(close: () => void, note: (text: string) => void)}
+                {#if desktopPort !== null}
+                  <CompanionMenu onclose={close} onnote={note} />
+                {/if}
+              {/snippet}
+            </CharacterControls>
+          </section>
+          <!-- Скрыто, а не снято: микрофон продолжает слушать и поверх стола. -->
+          <div class="card settings" class:hidden={overlay}>
+            <StatusBar store={client.store} {hints}>
+              <EditionBadge store={client.store} />
+              <AmbientControl audio={systemAudio} storage={layoutStorage()} />
+              <MicControl {client} storage={layoutStorage()} {background} />
+              <PrivacyControl {client} />
+              {#snippet panels()}
+                {#each panelButtons as panel (panel.id)}
+                  <button
+                    type="button"
+                    class="panel-button"
+                    class:active={panel.shown}
+                    title={panel.hint}
+                    aria-pressed={panel.shown}
+                    onclick={panel.toggle}>{panel.label}</button
+                  >
+                {/each}
+              {/snippet}
+            </StatusBar>
+          </div>
           {#if showMetrics}
             <MetricsPanel
               store={client.store}
@@ -235,41 +307,9 @@
               }}
             />
           {/if}
-        </section>
+        </div>
       {/snippet}
     </SplitLayout>
-  </div>
-  <!-- Скрыт, а не снят: микрофон продолжает слушать и поверх стола. -->
-  <div class="status" class:hidden={overlay}>
-    <StatusBar
-      store={client.store}
-      hint={`${locale.t.metrics.hotkey}, ${locale.t.resources.hotkey}, ${locale.t.memory.hotkey}, ${locale.t.skills.hotkey}, ${locale.t.theme.hotkey}${desktopPort === null ? "" : `, ${locale.t.desktop.hotkey}`}`}
-    >
-      <EditionBadge store={client.store} />
-      <AmbientControl audio={systemAudio} storage={layoutStorage()} />
-      <MicControl {client} storage={layoutStorage()} {background} />
-      <PrivacyControl {client} />
-      <button
-        type="button"
-        class="skills-button"
-        class:active={showSkills}
-        title={locale.t.skills.openHint}
-        aria-pressed={showSkills}
-        onclick={() => {
-          showSkills = !showSkills;
-        }}>🧩 {locale.t.skills.open}</button
-      >
-      <button
-        type="button"
-        class="skills-button"
-        class:active={showTheme}
-        title={locale.t.theme.openHint}
-        aria-pressed={showTheme}
-        onclick={() => {
-          showTheme = !showTheme;
-        }}>🎨 {locale.t.theme.open}</button
-      >
-    </StatusBar>
   </div>
   {#if client.store.setup?.needed && !setupClosed}
     <Onboarding
@@ -307,7 +347,7 @@
 
   .app {
     display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr);
     height: 100vh;
   }
 
@@ -321,6 +361,40 @@
     min-width: 0;
   }
 
+  /* Правая колонка: окошко персонажа сверху, окошко настроек под ним; панели — поверх обоих. */
+  .side {
+    position: relative;
+    display: grid;
+    grid-template-rows: minmax(200px, 42%) minmax(0, 1fr);
+    gap: 10px;
+    height: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  .side.overlay {
+    grid-template-rows: minmax(0, 1fr);
+    padding: 0;
+  }
+
+  .card {
+    min-height: 0;
+    border: 1px solid var(--rule-dim);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--panel) 70%, transparent);
+    overflow: hidden;
+  }
+
+  .side.overlay .card {
+    border: none;
+    background: transparent;
+  }
+
+  .settings {
+    display: flex;
+    flex-direction: column;
+  }
+
   .stage {
     position: relative;
     display: grid;
@@ -329,7 +403,7 @@
     text-align: center;
   }
 
-  .skills-button {
+  .panel-button {
     padding: 2px 8px;
     border: 1px solid var(--edge);
     border-radius: 6px;
@@ -340,7 +414,7 @@
     cursor: pointer;
   }
 
-  .skills-button.active {
+  .panel-button.active {
     border-color: var(--accent);
   }
 </style>

@@ -66,6 +66,11 @@ export const ru = {
   app: {
     stage: "Сцена",
     chatWidth: "Ширина чата",
+    settings: "Настройки",
+    state: "Состояние",
+    controls: "Голос и приватность",
+    panels: "Панели",
+    hotkeys: "Горячие клавиши",
   },
   status: {
     core: "Ядро",

@@ -49,6 +49,11 @@ export const en: Messages = {
   app: {
     stage: "Stage",
     chatWidth: "Chat width",
+    settings: "Settings",
+    state: "Status",
+    controls: "Voice and privacy",
+    panels: "Panels",
+    hotkeys: "Hotkeys",
   },
   status: {
     core: "Core",

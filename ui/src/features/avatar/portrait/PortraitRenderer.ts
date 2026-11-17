@@ -142,20 +142,20 @@ export class PortraitRenderer implements AvatarRenderer {
     const changed = fit !== this.#fit;
     this.#fit = fit;
     const corner = fit === "corner";
-    // В углу: прижать к правому нижнему углу окошка, размер — с ладонь.
-    this.#root.style.alignItems = corner ? "flex-end" : "center";
-    this.#root.style.justifyContent = corner ? "flex-end" : "center";
-    this.#root.style.padding = corner ? "0 16px 16px 0" : "0";
-    this.#glow.style.inset = corner ? "auto 0 0 auto" : "8%";
-    this.#glow.style.width = corner ? "min(80%, 360px)" : "";
-    this.#glow.style.height = corner ? "min(80%, 360px)" : "";
+    // Мордашка — своё окошко в правом верхнем углу (2026-11-17): по центру окошка, во всю его высоту.
+    this.#root.style.alignItems = "center";
+    this.#root.style.justifyContent = "center";
+    this.#root.style.padding = corner ? "12px" : "0";
+    this.#glow.style.inset = corner ? "15%" : "8%";
+    this.#glow.style.width = "";
+    this.#glow.style.height = "";
     if (changed && !this.#own && this.#image.src !== "") this.#image.src = this.#defaultPicture();
     if (corner) {
       this.#image.style.objectFit = "contain";
-      this.#image.style.width = "min(70%, 300px)";
-      this.#image.style.height = "auto";
-      this.#image.style.maxWidth = "92%";
-      this.#image.style.maxHeight = "50%";
+      this.#image.style.width = "auto";
+      this.#image.style.height = "100%";
+      this.#image.style.maxWidth = "100%";
+      this.#image.style.maxHeight = "100%";
       return;
     }
     const cover = fit === "cover";
