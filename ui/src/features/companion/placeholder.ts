@@ -205,6 +205,7 @@ const FIGURES: Record<Pose, Figure> = {
       [275, 1000],
     ],
   },
+  pet: STAND,
   poke: {
     ...STAND,
     elbows: [

@@ -305,3 +305,25 @@ describe("взгляд на мышь", () => {
     expect(brain.facing).toBe(1);
   });
 });
+
+describe("поглаживание", () => {
+  it("гладят стоящего: поза «довольный», сердечки, потом снова «стоит»", () => {
+    const brain = new Brain(() => 0.5);
+    brain.setWorld(WORLD);
+    const floor = snap(LIST, 800, 1040);
+    if (floor === null) throw new Error("нет места");
+    brain.place(floor);
+    brain.pet();
+    const body = brain.body();
+    expect(body.pose).toBe("pet");
+    expect(body.petting).toBe(1);
+    expect(body.effects.map((e) => e.kind)).toContain("hearts");
+    settle(brain, 1.5);
+    expect([brain.body().pose, brain.body().petting]).toEqual(["stand", 0]);
+    // Без кадра «довольный» рисуется «стоит» с закрытыми глазами.
+    const have = new Set(["stand", "stand_blink"]);
+    expect(pickFrame("pet", { time: 0, mouth: 0, speaking: false, blink: 0.5 }, have)).toBe(
+      "stand_blink",
+    );
+  });
+});

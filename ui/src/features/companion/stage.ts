@@ -76,14 +76,17 @@ export class CompanionStage {
     this.#dirty = null;
   }
 
-  #image(pose: Pose, look: Look): ImageBitmap | null {
+  #image(pose: Pose, look: Look, petting: number): ImageBitmap | null {
     const sleeping = pose === "sleep";
     const phase = this.#time % BLINK_EVERY_S;
+    // Гладят: жмурится (закрытые глаза), если отдельного кадра «довольный» нет.
+    const happy = petting > 0 && !this.#keys.has("pet") && !this.#keys.has("pet_1");
+    const blink = happy ? 0.5 : phase < BLINK_S && !sleeping ? phase / BLINK_S : null;
     const state = {
       time: this.#time,
       mouth: look.mouth,
-      speaking: look.speaking && !sleeping,
-      blink: phase < BLINK_S && !sleeping ? phase / BLINK_S : null,
+      speaking: look.speaking && !sleeping && petting === 0,
+      blink,
     };
     const key = pickFrame(pose, state, this.#keys);
     if (key !== null) return this.#poses.get(key) ?? null;
@@ -108,13 +111,15 @@ export class CompanionStage {
   }
 
   #figure(body: Body, look: Look): Rect | null {
-    const image = this.#image(body.pose, look);
+    const image = this.#image(body.pose, look, body.petting);
     if (image === null) return null;
     const h = this.#height * CANVAS_RATIO * body.scale;
     const w = (image.width / image.height) * h;
     const [ax, ay] = ANCHORS[body.pose];
     const breath = body.phase === "rest" ? Math.sin(this.#time * 1.8) * 0.008 : 0;
-    const lift = look.speaking ? look.mouth * 5 : 0;
+    // Подскок: в такт речи и маленький прыжок радости, когда гладят.
+    const hop = body.petting > 0 ? Math.abs(Math.sin(body.petting * Math.PI * 3)) * 10 : 0;
+    const lift = (look.speaking ? look.mouth * 5 : 0) + hop;
     const ctx = this.#ctx;
     ctx.save();
     ctx.translate(body.x, body.y - lift);

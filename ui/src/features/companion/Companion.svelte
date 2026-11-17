@@ -63,6 +63,8 @@
   let lastRemarkTime = 0;
   let topic: RemarkTopic = "other";
   let poking = false;
+  /** Времена поглаживаний за последние 3 с. */
+  let pets: number[] = [];
   // Мышь: удержание — молния, движение сразу — «держат», как у Capri.
   let press: { x: number; y: number; t: number } | null = null;
   let gesture: "none" | "held" | "aim" = "none";
@@ -346,7 +348,10 @@
       if (done.kind === "place") brain.place(done.spot);
       else if (done.kind === "hang") brain.hang(done.x, done.y);
       else brain.toss(done.vx, done.vy);
-    } else if (gesture === "aim" && aim !== null) {
+    } else if (gesture === "none") {
+      // Короткий клик без движения — погладить (удержание — молния, движение — «держат»).
+      petNow(performance.now());
+    } else if (aim !== null) {
       // Отпустили на самом персонаже — отмена; иначе — разряд по молнии к цели.
       if (Math.hypot(aim.x - brain.x, aim.y - (brain.y - brain.chest)) > 60)
         brain.bolt(aim.ghost, [aim.x, aim.y]);
@@ -355,6 +360,19 @@
     gesture = "none";
     aim = null;
     trail = [];
+  }
+
+  /** Погладили: сердечки, прыжок радости; чем чаще гладят подряд — тем довольнее реплика. */
+  function petNow(now: number): void {
+    pets = [...pets.filter((t) => now - t < 3000), now];
+    brain.pet();
+    look.attention = Math.max(look.attention, 0.5);
+    const lines = locale.t.companion.pet;
+    const list = pets.length >= 6 ? lines.lots : pets.length >= 3 ? lines.more : lines.first;
+    const line = list[Math.floor(Math.random() * list.length)];
+    if (line !== undefined && (pets.length === 1 || pets.length === 3 || pets.length === 6)) {
+      say(line, now);
+    }
   }
 
   function cancelAim(event: KeyboardEvent): void {
@@ -542,6 +560,8 @@
   }
 
   .layer {
+    /* Над персонажем — рука: его можно погладить (над пустым местом клики идут сквозь слой). */
+    cursor: pointer;
     position: fixed;
     inset: 0;
     width: 100vw;

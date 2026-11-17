@@ -1,4 +1,4 @@
-# Новые кадры (2026-11-17): «тыкает пальцем» и мордашка для угла окна
+# Новые кадры (2026-11-17): «тыкает пальцем», мордашка для угла окна, «гладят»
 
 Нужны для двух новых возможностей:
 - **спутник «тыкает» в кнопки и значки.** Сейчас вместо этой позы — `lean_side`, облокотился;
@@ -78,3 +78,24 @@ pixel — but {change}. Nothing else changes. Square canvas 1024x1024.
 
 Готовые картинки — в любую папку с этими именами, пришлите путь. Подгоню, проверю совмещение и добавлю
 во встроенного персонажа. Кадры с ореолом или со сдвигом верну на перегенерацию.
+
+## 3. Гладят — `pet.png`, `pet_1.png`, `pet_2.png`
+Когда пользователь кликает по спутнику, тот довольно жмурится. Точка опоры — **ступни, как у `stand.png`**:
+та же линия пола и тот же масштаб. Пока кадра нет, программа показывает `stand` с закрытыми глазами.
+
+`pet.png`:
+```
+Same character, full body, standing exactly like the attached stand.png (same scale, same feet position
+on the bottom line). Pose: being petted on the head — eyes closed in two happy upward curves, head tilted
+slightly toward the hand, shoulders raised in delight, small pink blush on the mask, the blue flame horns
+glow a little brighter and curl happily. No hand drawn. Canvas 1024x1536, vertical.
+```
+Затем хвост.
+
+`pet_1.png`, `pet_2.png` — сразу после `pet.png`, по одному:
+```
+Using the previous pet image as the reference, draw frame {N} of 2 of a tiny happy wiggle: frame 1 —
+the body sways slightly to the left, frame 2 — slightly to the right; the feet stay exactly in place.
+Canvas 1024x1536, vertical.
+```
+Затем хвост.

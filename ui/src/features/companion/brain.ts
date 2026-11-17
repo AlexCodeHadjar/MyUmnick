@@ -22,7 +22,9 @@ export type Phase =
 export type Effect =
   | { kind: "bolt"; from: [number, number]; to: [number, number]; t: number }
   | { kind: "portal"; x: number; y: number; t: number; opening: boolean }
-  | { kind: "sparks"; x: number; y: number; t: number };
+  | { kind: "sparks"; x: number; y: number; t: number }
+  /** Сердечки над головой: погладили. */
+  | { kind: "hearts"; x: number; y: number; t: number };
 
 export interface Body {
   phase: Phase;
@@ -32,6 +34,8 @@ export interface Body {
   facing: 1 | -1;
   /** 0…1: портал «вытягивает» персонажа из точки и втягивает обратно. */
   scale: number;
+  /** 1 → 0 после поглаживания: зажмуренные глаза, подскок. */
+  petting: number;
   effects: Effect[];
 }
 
@@ -49,6 +53,9 @@ const SPARKS_S = 0.5;
 const LAY_AFTER_S = 90;
 const SLEEP_AFTER_S = 300;
 const LOOK_DEADZONE = 40;
+const HEARTS_S = 1.4;
+/** Сколько держится «довольная мордочка» после поглаживания. */
+const PET_S = 1.2;
 
 type Random = () => number;
 
@@ -84,6 +91,7 @@ export class Brain {
    * прыжка и полёта он и так смотрит по движению.
    */
   busy = false;
+  #petting = 0;
   /** Высота груди над точкой опоры: отсюда выходит молния и искры (рост × 0,55). */
   chest = 150;
 
@@ -177,6 +185,14 @@ export class Brain {
     this.#pinAfter = { pose, facing };
   }
 
+  /** Погладили (клик по персонажу): жмурится, подпрыгивает, над головой сердечки. */
+  pet(): void {
+    if (this.phase === "hidden" || this.phase === "held") return;
+    this.#effects.push({ kind: "hearts", x: this.x, y: this.y - this.chest * 1.7, t: 0 });
+    this.#petting = PET_S;
+    this.#idle = 0;
+  }
+
   /** Персонажа взяли мышью: висит за «шиворот» у курсора. */
   hold(px: number, py: number): void {
     this.phase = "held";
@@ -243,6 +259,7 @@ export class Brain {
   tick(dt: number): void {
     const step = Math.min(dt, 0.05);
     this.#t += step;
+    this.#petting = Math.max(0, this.#petting - step);
     this.#effects = this.#effects
       .map((effect) => ({ ...effect, t: effect.t + step / this.#effectLength(effect) }))
       .filter((effect) => effect.t < 1);
@@ -263,6 +280,7 @@ export class Brain {
       pose: this.#pose(),
       facing: this.facing,
       scale: this.#scale(),
+      petting: this.#petting / PET_S,
       effects: this.#effects,
     };
   }
@@ -270,6 +288,7 @@ export class Brain {
   #effectLength(effect: Effect): number {
     if (effect.kind === "bolt") return BOLT_S;
     if (effect.kind === "portal") return PORTAL_S * 1.4;
+    if (effect.kind === "hearts") return HEARTS_S;
     return SPARKS_S;
   }
 
@@ -288,6 +307,8 @@ export class Brain {
     if (this.phase === "jump" || this.phase === "fall" || this.phase.startsWith("portal"))
       return "float";
     const pose = this.#spot?.pose ?? "float";
+    // Гладят стоящего — отдельный кадр «довольный»; нет его — «стоит» с закрытыми глазами (stage.ts).
+    if (this.#petting > 0 && pose === "stand") return "pet";
     if (
       this.#idle > SLEEP_AFTER_S &&
       (pose === "sit_edge" || pose === "stand" || pose === "sit_corner")

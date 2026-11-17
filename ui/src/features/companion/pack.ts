@@ -20,6 +20,7 @@ export const FALLBACK: Record<Pose, readonly Pose[]> = {
   held: ["float", "stand"],
   float: ["held", "stand"],
   poke: ["lean_side", "stand"],
+  pet: ["stand"],
 };
 
 /** Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот». */
@@ -37,6 +38,7 @@ export const ANCHORS: Record<Pose, readonly [number, number]> = {
   float: [0.5, 0.6],
   // Кончик вытянутого вперёд пальца — справа на уровне груди (кадр poke, раздел 7.2).
   poke: [0.88, 0.42],
+  pet: [0.5, 0.97],
 };
 
 /** Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз. */
@@ -56,6 +58,7 @@ export const LOOP_FPS: Partial<Record<Pose, number>> = {
   hang_side: 6,
   float: 8,
   poke: 6,
+  pet: 8,
   laydown: 4,
   sleep: 3,
 };

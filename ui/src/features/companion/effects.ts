@@ -154,6 +154,43 @@ function drawSparks(
   ctx.restore();
 }
 
+/** Сердечки: поднимаются, покачиваясь, и тают (погладили). */
+function drawHearts(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
+  const random = seeded(Math.round(x * 13 + y * 7));
+  ctx.save();
+  for (let i = 0; i < 6; i += 1) {
+    const delay = i * 0.08;
+    const local = Math.min(1, Math.max(0, (t - delay) / (1 - delay)));
+    if (local <= 0) continue;
+    const spread = (random() - 0.5) * 90;
+    const hx = x + spread + Math.sin(local * 6 + i) * 8;
+    const hy = y - local * 110 - random() * 20;
+    const size = 7 + random() * 6 + local * 4;
+    ctx.globalAlpha = 1 - local;
+    ctx.fillStyle = `hsl(${String(335 + random() * 20)} 95% ${String(68 + random() * 12)}%)`;
+    ctx.beginPath();
+    ctx.moveTo(hx, hy + size * 0.35);
+    ctx.bezierCurveTo(
+      hx - size,
+      hy - size * 0.4,
+      hx - size * 0.45,
+      hy - size,
+      hx,
+      hy - size * 0.45,
+    );
+    ctx.bezierCurveTo(
+      hx + size * 0.45,
+      hy - size,
+      hx + size,
+      hy - size * 0.4,
+      hx,
+      hy + size * 0.35,
+    );
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 function drawPortal(
   ctx: CanvasRenderingContext2D,
   effect: { x: number; y: number; t: number; opening: boolean },
@@ -195,6 +232,7 @@ export function drawEffects(
   for (const effect of effects) {
     if (effect.kind === "bolt") drawBolt(ctx, effect.from, effect.to, hue, seed, effect.t);
     else if (effect.kind === "sparks") drawSparks(ctx, effect.x, effect.y, effect.t, hue);
+    else if (effect.kind === "hearts") drawHearts(ctx, effect.x, effect.y, effect.t);
     else drawPortal(ctx, effect, hue);
   }
 }
