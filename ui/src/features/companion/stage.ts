@@ -7,6 +7,7 @@ import type { Pose } from "./anchors";
 import type { Body } from "./brain";
 import { drawEffects } from "./effects";
 import { ANCHORS, CANVAS_RATIO, FALLBACK, loadPoses, pickFrame } from "./pack";
+import { drawPanel, panelRect } from "./panel";
 import { placeholderPose } from "./placeholder";
 import type { Rect } from "./world";
 
@@ -33,7 +34,12 @@ export interface Look {
   hue: number;
   /** 1 → 0 за пару секунд после зова: вспышка. */
   attention: number;
+  /** Название станции для табло музыкального ящика или `null`. */
+  panel: string | null;
 }
+
+/** Позы радио — спокойные: без подскока в такт громкости (просьба пользователя 2026-11-17). */
+const CALM: ReadonlySet<Pose> = new Set(["sing", "jukebox", "radio_idle"]);
 
 export class CompanionStage {
   readonly #ctx: CanvasRenderingContext2D;
@@ -78,6 +84,9 @@ export class CompanionStage {
     this.#dirty = null;
   }
 
+  /** Имя кадра, нарисованного последним: табло — только у кадров `jukebox*`. */
+  #frameKey: string | null = null;
+
   #image(pose: Pose, look: Look, petting: number): ImageBitmap | null {
     const sleeping = pose === "sleep";
     const phase = this.#time % BLINK_EVERY_S;
@@ -91,6 +100,7 @@ export class CompanionStage {
       blink,
     };
     const key = pickFrame(pose, state, this.#keys);
+    this.#frameKey = key;
     if (key !== null) return this.#poses.get(key) ?? null;
     const fallback = [pose, ...FALLBACK[pose]].find((one) => this.#placeholders.has(one));
     return fallback === undefined ? null : (this.#placeholders.get(fallback) ?? null);
@@ -146,7 +156,7 @@ export class CompanionStage {
     const breath = body.phase === "rest" ? Math.sin(this.#time * 1.8) * 0.008 : 0;
     // Подскок: в такт речи и маленький прыжок радости, когда гладят.
     const hop = body.petting > 0 ? Math.abs(Math.sin(body.petting * Math.PI * 3)) * 10 : 0;
-    const lift = (look.speaking ? look.mouth * 5 : 0) + hop;
+    const lift = (look.speaking && !CALM.has(body.pose) ? look.mouth * 5 : 0) + hop;
     const ctx = this.#ctx;
     ctx.save();
     ctx.translate(body.x, body.y - lift);
@@ -163,6 +173,10 @@ export class CompanionStage {
       w,
       h,
     };
+    // Табло по центру кадра — отражение не мешает; текст пишется прямо, а не зеркально.
+    if (look.panel !== null && this.#frameKey?.startsWith("jukebox") === true) {
+      drawPanel(ctx, panelRect(box), look.panel, this.#time);
+    }
     this.bounds = box;
     return box;
   }

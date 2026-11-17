@@ -36,7 +36,7 @@
   import { Reactions } from "./reactions";
   import { keepWatching, mediaVideo, pickMedia, watching, type Media } from "./watch";
   import { watchPhrases } from "./phrases";
-  import { CompanionStage } from "./stage";
+  import { CompanionStage, type Look } from "./stage";
   import { rectToCss, worldToCss, type Focus, type Rect, type World } from "./world";
 
   interface Feed {
@@ -73,7 +73,13 @@
   let shown = false;
   let lastFocus = "";
   let attachedHost: number | null = null;
-  const look = { mouth: 0, speaking: false, hue: EMOTION_HUE.neutral, attention: 0 };
+  const look: Look = {
+    mouth: 0,
+    speaking: false,
+    hue: EMOTION_HUE.neutral,
+    attention: 0,
+    panel: null,
+  };
   let replyText = "";
   let bubbleUntil = 0;
   let listening = false;
@@ -229,6 +235,7 @@
     const line = list?.[Math.floor(Math.random() * list.length)];
     if (line !== undefined && shown) speak(line, "reaction");
     radio = mode === "off" ? null : next;
+    look.panel = radio === null ? null : radio.title;
     // Поёт: рот — по громкости потока, «говорит» — значит, не комментирует и не гуляет.
     if (mode === "playing" && next !== null && !speaking) {
       look.mouth = next.level;

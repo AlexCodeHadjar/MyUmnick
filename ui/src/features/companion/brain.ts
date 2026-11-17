@@ -457,7 +457,7 @@ export class Brain {
     if (this.watching && pose === "sit_corner") return "watch";
     // Радио: стоя — поёт (на паузе слушает), сидя — сидит как сидел.
     if (this.music !== "off" && pose === "stand" && this.#petting === 0) {
-      return this.music === "playing" ? "sing" : "radio_idle";
+      return this.music === "playing" ? "jukebox" : "radio_idle";
     }
     // Гладят стоящего — отдельный кадр «довольный»; нет его — «стоит» с закрытыми глазами (stage.ts).
     if (this.#petting > 0 && pose === "stand") return "pet";

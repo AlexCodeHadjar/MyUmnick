@@ -30,6 +30,7 @@ export const FALLBACK: Record<Pose, readonly Pose[]> = {
   yawn: ["stand"],
   dance: ["stand"],
   watch: ["sit_corner", "sit_edge", "stand"],
+  jukebox: ["sing", "radio_idle", "stand"],
 };
 
 /** Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот». */
@@ -56,6 +57,7 @@ export const ANCHORS: Record<Pose, readonly [number, number]> = {
   yawn: [0.5, 0.97],
   dance: [0.5, 0.97],
   watch: [0.5, 0.95],
+  jukebox: [0.5, 0.97],
 };
 
 /** Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз. */
@@ -77,7 +79,9 @@ export const LOOP_FPS: Partial<Record<Pose, number>> = {
   poke: 6,
   pet: 8,
   laydown: 4,
-  sing: 6,
+  // Радио — спокойно (просьба пользователя 2026-11-17: «слишком дёргается»): медленные циклы.
+  sing: 3,
+  jukebox: 2,
   climb: 6,
   dizzy: 4,
   wave: 6,
@@ -109,7 +113,8 @@ function frameOf(name: string, pose: Pose, state: FrameState, have: ReadonlySet<
   // Спит, а позы сна нет: замена с закрытыми глазами.
   if (pose === "sleep" && name !== "sleep" && have.has(`${name}_blink`)) return `${name}_blink`;
   // Поёт: тело качается циклом `sing_1…4` (рот там уже открыт), кадры рта — только на громких местах.
-  const threshold = pose === "sing" ? 0.75 : 0.08;
+  // Поёт или сидит на ящике — кадры рта не вклиниваются в спокойный цикл совсем.
+  const threshold = pose === "sing" || pose === "jukebox" ? 2 : 0.08;
   if (state.speaking && state.mouth > threshold) {
     // Рот по громкости: `_talk_1` приоткрыт … `_talk_N` открыт широко; без них — один `_talk`.
     const talk = sequence(`${name}_talk`, have);

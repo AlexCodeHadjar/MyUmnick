@@ -213,6 +213,7 @@ const FIGURES: Record<Pose, Figure> = {
   yawn: STAND,
   dance: STAND,
   watch: STAND,
+  jukebox: STAND,
   // Силуэт «лезет» не рисуется: пока нет кадров, берётся силуэт `hang_side` (FALLBACK).
   climb: STAND,
   poke: {

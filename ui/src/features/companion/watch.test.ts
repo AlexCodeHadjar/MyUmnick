@@ -61,20 +61,18 @@ describe("смотрим вместе", () => {
 });
 
 describe("кадры пения", () => {
-  it("поёт — цикл покачивания; кадры рта только на громких местах", () => {
-    const have = new Set([
-      "stand",
-      "sing",
-      "sing_1",
-      "sing_2",
-      "sing_talk_1",
-      "sing_talk_2",
-      "sing_talk_3",
-    ]);
-    const state = { time: 0, mouth: 0.5, speaking: true, blink: null };
+  it("поёт спокойно: только медленный цикл, кадры рта не вклиниваются даже на громких местах", () => {
+    const have = new Set(["stand", "sing", "sing_1", "sing_2", "sing_talk_1", "sing_talk_3"]);
+    const state = { time: 0, mouth: 0.95, speaking: true, blink: null };
     expect(pickFrame("sing", state, have)).toBe("sing_1");
-    expect(pickFrame("sing", { ...state, mouth: 0.95 }, have)).toBe("sing_talk_3");
-    expect(pickFrame("radio_idle", state, new Set(["stand", "stand_talk_1"]))).toBe("stand_talk_1");
+    // Ящика ещё нет — замена: тот же спокойный цикл пения.
+    expect(pickFrame("jukebox", state, have)).toBe("sing_1");
+    expect(pickFrame("jukebox", state, new Set([...have, "jukebox", "jukebox_1"]))).toBe(
+      "jukebox_1",
+    );
+    expect(
+      pickFrame("radio_idle", { ...state, mouth: 0.5 }, new Set(["stand", "stand_talk_1"])),
+    ).toBe("stand_talk_1");
   });
 });
 
