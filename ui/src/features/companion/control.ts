@@ -75,3 +75,26 @@ export function bubbleText(text: string, limit = 140): string {
   const space = tail.indexOf(" ");
   return `…${space > 0 ? tail.slice(space + 1) : tail}`;
 }
+
+const BUBBLE_MARGIN = 8;
+
+/**
+ * Где поставить облачко размером `size` у фигуры `box` в окне `view` (левый верхний угол): над головой,
+ * а если сверху тесно — сбоку от головы. Всегда целиком в пределах экрана — текст не обрезан краем.
+ */
+export function placeBubble(
+  box: { x: number; y: number; w: number; h: number },
+  size: { w: number; h: number },
+  view: { w: number; h: number },
+): { x: number; y: number } {
+  const head = box.y + box.h * 0.08;
+  const fit = (value: number, limit: number): number =>
+    Math.max(BUBBLE_MARGIN, Math.min(value, limit - BUBBLE_MARGIN));
+  if (head - size.h - BUBBLE_MARGIN >= BUBBLE_MARGIN) {
+    const x = fit(box.x + box.w / 2 - size.w / 2, view.w - size.w);
+    return { x, y: head - size.h };
+  }
+  const right = box.x + box.w + size.w + BUBBLE_MARGIN <= view.w;
+  const x = right ? box.x + box.w : box.x - size.w;
+  return { x: fit(x, view.w - size.w), y: fit(head, view.h - size.h) };
+}

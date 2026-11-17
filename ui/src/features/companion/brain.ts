@@ -152,10 +152,9 @@ export class Brain {
       this.#fall();
       return;
     }
-    this.x =
-      spot.surface.kind === "side" && spot.surface.side === "right"
-        ? rect.x + rect.w
-        : rect.x + this.#rel;
+    const surface = spot.surface;
+    const base = surface.kind === "side" && surface.side === "right" ? rect.x + rect.w : rect.x;
+    this.x = base + this.#rel;
     if (spot.surface.kind === "edge") this.y = rect.y;
   }
 
@@ -342,7 +341,13 @@ export class Brain {
     this.#vx = 0;
     this.#vy = 0;
     const surface = spot.surface;
-    this.#rel = surface.kind === "edge" ? spot.x - this.#hostLeft(surface) : 0;
+    // Сдвиг от окна: по краю — от левого края окна, у бока — от самого бока (отступ от стены).
+    this.#rel =
+      surface.kind === "edge"
+        ? spot.x - this.#hostLeft(surface)
+        : surface.kind === "side"
+          ? spot.x - surface.x
+          : 0;
   }
 
   #hostLeft(surface: Surface): number {

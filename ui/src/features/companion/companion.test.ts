@@ -4,7 +4,7 @@ import { messagesFor } from "../../core";
 
 import { below, floorSpot, seatSpot, snap, surfaces } from "./anchors";
 import { Brain, WALK_LIMIT } from "./brain";
-import { bubbleText, followSpot, release, velocityOf } from "./control";
+import { bubbleText, followSpot, placeBubble, release, velocityOf } from "./control";
 import { along, lightning, seeded } from "./effects";
 import { pickFrame, poseName, sequence } from "./pack";
 import { choosePoke, remark, topicOf } from "./remarks";
@@ -36,9 +36,15 @@ describe("опоры и позы", () => {
     expect(snap(LIST, 600, 700)).toBeNull(); // посреди окна опоры нет
   });
 
-  it("бок окна: вверху — висит, ниже — облокотился", () => {
-    expect(snap(LIST, 195, 320)?.pose).toBe("hang_side");
-    expect(snap(LIST, 1005, 450)?.pose).toBe("lean_side");
+  it("бок окна: вверху — висит, ниже — стоит у стены, лицом от неё и не заходя в окно", () => {
+    const left = snap(LIST, 145, 320);
+    expect(left?.pose).toBe("hang_side");
+    expect(left?.facing).toBe(-1);
+    expect(left?.x).toBeLessThan(200);
+    const right = snap(LIST, 1055, 450);
+    expect(right?.pose).toBe("lean_side");
+    expect(right?.facing).toBe(1);
+    expect(right?.x).toBeGreaterThan(1000);
   });
 
   it("под точкой — ближайший край ниже, иначе «пол»", () => {
@@ -362,5 +368,22 @@ describe("значки рабочего стола", () => {
     settle(brain, 3);
     // Значки у левого края: упав у самого угла экрана, садится в угол.
     expect([brain.phase, brain.y, brain.body().pose]).toEqual(["rest", 1040, "sit_corner"]);
+  });
+});
+
+describe("placeBubble", () => {
+  const view = { w: 1920, h: 1080 };
+  const size = { w: 200, h: 50 };
+
+  it("stays inside the screen at the left edge", () => {
+    const at = placeBubble({ x: -40, y: 500, w: 160, h: 300 }, size, view);
+    expect(at.x).toBeGreaterThanOrEqual(8);
+    expect(at.y + size.h).toBeLessThanOrEqual(524);
+  });
+
+  it("goes beside the head when there is no room above", () => {
+    const at = placeBubble({ x: 1700, y: 0, w: 160, h: 300 }, size, view);
+    expect(at.y).toBeGreaterThanOrEqual(8);
+    expect(at.x + size.w).toBeLessThanOrEqual(1700);
   });
 });

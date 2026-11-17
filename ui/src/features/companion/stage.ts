@@ -46,6 +46,8 @@ export class CompanionStage {
   #time = 0;
   #dirty: Rect | null = null;
   #seed = 1;
+  /** Центр портала (фигуры) — пока персонаж выходит или уходит; кольцо держится там же и после. */
+  #portalAt: [number, number] | null = null;
   /** Где персонаж сейчас нарисован (CSS-пиксели): для кликов и облачка. */
   bounds: Rect | null = null;
 
@@ -103,19 +105,44 @@ export class CompanionStage {
     this.bounds = null;
     let area: Rect | null = null;
     if (body.phase !== "hidden" && body.scale > 0.01) area = this.#figure(body, look);
+    if (body.phase === "portal_out" || body.phase === "portal_in") {
+      this.#portalAt = this.#centerOf(body, look);
+    }
     if (body.effects.length > 0) {
-      drawEffects(ctx, body.effects, look.hue, Math.floor(this.#seed / 2));
+      // Кольцо портала — в центре фигуры: персонаж «вырастает» из его середины, а не под ним.
+      const at = this.#portalAt;
+      const effects =
+        at === null
+          ? body.effects
+          : body.effects.map((one) =>
+              one.kind === "portal" ? { ...one, x: at[0], y: at[1] } : one,
+            );
+      drawEffects(ctx, effects, look.hue, Math.floor(this.#seed / 2));
       area = { x: 0, y: 0, w: this.#canvas.width, h: this.#canvas.height };
     }
     this.#dirty = area === null ? null : grow(area, 40);
   }
 
+  /** Центр фигуры в полный рост (CSS-пиксели): из него растёт персонаж в портале. */
+  #centerOf(body: Body, look: Look): [number, number] {
+    const image = this.#image(body.pose, look, body.petting);
+    const H = this.#height * CANVAS_RATIO;
+    const W = image === null ? H * 0.55 : (image.width / image.height) * H;
+    const [ax, ay] = ANCHORS[body.pose];
+    return [body.x + body.facing * (0.5 - ax) * W, body.y + (0.5 - ay) * H];
+  }
+
   #figure(body: Body, look: Look): Rect | null {
     const image = this.#image(body.pose, look, body.petting);
     if (image === null) return null;
-    const h = this.#height * CANVAS_RATIO * body.scale;
-    const w = (image.width / image.height) * h;
+    const H = this.#height * CANVAS_RATIO;
+    const W = (image.width / image.height) * H;
+    // В портале фигура масштабируется вокруг своего центра; в полный рост — та же точка опоры.
+    const h = H * body.scale;
+    const w = W * body.scale;
     const [ax, ay] = ANCHORS[body.pose];
+    const cx = (0.5 - ax) * W;
+    const cy = (0.5 - ay) * H;
     const breath = body.phase === "rest" ? Math.sin(this.#time * 1.8) * 0.008 : 0;
     // Подскок: в такт речи и маленький прыжок радости, когда гладят.
     const hop = body.petting > 0 ? Math.abs(Math.sin(body.petting * Math.PI * 3)) * 10 : 0;
@@ -128,11 +155,11 @@ export class CompanionStage {
       ctx.shadowColor = `hsla(${String(look.hue)}, 95%, 70%, ${String(look.attention)})`;
       ctx.shadowBlur = 30 * look.attention;
     }
-    ctx.drawImage(image, -w * ax, -h * ay, w, h);
+    ctx.drawImage(image, cx - w / 2, cy - h / 2, w, h);
     ctx.restore();
     const box = {
-      x: body.x - w * (body.facing === 1 ? ax : 1 - ax),
-      y: body.y - lift - h * ay,
+      x: body.x + body.facing * cx - w / 2,
+      y: body.y - lift + cy - h / 2,
       w,
       h,
     };

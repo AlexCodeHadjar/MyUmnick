@@ -846,17 +846,17 @@
 - `Surface` — `ui/src/features/companion/anchors.ts:25` — Опора: горизонтальная (край окна, «пол») или вертикальная (бок окна).
 - `Spot` — `ui/src/features/companion/anchors.ts:33` — Место на опоре: точка опоры позы (сиденье, ступни, ладони) и сама поза.
 - `SCREEN` — `ui/src/features/companion/anchors.ts:43` — «Хозяин» боков экрана: не окно, за ним не следят и его не опрашивают.
-- `SNAP_RADIUS` — `ui/src/features/companion/anchors.ts:47` — —
-- `surfaces` — `ui/src/features/companion/anchors.ts:52` — Все опоры картины: открытые участки верхних краёв окон, бока окон, «пол» над панелью задач.
-- `spotOn` — `ui/src/features/companion/anchors.ts:92` — Место на опоре `surface`, ближайшее к точке; поза — по месту.
-- `hostId` — `ui/src/features/companion/anchors.ts:116` — Окно, на котором место (за ним следят), или `null` — «пол», верх и бока экрана.
-- `ICONS` — `ui/src/features/companion/anchors.ts:123` — «Хозяин» значков рабочего стола: они опоры, но не окна (оболочка их не отслеживает).
-- `iconSurfaces` — `ui/src/features/companion/anchors.ts:126` — Верх значков рабочего стола как опоры (по образцу Capri): сесть на «Корзину» или «Steam».
-- `snap` — `ui/src/features/companion/anchors.ts:148` — Ближайшее место в радиусе `radius` или `null` — тогда спутник «парит» и опускается сам.
-- `below` — `ui/src/features/companion/anchors.ts:167` — Горизонтальная опора под точкой (падение): ближайшая сверху вниз, иначе «пол».
-- `seatSpot` — `ui/src/features/companion/anchors.ts:184` — Куда сесть, когда активным стало окно: правая треть верхнего края, на открытом участке.
-- `floorSpot` — `ui/src/features/companion/anchors.ts:201` — Место на «полу» у правого края — рабочий стол или развёрнутое окно.
-- `sameSurface` — `ui/src/features/companion/anchors.ts:210` — Та же опора в новой картине (окно сдвинули): по хозяину и виду.
+- `SNAP_RADIUS` — `ui/src/features/companion/anchors.ts:50` — —
+- `surfaces` — `ui/src/features/companion/anchors.ts:55` — Все опоры картины: открытые участки верхних краёв окон, бока окон, «пол» над панелью задач.
+- `spotOn` — `ui/src/features/companion/anchors.ts:95` — Место на опоре `surface`, ближайшее к точке; поза — по месту.
+- `hostId` — `ui/src/features/companion/anchors.ts:122` — Окно, на котором место (за ним следят), или `null` — «пол», верх и бока экрана.
+- `ICONS` — `ui/src/features/companion/anchors.ts:129` — «Хозяин» значков рабочего стола: они опоры, но не окна (оболочка их не отслеживает).
+- `iconSurfaces` — `ui/src/features/companion/anchors.ts:132` — Верх значков рабочего стола как опоры (по образцу Capri): сесть на «Корзину» или «Steam».
+- `snap` — `ui/src/features/companion/anchors.ts:161` — Ближайшее место в радиусе `radius` или `null` — тогда спутник «парит» и опускается сам.
+- `below` — `ui/src/features/companion/anchors.ts:180` — Горизонтальная опора под точкой (падение): ближайшая сверху вниз, иначе «пол».
+- `seatSpot` — `ui/src/features/companion/anchors.ts:197` — Куда сесть, когда активным стало окно: правая треть верхнего края, на открытом участке.
+- `floorSpot` — `ui/src/features/companion/anchors.ts:214` — Место на «полу» у правого края — рабочий стол или развёрнутое окно.
+- `sameSurface` — `ui/src/features/companion/anchors.ts:223` — Та же опора в новой картине (окно сдвинули): по хозяину и виду.
 - `Phase` — `ui/src/features/companion/brain.ts:20` — —
 - `Effect` — `ui/src/features/companion/brain.ts:23` — —
 - `Body` — `ui/src/features/companion/brain.ts:32` — —
@@ -873,6 +873,7 @@
 - `release` — `ui/src/features/companion/control.ts:40` — —
 - `velocityOf` — `ui/src/features/companion/control.ts:59` — Скорость по следу курсора за последние 80 мс, пикселей в секунду.
 - `bubbleText` — `ui/src/features/companion/control.ts:71` — Облачко: последние ~140 знаков реплики, целыми словами.
+- `placeBubble` — `ui/src/features/companion/control.ts:85` — Где поставить облачко размером `size` у фигуры `box` в окне `view` (левый верхний угол): над головой,
 - `Point` — `ui/src/features/companion/effects.ts:8` — —
 - `Random` — `ui/src/features/companion/effects.ts:9` — —
 - `seeded` — `ui/src/features/companion/effects.ts:12` — Генератор с зерном (mulberry32): молния не «дёргается» сильнее, чем мы просим.

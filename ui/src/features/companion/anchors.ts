@@ -42,7 +42,10 @@ export interface Spot {
 /** «Хозяин» боков экрана: не окно, за ним не следят и его не опрашивают. */
 export const SCREEN = -1;
 /** Бока экрана — чуть внутри: персонаж облокачивается, а не уходит наполовину за край. */
-const WALL_INSET = 45;
+const WALL_INSET = 0;
+/** От стены до точки опоры: полкорпуса, чтобы персонаж был виден целиком и не заходил в окно. */
+const WALL_GAP = 60;
+const WALL_GAP_SCREEN = 70;
 
 export const SNAP_RADIUS = 40;
 /** Ближе к концу опоры — «угловая» поза. */
@@ -92,10 +95,13 @@ function clamp(value: number, low: number, high: number): number {
 export function spotOn(surface: Surface, px: number, py: number): Spot {
   if (surface.kind === "side") {
     const y = clamp(py, surface.y0, surface.y1);
-    const facing = surface.side === "left" ? 1 : -1;
-    // Наверху бока — висит, держась за край; ниже — стоит, облокотившись.
+    // Лицом от стены (просьба пользователя 2026-11-17) и рядом с ней, а не наполовину за краем:
+    // стена справа от персонажа (`left` — левый бок окна или правый край экрана) — смотрит влево.
+    const away: 1 | -1 = surface.side === "left" ? -1 : 1;
+    const x = wallX(surface);
+    // Наверху бока — висит, держась за край; ниже — стоит у стены.
     const pose: Pose = y - surface.y0 < 60 ? "hang_side" : "lean_side";
-    return { surface, x: surface.x, y, pose, facing };
+    return { surface, x, y, pose, facing: away };
   }
   const x = clamp(px, surface.x0 + 20, surface.x1 - 20);
   if (surface.kind === "ceiling") {
@@ -135,10 +141,17 @@ export function iconSurfaces(
   }));
 }
 
+/** Где стоит персонаж у бока: на полкорпуса от стены, внутри экрана и вне окна. */
+function wallX(surface: Extract<Surface, { kind: "side" }>): number {
+  const away = surface.side === "left" ? -1 : 1;
+  return surface.x + away * (surface.host === SCREEN ? WALL_GAP_SCREEN : WALL_GAP);
+}
+
 function distance(surface: Surface, px: number, py: number): number {
   if (surface.kind === "side") {
     const dy = py < surface.y0 ? surface.y0 - py : py > surface.y1 ? py - surface.y1 : 0;
-    return Math.hypot(px - surface.x, dy);
+    // От места у стены, где персонаж стоит, а не от самой стены (отступ — `wallX`).
+    return Math.hypot(px - wallX(surface), dy);
   }
   const dx = px < surface.x0 ? surface.x0 - px : px > surface.x1 ? px - surface.x1 : 0;
   return Math.hypot(dx, py - surface.y);

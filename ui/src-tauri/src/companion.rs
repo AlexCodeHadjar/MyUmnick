@@ -14,7 +14,8 @@ use tauri::{
 };
 use windows_sys::Win32::Foundation::HWND;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW,
+    GetWindowLongPtrW, SetWindowLongPtrW, SetWindowPos, GWL_EXSTYLE, HWND_TOPMOST, SWP_NOACTIVATE,
+    SWP_NOMOVE, SWP_NOSIZE, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW,
 };
 
 use crate::desktop::{self, Rect, World};
@@ -26,6 +27,9 @@ const FOCUS_EVERY: u32 = 3;
 const SCAN_EVERY: u32 = 60;
 /// Курсор — 15 раз в секунду: спутник поворачивается к мыши (просьба пользователя 2026-11-17).
 const CURSOR_EVERY: u32 = 4;
+/// Раз в 2 с слой снова встаёт поверх всех: другие окна «поверх всех» не прячут облачко
+/// (просьба пользователя 2026-11-17).
+const TOPMOST_EVERY: u32 = 120;
 
 /// Прямоугольник персонажа в CSS-пикселях окна спутника.
 #[derive(Deserialize, Clone, Copy, Debug)]
@@ -67,6 +71,23 @@ fn no_activate(window: &WebviewWindow) {
             hwnd,
             GWL_EXSTYLE,
             ex | (WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW) as isize,
+        );
+    }
+}
+
+/// Поднимает слой над другими окнами «поверх всех», не забирая фокус.
+fn raise(window: &WebviewWindow) {
+    let Ok(hwnd) = window.hwnd() else { return };
+    // SAFETY: дескриптор нашего окна; только порядок окон, без сдвига, размера и активации.
+    unsafe {
+        SetWindowPos(
+            hwnd.0 as HWND,
+            HWND_TOPMOST,
+            0,
+            0,
+            0,
+            0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
         );
     }
 }
@@ -122,6 +143,9 @@ fn watch(app: &AppHandle, state: &CompanionState) {
             passing = hit_test(&window, state, passing);
             if tick % CURSOR_EVERY == 0 {
                 last_cursor = publish_cursor(app, &window, last_cursor);
+            }
+            if tick % TOPMOST_EVERY == 0 {
+                raise(&window);
             }
         }
         if tick % FOCUS_EVERY == 0 {

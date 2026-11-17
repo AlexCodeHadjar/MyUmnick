@@ -10,7 +10,15 @@
   import { characterChannel } from "../avatar/portrait/picture";
   import { snap, type Spot } from "./anchors";
   import { Brain } from "./brain";
-  import { bubbleText, dropTarget, followSpot, hostOf, release, velocityOf } from "./control";
+  import {
+    bubbleText,
+    dropTarget,
+    followSpot,
+    hostOf,
+    placeBubble,
+    release,
+    velocityOf,
+  } from "./control";
   import {
     COMPANION_KEY,
     HEIGHTS,
@@ -39,6 +47,8 @@
   let canvas: HTMLCanvasElement | undefined = $state();
   let settings = $state<CompanionSettings>(loadSettings(window.localStorage));
   let bubble = $state<{ text: string; x: number; y: number } | null>(null);
+  /** Облачко на экране: его размер прошлого кадра держит текст в пределах экрана. */
+  let bubbleEl = $state<HTMLParagraphElement | null>(null);
   let menu = $state<{ x: number; y: number } | null>(null);
 
   const brain = new Brain();
@@ -326,7 +336,10 @@
       bubble = null;
       return;
     }
-    bubble = { text, x: box.x + box.w / 2, y: box.y + box.h * 0.08 };
+    const size =
+      bubbleEl === null ? { w: 280, h: 60 } : { w: bubbleEl.offsetWidth, h: bubbleEl.offsetHeight };
+    const at = placeBubble(box, size, { w: innerWidth, h: innerHeight });
+    bubble = { text, x: at.x, y: at.y };
   }
 
   function frame(dt: number, now: number): void {
@@ -547,7 +560,12 @@
 ></canvas>
 
 {#if bubble !== null}
-  <p class="bubble" style:left={`${String(bubble.x)}px`} style:top={`${String(bubble.y)}px`}>
+  <p
+    class="bubble"
+    bind:this={bubbleEl}
+    style:left={`${String(bubble.x)}px`}
+    style:top={`${String(bubble.y)}px`}
+  >
     {bubble.text}
   </p>
 {/if}
@@ -617,6 +635,9 @@
     margin: 0;
     overflow: hidden;
     background: transparent;
+    /* Текст спутника не выделяется ни кликом, ни протяжкой: это персонаж, а не страница. */
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .layer {
@@ -641,7 +662,9 @@
     font-size: 15px;
     line-height: 1.3;
     pointer-events: none;
-    transform: translate(-50%, -100%);
+    user-select: none;
+    -webkit-user-select: none;
+    overflow-wrap: anywhere;
   }
 
   .menu {
