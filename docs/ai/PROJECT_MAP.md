@@ -935,6 +935,8 @@
 - `along` — `ui/src/features/companion/look/effects.ts:63` — Точка на ломаной на доле `t` её длины — где сейчас разряд.
 - `drawBolt` — `ui/src/features/companion/look/effects.ts:97` — Молния тремя проходами: широкое свечение, мягкая линия, яркая сердцевина.
 - `drawEffects` — `ui/src/features/companion/look/effects.ts:277` — Нарисовать эффекты тела; `seed` меняется 30 раз в секунду — молния «живёт».
+- `Pose2D` — `ui/src/features/companion/look/motion.ts:13` — —
+- `Motion` — `ui/src/features/companion/look/motion.ts:22` — —
 - `FALLBACK` — `ui/src/features/companion/look/pack.ts:10` — Замены отсутствующей позы, в порядке предпочтения; всё кончается позой `stand`.
 - `ANCHORS` — `ui/src/features/companion/look/pack.ts:37` — Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот».
 - `CANVAS_RATIO` — `ui/src/features/companion/look/pack.ts:64` — Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз.
@@ -947,12 +949,13 @@
 - `clearPoses` — `ui/src/features/companion/look/pack.ts:171` — —
 - `DEFAULT_PACK` — `ui/src/features/companion/look/pack.ts:182` — Встроенный персонаж (`ui/public/characters/default/`; подгонка — `docs/character/README.md`).
 - `loadPoses` — `ui/src/features/companion/look/pack.ts:215` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
+- `loopIndex` — `ui/src/features/companion/look/pack.ts:243` — Номер кадра цикла. «Туда-обратно» (1-2-3-4-3-2): нет скачка с последнего кадра на первый, и из
 - `PANEL` — `ui/src/features/companion/look/panel.ts:8` — Табло в долях кадра: x 0,28…0,72, y 0,74…0,80.
 - `panelRect` — `ui/src/features/companion/look/panel.ts:12` — Прямоугольник табло на экране по рамке нарисованного кадра.
 - `drawPanel` — `ui/src/features/companion/look/panel.ts:22` — Написать `text` на табло; не влезает — медленно бежит по кругу (`time` — секунды).
 - `placeholderPose` — `ui/src/features/companion/look/placeholder.ts:260` — Силуэт позы: широкие линии с градиентом палитры окна, круг головы, подпись с именем позы.
-- `Look` — `ui/src/features/companion/look/stage.ts:31` — —
-- `CompanionStage` — `ui/src/features/companion/look/stage.ts:44` — —
+- `Look` — `ui/src/features/companion/look/stage.ts:32` — —
+- `CompanionStage` — `ui/src/features/companion/look/stage.ts:45` — —
 
 ## ui/src/features/companion/mind
 «Разум» спутника (MIND.md, ADR-0051): картина мира со сглаживанием, потребности, стимулы, арбитр

@@ -7,6 +7,7 @@ import type { Pose } from "../space";
 import type { Body } from "../body";
 import { drawEffects } from "./effects";
 import { ANCHORS, CANVAS_RATIO, FALLBACK, loadPoses, pickFrame } from "./pack";
+import { Motion } from "./motion";
 import { drawPanel, panelRect } from "./panel";
 import { placeholderPose } from "./placeholder";
 import type { Rect } from "../space";
@@ -86,6 +87,13 @@ export class CompanionStage {
 
   /** Имя кадра, нарисованного последним: табло — только у кадров `jukebox*`. */
   #frameKey: string | null = null;
+  /** Плавность кодом: разворот, наклон, упругость, растворение кадров (ANIMATION.md). */
+  readonly #motion = new Motion();
+
+  /** Идёт переход (растворение, разворот, посадка) — нужно 60 кадров/с. */
+  get animating(): boolean {
+    return this.#motion.busy;
+  }
 
   #image(pose: Pose, look: Look, petting: number): ImageBitmap | null {
     const sleeping = pose === "sleep";
@@ -106,8 +114,11 @@ export class CompanionStage {
     return fallback === undefined ? null : (this.#placeholders.get(fallback) ?? null);
   }
 
+  #lastDt = 0;
+
   draw(body: Body, look: Look, dt: number): void {
     this.#time += dt;
+    this.#lastDt = dt;
     this.#seed = (this.#seed + 1) % 100000;
     const ctx = this.#ctx;
     const dirty = this.#dirty;
@@ -159,13 +170,25 @@ export class CompanionStage {
     const lift = (look.speaking && !CALM.has(body.pose) ? look.mouth * 5 : 0) + hop;
     const ctx = this.#ctx;
     ctx.save();
+    this.#motion.frame(image);
+    const smooth = this.#motion.step(body, this.#lastDt);
     ctx.translate(body.x, body.y - lift);
-    ctx.scale(body.facing, 1 + breath);
+    ctx.rotate(smooth.lean);
+    ctx.scale(smooth.scaleX, smooth.scaleY + breath);
     if (look.attention > 0.01) {
       ctx.shadowColor = `hsla(${String(look.hue)}, 95%, 70%, ${String(look.attention)})`;
       ctx.shadowBlur = 30 * look.attention;
     }
     ctx.drawImage(image, cx - w / 2, cy - h / 2, w, h);
+    // Прошлый кадр растворяется поверх нового: смена позы и кадра цикла — мягкая.
+    const previous = this.#motion.previous;
+    const left = this.#motion.fadeLeft;
+    if (previous !== null && left > 0.01) {
+      ctx.globalAlpha = left;
+      const pw = (previous.width / previous.height) * h;
+      ctx.drawImage(previous, cx - pw / 2, cy - h / 2, pw, h);
+      ctx.globalAlpha = 1;
+    }
     ctx.restore();
     const box = {
       x: body.x + body.facing * cx - w / 2,

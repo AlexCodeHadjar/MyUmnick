@@ -131,7 +131,7 @@ function frameOf(name: string, pose: Pose, state: FrameState, have: ReadonlySet<
   }
   const loop = sequence(name, have);
   if (loop.length > 0) {
-    const frame = loop[Math.floor(state.time * (LOOP_FPS[pose] ?? 6)) % loop.length];
+    const frame = loop[loopIndex(pose, state.time, loop.length)];
     if (frame !== undefined) return frame;
   }
   return have.has(name) ? name : `${name}_1`;
@@ -231,4 +231,19 @@ async function userPoses(height: number): Promise<Map<string, ImageBitmap>> {
     // Хранилище недоступно — будут временные силуэты.
   }
   return poses;
+}
+
+/** Циклы с направлением (походка, лазанье, танец) — кольцом; спокойные — «туда-обратно» (ANIMATION.md). */
+const RING: ReadonlySet<Pose> = new Set(["walk", "climb", "dance"]);
+
+/**
+ * Номер кадра цикла. «Туда-обратно» (1-2-3-4-3-2): нет скачка с последнего кадра на первый, и из
+ * четырёх кадров выходит шесть фаз.
+ */
+export function loopIndex(pose: Pose, time: number, length: number): number {
+  const step = Math.floor(time * (LOOP_FPS[pose] ?? 6));
+  if (RING.has(pose) || length < 3) return step % length;
+  const period = 2 * length - 2;
+  const phase = step % period;
+  return phase < length ? phase : period - phase;
 }

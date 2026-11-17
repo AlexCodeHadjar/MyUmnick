@@ -237,7 +237,8 @@ export class CompanionController {
   fps(): number {
     const body = this.brain.body();
     const still = this.brain.phase === "rest" && body.effects.length === 0 && !this.gestures.active;
-    if (!still || this.look.speaking || this.look.attention > 0.01) return 60;
+    const smoothing = this.stage?.animating ?? false;
+    if (!still || smoothing || this.look.speaking || this.look.attention > 0.01) return 60;
     return body.pose === "sleep" ? 8 : 20;
   }
 
