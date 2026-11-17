@@ -6,6 +6,7 @@
 import {
   below,
   hostId,
+  iconSurfaces,
   sameSurface,
   snap,
   spotOn,
@@ -92,6 +93,8 @@ export class Brain {
    */
   busy = false;
   #petting = 0;
+  #world: World | null = null;
+  #icons: Surface[] = [];
   /** Высота груди над точкой опоры: отсюда выходит молния и искры (рост × 0,55). */
   chest = 150;
 
@@ -113,8 +116,15 @@ export class Brain {
   }
 
   /** Новая картина рабочего стола: опоры пересчитываются, ушедшее из-под ног окно — падение. */
+  /** Значки рабочего стола как опоры, пока он активен; закрыли значки окном — пусто (персонаж падает). */
+  setIcons(icons: readonly Rect[]): void {
+    this.#icons = iconSurfaces(icons);
+    if (this.#world !== null) this.setWorld(this.#world);
+  }
+
   setWorld(world: World): void {
-    this.#surfaces = surfaces(world);
+    this.#world = world;
+    this.#surfaces = [...surfaces(world), ...this.#icons];
     this.#bounds = world.monitor;
     const spot = this.#spot;
     if (this.phase !== "rest" || spot === null) return;

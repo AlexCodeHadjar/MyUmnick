@@ -676,7 +676,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:352` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:357` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).
@@ -849,17 +849,19 @@
 - `SNAP_RADIUS` — `ui/src/features/companion/anchors.ts:47` — —
 - `surfaces` — `ui/src/features/companion/anchors.ts:52` — Все опоры картины: открытые участки верхних краёв окон, бока окон, «пол» над панелью задач.
 - `spotOn` — `ui/src/features/companion/anchors.ts:92` — Место на опоре `surface`, ближайшее к точке; поза — по месту.
-- `hostId` — `ui/src/features/companion/anchors.ts:115` — Окно, на котором место (за ним следят), или `null` — «пол», верх и бока экрана.
-- `snap` — `ui/src/features/companion/anchors.ts:131` — Ближайшее место в радиусе `radius` или `null` — тогда спутник «парит» и опускается сам.
-- `below` — `ui/src/features/companion/anchors.ts:150` — Горизонтальная опора под точкой (падение): ближайшая сверху вниз, иначе «пол».
-- `seatSpot` — `ui/src/features/companion/anchors.ts:167` — Куда сесть, когда активным стало окно: правая треть верхнего края, на открытом участке.
-- `floorSpot` — `ui/src/features/companion/anchors.ts:184` — Место на «полу» у правого края — рабочий стол или развёрнутое окно.
-- `sameSurface` — `ui/src/features/companion/anchors.ts:193` — Та же опора в новой картине (окно сдвинули): по хозяину и виду.
-- `Phase` — `ui/src/features/companion/brain.ts:19` — —
-- `Effect` — `ui/src/features/companion/brain.ts:22` — —
-- `Body` — `ui/src/features/companion/brain.ts:29` — —
-- `WALK_LIMIT` — `ui/src/features/companion/brain.ts:43` — Ближе — пешком или прыжком, дальше — молнией (решение пользователя, раздел 9.1).
-- `Brain` — `ui/src/features/companion/brain.ts:62` — —
+- `hostId` — `ui/src/features/companion/anchors.ts:116` — Окно, на котором место (за ним следят), или `null` — «пол», верх и бока экрана.
+- `ICONS` — `ui/src/features/companion/anchors.ts:123` — «Хозяин» значков рабочего стола: они опоры, но не окна (оболочка их не отслеживает).
+- `iconSurfaces` — `ui/src/features/companion/anchors.ts:126` — Верх значков рабочего стола как опоры (по образцу Capri): сесть на «Корзину» или «Steam».
+- `snap` — `ui/src/features/companion/anchors.ts:148` — Ближайшее место в радиусе `radius` или `null` — тогда спутник «парит» и опускается сам.
+- `below` — `ui/src/features/companion/anchors.ts:167` — Горизонтальная опора под точкой (падение): ближайшая сверху вниз, иначе «пол».
+- `seatSpot` — `ui/src/features/companion/anchors.ts:184` — Куда сесть, когда активным стало окно: правая треть верхнего края, на открытом участке.
+- `floorSpot` — `ui/src/features/companion/anchors.ts:201` — Место на «полу» у правого края — рабочий стол или развёрнутое окно.
+- `sameSurface` — `ui/src/features/companion/anchors.ts:210` — Та же опора в новой картине (окно сдвинули): по хозяину и виду.
+- `Phase` — `ui/src/features/companion/brain.ts:20` — —
+- `Effect` — `ui/src/features/companion/brain.ts:23` — —
+- `Body` — `ui/src/features/companion/brain.ts:30` — —
+- `WALK_LIMIT` — `ui/src/features/companion/brain.ts:44` — Ближе — пешком или прыжком, дальше — молнией (решение пользователя, раздел 9.1).
+- `Brain` — `ui/src/features/companion/brain.ts:63` — —
 - `Companion.svelte` — `ui/src/features/companion/Companion.svelte:1` — —
 - `CompanionMenu.svelte` — `ui/src/features/companion/CompanionMenu.svelte:1` — —
 - `followSpot` — `ui/src/features/companion/control.ts:9` — Место для активного окна (раздел 4.1): край окна, «пол» у правого края или угол экрана.

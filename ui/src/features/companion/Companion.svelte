@@ -63,6 +63,9 @@
   let lastRemarkTime = 0;
   let topic: RemarkTopic = "other";
   let poking = false;
+  let onDesktop = false;
+  let icons: Target[] = [];
+  let desktopAt = Infinity;
   /** Времена поглаживаний за последние 3 с. */
   let pets: number[] = [];
   // Мышь: удержание — молния, движение сразу — «держат», как у Capri.
@@ -143,6 +146,7 @@
       lastFocus = key;
       scheduleFollow(world.focus);
       noticeTopic(world.focus);
+      void enterDesktop(world.focus.kind === "desktop");
     }
   }
 
@@ -200,6 +204,50 @@
   }
 
   /** Перешли в программу другого рода — иногда сразу прокомментировать, но не чаще раза в 45 с. */
+  /** Рабочий стол: значки — опоры и цели; спутник садится на них и иногда перепрыгивает или тычет. */
+  async function enterDesktop(desktop: boolean): Promise<void> {
+    onDesktop = desktop;
+    if (!desktop) {
+      icons = [];
+      brain.setIcons([]);
+      return;
+    }
+    await refreshIcons();
+    desktopAt = performance.now() + 1200;
+  }
+
+  async function refreshIcons(): Promise<void> {
+    if (monitor === null) return;
+    const origin = monitor;
+    const found = await invoke<Target[]>("companion_targets").catch(() => []);
+    if (!onDesktop) return;
+    icons = found
+      .filter((one) => one.kind === "item")
+      .map((one) => ({ ...one, rect: rectToCss(one.rect, origin, scale) }));
+    brain.setIcons(icons.map((one) => one.rect));
+  }
+
+  /** Перепрыгнуть на значок (с репликой) или ткнуть в него. */
+  async function desktopAct(now: number): Promise<void> {
+    desktopAt = now + (25 + Math.random() * 35) * 1000;
+    await refreshIcons();
+    const chosen = icons[Math.floor(Math.random() * icons.length)];
+    if (chosen === undefined || brain.phase !== "rest" || gesture !== "none") return;
+    if (Math.random() < 0.4) {
+      void poke(now);
+      return;
+    }
+    const spot = snap(brain.surfaceList, chosen.rect.x + chosen.rect.w / 2, chosen.rect.y + 6, 30);
+    if (spot === null) return;
+    brain.goTo(spot);
+    const lines = locale.t.companion.perch;
+    const line = lines[Math.floor(Math.random() * lines.length)];
+    if (line !== undefined)
+      setTimeout(() => {
+        say(line(chosen.name), performance.now());
+      }, 900);
+  }
+
   function noticeTopic(focus: Focus): void {
     const app = focus.kind === "desktop" ? "" : focus.app;
     const next = topicOf(app, focus.kind === "desktop");
@@ -281,6 +329,8 @@
 
   function frame(dt: number, now: number): void {
     maybeRemark(now);
+    const free = shown && brain.phase === "rest" && gesture === "none" && !poking && !look.speaking;
+    if (onDesktop && free && settings.behavior !== "stay" && now >= desktopAt) void desktopAct(now);
     // Своя инициатива — фраза в облачке или «тыканье»: на мышь в это время не смотрит.
     brain.busy = poking || (!listening && now < bubbleUntil && replyText === lastRemark);
     if (press !== null && gesture === "none" && now - press.t >= HOLD_MS) {

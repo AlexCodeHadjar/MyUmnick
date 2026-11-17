@@ -103,7 +103,8 @@ export function spotOn(surface: Surface, px: number, py: number): Spot {
   }
   const nearLeft = x - surface.x0 < CORNER + 20;
   const nearRight = surface.x1 - x < CORNER + 20;
-  const corner = nearLeft || nearRight;
+  // Узкая опора (значок) — сидит посередине, а не «на углу».
+  const corner = (nearLeft || nearRight) && surface.x1 - surface.x0 >= 140;
   const facing: 1 | -1 = nearRight ? -1 : 1;
   if (surface.kind === "edge") {
     return { surface, x, y: surface.y, pose: corner ? "perch_corner" : "sit_edge", facing };
@@ -114,8 +115,24 @@ export function spotOn(surface: Surface, px: number, py: number): Spot {
 /** Окно, на котором место (за ним следят), или `null` — «пол», верх и бока экрана. */
 export function hostId(surface: Surface): number | null {
   if (surface.kind === "edge" || surface.kind === "side")
-    return surface.host === SCREEN ? null : surface.host;
+    return surface.host < 0 ? null : surface.host;
   return null;
+}
+
+/** «Хозяин» значков рабочего стола: они опоры, но не окна (оболочка их не отслеживает). */
+export const ICONS = -2;
+
+/** Верх значков рабочего стола как опоры (по образцу Capri): сесть на «Корзину» или «Steam». */
+export function iconSurfaces(
+  icons: readonly { x: number; y: number; w: number; h: number }[],
+): Surface[] {
+  return icons.map((r) => ({
+    kind: "edge",
+    host: ICONS,
+    x0: r.x + 4,
+    x1: r.x + r.w - 4,
+    y: r.y + 6,
+  }));
 }
 
 function distance(surface: Surface, px: number, py: number): number {

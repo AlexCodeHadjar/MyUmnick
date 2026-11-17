@@ -327,3 +327,27 @@ describe("поглаживание", () => {
     );
   });
 });
+
+describe("значки рабочего стола", () => {
+  it("садится на значок, перепрыгивает на другой; значки закрыли — падает на «пол»", () => {
+    const brain = new Brain(() => 0.5);
+    brain.setWorld({ ...WORLD, seats: [] });
+    brain.setIcons([
+      { x: 0, y: 100, w: 75, h: 70 },
+      { x: 0, y: 190, w: 75, h: 70 },
+    ]);
+    const first = snap(brain.surfaceList, 37, 106, 30);
+    expect(first?.pose).toBe("sit_edge");
+    if (first === null) throw new Error("нет значка");
+    brain.place(first);
+    const second = snap(brain.surfaceList, 37, 196, 30);
+    if (second === null) throw new Error("нет значка");
+    brain.goTo(second);
+    settle(brain, 2);
+    expect([brain.phase, brain.y]).toEqual(["rest", 196]);
+    brain.setIcons([]);
+    settle(brain, 3);
+    // Значки у левого края: упав у самого угла экрана, садится в угол.
+    expect([brain.phase, brain.y, brain.body().pose]).toEqual(["rest", 1040, "sit_corner"]);
+  });
+});

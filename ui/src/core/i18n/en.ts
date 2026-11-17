@@ -141,6 +141,11 @@ export const en: Messages = {
     poses: "Companion poses (PNG folder)…",
     clearPoses: "Remove companion poses",
     posesSaved: (n: number) => `Poses loaded: ${String(n)}`,
+    perch: [
+      (name: string) => `I'll sit on "${name}".`,
+      (name: string) => `Oh, "${name}" is a comfy spot.`,
+      (name: string) => `Hop onto "${name}"!`,
+    ],
     pet: {
       first: ["Oh, that's nice!", "Hehe, that tickles.", "Purr… I mean, thanks!", "One more?"],
       more: ["More! More!", "I'm about to melt…", "Now that's what I call care!"],
