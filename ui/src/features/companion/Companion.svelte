@@ -8,7 +8,8 @@
 
   import { EMOTION_HUE } from "../avatar/orb/palette";
   import { characterChannel } from "../avatar/portrait/picture";
-  import { snap, type Spot } from "./anchors";
+  import { ICONS, snap, type Spot } from "./anchors";
+  import { Life } from "./life";
   import { Brain } from "./brain";
   import {
     bubbleText,
@@ -90,6 +91,11 @@
   const reactions = new Reactions(brain, (text) => {
     say(text, performance.now());
   });
+  // Настроение, привычки, сайты, любимый значок (BEHAVIOR §2, §4.4, §5, §6).
+  const life = new Life(brain, window.localStorage);
+  reactions.onMood = (event) => {
+    life.event(event);
+  };
   let cursor: { x: number; y: number } | null = null;
   let cursorFedAt = 0;
   let lastPhase = brain.phase;
@@ -235,6 +241,13 @@
     if (feed.speaking) {
       brain.wake();
       listening = false;
+      // Новый ответ ассистента — с ним говорят, радость чуть растёт (BEHAVIOR §2).
+      if (
+        feed.text !== replyText &&
+        replyText !== lastRemark &&
+        feed.text.length < replyText.length
+      )
+        life.event("talk");
       replyText = feed.text;
       bubbleUntil = performance.now() + 4000;
     }
@@ -307,7 +320,7 @@
   async function desktopAct(now: number): Promise<void> {
     desktopAt = now + (25 + Math.random() * 35) * 1000;
     await refreshIcons();
-    const chosen = icons[Math.floor(Math.random() * icons.length)];
+    const chosen = life.icon(icons);
     if (chosen === undefined || brain.phase !== "rest" || gesture !== "none") return;
     if (Math.random() < 0.4) {
       void poke(now);
@@ -317,10 +330,11 @@
     if (spot === null) return;
     brain.goTo(spot);
     const lines = locale.t.companion.perch;
-    const line = lines[Math.floor(Math.random() * lines.length)];
+    const perch = lines[Math.floor(Math.random() * lines.length)];
+    const line = life.iconLine(chosen.name, icons.length) ?? perch?.(chosen.name);
     if (line !== undefined)
       setTimeout(() => {
-        say(line(chosen.name), performance.now());
+        say(line, performance.now());
       }, 900);
   }
 
@@ -330,6 +344,14 @@
     if (next === topic) return;
     topic = next;
     const now = performance.now();
+    // Первый раз за день в программе или мечется между окнами — сразу к месту (BEHAVIOR §4.4).
+    const habit = life.focus(next, now / 1000);
+    if (habit !== null) {
+      setTimeout(() => {
+        if (canSpeak(performance.now())) say(habit, performance.now());
+      }, 1500);
+      return;
+    }
     if (now - lastRemarkTime > 45_000 && Math.random() < 0.35) remarkAt = now + 1500;
   }
 
@@ -339,6 +361,22 @@
     bubbleUntil = now + 6000;
     lastRemark = text;
     lastRemarkTime = now;
+  }
+
+  /** Можно ли сейчас сказать фразу: на экране, стоит, не говорит и не держат. */
+  function canSpeak(now: number): boolean {
+    const busy = look.speaking || listening || now < bubbleUntil || gesture !== "none";
+    return shown && brain.phase === "rest" && !busy && !poking;
+  }
+
+  /** Про браузер — по названиям вкладок; ничего не узнал — обычная фраза о браузере. */
+  async function browserRemark(now: number): Promise<void> {
+    const found = await invoke<Target[]>("companion_targets").catch(() => []);
+    const tabs = found.filter((one) => one.kind === "tab").map((one) => one.name);
+    const line =
+      life.browser(tabs) ??
+      remark(locale.t, { topic, hour: new Date().getHours(), idleS: 0 }, Math.random, lastRemark);
+    if (canSpeak(performance.now())) say(line, now);
   }
 
   function maybeRemark(now: number): void {
@@ -351,6 +389,15 @@
       return;
     }
     const hour = new Date().getHours();
+    const own = life.remark(topic);
+    if (own !== null) {
+      say(own, now);
+      return;
+    }
+    if (topic === "browser" && Math.random() < 0.5) {
+      void browserRemark(now);
+      return;
+    }
     say(remark(locale.t, { topic, hour, idleS: brain.idleSeconds }, Math.random, lastRemark), now);
   }
 
@@ -426,6 +473,8 @@
     }
     brain.tick(dt);
     reactions.tick(now / 1000);
+    const long = life.tick(now / 1000);
+    if (long !== null && canSpeak(now)) say(long, now);
     if (brain.phase === "climb" && lastPhase !== "climb") reactions.climbing();
     lastPhase = brain.phase;
     // Курсор стоит — событий нет, а «что смотришь?» (T8) ждёт 4 с: подкармливаем 4 раза в секунду.
@@ -523,6 +572,14 @@
     brain.pet();
     look.attention = Math.max(look.attention, 0.5);
     reactions.pet(now / 1000);
+    // Гладят на значке — значок становится любимее (BEHAVIOR §6).
+    const spot = brain.spot;
+    if (spot?.surface.kind === "edge" && spot.surface.host === ICONS) {
+      const under = icons.find(
+        (one) => brain.x >= one.rect.x - 10 && brain.x <= one.rect.x + one.rect.w + 10,
+      );
+      if (under !== undefined) life.petOn(under.name);
+    }
   }
 
   function cancelAim(event: KeyboardEvent): void {

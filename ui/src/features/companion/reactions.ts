@@ -5,6 +5,7 @@
  */
 import { locale } from "../../core";
 import type { Brain } from "./brain";
+import type { MoodEvent } from "./mood";
 import { petLine, petPhrases, petSection } from "./phrases";
 import { timeOfDay } from "./remarks";
 import { Cooldowns, CursorWatch, dragged, lateNight, shaken, type Trigger } from "./triggers";
@@ -20,6 +21,8 @@ export class Reactions {
   readonly #brain: Brain;
   readonly #say: Say;
   readonly #random: () => number;
+  /** Настроение слышит тряску, возвращение и поглаживания (`life.ts`, BEHAVIOR §2). */
+  onMood: (event: MoodEvent) => void = () => undefined;
   readonly #cool = new Cooldowns();
   readonly #cursor = new CursorWatch();
   readonly #recent: string[] = [];
@@ -60,6 +63,7 @@ export class Reactions {
       if (kind === "greet" || !this.fire(kind, now)) continue;
       if (kind === "comeback") {
         this.#comebackAt = now;
+        this.onMood("comeback");
         brain.wake();
         brain.emote("wave", 2);
       } else if (kind === "stare") {
@@ -75,6 +79,7 @@ export class Reactions {
     if (!shaken(this.#shook) || !this.fire("dizzy", now)) return;
     this.#shakenAt = now;
     this.#dizzyPending = true;
+    this.onMood("shake");
   }
 
   /** Отпустили: бросили с размаху (T5). */
@@ -98,6 +103,7 @@ export class Reactions {
   /** Погладили (T3): фраза по номеру клика в серии и состоянию; на остальных кликах молчит. */
   pet(now: number): void {
     this.#pets = [...this.#pets.filter((t) => now - t < PET_SERIES_S), now];
+    this.onMood("pet");
     const brain = this.#brain;
     const section = petSection(
       {

@@ -194,6 +194,79 @@ export const en: Messages = {
       ],
       climb: ["Let me climb up!", "Climbing!", "Whoa, that's high!"],
     },
+    mood: {
+      low: [
+        "I'm a bit sad…",
+        "Did everyone forget me?",
+        "A pat would be nice…",
+        "Lonely over here.",
+      ],
+      high: [
+        "I'm in a great mood today!",
+        "What a nice day!",
+        "So much energy!",
+        "I feel like singing!",
+      ],
+    },
+    sites: {
+      video: [
+        "What are we watching? I want to see too.",
+        "Videos! Just not for too long, okay?",
+        "Popcorn, anyone?",
+      ],
+      code: [
+        "Code review? I'm strict.",
+        "Oh, a repo! Don't forget to star it.",
+        "Looking for answers on Stack Overflow?",
+      ],
+      mail: ["Mail! No spam, please.", "How many unread?", "Answer all the mail and we're free!"],
+      maps: ["Where are we going?", "Take me with you!", "Maps — I love travel."],
+      shop: ["Don't overfill the cart!", "Shopping? Is it a gift for me?", "Sales are tempting…"],
+      news: ["Something happened again?", "Only good news, okay?", "What's new in the world?"],
+      social: ["Scrolling the feed?", "Like something for me.", "Social media eats time…"],
+      music: ["Music in the browser! Singing!", "Add it to my playlist too."],
+      search: ["Searching? You could ask me.", "What are we googling?", "Search is my weakness."],
+      ai: ["Another AI?! I'm jealous.", "It's smart too, but I'm right here.", "Ask me instead!"],
+      docs: [
+        "Reading the docs — respect.",
+        "Wikipedia is a bottomless pit.",
+        "Documents, documents…",
+      ],
+      many: ["More tabs than stars!", "So many tabs! Close a couple?", "The tabs are multiplying!"],
+    },
+    habits: {
+      first: {
+        browser: ["First browser of the day! What are we looking for?"],
+        code: ["Coding again! Good code to you.", "First code of the day — good luck!"],
+        chat: ["Checking messages?"],
+        music: ["Music today — great!"],
+        video: ["Video time!"],
+        game: ["Gaming! Good luck!"],
+        office: ["Documents first thing?"],
+        terminal: ["Terminal! I feel the power."],
+        files: ["Sorting files?"],
+      },
+      long: [
+        "Forty minutes in here. Great, but blink!",
+        "Long session. Maybe a sip of water?",
+        "You're so focused. I'm proud.",
+        "Forty minutes in one app — that's power!",
+      ],
+      switching: [
+        "Looking for something? I'm lost.",
+        "Back and forth… I'm dizzy.",
+        "So many windows in a minute!",
+      ],
+    },
+    desktopFun: {
+      recycle: [
+        "So much stuff thrown away here…",
+        "Sitting on the bin. Don't throw me out!",
+        "The bin is not my place!",
+      ],
+      count: (n: number) => `One, two… ${String(n)}! All icons in place.`,
+      favorite: (name: string) => `«${name}» is my favorite icon!`,
+    },
     remarks: {
       browser: [
         "More tabs again… how many is that now?",

@@ -68,8 +68,6 @@ const BOLT_S = 0.35;
 const JUMP_S = 0.6;
 const PORTAL_S = 0.6;
 const SPARKS_S = 0.5;
-const LAY_AFTER_S = 90;
-const SLEEP_AFTER_S = 300;
 const LOOK_DEADZONE = 40;
 const HEARTS_S = 1.4;
 /** Сколько держится «довольная мордочка» после поглаживания. */
@@ -119,6 +117,11 @@ export class Brain {
   /** Рост холста позы в CSS-пикселях: сколько места нужно над сиденьем (`fitScreen`). */
   figure = 300;
   music: Music = "off";
+  /** Простой до «лечь» и «уснуть», секунды; задаёт настроение (`mood.ts`, BEHAVIOR §2). */
+  layAfter = 90;
+  sleepAfter = 300;
+  /** Множитель пауз между прогулками: бодрый гуляет чаще. */
+  pace = 1;
   #climb: Climb | null = null;
   /** Окно, по которому лезет: его левый/правый край в момент прошлого сдвига. */
   #climbBase = 0;
@@ -136,7 +139,7 @@ export class Brain {
 
   /** Лежит или спит: гладят — фразы «сонные». */
   get drowsy(): boolean {
-    return this.phase === "rest" && this.#idle > LAY_AFTER_S;
+    return this.phase === "rest" && this.#idle > this.layAfter;
   }
 
   /** Показать позу-эмоцию на `seconds` секунд, если стоит или сидит (T4, T6, T7, T16). */
@@ -439,12 +442,12 @@ export class Brain {
     // Гладят стоящего — отдельный кадр «довольный»; нет его — «стоит» с закрытыми глазами (stage.ts).
     if (this.#petting > 0 && pose === "stand") return "pet";
     if (
-      this.#idle > SLEEP_AFTER_S &&
+      this.#idle > this.sleepAfter &&
       (pose === "sit_edge" || pose === "stand" || pose === "sit_corner")
     ) {
       return "sleep";
     }
-    if (this.#idle > LAY_AFTER_S && (pose === "sit_edge" || pose === "stand")) return "laydown";
+    if (this.#idle > this.layAfter && (pose === "sit_edge" || pose === "stand")) return "laydown";
     return pose;
   }
 
@@ -510,7 +513,8 @@ export class Brain {
     if (!this.wander || !standing) return;
     this.#wanderIn -= dt;
     if (this.#wanderIn > 0) return;
-    this.#wanderIn = this.calm ? 20 + this.#random() * 25 : 6 + this.#random() * 12;
+    const base = this.calm ? 20 + this.#random() * 25 : 6 + this.#random() * 12;
+    this.#wanderIn = base * this.pace;
     const reach = this.calm ? 320 : 500;
     this.goTo(spotOn(surface, this.x + (this.#random() - 0.5) * reach, this.y));
   }
@@ -518,7 +522,7 @@ export class Brain {
   /** Смотрит в сторону мыши; порог 40 px — не дёргается, когда курсор прямо над ним. */
   #faceCursor(): void {
     const cursor = this.cursorX;
-    if (cursor === null || this.busy || this.#idle > SLEEP_AFTER_S) return;
+    if (cursor === null || this.busy || this.#idle > this.sleepAfter) return;
     if (cursor > this.x + LOOK_DEADZONE) this.facing = 1;
     else if (cursor < this.x - LOOK_DEADZONE) this.facing = -1;
   }

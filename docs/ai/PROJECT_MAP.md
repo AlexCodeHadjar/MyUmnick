@@ -676,7 +676,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:408` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:480` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).
@@ -866,7 +866,7 @@
 - `Effect` — `ui/src/features/companion/brain.ts:38` — —
 - `Body` — `ui/src/features/companion/brain.ts:47` — —
 - `WALK_LIMIT` — `ui/src/features/companion/brain.ts:61` — Ближе — пешком или прыжком, дальше — молнией (решение пользователя, раздел 9.1).
-- `Brain` — `ui/src/features/companion/brain.ts:82` — —
+- `Brain` — `ui/src/features/companion/brain.ts:80` — —
 - `Climb` — `ui/src/features/companion/climb.ts:12` — —
 - `climbRoute` — `ui/src/features/companion/climb.ts:25` — Маршрут с места `from` на верх окна `to` или `null` (прыгать). `bottom` — низ окна-цели: окно должно
 - `Companion.svelte` — `ui/src/features/companion/Companion.svelte:1` — —
@@ -890,6 +890,26 @@
 - `drawBolt` — `ui/src/features/companion/effects.ts:97` — Молния тремя проходами: широкое свечение, мягкая линия, яркая сердцевина.
 - `drawEffects` — `ui/src/features/companion/effects.ts:251` — Нарисовать эффекты тела; `seed` меняется 30 раз в секунду — молния «живёт».
 - `startFeed` — `ui/src/features/companion/feed.ts:17` — Запустить передачу; `mouth(dt)` — громкость голоса 0…1. Возвращает остановку.
+- `Habit` — `ui/src/features/companion/habits.ts:8` — —
+- `AppWatch` — `ui/src/features/companion/habits.ts:25` — —
+- `FAVORITES_KEY` — `ui/src/features/companion/habits.ts:67` — —
+- `pickIcon` — `ui/src/features/companion/habits.ts:70` — Значок, на который садиться: чаще тот, где чаще гладили (вес 1 + число поглаживаний).
+- `isRecycleBin` — `ui/src/features/companion/habits.ts:84` — —
+- `parseFavorites` — `ui/src/features/companion/habits.ts:88` — —
+- `Life` — `ui/src/features/companion/life.ts:33` — —
+- `Mood` — `ui/src/features/companion/mood.ts:6` — Настроение спутника (BEHAVIOR §2): бодрость и радость 0…1. Меняются медленно, определяют, когда он
+- `MoodEvent` — `ui/src/features/companion/mood.ts:13` — —
+- `MoodTone` — `ui/src/features/companion/mood.ts:14` — —
+- `MOOD_KEY` — `ui/src/features/companion/mood.ts:16` — —
+- `neutralMood` — `ui/src/features/companion/mood.ts:33` — —
+- `nudge` — `ui/src/features/companion/mood.ts:38` — Событие сдвигает настроение.
+- `drift` — `ui/src/features/companion/mood.ts:47` — Течение времени (`dt` секунд): ночью бодрость падает, утром растёт; долгий простой тянет радость вниз,
+- `tone` — `ui/src/features/companion/mood.ts:57` — —
+- `restTimes` — `ui/src/features/companion/mood.ts:63` — Через сколько секунд простоя ложится и засыпает: устал — раньше.
+- `pace` — `ui/src/features/companion/mood.ts:70` — Множитель пауз между прогулками: бодрый гуляет чаще.
+- `parseMood` — `ui/src/features/companion/mood.ts:75` — Сохранённое настроение; за ночь (8 ч) — к середине.
+- `loadMood` — `ui/src/features/companion/mood.ts:98` — —
+- `saveMood` — `ui/src/features/companion/mood.ts:106` — —
 - `FALLBACK` — `ui/src/features/companion/pack.ts:10` — Замены отсутствующей позы, в порядке предпочтения; всё кончается позой `stand`.
 - `ANCHORS` — `ui/src/features/companion/pack.ts:35` — Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот».
 - `CANVAS_RATIO` — `ui/src/features/companion/pack.ts:60` — Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз.
@@ -903,7 +923,7 @@
 - `DEFAULT_PACK` — `ui/src/features/companion/pack.ts:172` — Встроенный персонаж (`ui/public/characters/default/`; подгонка — `docs/character/README.md`).
 - `loadPoses` — `ui/src/features/companion/pack.ts:205` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
 - `placeholderPose` — `ui/src/features/companion/placeholder.ts:258` — Силуэт позы: широкие линии с градиентом палитры окна, круг головы, подпись с именем позы.
-- `Reactions` — `ui/src/features/companion/reactions.ts:19` — —
+- `Reactions` — `ui/src/features/companion/reactions.ts:20` — —
 - `RemarkTopic` — `ui/src/features/companion/remarks.ts:9` — —
 - `topicOf` — `ui/src/features/companion/remarks.ts:74` — —
 - `TimeOfDay` — `ui/src/features/companion/remarks.ts:79` — —
@@ -923,6 +943,9 @@
 - `loadSettings` — `ui/src/features/companion/settings.ts:58` — —
 - `saveSettings` — `ui/src/features/companion/settings.ts:66` — —
 - `shouldShow` — `ui/src/features/companion/settings.ts:75` — Виден ли спутник: полный экран прячет его всегда.
+- `SiteTopic` — `ui/src/features/companion/sites.ts:5` — Сайты в браузере (BEHAVIOR §5): тема — по названию вкладки, которое и так видно на экране (UI
+- `siteOf` — `ui/src/features/companion/sites.ts:36` — —
+- `browserTopic` — `ui/src/features/companion/sites.ts:48` — Что сказать про браузер по названиям вкладок: «много вкладок», тема узнанного сайта или `null` (тогда
 - `Look` — `ui/src/features/companion/stage.ts:30` — —
 - `CompanionStage` — `ui/src/features/companion/stage.ts:38` — —
 - `Trigger` — `ui/src/features/companion/triggers.ts:6` — Триггеры спутника (BEHAVIOR §3): события мыши, окна-хозяина и времени → реакция с перезарядкой.
