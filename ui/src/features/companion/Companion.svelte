@@ -107,7 +107,6 @@
   let cursor: { x: number; y: number } | null = null;
   let cursorFedAt = 0;
   let lastPhase = brain.phase;
-  let wasFullscreen = false;
   // Мышь: удержание — молния, движение сразу — «держат», как у Capri.
   let press: { x: number; y: number; t: number } | null = null;
   let gesture: "none" | "held" | "aim" = "none";
@@ -194,13 +193,6 @@
       brain.hide();
       arrive();
     }
-    // Вышли из полного экрана (T14): «Ну как, интересно было?» — когда снова появится.
-    if (wasFullscreen && !world.fullscreen) {
-      setTimeout(() => {
-        if (shown) reactions.fire("back", performance.now() / 1000);
-      }, 1500);
-    }
-    wasFullscreen = world.fullscreen;
     refresh();
     // Показали раньше, чем пришла картина окон: выйти сейчас (иначе персонаж так и не появлялся).
     if (shown && brain.phase === "hidden") arrive();
@@ -389,7 +381,10 @@
       tabAt = now + 15_000;
       void refreshTab();
     }
-    const fullscreen = shown && (world?.fullscreen ?? false);
+    // Полный экран — у браузера, плеера, игры или незнакомой программы. Развёрнутые на весь экран чат,
+    // редактор, офис (панель задач скрыта) — обычные окна, а не «тихо в углу» (проверено вживую 2026-11-17).
+    const wide = topic === "browser" || topic === "video" || topic === "game" || topic === "other";
+    const fullscreen = shown && wide && (world?.fullscreen ?? false);
     return {
       resting: shown && brain.phase === "rest" && gesture === "none" && !poking,
       listening: assistant || listening,
@@ -410,7 +405,11 @@
       brain.watching = false;
       speak(pickOne(locale.t.companion.watch.end), "reaction");
     }
-    if (previous === "hush") brain.quiet = false;
+    if (previous === "hush") {
+      brain.quiet = false;
+      // Вышли из полного экрана (T14) — по сглаженному факту «Разума», а не по миганию сигнала.
+      reactions.fire("back", now / 1000);
+    }
     if ((previous === "watch" || previous === "hush") && world !== null && gesture === "none") {
       const home = followSpot(world, brain.surfaceList, world.focus);
       if (home !== null) brain.goTo(home);
