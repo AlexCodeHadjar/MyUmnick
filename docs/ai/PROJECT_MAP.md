@@ -896,7 +896,7 @@
 Подпакет «body» спутника: импорт снаружи — только через этот файл (R-06).
 
 - `WALK_LIMIT` — `ui/src/features/companion/body/brain.ts:27` — Ближе — пешком или прыжком, дальше — молнией (решение пользователя, раздел 9.1).
-- `Brain` — `ui/src/features/companion/body/brain.ts:46` — —
+- `Brain` — `ui/src/features/companion/body/brain.ts:48` — —
 - `PoseState` — `ui/src/features/companion/body/pose.ts:8` — —
 - `poseOf` — `ui/src/features/companion/body/pose.ts:54` — —
 - `Phase` — `ui/src/features/companion/body/types.ts:4` — —
@@ -957,8 +957,8 @@
 - `panelRect` — `ui/src/features/companion/look/panel.ts:12` — Прямоугольник табло на экране по рамке нарисованного кадра.
 - `drawPanel` — `ui/src/features/companion/look/panel.ts:22` — Написать `text` на табло; не влезает — медленно бежит по кругу (`time` — секунды).
 - `placeholderPose` — `ui/src/features/companion/look/placeholder.ts:260` — Силуэт позы: широкие линии с градиентом палитры окна, круг головы, подпись с именем позы.
-- `Look` — `ui/src/features/companion/look/stage.ts:32` — —
-- `CompanionStage` — `ui/src/features/companion/look/stage.ts:45` — —
+- `Look` — `ui/src/features/companion/look/stage.ts:44` — —
+- `CompanionStage` — `ui/src/features/companion/look/stage.ts:57` — —
 
 ## ui/src/features/companion/mind
 «Разум» спутника (MIND.md, ADR-0051): картина мира со сглаживанием, потребности, стимулы, арбитр

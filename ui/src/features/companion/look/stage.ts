@@ -6,7 +6,19 @@
 import type { Pose } from "../space";
 import type { Body } from "../body";
 import { drawEffects } from "./effects";
-import { ANCHORS, CANVAS_RATIO, FALLBACK, LOOP_FPS, loadPoses, pickFrame, RING } from "./pack";
+import {
+  ANCHORS,
+  CANVAS_RATIO,
+  FALLBACK,
+  LOOP_FPS,
+  loadPoses,
+  pickFrame,
+  RING,
+  sequence,
+} from "./pack";
+
+/** Переходные кадры между позами (`<из>_to_<в>_1…N`, FRAMES-4.md) — 12 кадров/с. */
+const TRANSITION_FPS = 12;
 import { Motion } from "./motion";
 import { drawPanel, panelRect } from "./panel";
 import { placeholderPose } from "./placeholder";
@@ -107,7 +119,12 @@ export class CompanionStage {
       speaking: look.speaking && !sleeping && petting === 0,
       blink,
     };
-    const key = pickFrame(pose, state, this.#keys);
+    const transition = this.#transition;
+    const step = transition === null ? -1 : Math.floor(transition.t * TRANSITION_FPS);
+    const key =
+      transition !== null && step < transition.keys.length
+        ? (transition.keys[step] ?? null)
+        : pickFrame(pose, state, this.#keys);
     this.#frameKey = key;
     if (key !== null) return this.#poses.get(key) ?? null;
     const fallback = [pose, ...FALLBACK[pose]].find((one) => this.#placeholders.has(one));
@@ -115,12 +132,15 @@ export class CompanionStage {
   }
 
   #lastDt = 0;
+  #lastPose: Pose | null = null;
+  #transition: { keys: string[]; t: number } | null = null;
   /** Показанное свечение — плавно догоняет `look.attention`. */
   #glow = 0;
 
   draw(body: Body, look: Look, dt: number): void {
     this.#time += dt;
     this.#lastDt = dt;
+    this.#transit(body.pose, dt);
     this.#seed = (this.#seed + 1) % 100000;
     const ctx = this.#ctx;
     const dirty = this.#dirty;
@@ -144,6 +164,19 @@ export class CompanionStage {
       area = { x: 0, y: 0, w: this.#canvas.width, h: this.#canvas.height };
     }
     this.#dirty = area === null ? null : grow(area, 40);
+  }
+
+  /** Поза сменилась: есть переходные кадры («из_to_в» или обратные «в_to_из» задом наперёд) — сыграть. */
+  #transit(pose: Pose, dt: number): void {
+    if (this.#transition !== null) this.#transition.t += dt;
+    if (pose === this.#lastPose) return;
+    const from = this.#lastPose;
+    this.#lastPose = pose;
+    if (from === null) return;
+    const forward = sequence(`${from}_to_${pose}`, this.#keys);
+    const keys =
+      forward.length > 0 ? forward : sequence(`${pose}_to_${from}`, this.#keys).reverse();
+    this.#transition = keys.length > 0 ? { keys, t: 0 } : null;
   }
 
   /** Нарисовать кадр позы `pose` высотой `h` относительно уже сдвинутой в точку опоры системы. */
@@ -200,15 +233,12 @@ export class CompanionStage {
     const swap = this.#motion.swap;
     if (swap?.phase === "out" && previous !== null) {
       // Смена позы, «выдох»: старая поза приседает и гаснет (своя точка опоры), новой ещё нет.
-      ctx.globalAlpha = 1 - swap.k;
-      ctx.scale(1, 1 - 0.1 * swap.k);
+      ctx.scale(1, 1 - 0.08 * swap.k);
       this.#drawAt(previous, this.#motion.previousPose ?? body.pose, H * body.scale);
     } else {
       // «Вдох»: новая поза проявляется с лёгкой растяжкой; иначе — обычный кадр.
-      if (swap?.phase === "in") {
-        ctx.globalAlpha = swap.k;
-        ctx.scale(1, 1.08 - 0.08 * swap.k);
-      }
+      if (swap?.phase === "in")
+        ctx.scale(1, 0.92 + 0.16 * Math.sin((Math.PI / 2) * swap.k) - 0.08 * swap.k);
       ctx.drawImage(image, cx - w / 2, cy - h / 2, w, h);
       // Кадр «телесного» цикла: прошлый коротко поверх (та же точка опоры — без двоения).
       const left = previous === null || swap !== null ? 0 : this.#motion.fadeLeft;

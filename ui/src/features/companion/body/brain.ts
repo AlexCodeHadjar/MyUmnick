@@ -40,6 +40,8 @@ const HEARTS_S = 1.4;
 const PET_S = 1.2;
 /** Скорость лазанья: медленнее ходьбы — видно, что тяжело. */
 const CLIMB_SPEED = 90;
+/** Замах перед шагом, с. */
+const WINDUP_S = 0.12;
 
 type Random = () => number;
 
@@ -98,6 +100,7 @@ export class Brain {
   #climb: Climb | null = null;
   /** Окно, по которому лезет: его левый/правый край в момент прошлого сдвига. */
   #climbBase = 0;
+  #windup = 0;
   /** Короткая поза-эмоция в покое (кружится, машет, зевает), секунды до конца. */
   #emote: { pose: Pose; left: number } | null = null;
 
@@ -469,6 +472,9 @@ export class Brain {
   }
 
   #rest(spot: Spot): void {
+    // Пришёл и садится — сначала на миг встал (критик, раунд 3): «шёл → сел» без стойки — скачок.
+    const arriving = this.phase === "walk" || this.phase === "jump" || this.phase === "fall";
+    const sits = spot.pose !== "stand" && spot.pose !== "walk" && spot.pose !== "hang_side";
     this.#climb = null;
     this.phase = "rest";
     this.#spot = spot;
@@ -486,6 +492,7 @@ export class Brain {
         : surface.kind === "side"
           ? spot.x - surface.x
           : 0;
+    if (arriving && sits) this.#emote = { pose: "stand", left: 0.15 };
   }
 
   #hostLeft(surface: Surface): number {
@@ -505,6 +512,8 @@ export class Brain {
     this.phase = phase;
     this.facing = spot.x >= this.x ? 1 : -1;
     this.#idle = 0;
+    // Замах (упреждение): 0,12 с наклон вперёд, потом шаг.
+    this.#windup = phase === "walk" ? WINDUP_S : 0;
   }
 
   #fall(): void {
@@ -558,6 +567,10 @@ export class Brain {
   #tickWalk(dt: number): void {
     const target = this.#target;
     if (target === null) return;
+    if (this.#windup > 0) {
+      this.#windup -= dt;
+      return;
+    }
     const dx = target.x - this.x;
     const move = WALK_SPEED * dt;
     if (Math.abs(dx) > move) {

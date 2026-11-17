@@ -150,7 +150,8 @@ export class Motion {
     const moving = body.phase === "walk" || body.phase === "jump" || body.phase === "fall";
     const vx = this.#lastX === null || dt <= 0 ? 0 : (body.x - this.#lastX) / dt;
     this.#lastX = body.x;
-    const target = moving ? Math.max(-MAX_LEAN, Math.min(MAX_LEAN, vx / 2500)) : 0;
+    const windup = body.phase === "walk" && Math.abs(vx) < 1 ? body.facing * 0.05 : 0;
+    const target = moving ? Math.max(-MAX_LEAN, Math.min(MAX_LEAN, vx / 2500 + windup)) : 0;
     this.#lean += (target - this.#lean) * Math.min(1, dt * 8);
   }
 
