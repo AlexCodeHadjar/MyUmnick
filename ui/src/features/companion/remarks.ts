@@ -117,6 +117,8 @@ export interface Target {
   name: string;
   rect: Rect;
   kind: string;
+  /** Выбранная вкладка (только у `tab`). */
+  selected?: boolean;
 }
 
 /**

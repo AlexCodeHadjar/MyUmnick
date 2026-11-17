@@ -267,6 +267,30 @@ export const en: Messages = {
       count: (n: number) => `One, two… ${String(n)}! All icons in place.`,
       favorite: (name: string) => `«${name}» is my favorite icon!`,
     },
+    watch: {
+      start: [
+        "Watching together! I've got popcorn.",
+        "Ooh, a movie! I'll sit in the corner.",
+        "Dibs on the popcorn!",
+        "Play it, I'm ready!",
+      ],
+      during: [
+        "Munch-munch…",
+        "Whoa!",
+        "What a twist!",
+        "Shh, this is the best part!",
+        "What happens next?",
+        "Nice moment.",
+        "I couldn't do that.",
+      ],
+      end: [
+        "That was a good one!",
+        "Popcorn ran out just in time.",
+        "One more episode?",
+        "I liked it!",
+      ],
+      quiet: ["I won't bother you — I'll sit in the corner.", "Quietly here."],
+    },
     remarks: {
       browser: [
         "More tabs again… how many is that now?",

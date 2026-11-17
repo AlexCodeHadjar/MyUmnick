@@ -21,8 +21,9 @@
 | 6 | Выглядывает | `peek`, `peek_blink` | 2 | из-за края окна | — (не выглядывает) |
 | 7 | Зевает | `yawn`, `yawn_1` | 2 | ночь, перед сном | `stand` |
 | 8 | Танцует | `dance_1…4` | 4 | музыка в плеере | `stand` |
+| 9 | Смотрит с попкорном | `watch`, `watch_1…3` | 4 | «Смотрим вместе»: идёт видео | `sit_corner` |
 
-Всего 29 кадров. Самое важное — §1 и §3 (радио и лазанье).
+Всего 33 кадра. Самое важное — §1, §3 и §9 (радио, лазанье, просмотр вместе).
 
 ---
 
@@ -158,6 +159,27 @@ vertical.
 ```
 
 ---
+
+## 9. Смотрит с попкорном — `watch`, `watch_1…3`
+
+**Референсы:** `character-reference.png`, `sit_corner.png`.
+**Опора:** как у `sit_corner` — x ≈ 0,5, низ ≈ 0,95 (сидит на полу). Смотрит вправо в три четверти —
+программа отражает его лицом к экрану.
+
+`watch.png`:
+```
+Full body, sitting on the floor exactly like the attached sit_corner.png (same scale, same bottom line),
+but relaxed and cross-legged, holding a red-and-white striped popcorn bucket in the lap with the left
+arm, the right hand lifting one piece of popcorn to the mask, eyes wide and fixed forward-right as if
+watching an exciting movie on a screen. Canvas 1024x1536, vertical.
+```
+`watch_1.png … watch_3.png` — цикл жевания, по одному после `watch.png`:
+```
+Using the previous watch image as the reference, draw frame {N} of 3 of a looping popcorn-munching
+cycle while watching: frame 1 — the hand dips into the bucket; frame 2 — the hand brings popcorn to the
+mask, mouth slightly open; frame 3 — chewing, eyes a bit wider as if at a plot twist. The body, the bucket
+and the bottom line stay in place, the scale does not change. Canvas 1024x1536, vertical.
+```
 
 ## Проверки (кратко, подробно — FRAMES.md §6)
 - фон прозрачный, ореола и букв нет;

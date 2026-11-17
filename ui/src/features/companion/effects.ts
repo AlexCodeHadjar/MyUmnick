@@ -155,6 +155,32 @@ function drawSparks(
 }
 
 /** Сердечки: поднимаются, покачиваясь, и тают (погладили). */
+/** Два-три зёрнышка попкорна: подлетают дугой и падают обратно в ведёрко. */
+function drawPopcorn(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
+  const random = seeded(Math.round(x * 5 + y * 11));
+  ctx.save();
+  for (let i = 0; i < 3; i += 1) {
+    const dx = (random() - 0.5) * 40 * t;
+    const dy = -60 * Math.sin(Math.PI * t) * (0.6 + random() * 0.6);
+    const size = 4 + random() * 3;
+    ctx.globalAlpha = t < 0.8 ? 1 : (1 - t) * 5;
+    ctx.fillStyle = "#fff4d6";
+    ctx.strokeStyle = "#e6b84a";
+    ctx.lineWidth = 1;
+    for (const [ox, oy] of [
+      [0, 0],
+      [size * 0.6, -size * 0.4],
+      [-size * 0.5, -size * 0.5],
+    ] as const) {
+      ctx.beginPath();
+      ctx.arc(x + dx + ox, y + dy + oy, size * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
 function drawHearts(ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
   const random = seeded(Math.round(x * 13 + y * 7));
   ctx.save();
@@ -258,6 +284,7 @@ export function drawEffects(
     if (effect.kind === "bolt") drawBolt(ctx, effect.from, effect.to, hue, seed, effect.t);
     else if (effect.kind === "sparks") drawSparks(ctx, effect.x, effect.y, effect.t, hue);
     else if (effect.kind === "hearts") drawHearts(ctx, effect.x, effect.y, effect.t);
+    else if (effect.kind === "popcorn") drawPopcorn(ctx, effect.x, effect.y, effect.t);
     else if (effect.kind === "mark") drawMark(ctx, effect.x, effect.y, hue, seed);
     else drawPortal(ctx, effect, hue);
   }

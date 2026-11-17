@@ -12,7 +12,8 @@ use windows_sys::Win32::Graphics::Dwm::{
     DwmGetWindowAttribute, DWMWA_CLOAKED, DWMWA_EXTENDED_FRAME_BOUNDS,
 };
 use windows_sys::Win32::Graphics::Gdi::{
-    GetMonitorInfoW, MonitorFromPoint, MONITORINFO, MONITOR_DEFAULTTOPRIMARY,
+    GetMonitorInfoW, MonitorFromPoint, MonitorFromWindow, HMONITOR, MONITORINFO,
+    MONITOR_DEFAULTTONEAREST,
 };
 use windows_sys::Win32::System::Threading::{
     OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
@@ -95,7 +96,7 @@ pub enum Focus {
     Other { app: String },
 }
 
-/// Картина основного монитора в физических пикселях экрана.
+/// Картина монитора, где пользователь, в физических пикселях экрана.
 #[derive(Serialize, Clone, PartialEq, Debug)]
 pub struct World {
     pub monitor: Rect,
@@ -222,7 +223,24 @@ pub fn subtract(span: (i32, i32), cuts: &[(i32, i32)]) -> Vec<(i32, i32)> {
     parts
 }
 
-fn primary() -> (Rect, Rect) {
+/// Монитор, где сейчас пользователь (просьба 2026-11-17: спутник виден на любом экране): монитор
+/// активного окна, а на рабочем столе и без активного окна — монитор курсора.
+fn active_monitor(fg: Option<HWND>) -> (Rect, Rect) {
+    let window = fg.filter(|&h| !DESKTOP.contains(&class_of(h).as_str()));
+    // SAFETY: дескриптор окна или точка курсора; NEAREST всегда возвращает монитор.
+    let monitor = unsafe {
+        match window {
+            Some(hwnd) => MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST),
+            None => {
+                let (x, y) = cursor();
+                MonitorFromPoint(POINT { x, y }, MONITOR_DEFAULTTONEAREST)
+            }
+        }
+    };
+    monitor_info(monitor)
+}
+
+fn monitor_info(monitor: HMONITOR) -> (Rect, Rect) {
     let mut info: MONITORINFO = MONITORINFO {
         cbSize: size_of::<MONITORINFO>() as u32,
         rcMonitor: RECT {
@@ -239,9 +257,8 @@ fn primary() -> (Rect, Rect) {
         },
         dwFlags: 0,
     };
-    // SAFETY: точка (0,0) лежит на основном мониторе; структура с правильным cbSize.
+    // SAFETY: дескриптор монитора от MonitorFrom*; структура с правильным cbSize.
     unsafe {
-        let monitor = MonitorFromPoint(POINT { x: 0, y: 0 }, MONITOR_DEFAULTTOPRIMARY);
         GetMonitorInfoW(monitor, &mut info);
     }
     (Rect::of(info.rcMonitor), Rect::of(info.rcWork))
@@ -310,7 +327,8 @@ fn focus_of(hwnd: Option<HWND>, seats: &[Seat], monitor: &Rect, own: u32) -> Foc
 
 /// Полная картина: раз в секунду и при смене активного окна.
 pub fn scan(own: u32) -> World {
-    let (monitor, work) = primary();
+    let fg = foreground(own);
+    let (monitor, work) = active_monitor(fg);
     let windows: Vec<Seen> = top_level()
         .into_iter()
         .filter_map(|h| seen(h, own))
@@ -333,18 +351,19 @@ pub fn scan(own: u32) -> World {
             open: subtract((r.x, r.x + r.w), &cuts),
         });
     }
-    let fg = foreground(own);
     let focus = focus_of(fg, &seats, &monitor, own);
     // Развёрнутое окно при скрытой панели задач тоже закрывает весь монитор — это не полный экран.
     let covering = fg
         .and_then(|h| seen(h, own))
         .is_some_and(|one| !one.zoomed && one.rect.covers(&monitor));
+    let fullscreen = busy() || covering;
     World {
         monitor,
-        work,
+        // Полный экран прячет панель задач: «пол» — низ монитора.
+        work: if fullscreen { monitor } else { work },
         seats,
         focus,
-        fullscreen: busy() || covering,
+        fullscreen,
     }
 }
 

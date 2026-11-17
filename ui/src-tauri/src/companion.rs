@@ -27,9 +27,9 @@ const FOCUS_EVERY: u32 = 3;
 const SCAN_EVERY: u32 = 60;
 /// Курсор — 15 раз в секунду: спутник поворачивается к мыши (просьба пользователя 2026-11-17).
 const CURSOR_EVERY: u32 = 4;
-/// Раз в 2 с слой снова встаёт поверх всех: другие окна «поверх всех» не прячут облачко
+/// Раз в 0,5 с (и сразу при смене активного окна) слой снова встаёт поверх всех: другие окна «поверх всех» не прячут облачко
 /// (просьба пользователя 2026-11-17).
-const TOPMOST_EVERY: u32 = 120;
+const TOPMOST_EVERY: u32 = 30;
 
 /// Прямоугольник персонажа в CSS-пикселях окна спутника.
 #[derive(Deserialize, Clone, Copy, Debug)]
@@ -151,6 +151,10 @@ fn watch(app: &AppHandle, state: &CompanionState) {
         if tick % FOCUS_EVERY == 0 {
             let fg = desktop::foreground(own).map(|h| h as isize);
             if fg != last_fg || tick % SCAN_EVERY == 0 {
+                // Новое активное окно могло встать поверх всех — поднимаемся над ним сразу.
+                if fg != last_fg && window.is_visible().unwrap_or(false) {
+                    raise(&window);
+                }
                 last_fg = fg;
                 publish_world(app, &window, state, own);
             }

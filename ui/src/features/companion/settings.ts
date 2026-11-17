@@ -71,12 +71,11 @@ export function saveSettings(storage: Storage | undefined, settings: CompanionSe
   }
 }
 
-/** Виден ли спутник: полный экран прячет его всегда. */
-export function shouldShow(
-  settings: CompanionSettings,
-  mainShown: boolean,
-  fullscreen: boolean,
-): boolean {
-  if (fullscreen || settings.when === "off") return false;
+/**
+ * Виден ли спутник. Полный экран его больше не прячет (просьба пользователя 2026-11-17: виден всегда, в
+ * любой программе) — там он садится в угол: смотрит видео вместе или тихо сидит.
+ */
+export function shouldShow(settings: CompanionSettings, mainShown: boolean): boolean {
+  if (settings.when === "off") return false;
   return settings.when === "always" || !mainShown;
 }

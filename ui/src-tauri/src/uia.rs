@@ -13,9 +13,10 @@ use windows::Win32::System::Com::{
     CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED,
 };
 use windows::Win32::UI::Accessibility::{
-    CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationTreeWalker,
-    UIA_ButtonControlTypeId, UIA_HyperlinkControlTypeId, UIA_ListItemControlTypeId,
-    UIA_MenuItemControlTypeId, UIA_TabItemControlTypeId, UIA_CONTROLTYPE_ID,
+    CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationSelectionItemPattern,
+    IUIAutomationTreeWalker, UIA_ButtonControlTypeId, UIA_HyperlinkControlTypeId,
+    UIA_ListItemControlTypeId, UIA_MenuItemControlTypeId, UIA_SelectionItemPatternId,
+    UIA_TabItemControlTypeId, UIA_CONTROLTYPE_ID,
 };
 use windows::Win32::UI::WindowsAndMessaging::{FindWindowExW, FindWindowW};
 
@@ -33,6 +34,19 @@ pub struct Target {
     pub name: String,
     pub rect: Rect,
     pub kind: &'static str,
+    /// Выбранная вкладка: по её названию спутник понимает, что идёт видео («смотрим вместе»).
+    pub selected: bool,
+}
+
+/// Выбрана ли вкладка (шаблон SelectionItem); нет шаблона — нет.
+fn selected(element: &IUIAutomationElement) -> bool {
+    // SAFETY: COM-вызовы к живому элементу; ошибка — «не выбрана».
+    unsafe {
+        element
+            .GetCurrentPatternAs::<IUIAutomationSelectionItemPattern>(UIA_SelectionItemPatternId)
+            .and_then(|pattern| pattern.CurrentIsSelected())
+            .is_ok_and(|yes| yes.as_bool())
+    }
 }
 
 fn kind_of(control: UIA_CONTROLTYPE_ID) -> Option<&'static str> {
@@ -64,10 +78,12 @@ fn target(element: &IUIAutomationElement) -> Option<Target> {
             h: r.bottom - r.top,
         };
         let sized = (8..=600).contains(&rect.w) && (8..=300).contains(&rect.h);
-        (sized && !name.is_empty() && name.chars().count() <= 60).then_some(Target {
+        let ok = sized && !name.is_empty() && name.chars().count() <= 60;
+        ok.then(|| Target {
             name,
             rect,
             kind,
+            selected: kind == "tab" && selected(element),
         })
     }
 }

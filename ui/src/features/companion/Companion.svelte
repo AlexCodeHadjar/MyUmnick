@@ -8,7 +8,7 @@
 
   import { EMOTION_HUE } from "../avatar/orb/palette";
   import { characterChannel } from "../avatar/portrait/picture";
-  import { ICONS, snap, type Spot } from "./anchors";
+  import { floorSpot, ICONS, snap, type Spot } from "./anchors";
   import { Life } from "./life";
   import { Brain } from "./brain";
   import {
@@ -33,6 +33,7 @@
   import { choosePoke, nextPause, remark, topicOf, type RemarkTopic, type Target } from "./remarks";
   import { sendRadioCommand, type RadioFeed, type RadioMode } from "../radio";
   import { Reactions } from "./reactions";
+  import { watching } from "./watch";
   import { CompanionStage } from "./stage";
   import { rectToCss, worldToCss, type Focus, type Rect, type World } from "./world";
 
@@ -96,6 +97,12 @@
   reactions.onMood = (event) => {
     life.event(event);
   };
+  // «Смотрим вместе» (BEHAVIOR §11): выбранная вкладка браузера, проверка раз в секунду.
+  let tab: string | null = null;
+  let tabAt = 0;
+  let watchAt = 0;
+  let watchOff = 0;
+  let cornerPending = false;
   let cursor: { x: number; y: number } | null = null;
   let cursorFedAt = 0;
   let lastPhase = brain.phase;
@@ -168,13 +175,24 @@
 
   function refresh(): void {
     applyBehavior();
-    void setShown(shouldShow(settings, mainShown, world?.fullscreen ?? false));
+    void setShown(shouldShow(settings, mainShown));
   }
 
   function onWorld(raw: World): void {
+    const before = monitor;
     monitor = raw.monitor;
     world = css(raw);
     brain.setWorld(world);
+    // Пользователь перешёл на другой монитор — спутник переходит туда же через портал.
+    const moved =
+      before !== null &&
+      (before.x !== raw.monitor.x || before.y !== raw.monitor.y || before.w !== raw.monitor.w);
+    if (moved && shown && gesture === "none") {
+      // Портал — на новом мониторе, а не там, где было окно приложения на старом.
+      mainRect = null;
+      brain.hide();
+      arrive();
+    }
     // Вышли из полного экрана (T14): «Ну как, интересно было?» — когда снова появится.
     if (wasFullscreen && !world.fullscreen) {
       setTimeout(() => {
@@ -199,6 +217,7 @@
     // Быстрый Alt+Tab не дёргает спутника: переход — если окно осталось активным 0,25 с.
     followTimer = setTimeout(() => {
       if (world === null || settings.behavior !== "follow" || gesture !== "none") return;
+      if (brain.watching || brain.quiet) return;
       if (brain.phase !== "rest") return;
       const spot = followSpot(world, brain.surfaceList, focus);
       if (spot !== null && hostOf(spot) !== hostOf(brain.spot)) brain.goTo(spot);
@@ -343,6 +362,8 @@
     const next = topicOf(app, focus.kind === "desktop");
     if (next === topic) return;
     topic = next;
+    tab = null;
+    tabAt = 0;
     const now = performance.now();
     // Первый раз за день в программе или мечется между окнами — сразу к месту (BEHAVIOR §4.4).
     const habit = life.focus(next, now / 1000);
@@ -363,6 +384,64 @@
     lastRemarkTime = now;
   }
 
+  function pickOne(list: readonly string[]): string {
+    return list[Math.floor(Math.random() * list.length)] ?? "";
+  }
+
+  function appName(): string {
+    const focus = world?.focus;
+    return focus === undefined || focus.kind === "desktop" ? "" : focus.app;
+  }
+
+  /** Название выбранной вкладки браузера (UI Automation): по нему видно, что идёт видео. */
+  async function refreshTab(): Promise<void> {
+    const found = await invoke<Target[]>("companion_targets").catch(() => []);
+    if (topic !== "browser") return;
+    tab = found.find((one) => one.kind === "tab" && one.selected === true)?.name ?? null;
+  }
+
+  /**
+   * Раз в секунду: идёт ли видео — садится в угол смотреть с попкорном; полный экран без видео — тихо
+   * сидит в углу. Видео кончилось — встаёт через 3 с (короткие паузы и переключения не считаются).
+   */
+  function updateWatch(now: number): void {
+    if (now < watchAt || world === null) return;
+    watchAt = now + 1000;
+    if (topic === "browser" && now >= tabAt) {
+      tabAt = now + 15_000;
+      void refreshTab();
+    }
+    const fullscreen = world.fullscreen;
+    const want = shown && watching({ app: appName(), topic, fullscreen, tab });
+    if (want && !brain.watching) {
+      brain.watching = true;
+      cornerPending = true;
+      setTimeout(() => {
+        if (brain.watching && shown)
+          say(pickOne(locale.t.companion.watch.start), performance.now());
+      }, 1500);
+    }
+    watchOff = !want && brain.watching ? watchOff || now + 3000 : 0;
+    if (watchOff !== 0 && now >= watchOff) {
+      watchOff = 0;
+      brain.watching = false;
+      say(pickOne(locale.t.companion.watch.end), now);
+      const home = followSpot(world, brain.surfaceList, world.focus);
+      if (home !== null && gesture === "none") brain.goTo(home);
+    }
+    const quiet = shown && fullscreen && !want;
+    if (quiet && !brain.quiet) {
+      cornerPending = true;
+      if (Math.random() < 0.5) say(pickOne(locale.t.companion.watch.quiet), now);
+    }
+    brain.quiet = quiet;
+    if (cornerPending && brain.phase === "rest" && gesture === "none") {
+      cornerPending = false;
+      const corner = floorSpot(brain.surfaceList, true);
+      if (corner !== null) brain.goTo(corner);
+    }
+  }
+
   /** Можно ли сейчас сказать фразу: на экране, стоит, не говорит и не держат. */
   function canSpeak(now: number): boolean {
     const busy = look.speaking || listening || now < bubbleUntil || gesture !== "none";
@@ -381,7 +460,13 @@
 
   function maybeRemark(now: number): void {
     const busy = look.speaking || listening || now < bubbleUntil || gesture !== "none";
-    if (!shown || brain.phase !== "rest" || busy || poking || now < remarkAt) return;
+    if (!shown || brain.phase !== "rest" || busy || poking || now < remarkAt || brain.quiet) return;
+    if (brain.watching) {
+      // Смотрим вместе: редкие тихие реплики, без «тыканья».
+      remarkAt = now + (240 + Math.random() * 180) * 1000;
+      say(pickOne(locale.t.companion.watch.during), now);
+      return;
+    }
     remarkAt = now + nextPause(Math.random) * 1000;
     // Примерно каждая третья выходка — «потыкать» в кнопку или значок (ADR-0048).
     if (Math.random() < 0.35) {
@@ -463,7 +548,15 @@
 
   function frame(dt: number, now: number): void {
     maybeRemark(now);
-    const free = shown && brain.phase === "rest" && gesture === "none" && !poking && !look.speaking;
+    updateWatch(now);
+    const free =
+      shown &&
+      brain.phase === "rest" &&
+      gesture === "none" &&
+      !poking &&
+      !look.speaking &&
+      !brain.watching &&
+      !brain.quiet;
     if (onDesktop && free && settings.behavior !== "stay" && now >= desktopAt) void desktopAct(now);
     // Своя инициатива — фраза в облачке или «тыканье»: на мышь в это время не смотрит.
     brain.busy = poking || (!listening && now < bubbleUntil && replyText === lastRemark);

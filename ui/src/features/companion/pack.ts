@@ -29,6 +29,7 @@ export const FALLBACK: Record<Pose, readonly Pose[]> = {
   wave: ["stand"],
   yawn: ["stand"],
   dance: ["stand"],
+  watch: ["sit_corner", "sit_edge", "stand"],
 };
 
 /** Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот». */
@@ -54,6 +55,7 @@ export const ANCHORS: Record<Pose, readonly [number, number]> = {
   wave: [0.5, 0.97],
   yawn: [0.5, 0.97],
   dance: [0.5, 0.97],
+  watch: [0.5, 0.95],
 };
 
 /** Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз. */
@@ -81,6 +83,7 @@ export const LOOP_FPS: Partial<Record<Pose, number>> = {
   wave: 6,
   yawn: 2,
   dance: 6,
+  watch: 3,
   lean_side: 4,
   sit_corner: 4,
   sleep: 3,

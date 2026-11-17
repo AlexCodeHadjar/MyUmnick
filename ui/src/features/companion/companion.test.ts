@@ -228,9 +228,10 @@ describe("молния, позы, настройки", () => {
     expect(parseSettings("{oops")).toEqual(DEFAULT_SETTINGS);
     expect(parseSettings('{"when":"always","height":9999}').height).toBe(280);
     const always = { ...DEFAULT_SETTINGS, when: "always" as const };
-    expect(shouldShow(DEFAULT_SETTINGS, true, false)).toBe(false);
-    expect(shouldShow(DEFAULT_SETTINGS, false, false)).toBe(true);
-    expect(shouldShow(always, true, true)).toBe(false);
+    expect(shouldShow(DEFAULT_SETTINGS, true)).toBe(false);
+    expect(shouldShow(DEFAULT_SETTINGS, false)).toBe(true);
+    expect(shouldShow(always, true)).toBe(true);
+    expect(shouldShow({ ...always, when: "off" }, false)).toBe(false);
   });
 });
 

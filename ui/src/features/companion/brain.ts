@@ -42,7 +42,9 @@ export type Effect =
   /** Сердечки над головой: погладили. */
   | { kind: "hearts"; x: number; y: number; t: number }
   /** Кольцо «закрепится здесь» при перетаскивании и прицеливании; рисуется кадр, не хранится. */
-  | { kind: "mark"; x: number; y: number; t: number };
+  | { kind: "mark"; x: number; y: number; t: number }
+  /** Зёрнышко попкорна вылетает из ведёрка: «смотрим вместе». */
+  | { kind: "popcorn"; x: number; y: number; t: number };
 
 export interface Body {
   phase: Phase;
@@ -117,6 +119,13 @@ export class Brain {
   /** Рост холста позы в CSS-пикселях: сколько места нужно над сиденьем (`fitScreen`). */
   figure = 300;
   music: Music = "off";
+  /**
+   * «Смотрим вместе» (BEHAVIOR §11): сидит в углу, смотрит видео с попкорном, не гуляет и не засыпает.
+   * «Тихо» — полный экран без видео: сидит в углу и не мешает.
+   */
+  watching = false;
+  quiet = false;
+  #popcornIn = 2;
   /** Простой до «лечь» и «уснуть», секунды; задаёт настроение (`mood.ts`, BEHAVIOR §2). */
   layAfter = 90;
   sleepAfter = 300;
@@ -414,6 +423,7 @@ export class Brain {
     if (effect.kind === "bolt") return BOLT_S;
     if (effect.kind === "portal") return PORTAL_S * 1.4;
     if (effect.kind === "hearts") return HEARTS_S;
+    if (effect.kind === "popcorn") return 0.9;
     if (effect.kind === "mark") return 0.05;
     return SPARKS_S;
   }
@@ -435,6 +445,7 @@ export class Brain {
       return "float";
     const pose = this.#spot?.pose ?? "float";
     if (this.#emote !== null) return this.#emote.pose;
+    if (this.watching && pose === "sit_corner") return "watch";
     // Радио: стоя — поёт (на паузе слушает), сидя — сидит как сидел.
     if (this.music !== "off" && pose === "stand" && this.#petting === 0) {
       return this.music === "playing" ? "sing" : "radio_idle";
@@ -500,11 +511,13 @@ export class Brain {
   }
 
   #tickRest(dt: number): void {
-    // Поёт — не скучает и не засыпает.
-    if (this.music === "playing") {
+    // Поёт или смотрит — не скучает и не засыпает.
+    if (this.music === "playing" || this.watching) {
       this.#idle = 0;
+      if (this.watching && this.#spot?.pose === "sit_corner") this.#munch(dt);
       return;
     }
+    if (this.quiet) return;
     this.#idle += dt;
     const surface = this.#spot?.surface;
     if (surface === undefined || this.#pinned !== null) return;
@@ -517,6 +530,15 @@ export class Brain {
     this.#wanderIn = base * this.pace;
     const reach = this.calm ? 320 : 500;
     this.goTo(spotOn(surface, this.x + (this.#random() - 0.5) * reach, this.y));
+  }
+
+  /** Жуёт попкорн: время от времени зёрнышко вылетает из ведёрка. */
+  #munch(dt: number): void {
+    this.#popcornIn -= dt;
+    if (this.#popcornIn > 0) return;
+    this.#popcornIn = 2 + this.#random() * 2.5;
+    const x = this.x + this.facing * this.chest * 0.25;
+    this.#effects.push({ kind: "popcorn", x, y: this.y - this.chest * 0.75, t: 0 });
   }
 
   /** Смотрит в сторону мыши; порог 40 px — не дёргается, когда курсор прямо над ним. */
