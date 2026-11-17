@@ -859,7 +859,7 @@
 - `Effect` — `ui/src/features/companion/brain.ts:22` — —
 - `Body` — `ui/src/features/companion/brain.ts:27` — —
 - `WALK_LIMIT` — `ui/src/features/companion/brain.ts:39` — Ближе — пешком или прыжком, дальше — молнией (решение пользователя, раздел 9.1).
-- `Brain` — `ui/src/features/companion/brain.ts:54` — —
+- `Brain` — `ui/src/features/companion/brain.ts:55` — —
 - `Companion.svelte` — `ui/src/features/companion/Companion.svelte:1` — —
 - `CompanionMenu.svelte` — `ui/src/features/companion/CompanionMenu.svelte:1` — —
 - `followSpot` — `ui/src/features/companion/control.ts:9` — Место для активного окна (раздел 4.1): край окна, «пол» у правого края или угол экрана.

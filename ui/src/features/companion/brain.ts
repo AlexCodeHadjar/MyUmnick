@@ -48,6 +48,7 @@ const PORTAL_S = 0.6;
 const SPARKS_S = 0.5;
 const LAY_AFTER_S = 90;
 const SLEEP_AFTER_S = 300;
+const LOOK_DEADZONE = 40;
 
 type Random = () => number;
 
@@ -76,7 +77,13 @@ export class Brain {
   wander = false;
   /** «Следовать»: гуляет реже и недалеко; «Гулять» — часто. */
   calm = false;
-  #lookIn = 6;
+  /** Курсор по x (CSS-пиксели слоя) или `null`, пока неизвестен: в покое персонаж смотрит на мышь. */
+  cursorX: number | null = null;
+  /**
+   * Занят своей инициативой (говорит фразу, тыкает в кнопку): на мышь не оборачивается. Во время ходьбы,
+   * прыжка и полёта он и так смотрит по движению.
+   */
+  busy = false;
   /** Высота груди над точкой опоры: отсюда выходит молния и искры (рост × 0,55). */
   chest = 150;
 
@@ -336,18 +343,21 @@ export class Brain {
     const surface = this.#spot?.surface;
     if (surface === undefined || this.#pinned !== null) return;
     const standing = surface.kind === "edge" || surface.kind === "floor";
-    // Оглядывается: стоя и сидя не смотрит всё время в одну сторону.
-    this.#lookIn -= dt;
-    if (this.#lookIn <= 0 && standing && this.#idle < LAY_AFTER_S) {
-      this.#lookIn = 5 + this.#random() * 9;
-      this.facing = this.facing === 1 ? -1 : 1;
-    }
+    if (standing) this.#faceCursor();
     if (!this.wander || !standing) return;
     this.#wanderIn -= dt;
     if (this.#wanderIn > 0) return;
     this.#wanderIn = this.calm ? 20 + this.#random() * 25 : 6 + this.#random() * 12;
     const reach = this.calm ? 320 : 500;
     this.goTo(spotOn(surface, this.x + (this.#random() - 0.5) * reach, this.y));
+  }
+
+  /** Смотрит в сторону мыши; порог 40 px — не дёргается, когда курсор прямо над ним. */
+  #faceCursor(): void {
+    const cursor = this.cursorX;
+    if (cursor === null || this.busy || this.#idle > SLEEP_AFTER_S) return;
+    if (cursor > this.x + LOOK_DEADZONE) this.facing = 1;
+    else if (cursor < this.x - LOOK_DEADZONE) this.facing = -1;
   }
 
   #tickWalk(dt: number): void {

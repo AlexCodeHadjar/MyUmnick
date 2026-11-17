@@ -223,7 +223,7 @@ describe("инициатива и новые опоры", () => {
     expect(snap(LIST, 50, 700)?.pose).toBe("lean_side");
   });
 
-  it("сам оглядывается и прогуливается в «следовать»", () => {
+  it("сам прогуливается в «следовать»", () => {
     const rolls = [0.1, 0.9, 0.3, 0.7];
     let i = 0;
     const brain = new Brain(() => rolls[i++ % rolls.length] ?? 0.5);
@@ -233,14 +233,11 @@ describe("инициатива и новые опоры", () => {
     brain.place(floor);
     brain.wander = true;
     brain.calm = true;
-    const facings = new Set<number>();
     let walked = false;
     for (let t = 0; t < 60; t += 0.05) {
       brain.tick(0.05);
-      facings.add(brain.facing);
       if (brain.phase === "walk") walked = true;
     }
-    expect(facings.size).toBe(2);
     expect(walked).toBe(true);
   });
 
@@ -283,5 +280,28 @@ describe("инициатива и новые опоры", () => {
     brain.goTo(home);
     settle(brain, 2);
     expect([brain.phase, brain.body().pose]).toEqual(["rest", "stand"]);
+  });
+});
+
+describe("взгляд на мышь", () => {
+  it("в покое смотрит на курсор с порогом, а занятый своим — нет", () => {
+    const brain = new Brain(() => 0.5);
+    brain.setWorld(WORLD);
+    const floor = snap(LIST, 800, 1040);
+    if (floor === null) throw new Error("нет места");
+    brain.place(floor);
+    brain.cursorX = 100;
+    brain.tick(0.016);
+    expect(brain.facing).toBe(-1);
+    brain.cursorX = 820; // в пределах порога — не дёргается
+    brain.tick(0.016);
+    expect(brain.facing).toBe(-1);
+    brain.cursorX = 1500;
+    brain.tick(0.016);
+    expect(brain.facing).toBe(1);
+    brain.busy = true;
+    brain.cursorX = 100;
+    brain.tick(0.016);
+    expect(brain.facing).toBe(1);
   });
 });

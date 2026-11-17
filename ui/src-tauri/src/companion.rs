@@ -24,6 +24,8 @@ const TICK: Duration = Duration::from_millis(16);
 /// Активное окно — 20 раз в секунду, полная картина — раз в секунду (как у Capri).
 const FOCUS_EVERY: u32 = 3;
 const SCAN_EVERY: u32 = 60;
+/// Курсор — 15 раз в секунду: спутник поворачивается к мыши (просьба пользователя 2026-11-17).
+const CURSOR_EVERY: u32 = 4;
 
 /// Прямоугольник персонажа в CSS-пикселях окна спутника.
 #[derive(Deserialize, Clone, Copy, Debug)]
@@ -109,6 +111,7 @@ fn watch(app: &AppHandle, state: &CompanionState) {
     let mut last_fg = None;
     let mut last_host = None;
     let mut last_main = None;
+    let mut last_cursor = (f64::NAN, f64::NAN);
     loop {
         thread::sleep(TICK);
         tick = tick.wrapping_add(1);
@@ -117,6 +120,9 @@ fn watch(app: &AppHandle, state: &CompanionState) {
         };
         if window.is_visible().unwrap_or(false) {
             passing = hit_test(&window, state, passing);
+            if tick % CURSOR_EVERY == 0 {
+                last_cursor = publish_cursor(app, &window, last_cursor);
+            }
         }
         if tick % FOCUS_EVERY == 0 {
             let fg = desktop::foreground(own).map(|h| h as isize);
@@ -128,6 +134,23 @@ fn watch(app: &AppHandle, state: &CompanionState) {
         }
         last_host = publish_host(app, state, own, last_host);
     }
+}
+
+/// Курсор в CSS-пикселях слоя; шлётся, только если сдвинулся заметно (больше 3 px).
+fn publish_cursor(app: &AppHandle, window: &WebviewWindow, last: (f64, f64)) -> (f64, f64) {
+    let scale = window.scale_factor().unwrap_or(1.0);
+    let origin = window.outer_position().unwrap_or_default();
+    let (cx, cy) = desktop::cursor();
+    let now = (
+        f64::from(cx - origin.x) / scale,
+        f64::from(cy - origin.y) / scale,
+    );
+    let moved = (now.0 - last.0).abs() > 3.0 || (now.1 - last.1).abs() > 3.0 || last.0.is_nan();
+    if !moved {
+        return last;
+    }
+    let _ = app.emit_to(LABEL, "companion-cursor", now);
+    now
 }
 
 fn hit_test(window: &WebviewWindow, state: &CompanionState, passing: bool) -> bool {

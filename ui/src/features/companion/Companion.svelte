@@ -279,6 +279,8 @@
 
   function frame(dt: number, now: number): void {
     maybeRemark(now);
+    // Своя инициатива — фраза в облачке или «тыканье»: на мышь в это время не смотрит.
+    brain.busy = poking || (!listening && now < bubbleUntil && replyText === lastRemark);
     if (press !== null && gesture === "none" && now - press.t >= HOLD_MS) {
       gesture = "aim";
       aim = { x: press.x, y: press.y, ghost: null };
@@ -402,6 +404,9 @@
         refresh();
       }),
       listen("companion-called", onCalled),
+      listen<[number, number]>("companion-cursor", (event) => {
+        brain.cursorX = event.payload[0];
+      }),
       listen<Feed>("companion-feed", (event) => {
         onFeed(event.payload);
       }),
