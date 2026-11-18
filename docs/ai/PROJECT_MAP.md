@@ -676,7 +676,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:506` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:507` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).
@@ -1008,6 +1008,8 @@
 
 - `PlayWatch` — `ui/src/features/companion/senses/play.ts:19` — —
 - `caught` — `ui/src/features/companion/senses/play.ts:40` — Курсор у самой груди — «поймал».
+- `quotedNames` — `ui/src/features/companion/senses/pointer.ts:9` — Названия в кавычках «…», "…", “…” длиной 2–40 знаков.
+- `findTarget` — `ui/src/features/companion/senses/pointer.ts:15` — Видимый элемент, название которого совпадает с одним из названий (без регистра): точное — лучше.
 - `RemarkTopic` — `ui/src/features/companion/senses/remarks.ts:9` — —
 - `topicOf` — `ui/src/features/companion/senses/remarks.ts:74` — —
 - `TimeOfDay` — `ui/src/features/companion/senses/remarks.ts:79` — —

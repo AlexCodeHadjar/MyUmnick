@@ -78,6 +78,8 @@ export class CompanionController {
   #lastHit = "";
   #lastPhase = "hidden";
   #emotion = "neutral";
+  /** Текст текущего ответа ассистента — для «покажи на экране». */
+  #replyText = "";
   readonly #play = new PlayWatch();
   #caughtAt = 0;
 
@@ -206,6 +208,12 @@ export class CompanionController {
     look.hue =
       new Map<string, number>(Object.entries(EMOTION_HUE)).get(feed.emotion) ?? EMOTION_HUE.neutral;
     this.#feel(feed.emotion);
+    // Ответ договорён — назвал элемент в кавычках? Показать его на экране (этап 5).
+    if (!feed.speaking && this.#replyText !== "") {
+      void this.conductor.pointAt(this.#replyText);
+      this.#replyText = "";
+    }
+    if (feed.speaking) this.#replyText = feed.text;
     if (!feed.speaking) return;
     this.brain.wake();
     // Новый ответ ассистента — с ним говорят, радость чуть растёт (BEHAVIOR §2).

@@ -4,3 +4,4 @@ export * from "./sites";
 export * from "./watch";
 export * from "./triggers";
 export * from "./play";
+export * from "./pointer";

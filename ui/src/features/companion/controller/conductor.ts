@@ -8,7 +8,7 @@ import type { Life } from "../behavior";
 import type { Brain } from "../body";
 import type { ActivityId, Mind, Senses, VoiceKind } from "../mind";
 import { watchPhrases } from "../phrases";
-import { choosePoke, remark } from "../senses";
+import { choosePoke, findTarget, quotedNames, remark } from "../senses";
 import { floorSpot, followSpot, hostOf, snap } from "../space";
 import type { Presence } from "./presence";
 import type { Scout } from "./scout";
@@ -176,6 +176,34 @@ export class Conductor {
   }
 
   /** Подлететь к видимому элементу экрана, ткнуть, назвать его и вернуться. Нечего — фраза. */
+  /**
+   * «Покажи на экране» (этап 5): в ответе ассистента названия в кавычках — если такой элемент виден,
+   * подлететь и показать на него пальцем, потом вернуться. Не во время фильма и тихого режима.
+   */
+  async pointAt(text: string): Promise<boolean> {
+    const { brain, presence, scout } = this.#p;
+    const names = quotedNames(text);
+    const world = presence.world;
+    if (names.length === 0 || world === null || brain.watching || brain.quiet || this.poking)
+      return false;
+    const target = findTarget(await scout.targets(), names);
+    if (target === null || brain.phase !== "rest" || !presence.shown) return false;
+    const near = choosePoke([target], world.monitor);
+    if (near === null) return false;
+    this.poking = true;
+    const back = brain.spot;
+    brain.visit(near.x, near.y, "poke", near.facing);
+    this.#speak(
+      pickOne(locale.t.companion.triggers.show).replace("{name}", target.name),
+      "reaction",
+    );
+    setTimeout(() => {
+      this.poking = false;
+      if (brain.phase === "rest" && back !== null) brain.goTo(back);
+    }, POKE_BACK_MS);
+    return true;
+  }
+
   async poke(): Promise<void> {
     const { brain, presence, scout } = this.#p;
     const world = presence.world;
