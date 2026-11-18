@@ -937,6 +937,8 @@
 - `along` — `ui/src/features/companion/look/effects.ts:63` — Точка на ломаной на доле `t` её длины — где сейчас разряд.
 - `drawBolt` — `ui/src/features/companion/look/effects.ts:97` — Молния тремя проходами: широкое свечение, мягкая линия, яркая сердцевина.
 - `drawEffects` — `ui/src/features/companion/look/effects.ts:277` — Нарисовать эффекты тела; `seed` меняется 30 раз в секунду — молния «живёт».
+- `MenuPlace` — `ui/src/features/companion/look/menu.ts:7` — —
+- `placeMenu` — `ui/src/features/companion/look/menu.ts:20` — Левый верхний угол меню размера `size` для щелчка в `at` на экране `view`.
 - `SOFT_LOOPS` — `ui/src/features/companion/look/motion.ts:30` — Циклы, где кадры отличаются только телом: в них растворение уместно. Лицо меняется — резко. «Держат» и
 - `Swap` — `ui/src/features/companion/look/motion.ts:44` — Этап смены позы: старая уходит (`out`) или новая приходит (`in`), `k` — 0…1.
 - `Pose2D` — `ui/src/features/companion/look/motion.ts:49` — —

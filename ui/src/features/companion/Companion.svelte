@@ -9,7 +9,7 @@
   import { characterChannel } from "../avatar/portrait/picture";
   import { sendRadioCommand } from "../radio";
   import { CompanionController, tauriPorts, type Feed, type MainState } from "./controller";
-  import { CompanionStage } from "./look";
+  import { CompanionStage, placeMenu } from "./look";
   import {
     COMPANION_KEY,
     HEIGHTS,
@@ -32,6 +32,18 @@
   /** Облачко на экране: его размер прошлого кадра держит текст в пределах экрана. */
   let bubbleEl = $state<HTMLParagraphElement | null>(null);
   let menu = $state<{ x: number; y: number } | null>(null);
+  let menuEl: HTMLElement | undefined = $state();
+  // Меню целиком на экране: размер известен только после показа — тогда и сдвигаем.
+  $effect(() => {
+    if (menu === null || menuEl === undefined) return;
+    const box = menuEl.getBoundingClientRect();
+    const next = placeMenu(
+      menu,
+      { w: box.width, h: box.height },
+      { w: innerWidth, h: innerHeight },
+    );
+    if (next.x !== menu.x || next.y !== menu.y) menu = next;
+  });
   // Радио (ADR-0049): табличка над головой — станция и ⏮ ⏯ ⏭; кнопки шлют команды главному окну.
   let radio = $state(controller.radio);
   let radioAt = $state<{ x: number; y: number } | null>(null);
@@ -285,6 +297,7 @@
   <div
     class="menu u-frame"
     role="menu"
+    bind:this={menuEl}
     style:left={`${String(menu.x)}px`}
     style:top={`${String(menu.y)}px`}
   >
@@ -440,6 +453,8 @@
     display: flex;
     flex-direction: column;
     min-width: 200px;
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
     padding: 6px;
     font-family: var(--font);
     font-size: 14px;

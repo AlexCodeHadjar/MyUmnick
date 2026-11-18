@@ -4,3 +4,4 @@ export * from "./placeholder";
 export * from "./stage";
 export * from "./effects";
 export * from "./panel";
+export * from "./menu";
