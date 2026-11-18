@@ -44,12 +44,3 @@ export function statsLine(skill: SkillData, t: Messages): string {
   if (skill.timeouts > 0) parts.push(t.skills.timeouts(skill.timeouts));
   return parts.join(" · ");
 }
-
-type KeyInfo = Pick<KeyboardEvent, "code" | "ctrlKey" | "shiftKey" | "altKey" | "metaKey">;
-
-/** Ctrl+Shift+K по `code`: в русской раскладке `key` у этой клавиши — «Л». */
-export function isSkillsHotkey(event: KeyInfo): boolean {
-  return (
-    event.code === "KeyK" && event.ctrlKey && event.shiftKey && !event.altKey && !event.metaKey
-  );
-}

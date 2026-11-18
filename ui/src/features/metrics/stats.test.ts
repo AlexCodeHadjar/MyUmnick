@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { FIRST_CHAR_SPAN } from "../../core";
-import { isMetricsHotkey } from "./hotkey";
 import { overBudget, percentile, summarize, summarizeAll } from "./stats";
 
 describe("percentile", () => {
@@ -34,16 +33,5 @@ describe("summarize", () => {
   it("стадии с нормой — выше, остальные по имени", () => {
     const rows = summarizeAll({ "zz.other": [1], "llm.stream": [2], [FIRST_CHAR_SPAN]: [3] });
     expect(rows.map((r) => r.name)).toEqual([FIRST_CHAR_SPAN, "llm.stream", "zz.other"]);
-  });
-});
-
-describe("isMetricsHotkey", () => {
-  const base = { code: "KeyM", ctrlKey: true, shiftKey: true, altKey: false, metaKey: false };
-
-  it("Ctrl+Shift+M в любой раскладке", () => {
-    expect(isMetricsHotkey(base)).toBe(true);
-    expect(isMetricsHotkey({ ...base, shiftKey: false })).toBe(false);
-    expect(isMetricsHotkey({ ...base, altKey: true })).toBe(false);
-    expect(isMetricsHotkey({ ...base, code: "KeyN" })).toBe(false);
   });
 });

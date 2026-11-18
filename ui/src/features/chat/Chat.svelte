@@ -1,17 +1,18 @@
 <script lang="ts">
   import { locale } from "../../core";
-  // Панель чата: история, индикатор «печатает», ошибка ядра, поле ввода, режим субтитров.
+  // Панель чата: история, индикатор «печатает», ошибка ядра, поле ввода, команды после «/».
+  // Субтитры включаются иконкой в окошке персонажа (просьба пользователя 2026-11-18): здесь только флаг.
   // Состояние — только из store, действия — через CoreClient (R-63); своей логики диалога нет.
   import type { ChatMessage, CoreClient } from "../../core";
   import BranchBar from "./BranchBar.svelte";
   import Composer from "./Composer.svelte";
+  import type { Command } from "./commands";
   import type { Attachment } from "./image";
   import MessageList from "./MessageList.svelte";
-  import { readSubtitles, Subtitles, writeSubtitles, type SettingStorage } from "./subtitles";
+  import { Subtitles } from "./subtitles";
   import { TypingDebouncer } from "./typing";
 
-  const { client, storage }: { client: CoreClient; storage?: SettingStorage | undefined } =
-    $props();
+  const { client, subtitles }: { client: CoreClient; subtitles: boolean } = $props();
   const store = $derived(client.store);
   const speaking = $derived(store.voice.speech?.speaking ?? false);
 
@@ -22,17 +23,30 @@
 
   // Не реактивен: держит показанную длину субтитров между кадрами.
   const subtitler = new Subtitles();
-  // Читается один раз при создании: дальше режим живёт в компоненте, хранилище только пишется.
-  // svelte-ignore state_referenced_locally
-  let subtitles = $state(readSubtitles(storage));
   const subtitleView = $derived({
     enabled: subtitles && store.backends.tts === "ready",
     speech: store.voice.speech,
   });
 
-  function toggleSubtitles(): void {
-    subtitles = !subtitles;
-    writeSubtitles(storage, subtitles);
+  // Приватный режим и очистка памяти — команды (S-17.2): очистка в два шага, она необратима.
+  const commands = $derived<Command[]>([
+    { id: "private", name: "private", hint: locale.t.privacy.hint },
+    { id: "clear", name: "clear", hint: locale.t.privacy.clearHint },
+  ]);
+  let confirming = $state(false);
+  let said = $state<string | null>(null);
+
+  function oncommand(command: Command): void {
+    said = null;
+    if (command.id === "private") {
+      const next = !store.privacy.enabled;
+      client.setPrivate(next);
+      said = next ? locale.t.privacy.enabled : locale.t.privacy.disabled;
+    } else if (store.privacy.erasable) {
+      confirming = true;
+    } else {
+      said = locale.t.privacy.nothing;
+    }
   }
 </script>
 
@@ -55,7 +69,24 @@
   {/if}
   <div class="status">
     <span class="state" aria-live="polite">
-      {#if store.hypothesis !== ""}
+      {#if confirming}
+        <span class="warn">{locale.t.privacy.confirmErase}</span>
+        <button
+          type="button"
+          class="toggle danger"
+          onclick={() => {
+            confirming = false;
+            client.eraseMemory();
+          }}>{locale.t.privacy.erase}</button
+        >
+        <button
+          type="button"
+          class="toggle"
+          onclick={() => {
+            confirming = false;
+          }}>{locale.t.privacy.cancel}</button
+        >
+      {:else if store.hypothesis !== ""}
         <span class="hypothesis">{locale.t.chat.hearing} {store.hypothesis}</span>
       {:else if store.phase === "thinking"}
         <span class="typing"
@@ -65,18 +96,20 @@
         <span class="error" role="alert">{store.error.message}</span>
       {:else if store.notice !== null}
         <span class="notice" role="status">{store.notice}</span>
+      {:else if store.privacy.result !== null}
+        <span class="notice" role="status">{store.privacy.result}</span>
+      {:else if said !== null}
+        <span class="notice" role="status">{said}</span>
       {/if}
     </span>
-    <button
-      type="button"
-      class="toggle"
-      aria-pressed={subtitles}
-      title={locale.t.chat.subtitlesHint}
-      onclick={toggleSubtitles}>{locale.t.chat.subtitles}</button
-    >
+    {#if store.privacy.enabled}
+      <span class="private" title={locale.t.privacy.hint}>🔒 {locale.t.privacy.on}</span>
+    {/if}
   </div>
   <!-- «Стоп» нужен и после конца хода: голос звучит дольше, чем идёт ход (синтез быстрее речи). -->
   <Composer
+    {commands}
+    {oncommand}
     busy={store.phase !== "idle" || speaking}
     onsend={(text: string, attached: Attachment | null) => {
       typing.cancel();
@@ -125,10 +158,20 @@
     cursor: pointer;
   }
 
-  .toggle[aria-pressed="true"] {
-    border-color: #a77bc4;
-    background: #3a2a44;
+  .danger {
+    border-color: var(--danger);
+    background: #7a2222;
     opacity: 1;
+  }
+
+  .warn {
+    color: var(--hot);
+  }
+
+  .private {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--danger);
   }
 
   .sources {

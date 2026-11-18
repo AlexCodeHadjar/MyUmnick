@@ -2,6 +2,8 @@
   import { locale } from "../../core";
   // Поле ввода: Enter — отправить, Shift+Enter — перенос, Esc или «Стоп» — прервать ответ.
   // Отправка во время ответа разрешена: новая реплика сама прерывает текущий ход (ADR-0002).
+  import CommandHints from "./CommandHints.svelte";
+  import { commandOf, suggest, type Command } from "./commands";
   import { attachmentFromFile, type Attachment } from "./image";
   import { isSendKey, isStopKey } from "./keys";
   import { captureScreen, wantsCapture } from "./screen";
@@ -11,12 +13,17 @@
     onsend,
     onstop,
     ontyping = () => undefined,
+    commands = [],
+    oncommand = () => undefined,
   }: {
     busy: boolean;
     onsend: (text: string, attached: Attachment | null) => void;
     onstop: () => void;
     /** Текст поля после каждого изменения (черновик для прогрева LLM, T-05). */
     ontyping?: (text: string) => void;
+    /** Команды после «/» и что делать, когда команду выбрали. */
+    commands?: readonly Command[];
+    oncommand?: (command: Command) => void;
   } = $props();
 
   let text = $state("");
@@ -25,9 +32,22 @@
   // Снимок показывается с предупреждением: на нём может быть то, что показывать не хотели.
   let fromScreen = $state(false);
   const empty = $derived(text.trim() === "" && attached === null);
+  const hints = $derived(suggest(text, commands));
+  let active = $state(0);
+
+  function run(command: Command): void {
+    text = "";
+    active = 0;
+    oncommand(command);
+  }
 
   function submit(): void {
     if (empty) {
+      return;
+    }
+    const command = commandOf(text, commands);
+    if (command !== null) {
+      run(command);
       return;
     }
     if (wantsCapture(text, attached !== null)) {
@@ -80,7 +100,24 @@
     }
   }
 
+  /** Подсказки открыты: стрелки выбирают, Enter или Tab выполняют выбранную команду. */
+  function onhintkey(event: KeyboardEvent): boolean {
+    const hint = hints[Math.min(active, hints.length - 1)];
+    if (hint === undefined) return false;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      const step = event.key === "ArrowDown" ? 1 : hints.length - 1;
+      active = (active + step) % hints.length;
+    } else if (event.key === "Tab" || isSendKey(event)) {
+      run(hint);
+    } else {
+      return false;
+    }
+    event.preventDefault();
+    return true;
+  }
+
   function onkeydown(event: KeyboardEvent): void {
+    if (onhintkey(event)) return;
     if (isSendKey(event)) {
       event.preventDefault();
       submit();
@@ -114,6 +151,9 @@
     {/if}
   </div>
 {/if}
+{#if hints.length > 0}
+  <CommandHints {hints} active={Math.min(active, hints.length - 1)} onpick={run} />
+{/if}
 <form
   class="composer"
   onsubmit={(event) => {
@@ -126,7 +166,8 @@
     {onkeydown}
     {onpaste}
     oninput={() => {
-      ontyping(text);
+      active = 0;
+      if (!text.trimStart().startsWith("/")) ontyping(text);
     }}
     rows="2"
     placeholder={locale.t.composer.placeholder}

@@ -270,7 +270,10 @@ export class PortraitRenderer implements AvatarRenderer {
     this.#image.style.transform =
       `translateY(${pose.lift.toFixed(2)}px) rotate(${pose.rotate.toFixed(3)}deg) ` +
       `rotateX(${pose.tiltX.toFixed(2)}deg) rotateY(${pose.tiltY.toFixed(2)}deg) ` +
-      `scaleY(${pose.scaleY.toFixed(4)})`;
+      `scaleY(${pose.scaleY.toFixed(4)})` +
+      // Встроенный персонаж нарисован лицом вправо, а чат — слева от окошка: отражаем, чтобы смотрел на
+      // чат (просьба пользователя 2026-11-18). Отражение — последним, повороты к курсору остаются экранными.
+      (this.#own ? "" : " scaleX(-1)");
     const talk = this.#speaking ? this.#mouth * 0.35 : 0;
     const alpha = Math.min(0.75, 0.18 + talk + this.#attention * 0.45);
     const hue = Math.round(this.#hue);

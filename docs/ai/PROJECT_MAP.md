@@ -618,6 +618,7 @@
 - `loadRatio` — `ui/src/app/split.ts:35` — Сохранённая доля или умолчание; битое значение или недоступное хранилище — умолчание.
 - `saveRatio` — `ui/src/app/split.ts:45` — Запомнить долю; ошибка хранилища (переполнено, запрещено) не ломает раскладку.
 - `SplitLayout.svelte` — `ui/src/app/SplitLayout.svelte:1` — —
+- `StageBadges.svelte` — `ui/src/app/StageBadges.svelte:1` — —
 - `Tone` — `ui/src/app/status.ts:8` — —
 - `Indicator` — `ui/src/app/status.ts:10` — —
 - `connectionIndicator` — `ui/src/app/status.ts:15` — —
@@ -678,7 +679,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:502` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:503` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).
@@ -795,6 +796,11 @@
 
 - `BranchBar.svelte` — `ui/src/features/chat/BranchBar.svelte:1` — —
 - `Chat.svelte` — `ui/src/features/chat/Chat.svelte:1` — —
+- `CommandHints.svelte` — `ui/src/features/chat/CommandHints.svelte:1` — Подсказки команд над полем ввода: что можно написать после «/». Щелчок или Enter — выполнить.
+- `CommandId` — `ui/src/features/chat/commands.ts:6` — —
+- `Command` — `ui/src/features/chat/commands.ts:8` — —
+- `suggest` — `ui/src/features/chat/commands.ts:16` — Подсказки к набранному: только пока в поле одно «/слово» без пробела.
+- `commandOf` — `ui/src/features/chat/commands.ts:24` — Команда, которую набрали целиком (`/private`), или null — обычная реплика.
 - `Composer.svelte` — `ui/src/features/chat/Composer.svelte:1` — —
 - `MAX_IMAGE_SIDE` — `ui/src/features/chat/image.ts:8` — Больше длинной стороны модели всё равно не увидят: проектор сжимает картинку сам.
 - `ImageSize` — `ui/src/features/chat/image.ts:12` — —
@@ -849,6 +855,7 @@
 
 - `Companion.svelte` — `ui/src/features/companion/Companion.svelte:1` — —
 - `CompanionMenu.svelte` — `ui/src/features/companion/CompanionMenu.svelte:1` — —
+- `CompanionReturn.svelte` — `ui/src/features/companion/CompanionReturn.svelte:1` — —
 - `startFeed` — `ui/src/features/companion/feed.ts:17` — Запустить передачу; `mouth(dt)` — громкость голоса 0…1. Возвращает остановку.
 - `CompanionWhen` — `ui/src/features/companion/settings.ts:5` — Настройки «Сопровождения» (Этап 23, ADR-0045): общие для главного окна и слоя спутника через
 - `CompanionBehavior` — `ui/src/features/companion/settings.ts:6` — —
@@ -1108,15 +1115,11 @@
 ## ui/src/features/memory
 Публичный API редактора памяти (R-63).
 
-- `MEMORY_HOTKEY_LABEL` — `ui/src/features/memory/index.ts:7` — —
-- `isMemoryHotkey` — `ui/src/features/memory/index.ts:10` — По `code`, а не `key`: в русской раскладке `key` для этой клавиши — «Н».
 - `MemoryPanel.svelte` — `ui/src/features/memory/MemoryPanel.svelte:1` — —
 
 ## ui/src/features/metrics
-Публичный API фичи метрик: панель и её горячая клавиша (R-63).
+Публичный API фичи метрик: панель (R-63).
 
-- `METRICS_HOTKEY_LABEL` — `ui/src/features/metrics/hotkey.ts:6` — —
-- `isMetricsHotkey` — `ui/src/features/metrics/hotkey.ts:11` — По `code`, а не `key`: в русской раскладке `key` для этой клавиши — «Ь».
 - `MetricsPanel.svelte` — `ui/src/features/metrics/MetricsPanel.svelte:1` — —
 - `Summary` — `ui/src/features/metrics/stats.ts:7` — —
 - `percentile` — `ui/src/features/metrics/stats.ts:28` — Перцентиль по ближайшему рангу: значение из выборки, без интерполяции — честно для малых n.
@@ -1155,11 +1158,6 @@
 - `percent` — `ui/src/features/onboarding/plan.ts:49` — —
 - `restartApp` — `ui/src/features/onboarding/restart.ts:7` — Модели подхватываются при старте ядра, поэтому после установки приложение перезапускается.
 
-## ui/src/features/privacy
-Публичный API приватного режима (R-63).
-
-- `PrivacyControl.svelte` — `ui/src/features/privacy/PrivacyControl.svelte:1` — —
-
 ## ui/src/features/radio
 Публичный API радио (ADR-0049, BEHAVIOR §8).
 
@@ -1183,15 +1181,13 @@
 - `saveRadio` — `ui/src/features/radio/stations.ts:108` — —
 
 ## ui/src/features/resources
-Публичный API фичи ресурсов: панель и её горячая клавиша (R-63).
+Публичный API фичи ресурсов: панель (R-63).
 
 - `HISTORY_POINTS` — `ui/src/features/resources/history.ts:9` — Снимок приходит раз в секунду: на графике пять минут.
 - `LoadHistory` — `ui/src/features/resources/history.ts:11` — —
 - `addSnapshot` — `ui/src/features/resources/history.ts:18` — —
 - `sparkline` — `ui/src/features/resources/history.ts:30` — Точки SVG `polyline`; новые — справа, вертикальный масштаб — от `maxMb`.
 - `stateLabel` — `ui/src/features/resources/history.ts:46` — —
-- `RESOURCES_HOTKEY_LABEL` — `ui/src/features/resources/index.ts:7` — —
-- `isResourcesHotkey` — `ui/src/features/resources/index.ts:10` — По `code`, а не `key`: в русской раскладке `key` для этой клавиши — «Г».
 - `ResourcesPanel.svelte` — `ui/src/features/resources/ResourcesPanel.svelte:1` — —
 
 ## ui/src/features/skills
@@ -1202,13 +1198,11 @@
 - `grouped` — `ui/src/features/skills/skills.ts:16` — Навыки по группам в порядке панели; поиск — по названию, описанию и примерам, без регистра.
 - `needsConfirm` — `ui/src/features/skills/skills.ts:35` — Включение навыка, который ходит в интернет, — только после явного «да» (NFR-06).
 - `statsLine` — `ui/src/features/skills/skills.ts:40` — Строка счётчиков: «сработал 3 раза · 12 мс · не успел 1»; не срабатывал — пусто.
-- `isSkillsHotkey` — `ui/src/features/skills/skills.ts:51` — Ctrl+Shift+K по `code`: в русской раскладке `key` у этой клавиши — «Л».
 - `SkillsPanel.svelte` — `ui/src/features/skills/SkillsPanel.svelte:1` — —
 
 ## ui/src/features/theme
 Публичный API оформления (ADR-0047; R-63): панель с цветовым кругом и применение темы при старте.
 
-- `isThemeHotkey` — `ui/src/features/theme/index.ts:8` — Ctrl+Shift+L («look») по `code`: в русской раскладке `key` у этой клавиши — «Д».
 - `Swatch` — `ui/src/features/theme/palette.ts:7` — Точка на круге: оттенок 0…360 и насыщенность 0…1.
 - `Theme` — `ui/src/features/theme/palette.ts:12` — —
 - `Preset` — `ui/src/features/theme/palette.ts:20` — —

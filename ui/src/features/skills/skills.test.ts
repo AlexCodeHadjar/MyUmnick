@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { messagesFor, type SkillData } from "../../core";
-import { grouped, groupOf, isSkillsHotkey, needsConfirm, statsLine } from "./skills";
+import { grouped, groupOf, needsConfirm, statsLine } from "./skills";
 
 function skill(id: string, extra: Partial<SkillData> = {}): SkillData {
   return {
@@ -55,11 +55,5 @@ describe("панель навыков", () => {
     expect(statsLine(skill("t", { uses: 3, average_ms: 12.4, timeouts: 1 }), t)).toBe(
       `${t.skills.uses(3)} · ${t.skills.ms(12)} · ${t.skills.timeouts(1)}`,
     );
-  });
-
-  it("Ctrl+Shift+K в любой раскладке", () => {
-    const base = { ctrlKey: true, shiftKey: true, altKey: false, metaKey: false };
-    expect(isSkillsHotkey({ ...base, code: "KeyK" })).toBe(true);
-    expect(isSkillsHotkey({ ...base, code: "KeyK", altKey: true })).toBe(false);
   });
 });

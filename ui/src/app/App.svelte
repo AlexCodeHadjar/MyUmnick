@@ -1,7 +1,6 @@
 <script lang="ts">
   import { locale } from "../core";
-  // Окно: чат слева, сцена с аватаром справа (FR-01), статус-бар внизу, панель метрик по горячей
-  // клавише (FR-15). Голос: плеер из фичи audio, его громкость — рот аватара (ADR-0003, R-63).
+  // Окно: чат слева, сцена с аватаром справа (FR-01), настройки под ней, панели — кнопками (FR-15). Голос: плеер из фичи audio, его громкость — рот аватара (ADR-0003, R-63).
   import { isTauri } from "@tauri-apps/api/core";
   import { onMount } from "svelte";
 
@@ -15,21 +14,21 @@
     saveView,
     type AvatarView,
   } from "../features/avatar";
-  import { Chat } from "../features/chat";
+  import { Chat, readSubtitles, writeSubtitles } from "../features/chat";
   import { ChatSidebar } from "../features/chats";
   import { EditionBadge } from "../features/edition";
   import { MicControl } from "../features/mic";
-  import { isMetricsHotkey, MetricsPanel } from "../features/metrics";
-  import { isMemoryHotkey, MemoryPanel } from "../features/memory";
-  import { isSkillsHotkey, SkillsPanel } from "../features/skills";
-  import { isThemeHotkey, ThemePanel } from "../features/theme";
-  import { CompanionMenu, startFeed } from "../features/companion";
+  import { MetricsPanel } from "../features/metrics";
+  import { MemoryPanel } from "../features/memory";
+  import { SkillsPanel } from "../features/skills";
+  import { ThemePanel } from "../features/theme";
+  import { CompanionMenu, CompanionReturn, startFeed } from "../features/companion";
   import { Onboarding } from "../features/onboarding";
-  import { PrivacyControl } from "../features/privacy";
   import { listenRadioCommands, RadioControl, RadioPlayer } from "../features/radio";
-  import { isResourcesHotkey, ResourcesPanel } from "../features/resources";
+  import { ResourcesPanel } from "../features/resources";
   import { restoreWindow } from "./restoreWindow";
   import SplitLayout from "./SplitLayout.svelte";
+  import StageBadges from "./StageBadges.svelte";
   import StatusBar from "./StatusBar.svelte";
 
   const { client, background = false }: { client: CoreClient; background?: boolean } = $props();
@@ -47,6 +46,8 @@
 
   // Вид показа справа (Этап 23): картинка персонажа или сфера — выбор в меню по правой кнопке.
   let avatarView = $state(loadView(layoutStorage()));
+  // Субтитры — значком в окошке персонажа, а действуют в чате (просьба пользователя 2026-11-18).
+  let subtitles = $state(readSubtitles(layoutStorage()));
   let stageHost: HTMLElement | undefined = $state();
   // Спутник и его меню есть только в оболочке Tauri, в браузере их нет.
   const desktopApp = isTauri();
@@ -94,15 +95,7 @@
     };
   });
 
-  const hints = $derived([
-    locale.t.metrics.hotkey,
-    locale.t.resources.hotkey,
-    locale.t.memory.hotkey,
-    locale.t.skills.hotkey,
-    locale.t.theme.hotkey,
-  ]);
-
-  /** Кнопки панелей в окне настроек: те же панели, что по горячим клавишам. */
+  /** Кнопки панелей в окне настроек. */
   const panelButtons = $derived([
     {
       id: "skills",
@@ -121,21 +114,21 @@
     {
       id: "memory",
       label: `🧠 ${locale.t.memory.title}`,
-      hint: locale.t.memory.hotkey,
+      hint: locale.t.memory.title,
       shown: showMemory,
       toggle: () => (showMemory = !showMemory),
     },
     {
       id: "metrics",
       label: `⏱ ${locale.t.metrics.region}`,
-      hint: locale.t.metrics.hotkey,
+      hint: locale.t.metrics.region,
       shown: showMetrics,
       toggle: () => (showMetrics = !showMetrics),
     },
     {
       id: "resources",
       label: `📊 ${locale.t.resources.title}`,
-      hint: locale.t.resources.hotkey,
+      hint: locale.t.resources.title,
       shown: showResources,
       toggle: () => (showResources = !showResources),
     },
@@ -148,22 +141,7 @@
 
   function onkeydown(event: KeyboardEvent): void {
     unlockAudio();
-    if (isMetricsHotkey(event)) {
-      event.preventDefault();
-      showMetrics = !showMetrics;
-    } else if (isMemoryHotkey(event)) {
-      event.preventDefault();
-      showMemory = !showMemory;
-    } else if (isSkillsHotkey(event)) {
-      event.preventDefault();
-      showSkills = !showSkills;
-    } else if (isThemeHotkey(event)) {
-      event.preventDefault();
-      showTheme = !showTheme;
-    } else if (isResourcesHotkey(event)) {
-      event.preventDefault();
-      showResources = !showResources;
-    } else if (event.key === "Escape" && !event.isComposing) {
+    if (event.key === "Escape" && !event.isComposing) {
       // Ход в ядре мог уже закончиться (кнопки «Стоп» нет), а голос ещё звучит — Esc его глушит.
       player?.cancel(null);
     }
@@ -186,7 +164,7 @@
     <ChatSidebar {client} storage={layoutStorage() ?? null} />
     <SplitLayout storage={layoutStorage()}>
       {#snippet left()}
-        <Chat {client} storage={layoutStorage()} />
+        <Chat {client} {subtitles} />
       {/snippet}
       {#snippet right()}
         <!-- Справа два окошка (просьба пользователя 2026-11-17): мордашка сверху, настройки под ней. -->
@@ -216,13 +194,24 @@
                 {/if}
               {/snippet}
             </CharacterControls>
+            <StageBadges
+              store={client.store}
+              {subtitles}
+              onsubtitles={() => {
+                subtitles = !subtitles;
+                writeSubtitles(layoutStorage(), subtitles);
+              }}
+            >
+              {#if desktopApp}
+                <CompanionReturn />
+              {/if}
+            </StageBadges>
           </section>
           <div class="card settings">
-            <StatusBar store={client.store} {hints}>
+            <StatusBar>
               <EditionBadge store={client.store} />
               <AmbientControl audio={systemAudio} storage={layoutStorage()} />
               <MicControl {client} storage={layoutStorage()} {background} />
-              <PrivacyControl {client} />
               {#snippet radio()}
                 <RadioControl player={radioPlayer} />
               {/snippet}
