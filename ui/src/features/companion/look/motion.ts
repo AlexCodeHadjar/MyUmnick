@@ -111,11 +111,12 @@ export class Motion {
     this.#fade = this.previous === null || this.#fadeS <= 0 ? 1 : 0;
   }
 
-  step(body: Body, dt: number): Pose2D {
+  /** `hold` — идёт переходная последовательность: разворот ждёт её конца (критик, раунд 6). */
+  step(body: Body, dt: number, hold = false): Pose2D {
     this.#fade = this.#fadeS <= 0 ? 1 : Math.min(1, this.#fade + dt / this.#fadeS);
     this.#swapT += dt;
     if (this.#fade >= 1 && this.swap === null) this.previous = null;
-    this.#turn(body.facing, dt);
+    if (!hold) this.#turn(body.facing, dt);
     this.#tilt(body, dt);
     this.#landing(body.phase, dt);
     const squash = Math.sin(Math.PI * this.#land) * (1 - this.#land);

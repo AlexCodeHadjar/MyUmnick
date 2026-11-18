@@ -241,7 +241,7 @@ export class CompanionStage {
     // Растворять ли кадры цикла, решает `SOFT_LOOPS` (motion.ts): ходьба, лазанье, танец — нет.
     const loopS = 1 / (LOOP_FPS[body.pose] ?? 6);
     this.#motion.frame(image, body.pose, this.#edge ? 0 : loopS);
-    const smooth = this.#motion.step(body, this.#lastDt);
+    const smooth = this.#motion.step(body, this.#lastDt, this.#transitionKey() !== null);
     ctx.translate(body.x, body.y - lift);
     ctx.rotate(smooth.lean);
     ctx.scale(smooth.scaleX, smooth.scaleY + breath);
