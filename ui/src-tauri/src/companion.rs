@@ -5,7 +5,7 @@
 
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use tauri::{
@@ -19,6 +19,7 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
 };
 
 use crate::desktop::{self, Rect, World};
+use crate::ghost::{self, DoubleClick};
 
 pub const LABEL: &str = "companion";
 const TICK: Duration = Duration::from_millis(16);
@@ -47,6 +48,8 @@ struct Shared {
     hit: Option<Hit>,
     /// Персонажа держат мышью: клики не отпускаем, даже если курсор убежал за прямоугольник.
     capture: bool,
+    /// «Не мешать кликам»: клики всегда сквозь слой, а двойной щелчок по `hit` возвращает обычный режим.
+    ghost: bool,
     host: Option<i64>,
     world: Option<World>,
 }
@@ -136,6 +139,7 @@ fn watch(app: &AppHandle, state: &CompanionState) {
     let mut last_main = None;
     let mut last_cursor = (f64::NAN, f64::NAN);
     let mut layer = Layer::default();
+    let mut double = DoubleClick::default();
     loop {
         thread::sleep(TICK);
         tick = tick.wrapping_add(1);
@@ -148,7 +152,7 @@ fn watch(app: &AppHandle, state: &CompanionState) {
             layer = Layer::of(&window);
         }
         if layer.visible {
-            passing = hit_test(&window, &layer, state, passing);
+            passing = hit_test(app, &window, &layer, state, passing, &mut double);
             if tick % CURSOR_EVERY == 0 {
                 last_cursor = publish_cursor(app, &layer, last_cursor);
             }
@@ -225,14 +229,33 @@ fn publish_cursor(app: &AppHandle, layer: &Layer, last: (f64, f64)) -> (f64, f64
     now
 }
 
-fn hit_test(window: &WebviewWindow, layer: &Layer, state: &CompanionState, passing: bool) -> bool {
-    let (hit, capture) = match state.0.lock() {
-        Ok(shared) => (shared.hit, shared.capture),
+/// Клики сквозь слой везде, кроме персонажа. В режиме «Не мешать кликам» — сквозь всегда, но двойной
+/// щелчок по персонажу шлёт слою `companion-wake`.
+fn hit_test(
+    app: &AppHandle,
+    window: &WebviewWindow,
+    layer: &Layer,
+    state: &CompanionState,
+    passing: bool,
+    double: &mut DoubleClick,
+) -> bool {
+    let (hit, capture, ghost_mode) = match state.0.lock() {
+        Ok(shared) => (shared.hit, shared.capture, shared.ghost),
         Err(_) => return passing,
     };
     let (x, y) = layer.cursor();
     let over = hit.is_some_and(|h| x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
-    let pass = !(over || capture);
+    if ghost_mode
+        && double.step(
+            ghost::left_down(),
+            over,
+            Instant::now(),
+            ghost::double_click_time(),
+        )
+    {
+        let _ = app.emit_to(LABEL, "companion-wake", ());
+    }
+    let pass = !((over && !ghost_mode) || capture);
     if pass != passing {
         let _ = window.set_ignore_cursor_events(pass);
     }
@@ -314,12 +337,18 @@ pub fn companion_set(app: AppHandle, state: tauri::State<'_, CompanionState>, vi
     }
 }
 
-/// Где персонаж (CSS-пиксели слоя) и держат ли его мышью.
+/// Где персонаж (CSS-пиксели слоя), держат ли его мышью и включено ли «Не мешать кликам».
 #[tauri::command]
-pub fn companion_hit(state: tauri::State<'_, CompanionState>, hit: Option<Hit>, capture: bool) {
+pub fn companion_hit(
+    state: tauri::State<'_, CompanionState>,
+    hit: Option<Hit>,
+    capture: bool,
+    ghost: bool,
+) {
     if let Ok(mut shared) = state.0.lock() {
         shared.hit = hit;
         shared.capture = capture;
+        shared.ghost = ghost;
     }
 }
 

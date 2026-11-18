@@ -143,6 +143,10 @@
       listen("companion-called", () => {
         controller.onCalled();
       }),
+      // Двойной щелчок по персонажу в режиме «Не мешать кликам» — снова можно трогать.
+      listen("companion-wake", () => {
+        if (settings.hologram) change({ hologram: false });
+      }),
       listen<[number, number]>("companion-cursor", (event) => {
         controller.onCursor(...event.payload);
       }),

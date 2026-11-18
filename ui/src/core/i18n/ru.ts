@@ -127,12 +127,6 @@ export const ru = {
     failed: (reason: string) => `Персонаж не загрузился: ${reason}`,
     noCanvas: "Canvas 2D недоступен в этом окне",
   },
-  desktop: {
-    pinnedOn: "Поверх окон: да",
-    pinnedOff: "Поверх окон: нет",
-    leave: "Обычный вид",
-    hotkey: "Ctrl+Shift+O — поверх стола",
-  },
   character: {
     drop: "Отпустите, чтобы сменить картинку персонажа",
     change: "Сменить картинку…",
@@ -153,7 +147,7 @@ export const ru = {
     stay: "Сидеть здесь",
     wander: "Гулять",
     size: "Рост",
-    hologram: "Не мешать кликам",
+    hologram: "Не мешать кликам (вернуть — двойной щелчок по нему)",
     calm: "Спокойнее: реже гуляет и говорит",
     openWindow: "Открыть окно",
     hide: "Спрятать",

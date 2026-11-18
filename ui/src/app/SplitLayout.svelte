@@ -17,12 +17,10 @@
     left,
     right,
     storage,
-    onlyRight = false,
   }: {
     left: Snippet;
     right: Snippet;
     storage: RatioStorage | undefined;
-    onlyRight?: boolean;
   } = $props();
 
   const ARROW_STEPS: Partial<Record<string, number>> = {
@@ -79,12 +77,8 @@
   class:dragging
   bind:this={container}
   bind:clientWidth={width}
-  class:only-right={onlyRight}
-  style:grid-template-columns={onlyRight
-    ? "0 1fr"
-    : `${String(effective)}fr 6px ${String(1 - effective)}fr`}
+  style:grid-template-columns={`${String(effective)}fr 6px ${String(1 - effective)}fr`}
 >
-  <!-- Поверх стола разделитель скрыт (display: none) и выпадает из сетки: колонок две, а не три. -->
   <div class="pane">{@render left()}</div>
   <!-- Фокусируемый separator — интерактивный виджет по WAI-ARIA (шаблон window splitter), а
        проверка Svelte считает separator неинтерактивным всегда. -->
@@ -129,10 +123,6 @@
     cursor: col-resize;
     background: var(--rule-dim);
     touch-action: none;
-  }
-
-  .only-right .divider {
-    display: none;
   }
 
   .divider:hover,

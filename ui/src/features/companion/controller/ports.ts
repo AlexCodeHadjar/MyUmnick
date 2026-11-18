@@ -10,8 +10,11 @@ import type { Rect, World } from "../space";
 export interface Ports {
   /** Показать или спрятать слой спутника. */
   setVisible(visible: boolean): Promise<void>;
-  /** Где персонаж (клики по нему не уходят сквозь слой) и держат ли его мышью. */
-  hit(hit: Rect | null, capture: boolean): void;
+  /**
+   * Где персонаж (клики по нему не уходят сквозь слой) и держат ли его мышью. `ghost` — «Не мешать
+   * кликам»: клики сквозь, но двойной щелчок по `hit` оболочка присылает как `companion-wake`.
+   */
+  hit(hit: Rect | null, capture: boolean, ghost: boolean): void;
   /** Окно, на котором он сидит: оболочка следит за его сдвигом. */
   attach(host: number | null): void;
   /** Видимые элементы активного окна или значки рабочего стола (ADR-0048, ADR-0052). */
@@ -28,8 +31,8 @@ export const tauriPorts: Ports = {
   async setVisible(visible) {
     await invoke("companion_set", { visible });
   },
-  hit(hit, capture) {
-    void invoke("companion_hit", { hit, capture });
+  hit(hit, capture, ghost) {
+    void invoke("companion_hit", { hit, capture, ghost });
   },
   attach(host) {
     void invoke("companion_attach", { host });

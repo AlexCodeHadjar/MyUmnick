@@ -606,6 +606,8 @@
 —
 
 - `App.svelte` — `ui/src/app/App.svelte:1` — —
+- `wasOverlay` — `ui/src/app/restoreWindow.ts:15` — Была ли включена старая запись «поверх стола».
+- `restoreWindow` — `ui/src/app/restoreWindow.ts:27` — —
 - `DEFAULT_RATIO` — `ui/src/app/split.ts:7` — Чат 2 : сцена 3 — как в каркасе S-5.1.
 - `MIN_CHAT_PX` — `ui/src/app/split.ts:9` — Уже — чат не читается, сцена теряет модель.
 - `MIN_STAGE_PX` — `ui/src/app/split.ts:10` — —
@@ -676,7 +678,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:508` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:502` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).
@@ -917,7 +919,7 @@
 - `GestureHooks` — `ui/src/features/companion/controller/gestures.ts:19` — —
 - `Gestures` — `ui/src/features/companion/controller/gestures.ts:28` — —
 - `Ports` — `ui/src/features/companion/controller/ports.ts:10` — —
-- `tauriPorts` — `ui/src/features/companion/controller/ports.ts:27` — —
+- `tauriPorts` — `ui/src/features/companion/controller/ports.ts:30` — —
 - `MainState` — `ui/src/features/companion/controller/presence.ts:10` — Главное окно: показано ли и в фокусе, где стоит (физические пиксели).
 - `Presence` — `ui/src/features/companion/controller/presence.ts:16` — —
 - `MediaChange` — `ui/src/features/companion/controller/scout.ts:26` — Смена состояния того, что играет: для реплик «пауза» / «продолжаем».
@@ -1076,23 +1078,6 @@
 - `World` — `ui/src/features/companion/space/world.ts:24` — —
 - `rectToCss` — `ui/src/features/companion/space/world.ts:32` — —
 - `worldToCss` — `ui/src/features/companion/space/world.ts:42` — Вся картина в CSS-пикселях слоя.
-
-## ui/src/features/desktop
-Публичный API режима «персонаж поверх рабочего стола» (S-15.2).
-
-- `POLL_MS` — `ui/src/features/desktop/clickThrough.ts:9` — 10 раз в секунду: реакция незаметна глазу, а обращения к оболочке не мешают рендеру (NFR-05).
-- `ClickThrough` — `ui/src/features/desktop/clickThrough.ts:13` — —
-- `DesktopOverlay.svelte` — `ui/src/features/desktop/DesktopOverlay.svelte:1` — Поверх стола видно только персонажа: кнопок нет. Обратно — двойной щелчок по персонажу или
-- `OVERLAY_SIZE` — `ui/src/features/desktop/mode.ts:11` — Размер небольшого окна с моделью, CSS-пиксели: модель видна целиком и не занимает экран.
-- `DesktopState` — `ui/src/features/desktop/mode.ts:13` — —
-- `Point` — `ui/src/features/desktop/mode.ts:18` — —
-- `WindowPort` — `ui/src/features/desktop/mode.ts:24` — Что режиму нужно от окна. Все вызовы асинхронны: это обращения к оболочке.
-- `DesktopStorage` — `ui/src/features/desktop/mode.ts:36` — Нужное от localStorage: в тестах — словарь.
-- `loadDesktop` — `ui/src/features/desktop/mode.ts:44` — Запись могла испортиться или устареть: тогда обычное окно, а не сюрприз при запуске.
-- `saveDesktop` — `ui/src/features/desktop/mode.ts:62` — —
-- `isDesktopHotkey` — `ui/src/features/desktop/mode.ts:67` — Хоткей: окно без рамки, а кнопка может оказаться за краем экрана.
-- `DESKTOP_HOTKEY_LABEL` — `ui/src/features/desktop/mode.ts:76` — —
-- `tauriWindow` — `ui/src/features/desktop/tauriWindow.ts:9` — —
 
 ## ui/src/features/edition
 Публичный API экрана выбора издания (Этап 20, R-63).

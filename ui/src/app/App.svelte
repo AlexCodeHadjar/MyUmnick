@@ -2,6 +2,7 @@
   import { locale } from "../core";
   // Окно: чат слева, сцена с аватаром справа (FR-01), статус-бар внизу, панель метрик по горячей
   // клавише (FR-15). Голос: плеер из фичи audio, его громкость — рот аватара (ADR-0003, R-63).
+  import { isTauri } from "@tauri-apps/api/core";
   import { onMount } from "svelte";
 
   import type { CoreClient } from "../core";
@@ -16,14 +17,6 @@
   } from "../features/avatar";
   import { Chat } from "../features/chat";
   import { ChatSidebar } from "../features/chats";
-  import {
-    DesktopOverlay,
-    isDesktopHotkey,
-    loadDesktop,
-    saveDesktop,
-    tauriWindow,
-    type Point,
-  } from "../features/desktop";
   import { EditionBadge } from "../features/edition";
   import { MicControl } from "../features/mic";
   import { isMetricsHotkey, MetricsPanel } from "../features/metrics";
@@ -35,10 +28,9 @@
   import { PrivacyControl } from "../features/privacy";
   import { listenRadioCommands, RadioControl, RadioPlayer } from "../features/radio";
   import { isResourcesHotkey, ResourcesPanel } from "../features/resources";
+  import { restoreWindow } from "./restoreWindow";
   import SplitLayout from "./SplitLayout.svelte";
   import StatusBar from "./StatusBar.svelte";
-
-  type HitTest = (x: number, y: number) => boolean;
 
   const { client, background = false }: { client: CoreClient; background?: boolean } = $props();
 
@@ -56,33 +48,14 @@
   // Вид показа справа (Этап 23): картинка персонажа или сфера — выбор в меню по правой кнопке.
   let avatarView = $state(loadView(layoutStorage()));
   let stageHost: HTMLElement | undefined = $state();
-  // Вне Tauri такого окна нет: режим и кнопка просто отсутствуют.
-  const desktopPort = tauriWindow();
-  let desktop = $state(loadDesktop(layoutStorage()));
-  const overlay = $derived(desktopPort !== null && desktop.overlay);
-  // Не реактивна: опрашивается таймером, сцена даёт её один раз при создании.
-  let overModel: HitTest = () => false;
+  // Спутник и его меню есть только в оболочке Tauri, в браузере их нет.
+  const desktopApp = isTauri();
   // Не реактивен: рот опрашивается каждый кадр из цикла аватара, а не через Svelte (R-66).
   let player: VoicePlayer | null = null;
 
-  // Чат и сцена остаются смонтированными: возврат мгновенный, модель не загружается заново.
-  $effect(() => {
-    document.documentElement.classList.toggle("desktop-overlay", overlay);
-  });
-
-  function changeDesktop(next: typeof desktop): void {
-    const entering = next.overlay && !desktop.overlay;
-    const leaving = !next.overlay && desktop.overlay;
-    desktop = next;
-    saveDesktop(layoutStorage(), next);
-    if (entering) void desktopPort?.enterOverlay(next.pinned);
-    else if (leaving) void desktopPort?.leaveOverlay();
-    else void desktopPort?.setPinned(next.overlay && next.pinned);
-  }
-
   onMount(() => {
-    // Прошлый запуск закончился поверх стола: окно создаётся обычным.
-    if (overlay) void desktopPort?.enterOverlay(desktop.pinned);
+    // Режим «поверх стола» удалён (просьба пользователя 2026-11-18): окно, оставшееся без рамки, — обычным.
+    if (desktopApp) void restoreWindow(layoutStorage());
     let disposed = false;
     connectVoice(client)
       .then((created) => {
@@ -97,20 +70,18 @@
         console.warn("[audio] плеер не создан", error);
       });
     // Спутнику — речь и эмоция (Этап 23): к ядру он не подключается.
-    const stopFeed =
-      desktopPort === null
-        ? null
-        : startFeed(
-            client,
-            (dt) => player?.mouth(dt) ?? 0,
-            (time) => radioPlayer.feed(time),
-          );
-    const stopCommands =
-      desktopPort === null
-        ? null
-        : listenRadioCommands((command) => {
-            radioPlayer.command(command);
-          });
+    const stopFeed = !desktopApp
+      ? null
+      : startFeed(
+          client,
+          (dt) => player?.mouth(dt) ?? 0,
+          (time) => radioPlayer.feed(time),
+        );
+    const stopCommands = !desktopApp
+      ? null
+      : listenRadioCommands((command) => {
+          radioPlayer.command(command);
+        });
     return () => {
       disposed = true;
       stopFeed?.();
@@ -129,7 +100,6 @@
     locale.t.memory.hotkey,
     locale.t.skills.hotkey,
     locale.t.theme.hotkey,
-    ...(desktopPort === null ? [] : [locale.t.desktop.hotkey]),
   ]);
 
   /** Кнопки панелей в окне настроек: те же панели, что по горячим клавишам. */
@@ -181,9 +151,6 @@
     if (isMetricsHotkey(event)) {
       event.preventDefault();
       showMetrics = !showMetrics;
-    } else if (desktopPort !== null && isDesktopHotkey(event)) {
-      event.preventDefault();
-      changeDesktop({ ...desktop, overlay: !desktop.overlay });
     } else if (isMemoryHotkey(event)) {
       event.preventDefault();
       showMemory = !showMemory;
@@ -202,13 +169,6 @@
     }
   }
 
-  /** Двойной щелчок по персонажу — поверх стола и обратно (то же, что Ctrl+Shift+O). */
-  function ondblclick(event: MouseEvent): void {
-    if (desktopPort !== null && overModel(event.clientX, event.clientY)) {
-      changeDesktop({ ...desktop, overlay: !desktop.overlay });
-    }
-  }
-
   /** localStorage недоступен (политика WebView, приватный режим) — ширина просто не запомнится. */
   function layoutStorage(): Storage | undefined {
     try {
@@ -219,30 +179,22 @@
   }
 </script>
 
-<svelte:window {onkeydown} {ondblclick} onpointerdown={unlockAudio} />
+<svelte:window {onkeydown} onpointerdown={unlockAudio} />
 
 <main class="app">
-  {#if overlay && desktopPort !== null}
-    <DesktopOverlay port={desktopPort} overModel={(point: Point) => overModel(point.x, point.y)} />
-  {/if}
   <div class="workspace">
-    {#if !overlay}
-      <ChatSidebar {client} storage={layoutStorage() ?? null} />
-    {/if}
-    <SplitLayout storage={layoutStorage()} onlyRight={overlay}>
+    <ChatSidebar {client} storage={layoutStorage() ?? null} />
+    <SplitLayout storage={layoutStorage()}>
       {#snippet left()}
         <Chat {client} storage={layoutStorage()} />
       {/snippet}
       {#snippet right()}
         <!-- Справа два окошка (просьба пользователя 2026-11-17): мордашка сверху, настройки под ней. -->
-        <div class="side" class:overlay>
+        <div class="side">
           <section class="stage card" aria-label={locale.t.app.stage} bind:this={stageHost}>
             <!-- Смена вида пересоздаёт сцену: у каждого вида свой рендер. -->
             {#key avatarView}
               <AvatarStage
-                onhittest={(contains: HitTest) => {
-                  overModel = contains;
-                }}
                 view={avatarView}
                 store={client.store}
                 mouth={(deltaMs: number) => player?.mouth(deltaMs) ?? 0}
@@ -259,14 +211,13 @@
               }}
             >
               {#snippet extra(close: () => void, note: (text: string) => void)}
-                {#if desktopPort !== null}
+                {#if desktopApp}
                   <CompanionMenu onclose={close} onnote={note} />
                 {/if}
               {/snippet}
             </CharacterControls>
           </section>
-          <!-- Скрыто, а не снято: микрофон продолжает слушать и поверх стола. -->
-          <div class="card settings" class:hidden={overlay}>
+          <div class="card settings">
             <StatusBar store={client.store} {hints}>
               <EditionBadge store={client.store} />
               <AmbientControl audio={systemAudio} storage={layoutStorage()} />
@@ -357,16 +308,6 @@
     color: var(--text);
   }
 
-  /* Прозрачно только поверх стола: у обычного окна фон свой, хоть само окно и прозрачное. */
-  :global(html.desktop-overlay),
-  :global(html.desktop-overlay body) {
-    background: transparent;
-  }
-
-  .hidden {
-    display: none;
-  }
-
   .app {
     display: grid;
     grid-template-rows: minmax(0, 1fr);
@@ -394,22 +335,12 @@
     box-sizing: border-box;
   }
 
-  .side.overlay {
-    grid-template-rows: minmax(0, 1fr);
-    padding: 0;
-  }
-
   .card {
     min-height: 0;
     border: 1px solid var(--rule-dim);
     border-radius: 12px;
     background: color-mix(in srgb, var(--panel) 70%, transparent);
     overflow: hidden;
-  }
-
-  .side.overlay .card {
-    border: none;
-    background: transparent;
   }
 
   .settings {

@@ -7,6 +7,7 @@ use tauri::Manager;
 mod background;
 mod companion;
 mod desktop;
+mod ghost;
 mod launcher;
 mod media;
 mod system_audio;

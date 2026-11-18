@@ -110,12 +110,6 @@ export const en: Messages = {
     failed: (reason: string) => `The character failed to load: ${reason}`,
     noCanvas: "Canvas 2D is not available in this window",
   },
-  desktop: {
-    pinnedOn: "Always on top: yes",
-    pinnedOff: "Always on top: no",
-    leave: "Normal view",
-    hotkey: "Ctrl+Shift+O — on the desktop",
-  },
   character: {
     drop: "Drop to change the character picture",
     change: "Change picture…",
@@ -136,7 +130,7 @@ export const en: Messages = {
     stay: "Stay here",
     wander: "Wander",
     size: "Height",
-    hologram: "Let clicks through",
+    hologram: "Let clicks through (double-click it to undo)",
     calm: "Calmer: walks and talks less",
     openWindow: "Open the window",
     hide: "Hide",

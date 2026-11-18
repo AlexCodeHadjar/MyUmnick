@@ -425,14 +425,18 @@ export class CompanionController {
   #sendHit(view: { menuOpen: boolean; card: Rect | null }): void {
     const box = this.stage?.bounds ?? null;
     const capture = this.gestures.active || view.menuOpen;
-    const hit = this.settings.hologram || box === null ? null : union(box, view.card);
+    // «Не мешать кликам»: прямоугольник всё равно шлём — по нему оболочка узнаёт двойной щелчок,
+    // которым режим выключается (просьба пользователя 2026-11-18: иначе персонажа не вернуть).
+    const ghost = this.settings.hologram;
+    const hit = box === null ? null : union(box, view.card);
     const key = JSON.stringify([
       hit && [Math.round(hit.x), Math.round(hit.y), Math.round(hit.w)],
       capture,
+      ghost,
     ]);
     if (key === this.#lastHit) return;
     this.#lastHit = key;
-    this.#ports.hit(hit, capture);
+    this.#ports.hit(hit, capture && !ghost, ghost);
   }
 
   #syncHost(): void {

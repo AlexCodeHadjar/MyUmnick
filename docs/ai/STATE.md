@@ -151,7 +151,7 @@ _Обновлено: 2026-11-17, Этап 24 — карманный Умник_
 - [x] S-18.1 Картинка от пользователя: `Message.images`, `chat.send_image`, `[llama_server].mmproj`, ADR-0024; замеры ждут аренды
 - [x] S-18.3 Липсинк по спектру: `features/audio/viseme.ts`, `mapping.json` → `lipsync`, ADR-0023; на настоящем голосе не проверено
 - [x] S-18.4 Жесты: `Gesture`, `GestureCue`, `avatar.gesture`, `mapping.json` → `gestures`, `tools/eval_gesture.py`; замер ждёт модели
-- [x] S-15.2 Поверх стола: `ui/src/features/desktop/`, прозрачное окно, клики сквозь пустоту; вживую не проверено
+- [x] S-15.2 Поверх стола — удалён 2026-11-18 (ADR-0045, дополнение): его заменил спутник
 - [x] S-15.1 Инициативные реплики: `application/conversation/initiative.py`, `[initiative]` (выключено), `window.visibility`
 - [x] S-16.3 Поиск: `plugins/web_search/` (локальный SearXNG), `ContextTool` со своим сроком, `chat.sources`, ADR-0022
 

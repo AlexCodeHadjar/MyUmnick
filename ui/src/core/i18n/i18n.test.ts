@@ -17,7 +17,12 @@ const ALLOWED = new Set([
   // Имя и подпись плитки — на языке своего издания: язык ещё не выбран.
   "features/edition/editions.ts",
   "features/chat/image.ts",
+  // Спутник: слова для узнавания русских сайтов и корзины в названиях окон, ошибка для разработчика.
+  "features/companion/senses/sites.ts",
+  "features/companion/behavior/habits.ts",
+  "features/companion/mind/arbiter.ts",
 ]);
+// Наборы фраз русского издания (`*.ru.ts`) — словарь, как `ru.ts`.
 
 // Исходники как текст через Vite: без node-типов (их в UI нет, ADR-0010).
 const FILES = import.meta.glob<string>(
@@ -54,7 +59,7 @@ function keysOf(value: object, prefix = ""): string[] {
 describe("i18n", () => {
   it("UI has no Russian strings outside the dictionary", () => {
     const offenders = Object.entries(FILES)
-      .filter(([path]) => !ALLOWED.has(fromSrc(path)))
+      .filter(([path]) => !ALLOWED.has(fromSrc(path)) && !path.endsWith(".ru.ts"))
       .flatMap(([path, text]) =>
         visibleLines(text).map((line) => `${fromSrc(path)}: ${line.trim()}`),
       );
