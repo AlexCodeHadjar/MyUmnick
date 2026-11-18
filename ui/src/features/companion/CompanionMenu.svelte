@@ -8,6 +8,17 @@
 
   let when = $state<CompanionWhen>(loadSettings(window.localStorage).when);
   let folder: HTMLInputElement | undefined = $state();
+  let hologram = $state(loadSettings(window.localStorage).hologram);
+
+  /**
+   * «Не мешать кликам» — и здесь: в этом режиме клики, включая правый, проходят сквозь спутника, и его
+   * собственное меню не открыть (баг 2026-11-18) — вернуть обычный режим можно из главного окна.
+   */
+  function toggleHologram(): void {
+    hologram = !hologram;
+    saveSettings(window.localStorage, { ...loadSettings(window.localStorage), hologram });
+    onclose();
+  }
 
   function choose(next: CompanionWhen): void {
     when = next;
@@ -44,6 +55,9 @@
     }}>{when === value ? "● " : "○ "}{label}</button
   >
 {/each}
+<button type="button" role="menuitemcheckbox" aria-checked={hologram} onclick={toggleHologram}
+  >{hologram ? "☑ " : "☐ "}{locale.t.companion.hologram}</button
+>
 <button
   type="button"
   role="menuitem"
