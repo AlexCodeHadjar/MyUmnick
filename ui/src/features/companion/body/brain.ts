@@ -480,9 +480,6 @@ export class Brain {
   }
 
   #rest(spot: Spot): void {
-    // Пришёл и садится — сначала на миг встал (критик, раунд 3): «шёл → сел» без стойки — скачок.
-    const arriving = this.phase === "walk" || this.phase === "jump" || this.phase === "fall";
-    const sits = spot.pose !== "stand" && spot.pose !== "walk" && spot.pose !== "hang_side";
     this.#climb = null;
     this.phase = "rest";
     this.#spot = spot;
@@ -500,7 +497,6 @@ export class Brain {
         : surface.kind === "side"
           ? spot.x - surface.x
           : 0;
-    if (arriving && sits) this.#emote = { pose: "stand", left: 0.15 };
   }
 
   #hostLeft(surface: Surface): number {

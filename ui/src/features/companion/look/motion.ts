@@ -130,7 +130,8 @@ export class Motion {
   }
 
   #narrowest(): number {
-    return this.#currentPose !== null && WIDE.has(this.#currentPose) ? 0.6 : 0.08;
+    // Не уже 0,35: иначе на миг «исчезает» (критик, раунд 5); широкие позы — не уже 0,6.
+    return this.#currentPose !== null && WIDE.has(this.#currentPose) ? 0.6 : 0.35;
   }
 
   /** Разворот с замедлением — через узкую фигуру, как поворот, а не зеркало. */
