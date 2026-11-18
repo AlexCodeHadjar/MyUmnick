@@ -127,6 +127,13 @@ export class CompanionStage {
   #lastDt = 0;
   #lastPose: Pose | null = null;
   #transition: { keys: { key: string; s: number }[]; t: number } | null = null;
+  /** Рисовался ли прошлый кадр (меняет `#figure`; метод — чтобы анализ типов не «помнил» false). */
+  #previousDrawn(): boolean {
+    return this.#drewPrevious;
+  }
+
+  /** В этом кадре рисовался прошлый кадр — чистить весь холст. */
+  #drewPrevious = false;
   /** Этот кадр — граница перехода: без растворения цикла. */
   #edge = false;
   /** Показанное свечение — плавно догоняет `look.attention`. */
@@ -142,6 +149,7 @@ export class CompanionStage {
     if (dirty !== null) ctx.clearRect(dirty.x, dirty.y, dirty.w, dirty.h);
     this.bounds = null;
     let area: Rect | null = null;
+    this.#drewPrevious = false;
     if (body.phase !== "hidden" && body.scale > 0.01) area = this.#figure(body, look);
     if (body.phase === "portal_out" || body.phase === "portal_in") {
       this.#portalAt = this.#centerOf(body, look);
@@ -158,6 +166,10 @@ export class CompanionStage {
       drawEffects(ctx, effects, look.hue, Math.floor(this.#seed / 2));
       area = { x: 0, y: 0, w: this.#canvas.width, h: this.#canvas.height };
     }
+    // Прошлый кадр (растворение, смена позы) рисуется со своей точкой опоры и размером — он может выйти за
+    // рамку нового. Тогда чистим весь холст в следующем кадре, иначе при быстром перетаскивании оставались
+    // обрывки персонажа (баг 2026-11-18).
+    if (this.#previousDrawn()) area = { x: 0, y: 0, w: this.#canvas.width, h: this.#canvas.height };
     this.#dirty = area === null ? null : grow(area, 40);
   }
 
@@ -255,6 +267,7 @@ export class CompanionStage {
     }
     const previous = this.#motion.previous;
     const swap = this.#motion.swap;
+    this.#drewPrevious = previous !== null && (swap !== null || this.#motion.fadeLeft > 0.01);
     if (swap?.phase === "out" && previous !== null) {
       // Смена позы, «выдох»: старая поза приседает и гаснет (своя точка опоры), новой ещё нет.
       ctx.scale(1, 1 - 0.08 * swap.k);

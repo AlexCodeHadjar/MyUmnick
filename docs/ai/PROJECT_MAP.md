@@ -935,10 +935,10 @@
 - `along` — `ui/src/features/companion/look/effects.ts:63` — Точка на ломаной на доле `t` её длины — где сейчас разряд.
 - `drawBolt` — `ui/src/features/companion/look/effects.ts:97` — Молния тремя проходами: широкое свечение, мягкая линия, яркая сердцевина.
 - `drawEffects` — `ui/src/features/companion/look/effects.ts:277` — Нарисовать эффекты тела; `seed` меняется 30 раз в секунду — молния «живёт».
-- `SOFT_LOOPS` — `ui/src/features/companion/look/motion.ts:27` — Циклы, где кадры отличаются только телом: в них растворение уместно. Лицо меняется — резко.
-- `Swap` — `ui/src/features/companion/look/motion.ts:43` — Этап смены позы: старая уходит (`out`) или новая приходит (`in`), `k` — 0…1.
-- `Pose2D` — `ui/src/features/companion/look/motion.ts:48` — —
-- `Motion` — `ui/src/features/companion/look/motion.ts:57` — —
+- `SOFT_LOOPS` — `ui/src/features/companion/look/motion.ts:30` — Циклы, где кадры отличаются только телом: в них растворение уместно. Лицо меняется — резко. «Держат» и
+- `Swap` — `ui/src/features/companion/look/motion.ts:44` — Этап смены позы: старая уходит (`out`) или новая приходит (`in`), `k` — 0…1.
+- `Pose2D` — `ui/src/features/companion/look/motion.ts:49` — —
+- `Motion` — `ui/src/features/companion/look/motion.ts:58` — —
 - `FALLBACK` — `ui/src/features/companion/look/pack.ts:10` — Замены отсутствующей позы, в порядке предпочтения; всё кончается позой `stand`.
 - `ANCHORS` — `ui/src/features/companion/look/pack.ts:38` — Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот».
 - `CANVAS_RATIO` — `ui/src/features/companion/look/pack.ts:67` — Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз.

@@ -23,7 +23,10 @@ const WIDE: ReadonlySet<Pose> = new Set([
   "watch",
   "jukebox",
 ]);
-/** Циклы, где кадры отличаются только телом: в них растворение уместно. Лицо меняется — резко. */
+/**
+ * Циклы, где кадры отличаются только телом: в них растворение уместно. Лицо меняется — резко. «Держат» и
+ * «летит» — без растворения: там болтаются ноги, и растворение давало две пары ног (баг 2026-11-18).
+ */
 export const SOFT_LOOPS: ReadonlySet<Pose> = new Set([
   "stand",
   "sit_edge",
@@ -33,8 +36,6 @@ export const SOFT_LOOPS: ReadonlySet<Pose> = new Set([
   "sit_corner",
   "laydown",
   "sleep",
-  "held",
-  "float",
   "radio_idle",
   "jukebox",
 ]);
