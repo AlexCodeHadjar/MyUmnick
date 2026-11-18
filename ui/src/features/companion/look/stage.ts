@@ -8,8 +8,15 @@ import type { Body } from "../body";
 import { drawEffects } from "./effects";
 import { ANCHORS, CANVAS_RATIO, FALLBACK, LOOP_FPS, loadPoses, pickFrame, sequence } from "./pack";
 
-/** Переходные кадры между позами (`<из>_to_<в>_1…N`, FRAMES-4.md) — 12 кадров/с. */
+/** Переходные кадры между позами (`<из>_to_<в>_1…N`, FRAMES-4.md): 12 кадров/с, тяжёлые подъёмы — 8. */
 const TRANSITION_FPS = 12;
+const SLOW_TRANSITION: ReadonlyMap<string, number> = new Map([
+  ["laydown_to_stand", 8],
+  ["sit_edge_to_stand", 8],
+  ["float_to_stand", 10],
+]);
+/** Последний кадр перехода держится чуть дольше: подъём «доходит» (критик, раунд 4). */
+const TRANSITION_HOLD_S = 0.04;
 import { Motion } from "./motion";
 import { drawPanel, panelRect } from "./panel";
 import { placeholderPose } from "./placeholder";
@@ -110,12 +117,7 @@ export class CompanionStage {
       speaking: look.speaking && !sleeping && petting === 0,
       blink,
     };
-    const transition = this.#transition;
-    const step = transition === null ? -1 : Math.floor(transition.t * TRANSITION_FPS);
-    const key =
-      transition !== null && step < transition.keys.length
-        ? (transition.keys[step] ?? null)
-        : pickFrame(pose, state, this.#keys);
+    const key = this.#transitionKey() ?? pickFrame(pose, state, this.#keys);
     this.#frameKey = key;
     if (key !== null) return this.#poses.get(key) ?? null;
     const fallback = [pose, ...FALLBACK[pose]].find((one) => this.#placeholders.has(one));
@@ -124,7 +126,9 @@ export class CompanionStage {
 
   #lastDt = 0;
   #lastPose: Pose | null = null;
-  #transition: { keys: string[]; t: number } | null = null;
+  #transition: { keys: { key: string; s: number }[]; t: number } | null = null;
+  /** Этот кадр — граница перехода: без растворения цикла. */
+  #edge = false;
   /** Показанное свечение — плавно догоняет `look.attention`. */
   #glow = 0;
 
@@ -159,15 +163,43 @@ export class CompanionStage {
 
   /** Поза сменилась: есть переходные кадры («из_to_в» или обратные «в_to_из» задом наперёд) — сыграть. */
   #transit(pose: Pose, dt: number): void {
+    const was = this.#transitionKey();
     if (this.#transition !== null) this.#transition.t += dt;
+    // Вход в переход и выход из него — без растворения цикла: переход сам и есть сглаживание.
+    this.#edge = was !== this.#transitionKey();
     if (pose === this.#lastPose) return;
     const from = this.#lastPose;
     this.#lastPose = pose;
     if (from === null) return;
-    const forward = sequence(`${from}_to_${pose}`, this.#keys);
+    // Прямого перехода нет — через стойку (критик: «потягивается → машет» без перехода).
+    const direct = this.#path(from, pose);
     const keys =
-      forward.length > 0 ? forward : sequence(`${pose}_to_${from}`, this.#keys).reverse();
+      direct.length > 0 || from === "stand" || pose === "stand"
+        ? direct
+        : [...this.#path(from, "stand"), ...this.#path("stand", pose)];
     this.#transition = keys.length > 0 ? { keys, t: 0 } : null;
+    this.#edge = this.#edge || this.#transition !== null;
+  }
+
+  /** Кадры перехода `from → to`: прямые или обратные задом наперёд; каждый — со своей частотой. */
+  #path(from: Pose, to: Pose): { key: string; s: number }[] {
+    const forward = sequence(`${from}_to_${to}`, this.#keys);
+    const name = forward.length > 0 ? `${from}_to_${to}` : `${to}_to_${from}`;
+    const keys = forward.length > 0 ? forward : sequence(name, this.#keys).reverse();
+    const s = 1 / (SLOW_TRANSITION.get(name) ?? TRANSITION_FPS);
+    return keys.map((key, i) => ({ key, s: i === keys.length - 1 ? s + TRANSITION_HOLD_S : s }));
+  }
+
+  /** Кадр перехода сейчас или `null`. */
+  #transitionKey(): string | null {
+    const transition = this.#transition;
+    if (transition === null) return null;
+    let t = transition.t;
+    for (const one of transition.keys) {
+      if (t < one.s) return one.key;
+      t -= one.s;
+    }
+    return null;
   }
 
   /** Нарисовать кадр позы `pose` высотой `h` относительно уже сдвинутой в точку опоры системы. */
@@ -208,7 +240,7 @@ export class CompanionStage {
     ctx.save();
     // Растворять ли кадры цикла, решает `SOFT_LOOPS` (motion.ts): ходьба, лазанье, танец — нет.
     const loopS = 1 / (LOOP_FPS[body.pose] ?? 6);
-    this.#motion.frame(image, body.pose, loopS);
+    this.#motion.frame(image, body.pose, this.#edge ? 0 : loopS);
     const smooth = this.#motion.step(body, this.#lastDt);
     ctx.translate(body.x, body.y - lift);
     ctx.rotate(smooth.lean);

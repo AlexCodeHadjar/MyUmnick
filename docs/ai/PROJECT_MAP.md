@@ -957,8 +957,8 @@
 - `panelRect` — `ui/src/features/companion/look/panel.ts:12` — Прямоугольник табло на экране по рамке нарисованного кадра.
 - `drawPanel` — `ui/src/features/companion/look/panel.ts:22` — Написать `text` на табло; не влезает — медленно бежит по кругу (`time` — секунды).
 - `placeholderPose` — `ui/src/features/companion/look/placeholder.ts:261` — Силуэт позы: широкие линии с градиентом палитры окна, круг головы, подпись с именем позы.
-- `Look` — `ui/src/features/companion/look/stage.ts:35` — —
-- `CompanionStage` — `ui/src/features/companion/look/stage.ts:48` — —
+- `Look` — `ui/src/features/companion/look/stage.ts:42` — —
+- `CompanionStage` — `ui/src/features/companion/look/stage.ts:55` — —
 
 ## ui/src/features/companion/mind
 «Разум» спутника (MIND.md, ADR-0051): картина мира со сглаживанием, потребности, стимулы, арбитр
