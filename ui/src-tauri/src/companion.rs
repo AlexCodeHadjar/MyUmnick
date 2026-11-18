@@ -120,7 +120,10 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
     let state = CompanionState::default();
     app.manage(state.clone());
     let handle = app.handle().clone();
+    let typing = handle.clone();
     thread::spawn(move || watch(&handle, &state));
+    // Где пользователь печатает — свой поток: UI Automation может ждать ответа программы.
+    thread::spawn(move || crate::typing::watch(typing));
     Ok(())
 }
 

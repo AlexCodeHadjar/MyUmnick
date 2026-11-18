@@ -162,6 +162,30 @@ pub fn targets(hwnd: isize, covers: &[Rect]) -> Vec<Target> {
     walk(&walker, root).into_iter().filter(visible).collect()
 }
 
+/// Рамка элемента в фокусе (поле ввода) — где пользователь печатает, если программа не ставит системную
+/// каретку (`typing.rs`). Физические пиксели экрана.
+pub fn focused_rect() -> Option<Rect> {
+    // SAFETY: COM в этом потоке; повторная инициализация безвредна (S_FALSE).
+    let _ = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) };
+    // SAFETY: создание UI Automation и чтение рамки элемента в фокусе.
+    unsafe {
+        let automation: IUIAutomation =
+            CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER).ok()?;
+        let r = automation
+            .GetFocusedElement()
+            .ok()?
+            .CurrentBoundingRectangle()
+            .ok()?;
+        let rect = Rect {
+            x: r.left,
+            y: r.top,
+            w: r.right - r.left,
+            h: r.bottom - r.top,
+        };
+        (rect.w > 0 && rect.h > 0).then_some(rect)
+    }
+}
+
 #[cfg(test)]
 mod live {
     #[test]

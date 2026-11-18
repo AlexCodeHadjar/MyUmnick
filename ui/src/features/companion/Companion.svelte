@@ -159,6 +159,9 @@
       listen("companion-wake", () => {
         if (settings.hologram) change({ hologram: false });
       }),
+      listen<Rect | null>("companion-typing", (event) => {
+        controller.onTyping(event.payload);
+      }),
       listen<[number, number]>("companion-cursor", (event) => {
         controller.onCursor(...event.payload);
       }),

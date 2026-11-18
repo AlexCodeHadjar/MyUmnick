@@ -10,6 +10,7 @@ import type { ActivityId, Mind, Senses, VoiceKind } from "../mind";
 import { watchPhrases } from "../phrases";
 import { choosePoke, findTarget, quotedNames, remark } from "../senses";
 import { floorSpot, followSpot, hostOf, snap } from "../space";
+import type { Escort } from "./escort";
 import type { Presence } from "./presence";
 import type { Scout } from "./scout";
 
@@ -22,6 +23,7 @@ export interface ConductorParts {
   life: Life;
   scout: Scout;
   presence: Presence;
+  escort: Escort;
 }
 
 /** Что от контроллера нужно для картины кадра. */
@@ -51,6 +53,7 @@ export class Conductor {
   #lastPhase = "hidden";
   #lastLine = "";
   #watchSince = 0;
+  #behavior: Senses["behavior"] = "follow";
 
   constructor(parts: ConductorParts, speak: Speak) {
     this.#p = parts;
@@ -61,6 +64,17 @@ export class Conductor {
   update(now: number, situation: Situation): void {
     const { brain, mind } = this.#p;
     this.#lastLine = situation.lastLine;
+    this.#behavior = situation.behavior;
+    // За курсором и прочь от поля ввода (2026-11-18) — до «Разума»: это ответ на действия пользователя.
+    const free =
+      this.#p.presence.shown &&
+      brain.phase === "rest" &&
+      !situation.holding &&
+      !this.poking &&
+      !brain.watching &&
+      !brain.quiet &&
+      brain.music !== "playing";
+    this.#p.escort.update(now, { follow: situation.behavior === "follow", free });
     const choice = mind.update(now / 1000, this.#senses(now, situation));
     if (choice !== null) this.#act(choice.id, choice.previous, now);
     if (this.#cornerPending && brain.phase === "rest" && !situation.holding) {
@@ -151,11 +165,19 @@ export class Conductor {
     this.#speak(pickOne(locale.t.companion.triggers.play), "reaction");
   }
 
-  /** К активному окну; `always` — даже если уже на нём (вернуться из угла). */
+  /**
+   * «Следовать»: в режиме «следовать за мной» — к курсору, иначе к активному окну; `always` — даже если
+   * уже там (вернуться из угла).
+   */
   #follow(always = false): void {
-    const { brain, presence } = this.#p;
+    const { brain, presence, escort } = this.#p;
     const world = presence.world;
     if (world === null) return;
+    const near = this.#behavior === "follow" ? escort.target() : null;
+    if (near !== null) {
+      brain.goTo(near);
+      return;
+    }
     const spot = followSpot(world, brain.surfaceList, world.focus);
     if (spot !== null && (always || hostOf(spot) !== hostOf(brain.spot))) brain.goTo(spot);
   }

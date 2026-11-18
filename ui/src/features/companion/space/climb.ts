@@ -18,6 +18,8 @@ export interface Climb {
   target: Spot;
   /** Спуск: сползает по боку с крыши окна вниз (COMPANION.md, этап 2). */
   down?: boolean;
+  /** Остаться на стене в `target` (за курсором, 2026-11-18), а не перелезать на крышу. */
+  stay?: boolean;
 }
 
 /**

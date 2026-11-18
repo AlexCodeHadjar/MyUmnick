@@ -11,6 +11,7 @@ import {
   snap,
   spotOn,
   surfaces,
+  wallX,
   type Pose,
   type Spot,
   type Surface,
@@ -223,13 +224,29 @@ export class Brain {
     if (this.phase === "held" || this.phase === "hidden") return;
     const distance = Math.hypot(spot.x - this.x, spot.y - this.y);
     if (distance < 4) return;
-    if (this.#tryClimb(spot) || this.#tryDescend(spot)) return;
+    if (this.#tryWall(spot) || this.#tryClimb(spot) || this.#tryDescend(spot)) return;
     if (distance >= WALK_LIMIT) {
       this.bolt(spot, [spot.x, spot.y]);
       return;
     }
     const level = this.#spot !== null && sameSurface(this.#spot.surface, spot.surface);
     this.#start(level ? "walk" : "jump", spot);
+  }
+
+  /**
+   * На стену выше себя — дойти до её основания и залезть, а не прыгать: за курсором, который выше
+   * (просьба пользователя 2026-11-18). На стене остаётся и смотрит от неё.
+   */
+  #tryWall(spot: Spot): boolean {
+    const from = this.#spot;
+    const wall = spot.surface;
+    if (this.phase !== "rest" || from === null || wall.kind !== "side") return false;
+    const start = from.surface;
+    if (start.kind !== "edge" && start.kind !== "floor") return false;
+    const x = wallX(wall);
+    if (from.y - spot.y < 80 || x < start.x0 - 80 || x > start.x1 + 80) return false;
+    const foot = spotOn(start, x, from.y);
+    return this.#follow({ foot, side: wall, target: spot, stay: true });
   }
 
   /** На окно выше — по его боку, если до стены можно дойти (BEHAVIOR §9). */
@@ -294,6 +311,14 @@ export class Brain {
       return;
     }
     this.y -= CLIMB_SPEED * dt;
+    if (climb.stay === true) {
+      // Подтягивается к самой стене и останавливается, когда ступни — на месте цели.
+      this.x += (climb.target.x - this.x) * Math.min(1, dt * 4);
+      if (this.y > climb.target.y - this.figure * 0.45) return;
+      this.#climb = null;
+      this.#rest(climb.target);
+      return;
+    }
     // Середина тела дошла до крыши — перевалился наверх коротким прыжком.
     if (this.y > climb.target.y + this.figure * 0.15) return;
     this.#climb = null;

@@ -15,6 +15,7 @@ import { caught, PlayWatch } from "../senses";
 import { hostOf, ICONS, type Pose, type Rect, type World } from "../space";
 import { shouldShow, type CompanionSettings } from "../settings";
 import { Conductor } from "./conductor";
+import { Escort } from "./escort";
 import { Gestures } from "./gestures";
 import type { Ports } from "./ports";
 import { Presence, type MainState } from "./presence";
@@ -64,6 +65,7 @@ export class CompanionController {
   readonly presence: Presence;
   readonly scout: Scout;
   readonly gestures: Gestures;
+  readonly escort: Escort;
   readonly conductor: Conductor;
   settings: CompanionSettings;
   radio: RadioFeed | null = null;
@@ -108,7 +110,9 @@ export class CompanionController {
         this.reactions.released(speed, now / 1000);
       },
     });
+    this.escort = new Escort(brain, this.presence);
     const parts = {
+      escort: this.escort,
       brain,
       mind: this.mind,
       life: this.life,
@@ -175,9 +179,15 @@ export class CompanionController {
     if (id === this.#attached) this.reactions.host(css, performance.now() / 1000);
   }
 
+  /** Где пользователь печатает (физические пиксели экрана) или `null` — не печатает. */
+  onTyping(rect: Rect | null): void {
+    this.escort.caret = rect === null ? null : this.presence.toCss(rect);
+  }
+
   onCursor(x: number, y: number): void {
     this.brain.cursorX = x;
     this.#cursor = { x, y };
+    this.escort.cursor = { x, y };
     this.#cursorFedAt = performance.now();
     this.#movedAt = this.#cursorFedAt;
     this.reactions.cursor(x, y, this.#cursorFedAt / 1000, this.presence.shown);

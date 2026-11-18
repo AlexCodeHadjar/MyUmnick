@@ -904,8 +904,8 @@
 ## ui/src/features/companion/body
 Подпакет «body» спутника: импорт снаружи — только через этот файл (R-06).
 
-- `WALK_LIMIT` — `ui/src/features/companion/body/brain.ts:27` — Ближе — пешком или прыжком, дальше — молнией (решение пользователя, раздел 9.1).
-- `Brain` — `ui/src/features/companion/body/brain.ts:48` — —
+- `WALK_LIMIT` — `ui/src/features/companion/body/brain.ts:28` — Ближе — пешком или прыжком, дальше — молнией (решение пользователя, раздел 9.1).
+- `Brain` — `ui/src/features/companion/body/brain.ts:49` — —
 - `PoseState` — `ui/src/features/companion/body/pose.ts:8` — —
 - `poseOf` — `ui/src/features/companion/body/pose.ts:54` — —
 - `Phase` — `ui/src/features/companion/body/types.ts:4` — —
@@ -916,12 +916,14 @@
 ## ui/src/features/companion/controller
 Подпакет «controller» спутника: контроллер и его части; импорт снаружи — только через этот файл (R-06).
 
-- `Speak` — `ui/src/features/companion/controller/conductor.ts:17` — Предложить фразу голосу; `watchLine` — фраза самого просмотра (пропускается и во время фильма).
-- `ConductorParts` — `ui/src/features/companion/controller/conductor.ts:19` — —
-- `Situation` — `ui/src/features/companion/controller/conductor.ts:28` — Что от контроллера нужно для картины кадра.
-- `Conductor` — `ui/src/features/companion/controller/conductor.ts:43` — —
-- `Feed` — `ui/src/features/companion/controller/controller.ts:25` — Подача главного окна (`companion-feed`, ADR-0045, ADR-0049).
-- `CompanionController` — `ui/src/features/companion/controller/controller.ts:49` — —
+- `Speak` — `ui/src/features/companion/controller/conductor.ts:18` — Предложить фразу голосу; `watchLine` — фраза самого просмотра (пропускается и во время фильма).
+- `ConductorParts` — `ui/src/features/companion/controller/conductor.ts:20` — —
+- `Situation` — `ui/src/features/companion/controller/conductor.ts:30` — Что от контроллера нужно для картины кадра.
+- `Conductor` — `ui/src/features/companion/controller/conductor.ts:45` — —
+- `Feed` — `ui/src/features/companion/controller/controller.ts:26` — Подача главного окна (`companion-feed`, ADR-0045, ADR-0049).
+- `CompanionController` — `ui/src/features/companion/controller/controller.ts:50` — —
+- `EscortState` — `ui/src/features/companion/controller/escort.ts:17` — —
+- `Escort` — `ui/src/features/companion/controller/escort.ts:24` — —
 - `Gesture` — `ui/src/features/companion/controller/gestures.ts:11` — —
 - `GestureHooks` — `ui/src/features/companion/controller/gestures.ts:19` — —
 - `Gestures` — `ui/src/features/companion/controller/gestures.ts:28` — —
@@ -1067,9 +1069,14 @@
 - `seatSpot` — `ui/src/features/companion/space/anchors.ts:213` — Куда сесть, когда активным стало окно: правая треть верхнего края, на открытом участке.
 - `floorSpot` — `ui/src/features/companion/space/anchors.ts:230` — Место на «полу» у правого края — рабочий стол или развёрнутое окно.
 - `sameSurface` — `ui/src/features/companion/space/anchors.ts:239` — Та же опора в новой картине (окно сдвинули): по хозяину и виду.
+- `Point` — `ui/src/features/companion/space/chase.ts:20` — —
+- `cursorSpot` — `ui/src/features/companion/space/chase.ts:43` — Где встать, чтобы быть рядом с курсором; `body` — где персонаж сейчас (ступни).
+- `worthMoving` — `ui/src/features/companion/space/chase.ts:67` — Стоит ли идти: другая опора или заметно другое место на той же.
+- `inTheWay` — `ui/src/features/companion/space/chase.ts:74` — Мешает ли персонаж печатать: его фигура рядом с полем ввода (с запасом `gap`).
+- `stepAside` — `ui/src/features/companion/space/chase.ts:87` — Куда отойти от поля ввода: по своей опоре в сторону, где места больше, на `away` от него; не выходит —
 - `Climb` — `ui/src/features/companion/space/climb.ts:12` — —
-- `climbRoute` — `ui/src/features/companion/space/climb.ts:27` — Маршрут с места `from` на верх окна `to` или `null` (прыгать). `bottom` — низ окна-цели: окно должно
-- `descendRoute` — `ui/src/features/companion/space/climb.ts:59` — Маршрут спуска с крыши окна `from` вниз на опору `to` или `null` (прыгать): дойти по крыше до края над
+- `climbRoute` — `ui/src/features/companion/space/climb.ts:29` — Маршрут с места `from` на верх окна `to` или `null` (прыгать). `bottom` — низ окна-цели: окно должно
+- `descendRoute` — `ui/src/features/companion/space/climb.ts:61` — Маршрут спуска с крыши окна `from` вниз на опору `to` или `null` (прыгать): дойти по крыше до края над
 - `followSpot` — `ui/src/features/companion/space/control.ts:9` — Место для активного окна (раздел 4.1): край окна, «пол» у правого края или угол экрана.
 - `hostOf` — `ui/src/features/companion/space/control.ts:20` — Хозяин места (окно) или `null` для «пола».
 - `Release` — `ui/src/features/companion/space/control.ts:24` — —

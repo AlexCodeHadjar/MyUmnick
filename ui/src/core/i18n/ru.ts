@@ -68,7 +68,7 @@ export const ru = {
     chatWidth: "Ширина чата",
     settings: "Настройки",
     state: "Состояние",
-    controls: "Голос и приватность",
+    controls: "Голос",
     panels: "Панели",
   },
   status: {

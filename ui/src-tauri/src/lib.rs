@@ -11,6 +11,7 @@ mod ghost;
 mod launcher;
 mod media;
 mod system_audio;
+mod typing;
 mod uia;
 
 #[cfg(not(debug_assertions))]

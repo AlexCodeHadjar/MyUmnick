@@ -4,3 +4,4 @@ export * from "./anchors";
 export * from "./room";
 export * from "./climb";
 export * from "./control";
+export * from "./chase";

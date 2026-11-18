@@ -51,7 +51,7 @@ export const en: Messages = {
     chatWidth: "Chat width",
     settings: "Settings",
     state: "Status",
-    controls: "Voice and privacy",
+    controls: "Voice",
     panels: "Panels",
   },
   status: {
