@@ -676,7 +676,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:507` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:508` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).
@@ -920,8 +920,8 @@
 - `tauriPorts` — `ui/src/features/companion/controller/ports.ts:27` — —
 - `MainState` — `ui/src/features/companion/controller/presence.ts:10` — Главное окно: показано ли и в фокусе, где стоит (физические пиксели).
 - `Presence` — `ui/src/features/companion/controller/presence.ts:16` — —
-- `MediaChange` — `ui/src/features/companion/controller/scout.ts:25` — Смена состояния того, что играет: для реплик «пауза» / «продолжаем».
-- `Scout` — `ui/src/features/companion/controller/scout.ts:27` — —
+- `MediaChange` — `ui/src/features/companion/controller/scout.ts:26` — Смена состояния того, что играет: для реплик «пауза» / «продолжаем».
+- `Scout` — `ui/src/features/companion/controller/scout.ts:28` — —
 - `Speech` — `ui/src/features/companion/controller/speech.ts:12` — —
 
 ## ui/src/features/companion/look
@@ -1030,11 +1030,12 @@
 - `WatchContext` — `ui/src/features/companion/senses/watch.ts:24` — —
 - `watching` — `ui/src/features/companion/senses/watch.ts:32` — —
 - `Media` — `ui/src/features/companion/senses/watch.ts:39` — Что играет в системе (`companion_media`, ADR-0052).
-- `musicPlaying` — `ui/src/features/companion/senses/watch.ts:84` — Музыка играет в музыкальной программе (Spotify, Яндекс Музыка, AIMP…) — для «потанцевать».
-- `PAUSE_KEEP_S` — `ui/src/features/companion/senses/watch.ts:91` — Пауза — часть просмотра: столько секунд на паузе он ещё «смотрит».
-- `mediaVideo` — `ui/src/features/companion/senses/watch.ts:97` — Видео по сеансам мультимедиа Windows (ADR-0052): играет (или недавно встал на паузу) браузер или
-- `pickMedia` — `ui/src/features/companion/senses/watch.ts:111` — Из всех источников звука (`companion_media`) — видео: играющее важнее стоящего на паузе; нет —
-- `keepWatching` — `ui/src/features/companion/senses/watch.ts:123` — Начать смотреть — видео в фокусе или на весь экран; уже смотрим — держимся, пока фильм идёт или стоит
+- `loudMoment` — `ui/src/features/companion/senses/watch.ts:51` — Громкое место фильма (этап 5): пик заметно выше обычной громкости источника. `avg` — сглаженная
+- `musicPlaying` — `ui/src/features/companion/senses/watch.ts:94` — Музыка играет в музыкальной программе (Spotify, Яндекс Музыка, AIMP…) — для «потанцевать».
+- `PAUSE_KEEP_S` — `ui/src/features/companion/senses/watch.ts:101` — Пауза — часть просмотра: столько секунд на паузе он ещё «смотрит».
+- `mediaVideo` — `ui/src/features/companion/senses/watch.ts:107` — Видео по сеансам мультимедиа Windows (ADR-0052): играет (или недавно встал на паузу) браузер или
+- `pickMedia` — `ui/src/features/companion/senses/watch.ts:121` — Из всех источников звука (`companion_media`) — видео: играющее важнее стоящего на паузе; нет —
+- `keepWatching` — `ui/src/features/companion/senses/watch.ts:133` — Начать смотреть — видео в фокусе или на весь экран; уже смотрим — держимся, пока фильм идёт или стоит
 
 ## ui/src/features/companion/space
 Подпакет «space» спутника: импорт снаружи — только через этот файл (R-06).

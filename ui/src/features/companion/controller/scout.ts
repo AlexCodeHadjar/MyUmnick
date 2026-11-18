@@ -7,6 +7,7 @@ import {
   keepWatching,
   mediaVideo,
   musicPlaying,
+  loudMoment,
   pickMedia,
   topicOf,
   watching,
@@ -22,7 +23,7 @@ const MEDIA_EVERY_MS = 2000;
 const NONE: Media = { state: "none", app: "" };
 
 /** Смена состояния того, что играет: для реплик «пауза» / «продолжаем». */
-export type MediaChange = "paused" | "resumed" | "music" | null;
+export type MediaChange = "paused" | "resumed" | "music" | "loud" | null;
 
 export class Scout {
   readonly #ports: Ports;
@@ -39,6 +40,8 @@ export class Scout {
   #mediaBusy = false;
   #pausedSince = 0;
   #music = false;
+  /** Сглаженная громкость источника видео — для «громкого места». */
+  #avgPeak = 0;
 
   /** `toCss` — физические пиксели экрана → CSS-пиксели слоя (монитор и масштаб знает присутствие). */
   constructor(ports: Ports, brain: Brain, toCss: (rect: Rect) => Rect) {
@@ -114,6 +117,9 @@ export class Scout {
       const before = this.#media.state;
       this.#media = pickMedia(list, this.#tab);
       // Заиграла музыка в плеере (этап 5) — сказать «музыка!» и потанцевать.
+      const peak = this.#media.peak ?? 0;
+      if (this.#brain.watching && loudMoment(peak, this.#avgPeak)) onChange("loud");
+      this.#avgPeak = this.#avgPeak * 0.8 + peak * 0.2;
       const music = musicPlaying(list);
       if (music && !this.#music) onChange("music");
       this.#music = music;

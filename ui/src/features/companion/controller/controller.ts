@@ -80,6 +80,7 @@ export class CompanionController {
   #emotion = "neutral";
   /** Текст текущего ответа ассистента — для «покажи на экране». */
   #replyText = "";
+  #startledAt = -Infinity;
   readonly #play = new PlayWatch();
   #caughtAt = 0;
 
@@ -231,6 +232,14 @@ export class CompanionController {
     this.brain.emote("wave", 2);
   }
 
+  /** Громкое место фильма — вздрогнул (подскок) и «Ого!», не чаще раза в минуту (этап 5). */
+  #startle(now: number): void {
+    if (now - this.#startledAt < 60_000) return;
+    this.#startledAt = now;
+    this.brain.emote("float", 0.5);
+    this.speak(pickOne(locale.t.companion.triggers.loud), "reaction", true);
+  }
+
   /** Заиграла музыка в плеере: «О, музыка!» и танец, если не смотрит фильм и не на радио. */
   #dance(): void {
     const brain = this.brain;
@@ -309,6 +318,10 @@ export class CompanionController {
     this.scout.pollMedia(now, (change) => {
       if (change === "music") {
         this.#dance();
+        return;
+      }
+      if (change === "loud") {
+        this.#startle(now);
         return;
       }
       if (!this.brain.watching || change === null) return;

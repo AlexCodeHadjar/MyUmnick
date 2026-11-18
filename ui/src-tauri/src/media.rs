@@ -10,6 +10,7 @@ use windows::Media::Control::{
     GlobalSystemMediaTransportControlsSessionManager as Manager,
     GlobalSystemMediaTransportControlsSessionPlaybackStatus as Status,
 };
+use windows::Win32::Media::Audio::Endpoints::IAudioMeterInformation;
 use windows::Win32::Media::Audio::{
     eConsole, eRender, AudioSessionStateActive, IAudioSessionControl2, IAudioSessionManager2,
     IMMDeviceEnumerator, MMDeviceEnumerator,
@@ -26,6 +27,9 @@ pub struct Media {
     pub state: &'static str,
     /// Источник в нижнем регистре (AUMID): `chrome.exe`, `msedge`, `spotify.exe`…
     pub app: String,
+    /// Пиковая громкость звука источника сейчас, 0…1 (аудиосеансы; у сеансов мультимедиа — 0): громкие
+    /// места фильма — спутник вздрагивает (COMPANION.md, этап 5).
+    pub peak: f32,
 }
 
 fn state_of(session: &Session) -> Option<&'static str> {
@@ -88,9 +92,15 @@ fn audible() -> Vec<Media> {
         } else {
             "paused"
         };
+        let peak = control
+            .cast::<IAudioMeterInformation>()
+            // SAFETY: COM-вызов к живому измерителю сеанса.
+            .and_then(|meter| unsafe { meter.GetPeakValue() })
+            .unwrap_or(0.0);
         out.push(Media {
             state,
             app: desktop::exe_of(pid),
+            peak,
         });
     }
     out
@@ -116,7 +126,11 @@ fn sessions() -> Vec<Media> {
             .SourceAppUserModelId()
             .map(|id| id.to_string().to_lowercase())
             .unwrap_or_default();
-        out.push(Media { state, app });
+        out.push(Media {
+            state,
+            app,
+            peak: 0.0,
+        });
     }
     out
 }

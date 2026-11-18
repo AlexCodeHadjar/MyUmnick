@@ -40,6 +40,16 @@ export interface Media {
   state: "playing" | "paused" | "none";
   /** Источник в нижнем регистре: `chrome.exe`, `msedge`, `spotify.exe`… */
   app: string;
+  /** Пиковая громкость 0…1 (аудиосеансы; у сеансов мультимедиа нет). */
+  peak?: number;
+}
+
+/**
+ * Громкое место фильма (этап 5): пик заметно выше обычной громкости источника. `avg` — сглаженная
+ * громкость до этого замера.
+ */
+export function loudMoment(peak: number, avg: number): boolean {
+  return peak > 0.75 && peak > avg * 1.8;
 }
 
 const MUSIC_APPS = [

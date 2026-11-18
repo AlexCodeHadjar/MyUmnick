@@ -4,7 +4,7 @@ import { floorSpot, surfaces } from "../space";
 import { Brain } from "../body";
 import { pickFrame } from "../look";
 import { watchPhrases } from "../phrases";
-import { keepWatching, mediaVideo, musicPlaying, pickMedia, watching } from "./watch";
+import { keepWatching, loudMoment, mediaVideo, musicPlaying, pickMedia, watching } from "./watch";
 import type { World } from "../space";
 
 const WORLD: World = {
@@ -128,5 +128,13 @@ describe("музыка в плеере", () => {
     expect(musicPlaying([{ state: "playing", app: "spotify.exe" }])).toBe(true);
     expect(musicPlaying([{ state: "paused", app: "spotify.exe" }])).toBe(false);
     expect(musicPlaying([{ state: "playing", app: "chrome.exe" }])).toBe(false);
+  });
+});
+
+describe("громкие места", () => {
+  it("пик заметно выше обычного — громкое место; ровно громко — нет", () => {
+    expect(loudMoment(0.95, 0.3)).toBe(true);
+    expect(loudMoment(0.8, 0.7)).toBe(false);
+    expect(loudMoment(0.5, 0.1)).toBe(false);
   });
 });

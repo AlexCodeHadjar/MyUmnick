@@ -159,6 +159,7 @@ export const en: Messages = {
       (name: string) => `Look, there's "${name}"!`,
     ],
     triggers: {
+      loud: ["Whoa!", "Eek! Loud!", "That made me jump!", "What a bang!"],
       show: ["Right here: «{name}»!", "Look, «{name}» is here.", "There it is: «{name}»."],
       music: [
         "Ooh, music! Let's dance!",
