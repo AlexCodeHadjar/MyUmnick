@@ -35,8 +35,8 @@ export const SOFT_LOOPS: ReadonlySet<Pose> = new Set([
   "sleep",
   "held",
   "float",
-  "watch",
   "radio_idle",
+  "jukebox",
 ]);
 
 /** Этап смены позы: старая уходит (`out`) или новая приходит (`in`), `k` — 0…1. */

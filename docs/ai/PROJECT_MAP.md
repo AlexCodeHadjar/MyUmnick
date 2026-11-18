@@ -953,12 +953,12 @@
 - `loadPoses` — `ui/src/features/companion/look/pack.ts:218` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
 - `RING` — `ui/src/features/companion/look/pack.ts:240` — Циклы с направлением (походка, лазанье, танец) — кольцом; спокойные — «туда-обратно» (ANIMATION.md).
 - `loopIndex` — `ui/src/features/companion/look/pack.ts:246` — Номер кадра цикла. «Туда-обратно» (1-2-3-4-3-2): нет скачка с последнего кадра на первый, и из
-- `PANEL` — `ui/src/features/companion/look/panel.ts:8` — Табло в долях кадра: x 0,28…0,72, y 0,74…0,80.
+- `PANEL` — `ui/src/features/companion/look/panel.ts:8` — Табло в долях кадра — измерено по сгенерированным кадрам `frames-4` (2026-11-18), с отступом внутрь.
 - `panelRect` — `ui/src/features/companion/look/panel.ts:12` — Прямоугольник табло на экране по рамке нарисованного кадра.
 - `drawPanel` — `ui/src/features/companion/look/panel.ts:22` — Написать `text` на табло; не влезает — медленно бежит по кругу (`time` — секунды).
 - `placeholderPose` — `ui/src/features/companion/look/placeholder.ts:261` — Силуэт позы: широкие линии с градиентом палитры окна, круг головы, подпись с именем позы.
-- `Look` — `ui/src/features/companion/look/stage.ts:44` — —
-- `CompanionStage` — `ui/src/features/companion/look/stage.ts:57` — —
+- `Look` — `ui/src/features/companion/look/stage.ts:35` — —
+- `CompanionStage` — `ui/src/features/companion/look/stage.ts:48` — —
 
 ## ui/src/features/companion/mind
 «Разум» спутника (MIND.md, ADR-0051): картина мира со сглаживанием, потребности, стимулы, арбитр

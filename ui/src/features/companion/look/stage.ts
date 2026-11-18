@@ -6,16 +6,7 @@
 import type { Pose } from "../space";
 import type { Body } from "../body";
 import { drawEffects } from "./effects";
-import {
-  ANCHORS,
-  CANVAS_RATIO,
-  FALLBACK,
-  LOOP_FPS,
-  loadPoses,
-  pickFrame,
-  RING,
-  sequence,
-} from "./pack";
+import { ANCHORS, CANVAS_RATIO, FALLBACK, LOOP_FPS, loadPoses, pickFrame, sequence } from "./pack";
 
 /** Переходные кадры между позами (`<из>_to_<в>_1…N`, FRAMES-4.md) — 12 кадров/с. */
 const TRANSITION_FPS = 12;
@@ -215,7 +206,8 @@ export class CompanionStage {
     const lift = (look.speaking && !CALM.has(body.pose) ? look.mouth * 5 : 0) + hop;
     const ctx = this.#ctx;
     ctx.save();
-    const loopS = RING.has(body.pose) ? 0 : 1 / (LOOP_FPS[body.pose] ?? 6);
+    // Растворять ли кадры цикла, решает `SOFT_LOOPS` (motion.ts): ходьба, лазанье, танец — нет.
+    const loopS = 1 / (LOOP_FPS[body.pose] ?? 6);
     this.#motion.frame(image, body.pose, loopS);
     const smooth = this.#motion.step(body, this.#lastDt);
     ctx.translate(body.x, body.y - lift);
