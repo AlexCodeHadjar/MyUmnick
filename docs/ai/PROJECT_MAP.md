@@ -318,9 +318,9 @@
 - `language_pack` — `src/vtuber/bootstrap/edition.py:115` — Языковой пакет по `[edition].language`.
 - `edition_persona` — `src/vtuber/bootstrap/edition.py:132` — Персона из файла с правилами профиля содержания издания (ADR-0033).
 - `warn_ignored_user_keys` — `src/vtuber/bootstrap/edition.py:144` — Предупреждение: ключи общего `user.toml` (он для `ru`) здесь не действуют.
-- `LineSource` — `src/vtuber/bootstrap/main.py:67` — Откуда читать строки: `sys.stdin` или его тестовая замена.
-- `Console` — `src/vtuber/bootstrap/main.py:74` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
-- `main` — `src/vtuber/bootstrap/main.py:87` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
+- `LineSource` — `src/vtuber/bootstrap/main.py:63` — Откуда читать строки: `sys.stdin` или его тестовая замена.
+- `Console` — `src/vtuber/bootstrap/main.py:70` — Ввод построчно в отдельном потоке — ожидание строки не блокирует цикл (R-34).
+- `main` — `src/vtuber/bootstrap/main.py:83` — Код возврата: 0 — штатный выход, 1 — ошибка конфига, 2 — LLM недоступна (чат).
 - `run` — `src/vtuber/bootstrap/main.py:316` — Запуск из консоли: `python -m vtuber [chat|serve] [--root путь]`.
 - `SharedMemory` — `src/vtuber/bootstrap/memory.py:56` — Что общее у всех чатов (Этап 21): LLM фонового слота и e5 — грузятся один раз.
 - `shared_memory` — `src/vtuber/bootstrap/memory.py:64` — Модели памяти на время работы приложения; память выключена — None.
@@ -1003,9 +1003,11 @@
 - `clearPoses` — `ui/src/features/companion/look/pack.ts:198` — —
 - `DEFAULT_PACK` — `ui/src/features/companion/look/pack.ts:209` — Встроенный персонаж (`ui/public/characters/default/`; подгонка — `docs/character/README.md`).
 - `PACK_HEIGHT` — `ui/src/features/companion/look/pack.ts:219` — Высота кадра встроенного пакета; выше — место над головой (штамп, рожки), FRAMES-6 «Принято».
-- `loadPoses` — `ui/src/features/companion/look/pack.ts:262` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
-- `RING` — `ui/src/features/companion/look/pack.ts:284` — Циклы с направлением (походка, лазанье, танец) — кольцом; спокойные — «туда-обратно» (ANIMATION.md).
-- `loopIndex` — `ui/src/features/companion/look/pack.ts:297` — Номер кадра цикла. «Туда-обратно» (1-2-3-4-3-2): нет скачка с последнего кадра на первый, и из
+- `isFirstFrame` — `ui/src/features/companion/look/pack.ts:246` — Кадр одной из первых поз (`stand`, `stand_2`), но не переход (`stand_to_wave_1`).
+- `Staged` — `ui/src/features/companion/look/pack.ts:291` — Позы: карта сразу (первые кадры) и обещание догрузки остальных в ту же карту.
+- `loadPoses` — `ui/src/features/companion/look/pack.ts:300` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
+- `RING` — `ui/src/features/companion/look/pack.ts:322` — Циклы с направлением (походка, лазанье, танец) — кольцом; спокойные — «туда-обратно» (ANIMATION.md).
+- `loopIndex` — `ui/src/features/companion/look/pack.ts:335` — Номер кадра цикла. «Туда-обратно» (1-2-3-4-3-2): нет скачка с последнего кадра на первый, и из
 - `PANEL` — `ui/src/features/companion/look/panel.ts:8` — Табло в долях кадра — измерено по сгенерированным кадрам `frames-4` (2026-11-18), с отступом внутрь.
 - `panelRect` — `ui/src/features/companion/look/panel.ts:12` — Прямоугольник табло на экране по рамке нарисованного кадра.
 - `drawPanel` — `ui/src/features/companion/look/panel.ts:22` — Написать `text` на табло; не влезает — медленно бежит по кругу (`time` — секунды).

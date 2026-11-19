@@ -235,33 +235,71 @@ async function packBitmap(blob: Blob, height: number): Promise<ImageBitmap> {
   }
 }
 
-/** Позы встроенного персонажа; файлов нет (вкладка без сборки) — пусто, будут силуэты. */
-async function defaultPoses(height: number): Promise<Map<string, ImageBitmap>> {
+/**
+ * Позы, с которых персонаж начинает (ускорение запуска, 2026-11-19): выход из портала, падение, стоит,
+ * идёт. Их кадры декодируются первыми — персонаж на экране за доли секунды, остальные ~280 кадров
+ * догружаются, пока он уже ходит (все сразу — ~1,5 с декодирования до первого кадра).
+ */
+const FIRST_POSES: ReadonlySet<string> = new Set(["stand", "walk", "float", "held", "sit_corner"]);
+
+/** Кадр одной из первых поз (`stand`, `stand_2`), но не переход (`stand_to_wave_1`). */
+export function isFirstFrame(name: string): boolean {
+  if (name.includes("_to_")) return false;
+  const base = name.replace(/_\d+$/u, "");
+  return FIRST_POSES.has(base);
+}
+
+async function decodeInto(
+  poses: Map<string, ImageBitmap>,
+  names: readonly string[],
+  height: number,
+): Promise<void> {
+  await Promise.all(
+    names.map(async (name) => {
+      const response = await fetch(`${DEFAULT_PACK}/${name}.webp`);
+      if (response.ok) poses.set(name, await packBitmap(await response.blob(), height));
+    }),
+  );
+}
+
+/**
+ * Позы встроенного персонажа; файлов нет (вкладка без сборки) — пусто, будут силуэты. Сначала — первые
+ * позы, остальные — в `rest`, который заполняет ту же карту и завершается, когда догрузил всё.
+ */
+async function defaultPoses(height: number): Promise<Staged> {
   const poses = new Map<string, ImageBitmap>();
   try {
     const list: unknown = await (await fetch(`${DEFAULT_PACK}/index.json`)).json();
-    if (!Array.isArray(list)) return poses;
-    const names: unknown[] = list;
-    await Promise.all(
-      names.map(async (name) => {
-        if (typeof name !== "string" || poseName(`${name}.webp`) === null) return;
-        const response = await fetch(`${DEFAULT_PACK}/${name}.webp`);
-        if (response.ok) poses.set(name, await packBitmap(await response.blob(), height));
-      }),
+    if (!Array.isArray(list)) return { poses, rest: Promise.resolve() };
+    const names = list.filter(
+      (name): name is string => typeof name === "string" && poseName(`${name}.webp`) !== null,
     );
+    await decodeInto(poses, names.filter(isFirstFrame), height);
+    const rest = decodeInto(
+      poses,
+      names.filter((name) => !isFirstFrame(name)),
+      height,
+    ).catch(() => undefined);
+    return { poses, rest };
   } catch {
     // Нет пакета — временные силуэты.
+    return { poses, rest: Promise.resolve() };
   }
-  return poses;
+}
+
+/** Позы: карта сразу (первые кадры) и обещание догрузки остальных в ту же карту. */
+export interface Staged {
+  poses: Map<string, ImageBitmap>;
+  rest: Promise<void>;
 }
 
 /**
  * Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
  * пользователем папкой, а если их нет — встроенный персонаж.
  */
-export async function loadPoses(height: number): Promise<Map<string, ImageBitmap>> {
+export async function loadPoses(height: number): Promise<Staged> {
   const own = await userPoses(height);
-  return own.size > 0 ? own : defaultPoses(height);
+  return own.size > 0 ? { poses: own, rest: Promise.resolve() } : defaultPoses(height);
 }
 
 async function userPoses(height: number): Promise<Map<string, ImageBitmap>> {

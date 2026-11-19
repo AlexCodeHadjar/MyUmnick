@@ -91,12 +91,17 @@ export class CompanionStage {
   /** Позы пользователя и временные силуэты под рост `height`. */
   async load(height: number): Promise<void> {
     this.#height = height;
-    const [poses, placeholders] = await Promise.all([
+    const [staged, placeholders] = await Promise.all([
       loadPoses(height),
       Promise.all(POSES.map(async (pose) => [pose, await placeholderPose(pose, height)] as const)),
     ]);
+    const poses = staged.poses;
     this.#poses = poses;
     this.#keys = new Set(poses.keys());
+    // Остальные кадры догружаются в ту же карту, пока персонаж уже на экране; рост сменили — не наши.
+    void staged.rest.then(() => {
+      if (this.#poses === poses) this.#keys = new Set(poses.keys());
+    });
     this.#unit = Math.round(height * CANVAS_RATIO * devicePixelRatio);
     this.#placeholders = new Map(placeholders);
   }

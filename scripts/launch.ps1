@@ -20,6 +20,9 @@
 #>
 param([switch] $Background)
 $ErrorActionPreference = "Stop"
+# Хронометраж запуска (2026-11-19): окно пишет в startup.log миллисекунды от этой точки — клика по ярлыку.
+# Не VTUBER_*: такие переменные ядро читает как свой конфиг и падает на незнакомом ключе.
+$env:AI_VTUBER_LAUNCH_AT = [DateTimeOffset]::Now.ToUnixTimeMilliseconds().ToString()
 
 $Root = Split-Path -Parent $PSScriptRoot
 $Log = if ($env:VTUBER_LAUNCHER_LOG) { $env:VTUBER_LAUNCHER_LOG } else { Join-Path $Root "logs\launcher.log" }
@@ -39,6 +42,9 @@ $Node = @("C:\Program Files\nodejs\node.exe") + @((Get-Command node.exe -ErrorAc
     Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
 $TauriCli = Join-Path $Root "ui\node_modules\@tauri-apps\cli\tauri.js"
 $TauriConfig = Join-Path $PSScriptRoot "tauri.launch.json"
+# Собранное окно (`tauri build --no-bundle`, ускорение запуска 2026-11-19): открывается за доли секунды,
+# а `tauri dev` перед каждым запуском проверяет сборку Rust и поднимает Vite (~19 с до окна, замер).
+$BuiltWindow = Join-Path $Root "ui\src-tauri\target\release\vtuber-ui.exe"
 
 New-Item -ItemType Directory -Force (Split-Path $Log) | Out-Null
 
@@ -137,6 +143,34 @@ function Show-RunningWindow {
     return $true
 }
 
+function Test-BuiltWindow {
+    # Собранное окно годится, только если оно новее исходников окна: иначе показало бы старый код.
+    if (-not (Test-Path -LiteralPath $BuiltWindow)) { return $false }
+    $built = (Get-Item -LiteralPath $BuiltWindow).LastWriteTimeUtc
+    $sources = @("ui\src", "ui\src-tauri\src", "ui\public") | ForEach-Object { Join-Path $Root $_ }
+    $files = @("ui\index.html", "ui\src-tauri\tauri.conf.json", "ui\src-tauri\Cargo.toml") |
+        ForEach-Object { Join-Path $Root $_ }
+    $newest = @(Get-ChildItem -LiteralPath $sources -Recurse -File -ErrorAction SilentlyContinue) +
+        @(Get-Item -LiteralPath $files -ErrorAction SilentlyContinue) |
+        Measure-Object -Property LastWriteTimeUtc -Maximum
+    return $built -ge $newest.Maximum
+}
+
+function Start-BuiltWindow {
+    $info = New-Object System.Diagnostics.ProcessStartInfo
+    $info.FileName = $BuiltWindow
+    $info.WorkingDirectory = Split-Path $BuiltWindow
+    $info.UseShellExecute = $false
+    $self = $PSCommandPath
+    $info.EnvironmentVariables["VTUBER_AUTOSTART_COMMAND"] =
+        "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$self`" -Background"
+    $info.EnvironmentVariables["VTUBER_BACKGROUND"] = if ($Background) { "1" } else { "0" }
+    # Ядро запускает этот скрипт из .venv: собранное окно своё ядро (из поставки) не ищет.
+    $info.EnvironmentVariables["AI_VTUBER_EXTERNAL_CORE"] = "1"
+    Write-Log "окно: собранное$(if ($Background) { ', в фоне' })"
+    return [System.Diagnostics.Process]::Start($info)
+}
+
 function Start-Window {
     $info = New-Object System.Diagnostics.ProcessStartInfo
     $info.FileName = "cmd.exe"
@@ -177,8 +211,9 @@ try {
     Write-Log "запуск из $Root; node: $Node"
     Set-LlmAutostart
     $edition = Get-Edition
+    # Сначала окно, потом ядро: окно и персонаж видны сразу, ядро догружается параллельно.
+    $window = if (Test-BuiltWindow) { Start-BuiltWindow } else { Write-Log "собранное окно старше исходников"; Start-Window }
     $core = Start-Core $edition
-    $window = Start-Window
     while (-not $window.HasExited) {
         Start-Sleep -Milliseconds 1000
         $chosen = Get-Edition

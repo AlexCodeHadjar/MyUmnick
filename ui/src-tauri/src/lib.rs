@@ -37,8 +37,17 @@ mod core_process {
         app.manage(CoreProcess(Mutex::new(None)));
     }
 
+    /// Ядро запускает скрипт запуска из `.venv` (сборка окна без поставки, ускорение запуска 2026-11-19):
+    /// окно ядро не трогает, смену издания скрипт видит по `launcher.json`.
+    fn external() -> bool {
+        std::env::var_os("AI_VTUBER_EXTERNAL_CORE").is_some()
+    }
+
     /// Ядро издания `edition`; то же издание уже запущено — ничего не делает (предзапуск).
     pub fn start(app: &tauri::AppHandle, edition: &str) -> Result<(), String> {
+        if external() {
+            return Ok(());
+        }
         let core = app.state::<CoreProcess>();
         if let Ok(slot) = core.0.lock() {
             if matches!(slot.as_ref(), Some((_, running)) if running == edition) {

@@ -13,7 +13,7 @@ from typing import Final, Protocol, TextIO
 from vtuber.adapters.gpu import NvidiaSmiProbe
 from vtuber.adapters.llm import LlamaServerProcess
 from vtuber.application.conversation import ConversationService, Initiative
-from vtuber.application.prompting import RU_PROMPT, PromptBuilder
+from vtuber.application.prompting import PromptBuilder
 from vtuber.application.scheduler import ResourceManager
 from vtuber.application.supervision import Supervised, Supervisor
 from vtuber.bootstrap.chat_wiring import app_memory
@@ -56,10 +56,6 @@ EXIT_CONFIG: Final = 1
 EXIT_UNAVAILABLE: Final = 2
 CHAT_MODE: Final = "chat"
 SERVE_MODE: Final = "serve"
-# Реплика прогрева кэша и проба голоса — в тексте издания (`PromptTexts`): шаблоны чата (Qwen3.5)
-# отвергают промпт без реплики пользователя, а общий префикс от неё не меняется (T-06).
-WARMUP_USER: Final = RU_PROMPT.warmup_user  # прежнее имя: русское издание
-TTS_PROBE: Final = RU_PROMPT.tts_probe
 
 _log = get_logger(__name__)
 
@@ -192,8 +188,10 @@ async def _serve(
     async with GatewayServer(service, warmup.bus, cfg.gateway) as server:
         connect_panels(app, server, service)
         print(f"Шлюз для UI: ws://{cfg.gateway.host}:{server.port}", file=console.out)
-        if (problem := await warmup.run()) is not None:
-            _log.warning("llm.unavailable_at_start", problem=problem)
+        # LLM прогревается одновременно с загрузкой голоса и слуха (ускорение запуска, 2026-11-19):
+        # раньше голос ждал конца прогрева LLM, и TTS был готов на время загрузки модели позже.
+        # Ссылка держится до выхода, там задача отменяется: прогрев давно кончился или уже не нужен.
+        llm_warmup = asyncio.create_task(warmup.run())
         # Модель голоса грузится уже при открытом шлюзе: UI видит «TTS загружается».
         async with (
             warmup.voice(),
@@ -213,6 +211,7 @@ async def _serve(
                 pass
             serving.cancel()
             supervising.cancel()
+            llm_warmup.cancel()
             for reader in readers:
                 reader.cancel()
     return 0
@@ -269,6 +268,7 @@ class _Warmup:
             warmup = Message(Role.USER, self._texts.warmup_user)
             await self._llm.port.prefill((*self._prefix, warmup))
         except LLMUnavailable as exc:
+            _log.warning("llm.unavailable_at_start", problem=str(exc))
             await self.bus.publish(BackendStatusChanged(Component.LLM, BackendState.FAILED))
             return str(exc)
         await self.bus.publish(BackendStatusChanged(Component.LLM, BackendState.READY))

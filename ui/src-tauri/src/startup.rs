@@ -3,7 +3,7 @@
 //! принимается (AGENTS.md: «Изменение → замер до/после»).
 //!
 //! Метки — в `startup.log` папки настроек приложения: миллисекунды от клика по ярлыку (скрипт запуска
-//! передаёт время в `VTUBER_LAUNCH_AT`) и от старта процесса. Каждая метка — один раз за запуск.
+//! передаёт время в `AI_VTUBER_LAUNCH_AT`) и от старта процесса. Каждая метка — один раз за запуск.
 
 use std::collections::HashSet;
 use std::fs::{self, OpenOptions};
@@ -35,7 +35,7 @@ fn now_ms() -> u128 {
 
 /// Самое начало `run()`: время старта процесса.
 pub fn begin() {
-    let launch_ms = std::env::var("VTUBER_LAUNCH_AT")
+    let launch_ms = std::env::var("AI_VTUBER_LAUNCH_AT")
         .ok()
         .and_then(|raw| raw.trim().parse::<u128>().ok());
     let _ = CLOCK.set(Clock {
