@@ -4,6 +4,7 @@
  */
 import type { Brain } from "../body";
 import {
+  siteOf,
   keepWatching,
   mediaVideo,
   musicPlaying,
@@ -33,6 +34,11 @@ export class Scout {
   desktop = false;
   icons: Target[] = [];
   #app = "";
+
+  /** Программа в фокусе (имя exe без пути) — для чек-листа. */
+  get app(): string {
+    return this.#app;
+  }
   #tab: string | null = null;
   #tabAt = 0;
   #media: Media = NONE;
@@ -87,16 +93,30 @@ export class Scout {
    * Идёт ли видео (раз в кадр). Полный экран считается только у браузера, плеера, игры или незнакомой
    * программы: развёрнутые на весь экран чат и редактор — обычные окна.
    */
+  #copiedUntil = 0;
+  textCopied(now: number): void {
+    this.#copiedUntil = now + 12_000;
+  }
+  working(now: number): boolean {
+    return (
+      (now < this.#copiedUntil && this.topic !== "game" && this.topic !== "video") ||
+      this.topic === "code" ||
+      this.topic === "chat" ||
+      this.topic === "desktop" ||
+      (this.topic === "browser" && this.#tab !== null && siteOf(this.#tab) === "ai")
+    );
+  }
   video(now: number, fullscreenRaw: boolean): { video: boolean; fullscreen: boolean } {
     this.#refreshTab(now);
     const topic = this.topic;
+    if (this.working(now)) return { video: false, fullscreen: false };
     const wide = topic === "browser" || topic === "video" || topic === "game" || topic === "other";
     const fullscreen = wide && fullscreenRaw;
     // Начать — только по сильному признаку (живой тест 2026-11-17: звук фоновой вкладки браузера
     // сажал смотреть «фильм» на Википедии): плеер, полный экран или видеосайт, где правда играет.
     const sign = watching({ app: this.#app, topic, fullscreen, tab: this.#tab });
     const sounding = mediaVideo(this.#media, this.#tab) && this.#media.state === "playing";
-    const start = sign && (topic !== "browser" || fullscreen || sounding);
+    const start = sign && (topic !== "browser" || sounding);
     const playing = keepWatching({
       media: this.#media,
       pausedS: this.#media.state === "paused" ? (now - this.#pausedSince) / 1000 : 0,

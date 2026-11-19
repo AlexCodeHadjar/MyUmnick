@@ -651,6 +651,7 @@
 - `protocol.gen.ts` — `ui/src/core/protocol.gen.ts:1` — Автогенерация: `uv run python tools/gen_protocol.py`. Не редактировать.
 - `int16ToFloat` — `ui/src/core/resample.ts:11` — Сэмплы s16 → float [-1, 1).
 - `StreamResampler` — `ui/src/core/resample.ts:19` — —
+- `startupMark` — `ui/src/core/startup.ts:7` — —
 - `Role` — `ui/src/core/store.svelte.ts:29` — —
 - `MessageStatus` — `ui/src/core/store.svelte.ts:30` — —
 - `TurnPhase` — `ui/src/core/store.svelte.ts:32` — Фаза хода для аватара и кнопки «Стоп»: ждём первый токен / идёт ответ / ничего.
@@ -669,6 +670,7 @@
 - `Backoff` — `ui/src/core/transport.ts:37` — Пауза перед попыткой n (с нуля): `min(maxMs, initialMs · factor^n)`.
 - `TransportOptions` — `ui/src/core/transport.ts:43` — —
 - `Transport` — `ui/src/core/transport.ts:66` — —
+- `APP_VERSION` — `ui/src/core/version.ts:2` — Версия сборки для показа в окнах: номер, коммит и время запуска (vite.config.ts).
 
 ## ui/src/core/i18n
 Тексты интерфейса по языкам издания (Этап 20): фичи берут `locale.t`, а не строки в разметке.
@@ -679,7 +681,7 @@
 - `locale` — `ui/src/core/i18n/locale.svelte.ts:32` — Один на приложение: язык — свойство издания, а не отдельной панели.
 - `messagesFor` — `ui/src/core/i18n/locale.svelte.ts:35` — Словарь языка без реактивности — для тестов и чистых функций.
 - `ru` — `ui/src/core/i18n/ru.ts:21` — —
-- `Messages` — `ui/src/core/i18n/ru.ts:503` — —
+- `Messages` — `ui/src/core/i18n/ru.ts:593` — —
 
 ## ui/src/features/ambient
 Публичный API звука компьютера для сферы (Этап 22, R-63).
@@ -853,20 +855,27 @@
 ## ui/src/features/companion
 Публичный API «Сопровождения» (Этап 23, ADR-0045; R-63).
 
+- `ChecklistButton.svelte` — `ui/src/features/companion/ChecklistButton.svelte:1` — Кнопка чек-листа у персонажа в главном окне (просьба пользователя 2026-11-18): строки присылает слой
 - `Companion.svelte` — `ui/src/features/companion/Companion.svelte:1` — —
 - `CompanionMenu.svelte` — `ui/src/features/companion/CompanionMenu.svelte:1` — —
 - `CompanionReturn.svelte` — `ui/src/features/companion/CompanionReturn.svelte:1` — —
+- `DeskKeepsakes.svelte` — `ui/src/features/companion/DeskKeepsakes.svelte:1` — —
 - `startFeed` — `ui/src/features/companion/feed.ts:17` — Запустить передачу; `mouth(dt)` — громкость голоса 0…1. Возвращает остановку.
+- `createDesk` — `ui/src/features/companion/keepsakeScene.svelte.ts:16` — —
 - `CompanionWhen` — `ui/src/features/companion/settings.ts:5` — Настройки «Сопровождения» (Этап 23, ADR-0045): общие для главного окна и слоя спутника через
 - `CompanionBehavior` — `ui/src/features/companion/settings.ts:6` — —
 - `CompanionSettings` — `ui/src/features/companion/settings.ts:8` — —
-- `COMPANION_KEY` — `ui/src/features/companion/settings.ts:20` — —
-- `HEIGHTS` — `ui/src/features/companion/settings.ts:21` — —
-- `DEFAULT_SETTINGS` — `ui/src/features/companion/settings.ts:22` — —
-- `parseSettings` — `ui/src/features/companion/settings.ts:35` — Разбор сохранённого: чужое или битое — умолчания.
-- `loadSettings` — `ui/src/features/companion/settings.ts:62` — —
-- `saveSettings` — `ui/src/features/companion/settings.ts:70` — —
-- `shouldShow` — `ui/src/features/companion/settings.ts:82` — Виден ли спутник. Полный экран его больше не прячет (просьба пользователя 2026-11-17: виден всегда, в
+- `DESKTOP_REACTIONS` — `ui/src/features/companion/settings.ts:20` — —
+- `KEEPSAKE_TIMING` — `ui/src/features/companion/settings.ts:33` — —
+- `COMPANION_KEY` — `ui/src/features/companion/settings.ts:53` — —
+- `DIVERSION` — `ui/src/features/companion/settings.ts:54` — —
+- `TOUCH` — `ui/src/features/companion/settings.ts:62` — —
+- `HEIGHTS` — `ui/src/features/companion/settings.ts:70` — —
+- `DEFAULT_SETTINGS` — `ui/src/features/companion/settings.ts:71` — —
+- `parseSettings` — `ui/src/features/companion/settings.ts:84` — Разбор сохранённого: чужое или битое — умолчания.
+- `loadSettings` — `ui/src/features/companion/settings.ts:111` — —
+- `saveSettings` — `ui/src/features/companion/settings.ts:119` — —
+- `shouldShow` — `ui/src/features/companion/settings.ts:131` — Виден ли спутник. Полный экран его больше не прячет (просьба пользователя 2026-11-17: виден всегда, в
 
 ## ui/src/features/companion/behavior
 Подпакет «behavior» спутника: импорт снаружи — только через этот файл (R-06).
@@ -879,12 +888,24 @@
 - `grow` — `ui/src/features/companion/behavior/bond.ts:28` — Событие внимания: чем выше привязанность, тем медленнее она растёт дальше.
 - `bondTone` — `ui/src/features/companion/behavior/bond.ts:33` — —
 - `parseBond` — `ui/src/features/companion/behavior/bond.ts:39` — —
+- `createBuilding` — `ui/src/features/companion/behavior/building.svelte.ts:4` — —
+- `createNote` — `ui/src/features/companion/behavior/deskNote.svelte.ts:5` — —
+- `DesktopEvent` — `ui/src/features/companion/behavior/desktopEvents.ts:14` — —
+- `DesktopReactions` — `ui/src/features/companion/behavior/desktopEvents.ts:19` — —
+- `Diversion` — `ui/src/features/companion/behavior/diversions.ts:3` — —
+- `Scene` — `ui/src/features/companion/behavior/diversions.ts:4` — —
+- `Diversions` — `ui/src/features/companion/behavior/diversions.ts:10` — —
 - `Habit` — `ui/src/features/companion/behavior/habits.ts:8` — —
 - `AppWatch` — `ui/src/features/companion/behavior/habits.ts:25` — —
 - `FAVORITES_KEY` — `ui/src/features/companion/behavior/habits.ts:67` — —
 - `pickIcon` — `ui/src/features/companion/behavior/habits.ts:70` — Значок, на который садиться: чаще тот, где чаще гладили (вес 1 + число поглаживаний).
 - `isRecycleBin` — `ui/src/features/companion/behavior/habits.ts:84` — —
 - `parseFavorites` — `ui/src/features/companion/behavior/habits.ts:88` — —
+- `Keepsake` — `ui/src/features/companion/behavior/keepsakes.ts:1` — —
+- `Workday` — `ui/src/features/companion/behavior/keepsakes.ts:5` — —
+- `parsePocket` — `ui/src/features/companion/behavior/keepsakes.ts:26` — —
+- `addItem` — `ui/src/features/companion/behavior/keepsakes.ts:35` — —
+- `dayProgress` — `ui/src/features/companion/behavior/keepsakes.ts:39` — —
 - `Life` — `ui/src/features/companion/behavior/life.ts:34` — —
 - `Mood` — `ui/src/features/companion/behavior/mood.ts:6` — Настроение спутника (BEHAVIOR §2): бодрость и радость 0…1. Меняются медленно, определяют, когда он
 - `MoodEvent` — `ui/src/features/companion/behavior/mood.ts:13` — —
@@ -907,7 +928,7 @@
 - `WALK_LIMIT` — `ui/src/features/companion/body/brain.ts:28` — Ближе — пешком или прыжком, дальше — молнией (решение пользователя, раздел 9.1).
 - `Brain` — `ui/src/features/companion/body/brain.ts:49` — —
 - `PoseState` — `ui/src/features/companion/body/pose.ts:8` — —
-- `poseOf` — `ui/src/features/companion/body/pose.ts:54` — —
+- `poseOf` — `ui/src/features/companion/body/pose.ts:50` — —
 - `Phase` — `ui/src/features/companion/body/types.ts:4` — —
 - `Music` — `ui/src/features/companion/body/types.ts:18` — Радио (BEHAVIOR §8): играет — поёт стоя и не гуляет; пауза — слушает в наушниках.
 - `Effect` — `ui/src/features/companion/body/types.ts:20` — —
@@ -916,28 +937,45 @@
 ## ui/src/features/companion/controller
 Подпакет «controller» спутника: контроллер и его части; импорт снаружи — только через этот файл (R-06).
 
+- `Feed` — `ui/src/features/companion/controller/assistantFeed.ts:8` — Подача главного окна (`companion-feed`, ADR-0045, ADR-0049).
+- `AssistantFeed` — `ui/src/features/companion/controller/assistantFeed.ts:23` — —
 - `Speak` — `ui/src/features/companion/controller/conductor.ts:18` — Предложить фразу голосу; `watchLine` — фраза самого просмотра (пропускается и во время фильма).
 - `ConductorParts` — `ui/src/features/companion/controller/conductor.ts:20` — —
 - `Situation` — `ui/src/features/companion/controller/conductor.ts:30` — Что от контроллера нужно для картины кадра.
 - `Conductor` — `ui/src/features/companion/controller/conductor.ts:45` — —
-- `Feed` — `ui/src/features/companion/controller/controller.ts:26` — Подача главного окна (`companion-feed`, ADR-0045, ADR-0049).
-- `CompanionController` — `ui/src/features/companion/controller/controller.ts:50` — —
+- `CompanionController` — `ui/src/features/companion/controller/controller.ts:22` — —
+- `CursorInput` — `ui/src/features/companion/controller/cursorInput.ts:7` — —
 - `EscortState` — `ui/src/features/companion/controller/escort.ts:17` — —
 - `Escort` — `ui/src/features/companion/controller/escort.ts:24` — —
+- `CompanionFrame` — `ui/src/features/companion/controller/frame.ts:12` — —
 - `Gesture` — `ui/src/features/companion/controller/gestures.ts:11` — —
 - `GestureHooks` — `ui/src/features/companion/controller/gestures.ts:19` — —
 - `Gestures` — `ui/src/features/companion/controller/gestures.ts:28` — —
+- `pickOne` — `ui/src/features/companion/controller/pickOne.ts:1` — —
+- `pointerHandlers` — `ui/src/features/companion/controller/pointer.ts:2` — —
 - `Ports` — `ui/src/features/companion/controller/ports.ts:10` — —
 - `tauriPorts` — `ui/src/features/companion/controller/ports.ts:30` — —
 - `MainState` — `ui/src/features/companion/controller/presence.ts:10` — Главное окно: показано ли и в фокусе, где стоит (физические пиксели).
 - `Presence` — `ui/src/features/companion/controller/presence.ts:16` — —
-- `MediaChange` — `ui/src/features/companion/controller/scout.ts:26` — Смена состояния того, что играет: для реплик «пауза» / «продолжаем».
-- `Scout` — `ui/src/features/companion/controller/scout.ts:28` — —
+- `MediaChange` — `ui/src/features/companion/controller/scout.ts:27` — Смена состояния того, что играет: для реплик «пауза» / «продолжаем».
+- `Scout` — `ui/src/features/companion/controller/scout.ts:29` — —
 - `Speech` — `ui/src/features/companion/controller/speech.ts:12` — —
+- `subscribe` — `ui/src/features/companion/controller/subscriptions.ts:8` — —
+- `createView` — `ui/src/features/companion/controller/view.svelte.ts:27` — —
+- `CompanionView` — `ui/src/features/companion/controller/view.svelte.ts:284` — —
 
 ## ui/src/features/companion/look
 Подпакет «look» спутника: импорт снаружи — только через этот файл (R-06).
 
+- `Checklist.svelte` — `ui/src/features/companion/look/Checklist.svelte:1` — —
+- `CheckRow` — `ui/src/features/companion/look/checklist.ts:10` — —
+- `Checklist` — `ui/src/features/companion/look/checklist.ts:23` — —
+- `checklist` — `ui/src/features/companion/look/checklist.ts:127` — Строки чек-листа на момент `now` (мс, `performance.now()`).
+- `serveChecklist` — `ui/src/features/companion/look/checklistLink.ts:40` — Слой спутника: отвечать строками чек-листа, пока главное окно просит. Вернёт отписку.
+- `watchChecklist` — `ui/src/features/companion/look/checklistLink.ts:58` — Главное окно: просить строки и получать их в `onRows`. Вернёт отписку (перестать просить).
+- `CompanionMenu.svelte` — `ui/src/features/companion/look/CompanionMenu.svelte:1` — —
+- `poseScene` — `ui/src/features/companion/look/diversions.ts:16` — —
+- `drawDiversion` — `ui/src/features/companion/look/diversions.ts:26` — Props are painted in unit coordinates relative to the boots.
 - `Point` — `ui/src/features/companion/look/effects.ts:8` — —
 - `Random` — `ui/src/features/companion/look/effects.ts:9` — —
 - `seeded` — `ui/src/features/companion/look/effects.ts:12` — Генератор с зерном (mulberry32): молния не «дёргается» сильнее, чем мы просим.
@@ -946,39 +984,54 @@
 - `along` — `ui/src/features/companion/look/effects.ts:63` — Точка на ломаной на доле `t` её длины — где сейчас разряд.
 - `drawBolt` — `ui/src/features/companion/look/effects.ts:97` — Молния тремя проходами: широкое свечение, мягкая линия, яркая сердцевина.
 - `drawEffects` — `ui/src/features/companion/look/effects.ts:277` — Нарисовать эффекты тела; `seed` меняется 30 раз в секунду — молния «живёт».
+- `Inspection.svelte` — `ui/src/features/companion/look/Inspection.svelte:1` — —
 - `MenuPlace` — `ui/src/features/companion/look/menu.ts:7` — —
 - `placeMenu` — `ui/src/features/companion/look/menu.ts:20` — Левый верхний угол меню размера `size` для щелчка в `at` на экране `view`.
 - `SOFT_LOOPS` — `ui/src/features/companion/look/motion.ts:30` — Циклы, где кадры отличаются только телом: в них растворение уместно. Лицо меняется — резко. «Держат» и
 - `Swap` — `ui/src/features/companion/look/motion.ts:44` — Этап смены позы: старая уходит (`out`) или новая приходит (`in`), `k` — 0…1.
 - `Pose2D` — `ui/src/features/companion/look/motion.ts:49` — —
 - `Motion` — `ui/src/features/companion/look/motion.ts:58` — —
-- `FALLBACK` — `ui/src/features/companion/look/pack.ts:10` — Замены отсутствующей позы, в порядке предпочтения; всё кончается позой `stand`.
-- `ANCHORS` — `ui/src/features/companion/look/pack.ts:38` — Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот».
-- `CANVAS_RATIO` — `ui/src/features/companion/look/pack.ts:67` — Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз.
-- `LOOP_FPS` — `ui/src/features/companion/look/pack.ts:74` — Частота кадров зацикленной позы (`<поза>_1…N`), кадров в секунду.
-- `FrameState` — `ui/src/features/companion/look/pack.ts:100` — Что сейчас с персонажем: для выбора кадра. `blink` — доля моргания 0…1 или `null`.
-- `sequence` — `ui/src/features/companion/look/pack.ts:108` — Кадры `<имя>_1`, `<имя>_2` … подряд, пока есть.
-- `pickFrame` — `ui/src/features/companion/look/pack.ts:147` — Кадр для позы с учётом замен: речь (кадры рта по громкости), моргание, зацикленные кадры позы,
-- `poseName` — `ui/src/features/companion/look/pack.ts:155` — Имя позы из имени файла: `Sit_Edge.PNG` → `sit_edge`; не картинка — `null`.
-- `savePoses` — `ui/src/features/companion/look/pack.ts:162` — Сохранить позы из выбранной папки; вернёт, сколько картинок принято.
-- `clearPoses` — `ui/src/features/companion/look/pack.ts:174` — —
-- `DEFAULT_PACK` — `ui/src/features/companion/look/pack.ts:185` — Встроенный персонаж (`ui/public/characters/default/`; подгонка — `docs/character/README.md`).
-- `loadPoses` — `ui/src/features/companion/look/pack.ts:218` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
-- `RING` — `ui/src/features/companion/look/pack.ts:240` — Циклы с направлением (походка, лазанье, танец) — кольцом; спокойные — «туда-обратно» (ANIMATION.md).
-- `loopIndex` — `ui/src/features/companion/look/pack.ts:246` — Номер кадра цикла. «Туда-обратно» (1-2-3-4-3-2): нет скачка с последнего кадра на первый, и из
+- `FALLBACK` — `ui/src/features/companion/look/pack.ts:19` — Замены отсутствующей позы, в порядке предпочтения; всё кончается позой `stand`.
+- `ANCHORS` — `ui/src/features/companion/look/pack.ts:49` — Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот».
+- `CANVAS_RATIO` — `ui/src/features/companion/look/pack.ts:81` — Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз.
+- `LOOP_FPS` — `ui/src/features/companion/look/pack.ts:89` — Частота кадров зацикленной позы (`<поза>_1…N`), кадров в секунду.
+- `FrameState` — `ui/src/features/companion/look/pack.ts:117` — Что сейчас с персонажем: для выбора кадра. `blink` — доля моргания 0…1 или `null`.
+- `sequence` — `ui/src/features/companion/look/pack.ts:127` — Кадры `<имя>_1`, `<имя>_2` … подряд, пока есть.
+- `pickFrame` — `ui/src/features/companion/look/pack.ts:171` — Кадр для позы с учётом замен: речь (кадры рта по громкости), моргание, зацикленные кадры позы,
+- `poseName` — `ui/src/features/companion/look/pack.ts:179` — Имя позы из имени файла: `Sit_Edge.PNG` → `sit_edge`; не картинка — `null`.
+- `savePoses` — `ui/src/features/companion/look/pack.ts:186` — Сохранить позы из выбранной папки; вернёт, сколько картинок принято.
+- `clearPoses` — `ui/src/features/companion/look/pack.ts:198` — —
+- `DEFAULT_PACK` — `ui/src/features/companion/look/pack.ts:209` — Встроенный персонаж (`ui/public/characters/default/`; подгонка — `docs/character/README.md`).
+- `PACK_HEIGHT` — `ui/src/features/companion/look/pack.ts:219` — Высота кадра встроенного пакета; выше — место над головой (штамп, рожки), FRAMES-6 «Принято».
+- `loadPoses` — `ui/src/features/companion/look/pack.ts:262` — Позы как `ImageBitmap`, уменьшенные до экранного размера (5.2: экономная загрузка): загруженные
+- `RING` — `ui/src/features/companion/look/pack.ts:284` — Циклы с направлением (походка, лазанье, танец) — кольцом; спокойные — «туда-обратно» (ANIMATION.md).
+- `loopIndex` — `ui/src/features/companion/look/pack.ts:297` — Номер кадра цикла. «Туда-обратно» (1-2-3-4-3-2): нет скачка с последнего кадра на первый, и из
 - `PANEL` — `ui/src/features/companion/look/panel.ts:8` — Табло в долях кадра — измерено по сгенерированным кадрам `frames-4` (2026-11-18), с отступом внутрь.
 - `panelRect` — `ui/src/features/companion/look/panel.ts:12` — Прямоугольник табло на экране по рамке нарисованного кадра.
 - `drawPanel` — `ui/src/features/companion/look/panel.ts:22` — Написать `text` на табло; не влезает — медленно бежит по кругу (`time` — секунды).
-- `placeholderPose` — `ui/src/features/companion/look/placeholder.ts:261` — Силуэт позы: широкие линии с градиентом палитры окна, круг головы, подпись с именем позы.
-- `Look` — `ui/src/features/companion/look/stage.ts:42` — —
-- `CompanionStage` — `ui/src/features/companion/look/stage.ts:55` — —
+- `placeholderPose` — `ui/src/features/companion/look/placeholder.ts:289` — Силуэт позы: широкие линии с градиентом палитры окна, круг головы, подпись с именем позы.
+- `Placement` — `ui/src/features/companion/look/placement.ts:5` — Где рисовать кадр позы относительно точки опоры: размер и сдвиг центра. Кадр выше обычного (место над
+- `placement` — `ui/src/features/companion/look/placement.ts:19` — `tall` — во сколько раз кадр выше обычного (1 — обычный); `ANCHORS` заданы в долях обычного кадра.
+- `growsDown` — `ui/src/features/companion/look/placement.ts:33` — Опора в верхней половине кадра — лишнее место у высокого кадра снизу (подгонка FRAMES/этапов — так же).
+- `tallness` — `ui/src/features/companion/look/placement.ts:38` — Во сколько раз кадр выше обычного; `unit` — высота обычного кадра (рост × CANVAS_RATIO).
+- `RadioCard.svelte` — `ui/src/features/companion/look/RadioCard.svelte:1` — —
+- `ScenePose` — `ui/src/features/companion/look/scenePoses.ts:7` — —
+- `SCENE_FALLBACK` — `ui/src/features/companion/look/scenePoses.ts:30` — Без своих кадров (пакет пользователя) сцена рисуется той позой, что была до FRAMES-6.
+- `SCENE_ANCHORS` — `ui/src/features/companion/look/scenePoses.ts:57` — —
+- `SCENE_FPS` — `ui/src/features/companion/look/scenePoses.ts:82` — Кадров в секунду. У одноразовых сцен — так, чтобы кадры уложились в длительность сцены.
+- `ONCE` — `ui/src/features/companion/look/scenePoses.ts:112` — Одноразовые сцены: кадры идут по разу от начала позы и держат последний, а не крутятся.
+- `SCENE_RING` — `ui/src/features/companion/look/scenePoses.ts:129` — Циклы с направлением (бег, ноша) — кольцом, а не «туда-обратно».
+- `onceFrames` — `ui/src/features/companion/look/scenePoses.ts:135` — Кадры одноразовой сцены по порядку: `<имя>_1…N`. Базовый кадр `<имя>` — копия одного из них (этапы
+- `onceIndex` — `ui/src/features/companion/look/scenePoses.ts:141` — Номер кадра одноразовой сцены: `since` секунд от начала позы, последний кадр держится.
+- `Look` — `ui/src/features/companion/look/stage.ts:47` — —
+- `CompanionStage` — `ui/src/features/companion/look/stage.ts:60` — —
 
 ## ui/src/features/companion/mind
 «Разум» спутника (MIND.md, ADR-0051): картина мира со сглаживанием, потребности, стимулы, арбитр
 
 - `ActivityId` — `ui/src/features/companion/mind/activities.ts:8` — —
-- `MindContext` — `ui/src/features/companion/mind/activities.ts:12` — Что арбитр знает о мире в момент оценки (сглаженное, MIND §3.1–3.3).
-- `ACTIVITIES` — `ui/src/features/companion/mind/activities.ts:47` — —
+- `MindContext` — `ui/src/features/companion/mind/activities.ts:22` — Что арбитр знает о мире в момент оценки (сглаженное, MIND §3.1–3.3).
+- `ACTIVITIES` — `ui/src/features/companion/mind/activities.ts:57` — —
 - `Band` — `ui/src/features/companion/mind/arbiter.ts:6` — Арбитр действий (MIND §3.4): utility AI с защитой от метаний — группы важности, минимальная длительность,
 - `Activity` — `ui/src/features/companion/mind/arbiter.ts:8` — —
 - `Choice` — `ui/src/features/companion/mind/arbiter.ts:23` — —
@@ -990,8 +1043,9 @@
 - `DriveContext` — `ui/src/features/companion/mind/drives.ts:12` — —
 - `Drives` — `ui/src/features/companion/mind/drives.ts:20` — —
 - `Fact` — `ui/src/features/companion/mind/fact.ts:6` — Сглаженный факт картины мира (MIND §3.1): становится правдой, если сырой сигнал продержался
-- `Senses` — `ui/src/features/companion/mind/index.ts:20` — Сырые наблюдения кадра: сглаживает их сам «Разум».
-- `Mind` — `ui/src/features/companion/mind/index.ts:47` — —
+- `Ranked` — `ui/src/features/companion/mind/index.ts:16` — Строка чек-листа: баллы действия, можно ли начать (нет паузы) и идёт ли оно сейчас.
+- `Senses` — `ui/src/features/companion/mind/index.ts:28` — Сырые наблюдения кадра: сглаживает их сам «Разум».
+- `Mind` — `ui/src/features/companion/mind/index.ts:56` — —
 - `Fix` — `ui/src/features/companion/mind/sanity.ts:7` — Сторож «Разума» (COMPANION.md, часть III): раз в секунду сверяет состояние тела и решений с правилами
 - `Snapshot` — `ui/src/features/companion/mind/sanity.ts:10` — Что сторож видит в кадре.
 - `Sanity` — `ui/src/features/companion/mind/sanity.ts:42` — —
@@ -1024,16 +1078,17 @@
 - `quotedNames` — `ui/src/features/companion/senses/pointer.ts:9` — Названия в кавычках «…», "…", “…” длиной 2–40 знаков.
 - `findTarget` — `ui/src/features/companion/senses/pointer.ts:15` — Видимый элемент, название которого совпадает с одним из названий (без регистра): точное — лучше.
 - `RemarkTopic` — `ui/src/features/companion/senses/remarks.ts:9` — —
-- `topicOf` — `ui/src/features/companion/senses/remarks.ts:74` — —
-- `TimeOfDay` — `ui/src/features/companion/senses/remarks.ts:79` — —
-- `timeOfDay` — `ui/src/features/companion/senses/remarks.ts:81` — —
-- `remark` — `ui/src/features/companion/senses/remarks.ts:97` — Комментарий: чаще — про программу, иногда — про время суток или простой; без повтора подряд.
-- `nextPause` — `ui/src/features/companion/senses/remarks.ts:111` — Пауза до следующего комментария сам по себе, секунды: не часто, чтобы не надоедал.
-- `Target` — `ui/src/features/companion/senses/remarks.ts:116` — Элемент экрана от оболочки (`companion_targets`, ADR-0048): кнопка, ссылка, вкладка, значок.
-- `choosePoke` — `ui/src/features/companion/senses/remarks.ts:128` — Что потыкать: случайный элемент целиком на экране. Палец — к ближнему краю элемента, тело — с той
+- `topicOf` — `ui/src/features/companion/senses/remarks.ts:86` — —
+- `TimeOfDay` — `ui/src/features/companion/senses/remarks.ts:91` — —
+- `timeOfDay` — `ui/src/features/companion/senses/remarks.ts:93` — —
+- `remark` — `ui/src/features/companion/senses/remarks.ts:109` — Комментарий: чаще — про программу, иногда — про время суток или простой; без повтора подряд.
+- `nextPause` — `ui/src/features/companion/senses/remarks.ts:123` — Пауза до следующего комментария сам по себе, секунды: не часто, чтобы не надоедал.
+- `Target` — `ui/src/features/companion/senses/remarks.ts:128` — Элемент экрана от оболочки (`companion_targets`, ADR-0048): кнопка, ссылка, вкладка, значок.
+- `choosePoke` — `ui/src/features/companion/senses/remarks.ts:140` — Что потыкать: случайный элемент целиком на экране. Палец — к ближнему краю элемента, тело — с той
 - `SiteTopic` — `ui/src/features/companion/senses/sites.ts:5` — Сайты в браузере (BEHAVIOR §5): тема — по названию вкладки, которое и так видно на экране (UI
 - `siteOf` — `ui/src/features/companion/senses/sites.ts:36` — —
 - `browserTopic` — `ui/src/features/companion/senses/sites.ts:48` — Что сказать про браузер по названиям вкладок: «много вкладок», тема узнанного сайта или `null` (тогда
+- `CursorTouch` — `ui/src/features/companion/senses/stroking.ts:5` — One short trail in screen coordinates; only keep the latest turning point.
 - `Trigger` — `ui/src/features/companion/senses/triggers.ts:6` — Триггеры спутника (BEHAVIOR §3): события мыши, окна-хозяина и времени → реакция с перезарядкой.
 - `Cooldowns` — `ui/src/features/companion/senses/triggers.ts:34` — —
 - `CursorWatch` — `ui/src/features/companion/senses/triggers.ts:55` — Курсор: возвращение после отсутствия (T7), «смотрит» (T8), рывок рядом (T9), долгая работа (T17).
@@ -1054,21 +1109,21 @@
 Подпакет «space» спутника: импорт снаружи — только через этот файл (R-06).
 
 - `Pose` — `ui/src/features/companion/space/anchors.ts:7` — —
-- `Surface` — `ui/src/features/companion/space/anchors.ts:45` — Опора: горизонтальная (край окна, «пол») или вертикальная (бок окна).
-- `Spot` — `ui/src/features/companion/space/anchors.ts:53` — Место на опоре: точка опоры позы (сиденье, ступни, ладони) и сама поза.
-- `SCREEN` — `ui/src/features/companion/space/anchors.ts:63` — «Хозяин» боков экрана: не окно, за ним не следят и его не опрашивают.
-- `SNAP_RADIUS` — `ui/src/features/companion/space/anchors.ts:70` — —
-- `surfaces` — `ui/src/features/companion/space/anchors.ts:75` — Все опоры картины: открытые участки верхних краёв окон, бока окон, «пол» над панелью задач.
-- `spotOn` — `ui/src/features/companion/space/anchors.ts:115` — Место на опоре `surface`, ближайшее к точке; поза — по месту.
-- `hostId` — `ui/src/features/companion/space/anchors.ts:142` — Окно, на котором место (за ним следят), или `null` — «пол», верх и бока экрана.
-- `ICONS` — `ui/src/features/companion/space/anchors.ts:149` — «Хозяин» значков рабочего стола: они опоры, но не окна (оболочка их не отслеживает).
-- `iconSurfaces` — `ui/src/features/companion/space/anchors.ts:152` — Верх значков рабочего стола как опоры (по образцу Capri): сесть на «Корзину» или «Steam».
-- `wallX` — `ui/src/features/companion/space/anchors.ts:165` — Где стоит персонаж у бока: на полкорпуса от стены, внутри экрана и вне окна.
-- `snap` — `ui/src/features/companion/space/anchors.ts:181` — Ближайшее место в радиусе `radius` или `null` — тогда спутник «парит» и опускается сам.
-- `below` — `ui/src/features/companion/space/anchors.ts:200` — Горизонтальная опора под точкой (падение): ближайшая сверху вниз, иначе «пол».
-- `seatSpot` — `ui/src/features/companion/space/anchors.ts:213` — Куда сесть, когда активным стало окно: правая треть верхнего края, на открытом участке.
-- `floorSpot` — `ui/src/features/companion/space/anchors.ts:230` — Место на «полу» у правого края — рабочий стол или развёрнутое окно.
-- `sameSurface` — `ui/src/features/companion/space/anchors.ts:239` — Та же опора в новой картине (окно сдвинули): по хозяину и виду.
+- `Surface` — `ui/src/features/companion/space/anchors.ts:70` — Опора: горизонтальная (край окна, «пол») или вертикальная (бок окна).
+- `Spot` — `ui/src/features/companion/space/anchors.ts:78` — Место на опоре: точка опоры позы (сиденье, ступни, ладони) и сама поза.
+- `SCREEN` — `ui/src/features/companion/space/anchors.ts:88` — «Хозяин» боков экрана: не окно, за ним не следят и его не опрашивают.
+- `SNAP_RADIUS` — `ui/src/features/companion/space/anchors.ts:95` — —
+- `surfaces` — `ui/src/features/companion/space/anchors.ts:100` — Все опоры картины: открытые участки верхних краёв окон, бока окон, «пол» над панелью задач.
+- `spotOn` — `ui/src/features/companion/space/anchors.ts:140` — Место на опоре `surface`, ближайшее к точке; поза — по месту.
+- `hostId` — `ui/src/features/companion/space/anchors.ts:167` — Окно, на котором место (за ним следят), или `null` — «пол», верх и бока экрана.
+- `ICONS` — `ui/src/features/companion/space/anchors.ts:174` — «Хозяин» значков рабочего стола: они опоры, но не окна (оболочка их не отслеживает).
+- `iconSurfaces` — `ui/src/features/companion/space/anchors.ts:177` — Верх значков рабочего стола как опоры (по образцу Capri): сесть на «Корзину» или «Steam».
+- `wallX` — `ui/src/features/companion/space/anchors.ts:190` — Где стоит персонаж у бока: на полкорпуса от стены, внутри экрана и вне окна.
+- `snap` — `ui/src/features/companion/space/anchors.ts:206` — Ближайшее место в радиусе `radius` или `null` — тогда спутник «парит» и опускается сам.
+- `below` — `ui/src/features/companion/space/anchors.ts:225` — Горизонтальная опора под точкой (падение): ближайшая сверху вниз, иначе «пол».
+- `seatSpot` — `ui/src/features/companion/space/anchors.ts:238` — Куда сесть, когда активным стало окно: правая треть верхнего края, на открытом участке.
+- `floorSpot` — `ui/src/features/companion/space/anchors.ts:255` — Место на «полу» у правого края — рабочий стол или развёрнутое окно.
+- `sameSurface` — `ui/src/features/companion/space/anchors.ts:264` — Та же опора в новой картине (окно сдвинули): по хозяину и виду.
 - `Point` — `ui/src/features/companion/space/chase.ts:20` — —
 - `cursorSpot` — `ui/src/features/companion/space/chase.ts:43` — Где встать, чтобы быть рядом с курсором; `body` — где персонаж сейчас (ступни).
 - `worthMoving` — `ui/src/features/companion/space/chase.ts:67` — Стоит ли идти: другая опора или заметно другое место на той же.
@@ -1104,20 +1159,21 @@
 - `Edition` — `ui/src/features/edition/editions.ts:9` — —
 - `EDITIONS` — `ui/src/features/edition/editions.ts:20` — Порядок плиток; новое издание — строка здесь и файл `config/editions/<id>.toml`.
 - `LauncherState` — `ui/src/features/edition/editions.ts:33` — Что окно помнит между запусками (`launcher.json` в папке настроек приложения).
-- `DEFAULT_LAUNCHER` — `ui/src/features/edition/editions.ts:40` — —
-- `isEditionId` — `ui/src/features/edition/editions.ts:42` — —
-- `editionById` — `ui/src/features/edition/editions.ts:55` — —
-- `editionAt` — `ui/src/features/edition/editions.ts:60` — Плитка по номеру; номер вне ряда — первая плитка.
-- `parseLauncher` — `ui/src/features/edition/editions.ts:69` — Разбор сохранённого состояния: битое или чужое — умолчания, а не сбой запуска.
-- `needsPicker` — `ui/src/features/edition/editions.ts:81` — Показывать ли экран: при «запоминать» — нет, если не попросили сменить издание явно.
-- `needsAgeGate` — `ui/src/features/edition/editions.ts:86` — Нужно ли подтверждение возраста для выбранного издания.
-- `PickerAction` — `ui/src/features/edition/editions.ts:90` — —
-- `keyAction` — `ui/src/features/edition/editions.ts:94` — Клавиши экрана: ←/→ — фокус по кругу, Enter/Пробел — запуск, 1…9 — сразу плитка.
-- `afterPick` — `ui/src/features/edition/editions.ts:106` — Состояние после выбора: издание запоминается как последнее, подтверждение — с датой.
-- `LauncherPort` — `ui/src/features/edition/launcher.ts:11` — —
-- `launcher` — `ui/src/features/edition/launcher.ts:108` — —
-- `PICK_PARAM` — `ui/src/features/edition/launcher.ts:113` — Запрос экрана выбора при перезагрузке окна (смена издания из строки статуса).
-- `pickRequested` — `ui/src/features/edition/launcher.ts:115` — —
+- `DEFAULT_LAUNCHER` — `ui/src/features/edition/editions.ts:42` — Запоминать — по умолчанию (ускорение запуска, 2026-11-19): окно сразу открывает прошлое издание, экран
+- `isEditionId` — `ui/src/features/edition/editions.ts:44` — —
+- `editionById` — `ui/src/features/edition/editions.ts:57` — —
+- `editionAt` — `ui/src/features/edition/editions.ts:62` — Плитка по номеру; номер вне ряда — первая плитка.
+- `parseLauncher` — `ui/src/features/edition/editions.ts:71` — Разбор сохранённого состояния: битое или чужое — умолчания, а не сбой запуска.
+- `launcherJson` — `ui/src/features/edition/editions.ts:85` — Как состояние хранится в `launcher.json` (ключ `last` читает и скрипт запуска).
+- `needsPicker` — `ui/src/features/edition/editions.ts:94` — Показывать ли экран: при «запоминать» — нет, если не попросили сменить издание явно.
+- `needsAgeGate` — `ui/src/features/edition/editions.ts:99` — Нужно ли подтверждение возраста для выбранного издания.
+- `PickerAction` — `ui/src/features/edition/editions.ts:103` — —
+- `keyAction` — `ui/src/features/edition/editions.ts:107` — Клавиши экрана: ←/→ — фокус по кругу, Enter/Пробел — запуск, 1…9 — сразу плитка.
+- `afterPick` — `ui/src/features/edition/editions.ts:119` — Состояние после выбора: издание запоминается как последнее, подтверждение — с датой.
+- `LauncherPort` — `ui/src/features/edition/launcher.ts:17` — —
+- `launcher` — `ui/src/features/edition/launcher.ts:114` — —
+- `PICK_PARAM` — `ui/src/features/edition/launcher.ts:119` — Запрос экрана выбора при перезагрузке окна (смена издания из строки статуса).
+- `pickRequested` — `ui/src/features/edition/launcher.ts:121` — —
 
 ## ui/src/features/memory
 Публичный API редактора памяти (R-63).

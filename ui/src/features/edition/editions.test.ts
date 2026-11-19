@@ -6,6 +6,7 @@ import {
   editionById,
   EDITIONS,
   keyAction,
+  launcherJson,
   needsAgeGate,
   needsPicker,
   parseLauncher,
@@ -24,16 +25,24 @@ describe("экран выбора издания", () => {
 
   it("битое состояние — умолчания, а не сбой", () => {
     expect(parseLauncher(null)).toEqual(DEFAULT_LAUNCHER);
-    expect(parseLauncher({ last: "de", remember: "yes" })).toEqual(DEFAULT_LAUNCHER);
-    expect(parseLauncher({ last: "en", remember: true, adultConfirmed: "2026-11-10" })).toEqual({
+    expect(parseLauncher({ last: "de", ask: "yes" })).toEqual(DEFAULT_LAUNCHER);
+    expect(parseLauncher({ last: "en", ask: false, adultConfirmed: "2026-11-10" })).toEqual({
       last: "en",
       remember: true,
       adultConfirmed: "2026-11-10",
     });
   });
 
-  it("экран показывается, пока выбор не запомнен, и по явной просьбе", () => {
-    expect(needsPicker(DEFAULT_LAUNCHER, false)).toBe(true);
+  it("экран — только если попросили спрашивать каждый раз или сменить издание", () => {
+    expect(needsPicker(DEFAULT_LAUNCHER, false)).toBe(false);
+    expect(needsPicker(parseLauncher({ last: "ru", remember: false }), false)).toBe(false);
+    expect(needsPicker(parseLauncher({ last: "ru", ask: true }), false)).toBe(true);
+    expect(
+      parseLauncher(JSON.parse(launcherJson({ ...DEFAULT_LAUNCHER, remember: false }))),
+    ).toEqual({
+      ...DEFAULT_LAUNCHER,
+      remember: false,
+    });
     expect(needsPicker({ ...DEFAULT_LAUNCHER, remember: true }, false)).toBe(false);
     expect(needsPicker({ ...DEFAULT_LAUNCHER, remember: true }, true)).toBe(true);
     expect(pickRequested("?pick=1")).toBe(true);

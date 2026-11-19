@@ -34,12 +34,8 @@ function moving(phase: Phase): Pose | null {
 /** Режимы на месте: смотрит видео, радио, гладят. */
 function mode(state: PoseState, pose: Pose): Pose | null {
   if (state.watching && pose === "sit_corner") return "watch";
-  // Радио: стоя — сидит на музыкальном ящике (на паузе слушает), сидя — сидит как сидел.
-  if (state.music !== "off" && pose === "stand" && !state.petting) {
-    return state.music === "playing" ? "jukebox" : "radio_idle";
-  }
-  // Гладят стоящего — кадр «довольный»; нет его — «стоит» с закрытыми глазами (stage.ts).
-  if (state.petting && pose === "stand") return "pet";
+  // Гладят стоящего — жмурится (`purr`, FRAMES-6); нет кадров — «довольный» `pet` или закрытые глаза.
+  if (state.petting && pose === "stand") return "purr";
   return null;
 }
 
@@ -52,6 +48,7 @@ function drowsy(state: PoseState, pose: Pose): Pose | null {
 }
 
 export function poseOf(state: PoseState): Pose {
+  if (state.music !== "off") return "jukebox";
   if (state.pinned !== null) return state.pinned;
   const motion = moving(state.phase);
   if (motion !== null) return motion;

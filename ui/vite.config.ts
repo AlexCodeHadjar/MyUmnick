@@ -1,5 +1,6 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vitest/config";
+import { buildStamp } from "./build-stamp.js";
 
 // Порт фиксирован: его ждёт Tauri (`build.devUrl` в src-tauri/tauri.conf.json).
 const DEV_PORT = 1420;
@@ -14,6 +15,7 @@ export default defineConfig(({ mode }) => ({
     watch: { ignored: ["**/src-tauri/**"] },
   },
   envPrefix: ["VITE_", "TAURI_ENV_"],
+  define: { __APP_VERSION__: JSON.stringify(buildStamp()) },
   build: { target: "es2022" },
   // vitest (режим test) берёт клиентскую сборку Svelte: иначе руны компилируются в серверный
   // вариант без реактивности, и тест проверял бы не тот код, что работает в окне.

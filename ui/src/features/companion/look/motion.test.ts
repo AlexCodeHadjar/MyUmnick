@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Body } from "../body";
 import { Motion } from "./motion";
-import { loopIndex } from "./pack";
+import { LOOP_FPS, loopIndex } from "./pack";
 
 const body: Body = {
   phase: "rest",
@@ -17,8 +17,9 @@ const body: Body = {
 
 describe("плавность кодом", () => {
   it("спокойный цикл — туда-обратно без скачка 4→1; походка — кольцом", () => {
+    const fps = LOOP_FPS.stand ?? 6;
     const at = (pose: "stand" | "walk", step: number): number =>
-      loopIndex(pose, step / 5 + 0.01, 4);
+      loopIndex(pose, step / fps + 0.01, 4);
     expect([0, 1, 2, 3, 4, 5, 6].map((i) => at("stand", i))).toEqual([0, 1, 2, 3, 2, 1, 0]);
     expect([0, 1, 2, 3, 4].map((i) => loopIndex("walk", i / 10 + 0.01, 4))).toEqual([
       0, 1, 2, 3, 0,

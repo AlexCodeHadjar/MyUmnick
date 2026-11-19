@@ -3,6 +3,8 @@
 //! этот поток по прямоугольнику, который присылает UI. Он же раз в секунду (и сразу при смене активного
 //! окна) собирает картину рабочего стола (`desktop.rs`) и шлёт её окну спутника.
 
+mod desktop_events;
+
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -121,6 +123,8 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
     app.manage(state.clone());
     let handle = app.handle().clone();
     let typing = handle.clone();
+    let events = handle.clone();
+    thread::spawn(move || desktop_events::watch(events));
     thread::spawn(move || watch(&handle, &state));
     // Где пользователь печатает — свой поток: UI Automation может ждать ответа программы.
     thread::spawn(move || crate::typing::watch(typing));
@@ -129,8 +133,16 @@ pub fn create(app: &tauri::App) -> tauri::Result<()> {
 
 fn place(window: &WebviewWindow, monitor: &Rect) {
     let _ = window.set_position(PhysicalPosition::new(monitor.x, monitor.y));
-    let _ = window.set_size(PhysicalSize::new(monitor.w as u32, monitor.h as u32));
+    // Слой на строку пикселей ниже монитора: пока курсор над персонажем, слой ловит мышь, и Chrome/Edge
+    // считают своё окно перекрытым окном размером с экран — полноэкранное видео темнеет (жалоба 2026-11-18).
+    // Окно, не накрывающее экран целиком, перекрытием не считается. Область окна (SetWindowRgn) для этого
+    // не годится: с ней Windows рисует у слоя полосу заголовка.
+    let height = (monitor.h - NOT_COVERING_PX).max(1) as u32;
+    let _ = window.set_size(PhysicalSize::new(monitor.w as u32, height));
 }
+
+/// На сколько пикселей слой ниже монитора (см. `place`).
+const NOT_COVERING_PX: i32 = 1;
 
 /// Поток спутника: клики сквозь слой, картина рабочего стола, окно-хозяин, главное окно.
 fn watch(app: &AppHandle, state: &CompanionState) {
@@ -143,6 +155,7 @@ fn watch(app: &AppHandle, state: &CompanionState) {
     let mut last_cursor = (f64::NAN, f64::NAN);
     let mut layer = Layer::default();
     let mut double = DoubleClick::default();
+    let mut actions = desktop_events::Actions::default();
     loop {
         thread::sleep(TICK);
         tick = tick.wrapping_add(1);
@@ -155,6 +168,7 @@ fn watch(app: &AppHandle, state: &CompanionState) {
             layer = Layer::of(&window);
         }
         if layer.visible {
+            actions.shortcuts(app);
             passing = hit_test(app, &window, &layer, state, passing, &mut double);
             if tick % CURSOR_EVERY == 0 {
                 last_cursor = publish_cursor(app, &layer, last_cursor);
@@ -165,6 +179,11 @@ fn watch(app: &AppHandle, state: &CompanionState) {
         }
         if tick % FOCUS_EVERY == 0 {
             let fg = desktop::foreground(own).map(|h| h as isize);
+            if layer.visible {
+                actions.windows(app, fg);
+            } else {
+                actions = desktop_events::Actions::default();
+            }
             if fg != last_fg || tick % SCAN_EVERY == 0 {
                 // Новое активное окно могло встать поверх всех — поднимаемся над ним сразу.
                 if fg != last_fg && layer.visible {

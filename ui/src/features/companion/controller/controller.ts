@@ -1,18 +1,11 @@
-/**
- * Контроллер спутника: собирает тело, «Разум», жизнь, реакции, органы чувств, присутствие и жесты и
- * отвечает на события оболочки и главного окна. Вид (`Companion.svelte`) только передаёт события и
- * рисует то, что здесь решено. Порты оболочки — через конструктор (тест подставит подделку).
- */
-import { isLang, locale } from "../../../core";
 import { EMOTION_HUE } from "../../avatar/orb/palette";
-import type { RadioFeed, RadioMode } from "../../radio";
+import type { RadioFeed } from "../../radio";
 import { Life, Reactions } from "../behavior";
 import { Brain } from "../body";
 import { CANVAS_RATIO, type CompanionStage, type Look } from "../look";
-import { Mind, Sanity, type Fix, type VoiceKind } from "../mind";
-import { watchPhrases } from "../phrases";
-import { caught, PlayWatch } from "../senses";
-import { hostOf, ICONS, type Pose, type Rect, type World } from "../space";
+import { Mind, Sanity, type VoiceKind } from "../mind";
+import { DesktopReactions } from "../behavior/desktopEvents";
+import { ICONS, type Rect, type World } from "../space";
 import { shouldShow, type CompanionSettings } from "../settings";
 import { Conductor } from "./conductor";
 import { Escort } from "./escort";
@@ -21,32 +14,11 @@ import type { Ports } from "./ports";
 import { Presence, type MainState } from "./presence";
 import { Scout } from "./scout";
 import { Speech } from "./speech";
-
-/** Подача главного окна (`companion-feed`, ADR-0045, ADR-0049). */
-export interface Feed {
-  mouth: number;
-  speaking: boolean;
-  emotion: string;
-  text: string;
-  lang: string;
-  radio?: RadioFeed;
-}
-
+import { CompanionFrame } from "./frame";
+import { CursorInput } from "./cursorInput";
+import { AssistantFeed, type Feed } from "./assistantFeed";
+export type { Feed } from "./assistantFeed";
 const GREET_DELAY_MS = 900;
-/** Эмоция → короткая поза тела и её длительность (с); кадры уже есть (FRAMES-2). */
-const EMOTION_POSE: ReadonlyMap<string, readonly [Pose, number]> = new Map([
-  ["happy", ["wave", 1.6]],
-  ["embarrassed", ["wave", 1.2]],
-  ["sad", ["sit_corner", 3]],
-  ["surprised", ["float", 0.8]],
-] as const);
-const CURSOR_FEED_MS = 250;
-const BUSY_MS = 60_000;
-
-function pickOne(list: readonly string[]): string {
-  return list[Math.floor(Math.random() * list.length)] ?? "";
-}
-
 export class CompanionController {
   readonly brain = new Brain();
   readonly mind = new Mind();
@@ -70,24 +42,13 @@ export class CompanionController {
   settings: CompanionSettings;
   radio: RadioFeed | null = null;
   stage: CompanionStage | null = null;
-  readonly #ports: Ports;
-  #assistant = false;
-  #cursor: { x: number; y: number } | null = null;
-  #cursorFedAt = 0;
-  #movedAt = 0;
+  readonly cursor = new CursorInput(this);
+  readonly feed = new AssistantFeed(this);
+  readonly #frame: CompanionFrame;
   #lastFocus = "";
-  #attached: number | null = null;
-  #lastHit = "";
-  #lastPhase = "hidden";
-  #emotion = "neutral";
-  /** Текст текущего ответа ассистента — для «покажи на экране». */
-  #replyText = "";
-  #startledAt = -Infinity;
-  readonly #play = new PlayWatch();
-  #caughtAt = 0;
-
+  readonly desktopReactions = new DesktopReactions();
   constructor(ports: Ports, storage: Storage, settings: CompanionSettings) {
-    this.#ports = ports;
+    this.#frame = new CompanionFrame(this, ports);
     this.settings = settings;
     const brain = this.brain;
     this.life = new Life(brain, storage);
@@ -156,6 +117,11 @@ export class CompanionController {
     this.refresh();
     // Показали раньше, чем пришла картина окон: выйти сейчас (иначе персонаж так и не появлялся).
     if (presence.shown && this.brain.phase === "hidden") presence.arrive();
+    this.#focus(raw);
+  }
+
+  #focus(raw: World): void {
+    const presence = this.presence;
     const key = JSON.stringify(raw.focus);
     if (key === this.#lastFocus || presence.world === null) return;
     this.#lastFocus = key;
@@ -176,7 +142,7 @@ export class CompanionController {
     if (this.presence.world === null) return;
     const css = rect === null ? null : this.presence.toCss(rect);
     this.brain.hostMoved(id, css);
-    if (id === this.#attached) this.reactions.host(css, performance.now() / 1000);
+    if (id === this.#frame.attached) this.reactions.host(css, performance.now() / 1000);
   }
 
   /** Где пользователь печатает (физические пиксели экрана) или `null` — не печатает. */
@@ -185,52 +151,11 @@ export class CompanionController {
   }
 
   onCursor(x: number, y: number): void {
-    this.brain.cursorX = x;
-    this.#cursor = { x, y };
-    this.escort.cursor = { x, y };
-    this.#cursorFedAt = performance.now();
-    this.#movedAt = this.#cursorFedAt;
-    this.reactions.cursor(x, y, this.#cursorFedAt / 1000, this.presence.shown);
-    this.#playWith(x, y, this.#cursorFedAt);
+    this.cursor.onCursor(x, y);
   }
-
-  /** Игра с курсором (этап 4): кружат рядом — стимул «Разуму»; курсор у груди во время игры — «Поймал!». */
-  #playWith(x: number, y: number, now: number): void {
-    const brain = this.brain;
-    const chest =
-      this.presence.shown && brain.phase !== "hidden"
-        ? { x: brain.x, y: brain.y - brain.chest }
-        : null;
-    if (this.#play.feed(x, y, now, chest)) this.mind.feel("play", now / 1000, 1, 6);
-    const playing = this.mind.activity === "play" || now - this.#caughtAt < 8000;
-    if (chest === null || !playing || !caught(x, y, chest) || now - this.#caughtAt < 3000) return;
-    this.#caughtAt = now;
-    this.speak(pickOne(locale.t.companion.triggers.caught), "direct");
-    brain.emote("dance", 1.2);
-  }
-
   onFeed(feed: Feed): void {
-    if (isLang(feed.lang) && locale.lang !== feed.lang) locale.set(feed.lang);
-    const look = this.look;
-    look.mouth = feed.mouth;
-    look.speaking = feed.speaking;
-    this.#assistant = feed.speaking;
-    this.#onRadio(feed.radio ?? null, feed.speaking);
-    look.hue =
-      new Map<string, number>(Object.entries(EMOTION_HUE)).get(feed.emotion) ?? EMOTION_HUE.neutral;
-    this.#feel(feed.emotion);
-    // Ответ договорён — назвал элемент в кавычках? Показать его на экране (этап 5).
-    if (!feed.speaking && this.#replyText !== "") {
-      void this.conductor.pointAt(this.#replyText);
-      this.#replyText = "";
-    }
-    if (feed.speaking) this.#replyText = feed.text;
-    if (!feed.speaking) return;
-    this.brain.wake();
-    // Новый ответ ассистента — с ним говорят, радость чуть растёт (BEHAVIOR §2).
-    if (this.speech.reply(feed.text, performance.now())) this.life.event("talk");
+    this.feed.onFeed(feed);
   }
-
   /** Вышел из портала — поздоровался (T6): по привязанности тепло или сдержанно, иначе обычно. */
   #greet(): void {
     const special = this.life.greeting();
@@ -240,30 +165,6 @@ export class CompanionController {
     }
     this.speak(special, "reaction");
     this.brain.emote("wave", 2);
-  }
-
-  /** Громкое место фильма — вздрогнул (подскок) и «Ого!», не чаще раза в минуту (этап 5). */
-  #startle(now: number): void {
-    if (now - this.#startledAt < 60_000) return;
-    this.#startledAt = now;
-    this.brain.emote("float", 0.5);
-    this.speak(pickOne(locale.t.companion.triggers.loud), "reaction", true);
-  }
-
-  /** Заиграла музыка в плеере: «О, музыка!» и танец, если не смотрит фильм и не на радио. */
-  #dance(): void {
-    const brain = this.brain;
-    if (brain.watching || brain.music !== "off" || brain.phase !== "rest") return;
-    this.speak(pickOne(locale.t.companion.triggers.music), "reaction");
-    brain.emote("dance", 4);
-  }
-
-  /** Эмоция ответа ассистента сменилась — показать её телом коротко (COMPANION.md, этап 2). */
-  #feel(emotion: string): void {
-    if (emotion === this.#emotion) return;
-    this.#emotion = emotion;
-    const pose = EMOTION_POSE.get(emotion);
-    if (pose !== undefined && !this.brain.watching) this.brain.emote(pose[0], pose[1]);
   }
 
   /** Зов «Умник», пока спутник на экране: облачко вместо окна. */
@@ -287,140 +188,16 @@ export class CompanionController {
     if (under !== undefined) this.life.petOn(under.name);
   }
 
-  /** Сколько кадров в секунду нужно сейчас: 60 в движении и с эффектами, 20 в покое, 8 во сне. */
   fps(): number {
-    const body = this.brain.body();
-    const still = this.brain.phase === "rest" && body.effects.length === 0 && !this.gestures.active;
-    const smoothing = this.stage?.animating ?? false;
-    if (!still || smoothing || this.look.speaking || this.look.attention > 0.01) return 60;
-    return body.pose === "sleep" ? 8 : 20;
+    return this.#frame.fps();
   }
-
-  /** Один кадр: решение, тело, реакции, голос, отрисовка, область кликов. */
-  frame(dt: number, now: number, view: { menuOpen: boolean; card: Rect | null }): void {
-    this.#think(now);
-    const brain = this.brain;
-    brain.busy = this.conductor.poking || this.speech.own(now);
-    this.gestures.tick(now);
-    brain.tick(dt);
-    this.reactions.tick(now / 1000);
-    if (brain.phase === "climb" && this.#lastPhase !== "climb") this.reactions.climbing();
-    this.#lastPhase = brain.phase;
-    this.#feedCursor(now);
-    this.look.attention = Math.max(0, this.look.attention - dt * 0.8);
-    const body = brain.body();
-    body.effects = [...body.effects, ...this.gestures.effects()];
-    this.stage?.draw(body, this.look, dt);
-    this.presence.tick();
-    this.#sendHit(view);
-    this.#syncHost();
+  frame(
+    dt: number,
+    now: number,
+    view: { menuOpen: boolean; card: Rect | null; direct?: Rect | null },
+  ): void {
+    this.#frame.frame(dt, now, view);
   }
-
-  #think(now: number): void {
-    this.conductor.update(now, {
-      listening: this.#assistant || this.speech.listening,
-      holding: this.gestures.active,
-      behavior: this.settings.behavior,
-      calm: this.settings.calm || this.sanity.calm(now / 1000),
-      userBusy: now - this.#movedAt < BUSY_MS,
-      lastLine: this.speech.last,
-    });
-    this.scout.pollMedia(now, (change) => {
-      if (change === "music") {
-        this.#dance();
-        return;
-      }
-      if (change === "loud") {
-        this.#startle(now);
-        return;
-      }
-      if (!this.brain.watching || change === null) return;
-      const lines = watchPhrases(locale.lang);
-      this.speak(pickOne(change === "paused" ? lines.pause : lines.resume), "reaction", true);
-    });
-    const long = this.life.tick(now / 1000);
-    if (long !== null) this.speak(long, "ambient");
-    const line = this.mind.voice.next(now / 1000, {
-      blocked:
-        !this.presence.shown || this.#assistant || this.speech.listening || this.gestures.active,
-      bubble: this.speech.visible(now),
-    });
-    if (line !== null) {
-      this.speech.say(line, now);
-      this.sanity.noteLine(now / 1000);
-    }
-    this.#guard(now);
-  }
-
-  /** Сторож раз в секунду: нарушено правило — чинит и пишет в консоль. */
-  #guard(now: number): void {
-    const brain = this.brain;
-    const screen = this.presence.world?.monitor ?? { x: 0, y: 0, w: innerWidth, h: innerHeight };
-    const fixes = this.sanity.observe(
-      {
-        phase: brain.phase,
-        x: brain.x,
-        y: brain.y,
-        screen,
-        shown: this.presence.shown,
-        holding: this.gestures.active,
-        activity: this.mind.activity,
-      },
-      now / 1000,
-    );
-    this.mind.voice.hushed = this.sanity.hushed(now / 1000);
-    for (const fix of fixes) this.#repair(fix);
-  }
-
-  #repair(fix: Fix): void {
-    console.warn(
-      "[companion] sanity",
-      fix,
-      this.brain.phase,
-      Math.round(this.brain.x),
-      Math.round(this.brain.y),
-    );
-    if (fix === "land") this.brain.rescue();
-    else if (fix === "release") this.brain.toss(0, 0);
-    else if (fix === "arrive") this.presence.arrive();
-    else if (fix === "hide") this.brain.hide();
-  }
-
-  /** Курсор стоит — событий нет, а «что смотришь?» (T8) ждёт 4 с: подкармливаем 4 раза в секунду. */
-  #feedCursor(now: number): void {
-    const cursor = this.#cursor;
-    if (cursor === null || now - this.#cursorFedAt <= CURSOR_FEED_MS) return;
-    this.#cursorFedAt = now;
-    this.reactions.cursor(cursor.x, cursor.y, now / 1000, this.presence.shown);
-  }
-
-  /** Радио сменило состояние: поёт или слушает; фраза на включение, смену станции, паузу, выключение. */
-  #onRadio(next: RadioFeed | null, speaking: boolean): void {
-    const before: RadioMode = this.radio?.mode ?? "off";
-    const mode: RadioMode = next?.mode ?? "off";
-    this.brain.music = mode === "playing" ? "playing" : mode === "off" ? "off" : "paused";
-    const lines = locale.t.radio.lines;
-    const switched = next !== null && this.radio !== null && next.title !== this.radio.title;
-    const list =
-      before === "off" && mode !== "off"
-        ? lines.start
-        : before !== "off" && mode === "off"
-          ? lines.stop
-          : before === "playing" && mode === "paused"
-            ? lines.pause
-            : switched
-              ? lines.switch
-              : null;
-    if (list !== null && this.presence.shown) this.speak(pickOne(list), "reaction");
-    this.radio = mode === "off" ? null : next;
-    this.look.panel = this.radio === null ? null : this.radio.title;
-    // Поёт: рот — по громкости потока; «говорит» — значит, выходки не начинаются.
-    if (mode === "playing" && next !== null && !speaking) {
-      this.look.mouth = next.level;
-      this.look.speaking = true;
-    }
-  }
-
   #applyBehavior(): void {
     const brain = this.brain;
     const settings = this.settings;
@@ -430,41 +207,4 @@ export class CompanionController {
     brain.chest = settings.height * 0.55;
     brain.figure = settings.height * CANVAS_RATIO;
   }
-
-  /** Область кликов: персонаж и табличка радио; держат мышью или открыто меню — слой ловит всё. */
-  #sendHit(view: { menuOpen: boolean; card: Rect | null }): void {
-    const box = this.stage?.bounds ?? null;
-    const capture = this.gestures.active || view.menuOpen;
-    // «Не мешать кликам»: прямоугольник всё равно шлём — по нему оболочка узнаёт двойной щелчок,
-    // которым режим выключается (просьба пользователя 2026-11-18: иначе персонажа не вернуть).
-    const ghost = this.settings.hologram;
-    const hit = box === null ? null : union(box, view.card);
-    const key = JSON.stringify([
-      hit && [Math.round(hit.x), Math.round(hit.y), Math.round(hit.w)],
-      capture,
-      ghost,
-    ]);
-    if (key === this.#lastHit) return;
-    this.#lastHit = key;
-    this.#ports.hit(hit, capture && !ghost, ghost);
-  }
-
-  #syncHost(): void {
-    const host = hostOf(this.brain.spot);
-    if (host === this.#attached) return;
-    this.#attached = host;
-    this.#ports.attach(host);
-  }
-}
-
-function union(box: Rect, card: Rect | null): Rect {
-  if (card === null) return box;
-  const x = Math.min(box.x, card.x);
-  const y = Math.min(box.y, card.y);
-  return {
-    x,
-    y,
-    w: Math.max(box.x + box.w, card.x + card.w) - x,
-    h: Math.max(box.y + box.h, card.y + card.h) - y,
-  };
 }

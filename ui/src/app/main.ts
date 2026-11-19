@@ -5,7 +5,7 @@ import "./theme.css";
 import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
-import { CoreClient, locale } from "../core";
+import { CoreClient, locale, startupMark } from "../core";
 import { Companion } from "../features/companion";
 import { applyTheme, loadTheme, THEME_KEY } from "../features/theme";
 import {
@@ -45,6 +45,7 @@ function openApp(edition: Edition, background: boolean): void {
     client.setWindowVisible(!document.hidden);
   });
   mount(App, { target: root, props: { client, background } });
+  startupMark("window ui mounted");
 }
 
 async function start(): Promise<void> {
@@ -88,7 +89,9 @@ window.addEventListener("storage", (event) => {
 
 // Слой «Сопровождения» — второе окно того же приложения (ADR-0045): своя точка входа, без ядра и выбора.
 if (isTauri() && getCurrentWindow().label === "companion") {
+  startupMark("companion layer script");
   mount(Companion, { target: root });
 } else {
+  startupMark("window script");
   void start();
 }

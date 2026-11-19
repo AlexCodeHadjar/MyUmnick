@@ -5,6 +5,15 @@
  */
 import { characterChannel, run } from "../../avatar/portrait/picture";
 import type { Pose } from "../space";
+import {
+  ONCE,
+  SCENE_ANCHORS,
+  SCENE_FALLBACK,
+  SCENE_FPS,
+  SCENE_RING,
+  onceFrames,
+  onceIndex,
+} from "./scenePoses";
 
 /** Замены отсутствующей позы, в порядке предпочтения; всё кончается позой `stand`. */
 export const FALLBACK: Record<Pose, readonly Pose[]> = {
@@ -21,6 +30,7 @@ export const FALLBACK: Record<Pose, readonly Pose[]> = {
   float: ["held", "stand"],
   poke: ["lean_side", "stand"],
   pet: ["stand"],
+  reach: ["wave", "stand"],
   // Кадров BEHAVIOR §10 пока нет (FRAMES-2.md): спутник не пропадает, рисуется ближайшая поза.
   sing: ["radio_idle", "stand"],
   radio_idle: ["stand"],
@@ -32,6 +42,7 @@ export const FALLBACK: Record<Pose, readonly Pose[]> = {
   watch: ["sit_corner", "sit_edge", "stand"],
   jukebox: ["sing", "radio_idle", "stand"],
   peek: ["sit_corner", "stand"],
+  ...SCENE_FALLBACK,
 };
 
 /** Точка опоры позы — доля ширины и высоты картинки: сиденье, ступни, ладони, «шиворот». */
@@ -46,10 +57,12 @@ export const ANCHORS: Record<Pose, readonly [number, number]> = {
   sleep: [0.5, 0.92],
   held: [0.5, 0.06],
   hang_side: [0.5, 0.04],
-  float: [0.5, 0.6],
+  // Середина тела; 0,55, а не 0,6 — у кадров этапов 2026-11-19 ноги в полёте ниже (иначе обрезаются).
+  float: [0.5, 0.55],
   // Кончик вытянутого вперёд пальца — справа на уровне груди (кадр poke, раздел 7.2).
   poke: [0.88, 0.42],
   pet: [0.5, 0.97],
+  reach: [0.5, 0.97],
   sing: [0.5, 0.97],
   radio_idle: [0.5, 0.97],
   climb: [0.5, 0.5],
@@ -61,6 +74,7 @@ export const ANCHORS: Record<Pose, readonly [number, number]> = {
   jukebox: [0.5, 0.97],
   // Левый край кадра — край экрана; голова посередине высоты.
   peek: [0, 0.5],
+  ...SCENE_ANCHORS,
 };
 
 /** Холст позы 512×1024, рост персонажа ~960 (раздел 7.2): холст выше роста в 1024/960 раз. */
@@ -71,9 +85,10 @@ const PREFIX = "pose:";
 const NAME = /^[a-z]+(?:_[a-z]+)*(?:_\d{1,2})?$/;
 
 /** Частота кадров зацикленной позы (`<поза>_1…N`), кадров в секунду. */
+// Частоты — по заданию этапов (docs/character/ANIMATION-STAGES.md, кадры 2026-11-19).
 export const LOOP_FPS: Partial<Record<Pose, number>> = {
   walk: 10,
-  stand: 5,
+  stand: 6,
   sit_edge: 5,
   perch_corner: 5,
   held: 8,
@@ -81,19 +96,21 @@ export const LOOP_FPS: Partial<Record<Pose, number>> = {
   float: 8,
   poke: 6,
   pet: 8,
-  laydown: 4,
+  laydown: 3,
   // Радио — спокойно (просьба пользователя 2026-11-17: «слишком дёргается»): медленные циклы.
   sing: 3,
   jukebox: 2,
   climb: 6,
   dizzy: 4,
-  wave: 6,
-  yawn: 0.8,
-  dance: 6,
+  wave: 8,
+  dance: 8,
   watch: 3,
   lean_side: 4,
   sit_corner: 4,
-  sleep: 3,
+  sleep: 2,
+  reach: 5,
+  peek: 4,
+  ...SCENE_FPS,
 };
 
 /** Что сейчас с персонажем: для выбора кадра. `blink` — доля моргания 0…1 или `null`. */
@@ -102,6 +119,8 @@ export interface FrameState {
   mouth: number;
   speaking: boolean;
   blink: number | null;
+  /** Секунд с начала позы: одноразовые сцены идут кадр за кадром по ним (`ONCE`). */
+  since?: number;
 }
 
 /** Кадры `<имя>_1`, `<имя>_2` … подряд, пока есть. */
@@ -133,6 +152,11 @@ function frameOf(name: string, pose: Pose, state: FrameState, have: ReadonlySet<
     return edge && have.has(half) ? half : `${name}_blink`;
   }
   const loop = sequence(name, have);
+  if (ONCE.has(pose) && state.since !== undefined) {
+    const frames = onceFrames(name, loop, have.has(name));
+    const frame = frames[onceIndex(pose, state.since, frames.length)];
+    if (frame !== undefined) return frame;
+  }
   if (loop.length > 0) {
     const frame = loop[loopIndex(pose, state.time, loop.length)];
     if (frame !== undefined) return frame;
@@ -191,6 +215,26 @@ function bitmap(blob: Blob, height: number): Promise<ImageBitmap> {
   });
 }
 
+/** Высота кадра встроенного пакета; выше — место над головой (штамп, рожки), FRAMES-6 «Принято». */
+export const PACK_HEIGHT = 768;
+
+/**
+ * Кадр встроенного пакета в общем масштабе: кадр выше `PACK_HEIGHT` уменьшается во столько же раз,
+ * что и обычный, — персонаж того же роста, а лишнее место остаётся сверху.
+ */
+async function packBitmap(blob: Blob, height: number): Promise<ImageBitmap> {
+  const full = await createImageBitmap(blob);
+  try {
+    const tall = full.height / PACK_HEIGHT;
+    return await createImageBitmap(full, {
+      resizeHeight: Math.round(height * CANVAS_RATIO * devicePixelRatio * tall),
+      resizeQuality: "high",
+    });
+  } finally {
+    full.close();
+  }
+}
+
 /** Позы встроенного персонажа; файлов нет (вкладка без сборки) — пусто, будут силуэты. */
 async function defaultPoses(height: number): Promise<Map<string, ImageBitmap>> {
   const poses = new Map<string, ImageBitmap>();
@@ -202,7 +246,7 @@ async function defaultPoses(height: number): Promise<Map<string, ImageBitmap>> {
       names.map(async (name) => {
         if (typeof name !== "string" || poseName(`${name}.webp`) === null) return;
         const response = await fetch(`${DEFAULT_PACK}/${name}.webp`);
-        if (response.ok) poses.set(name, await bitmap(await response.blob(), height));
+        if (response.ok) poses.set(name, await packBitmap(await response.blob(), height));
       }),
     );
   } catch {
@@ -237,7 +281,14 @@ async function userPoses(height: number): Promise<Map<string, ImageBitmap>> {
 }
 
 /** Циклы с направлением (походка, лазанье, танец) — кольцом; спокойные — «туда-обратно» (ANIMATION.md). */
-export const RING: ReadonlySet<Pose> = new Set(["walk", "climb", "dance", "jukebox"]);
+export const RING: ReadonlySet<Pose> = new Set<Pose>([
+  "dizzy",
+  "walk",
+  "climb",
+  "dance",
+  "jukebox",
+  ...SCENE_RING,
+]);
 
 /**
  * Номер кадра цикла. «Туда-обратно» (1-2-3-4-3-2): нет скачка с последнего кадра на первый, и из

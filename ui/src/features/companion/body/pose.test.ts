@@ -25,9 +25,20 @@ describe("выбор позы", () => {
   it("режимы на месте: видео в углу, радио стоя, гладят", () => {
     expect(poseOf({ ...base, spot: "sit_corner", watching: true })).toBe("watch");
     expect(poseOf({ ...base, music: "playing" })).toBe("jukebox");
-    expect(poseOf({ ...base, music: "paused" })).toBe("radio_idle");
-    expect(poseOf({ ...base, spot: "sit_edge", music: "playing" })).toBe("sit_edge");
-    expect(poseOf({ ...base, petting: true })).toBe("pet");
+    expect(poseOf({ ...base, music: "paused" })).toBe("jukebox");
+    expect(poseOf({ ...base, spot: "sit_edge", music: "playing" })).toBe("jukebox");
+    expect(poseOf({ ...base, petting: true })).toBe("purr");
+  });
+
+  it("радио удерживает музбокс до выключения", () => {
+    const corner = { ...base, spot: "sit_corner", watching: true } as const;
+    for (const music of ["playing", "paused"] as const) {
+      expect(poseOf({ ...corner, music })).toBe("jukebox");
+      expect(poseOf({ ...corner, music, phase: "held", pinned: "poke", emote: "wave" })).toBe(
+        "jukebox",
+      );
+    }
+    expect(poseOf(corner)).toBe("watch");
   });
 
   it("простой: лёг, потом уснул; эмоция перебивает", () => {

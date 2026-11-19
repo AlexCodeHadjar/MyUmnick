@@ -37,7 +37,9 @@ export interface LauncherState {
   adultConfirmed: string;
 }
 
-export const DEFAULT_LAUNCHER: LauncherState = { last: "ru", remember: false, adultConfirmed: "" };
+// Запоминать — по умолчанию (ускорение запуска, 2026-11-19): окно сразу открывает прошлое издание, экран
+// выбора — по значку издания. Первый запуск — русское издание: подтверждение 18+ нужно только английскому.
+export const DEFAULT_LAUNCHER: LauncherState = { last: "ru", remember: true, adultConfirmed: "" };
 
 export function isEditionId(value: unknown): value is EditionId {
   return value === "ru" || value === "en";
@@ -72,9 +74,20 @@ export function parseLauncher(raw: unknown): LauncherState {
   const confirmed = field(raw, "adultConfirmed");
   return {
     last: isEditionId(last) ? last : DEFAULT_LAUNCHER.last,
-    remember: field(raw, "remember") === true,
+    // Ключ `ask` (2026-11-19), а не прежний `remember`: прежнее «не запоминать» было умолчанием, а не
+    // выбором, и экран выбора стоял на каждом запуске.
+    remember: field(raw, "ask") !== true,
     adultConfirmed: typeof confirmed === "string" ? confirmed : "",
   };
+}
+
+/** Как состояние хранится в `launcher.json` (ключ `last` читает и скрипт запуска). */
+export function launcherJson(state: LauncherState): string {
+  return JSON.stringify({
+    last: state.last,
+    ask: !state.remember,
+    adultConfirmed: state.adultConfirmed,
+  });
 }
 
 /** Показывать ли экран: при «запоминать» — нет, если не попросили сменить издание явно. */

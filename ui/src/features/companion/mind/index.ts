@@ -11,6 +11,14 @@ import { Stimuli, type Stimulus } from "./stimuli";
 import { Voice } from "./voice";
 
 export type { ActivityId } from "./activities";
+
+/** Строка чек-листа: баллы действия, можно ли начать (нет паузы) и идёт ли оно сейчас. */
+export interface Ranked {
+  id: ActivityId;
+  score: number;
+  available: boolean;
+  current: boolean;
+}
 export type { VoiceKind } from "./voice";
 export { Sanity, type Fix, type Snapshot } from "./sanity";
 
@@ -34,6 +42,7 @@ export interface Senses {
 
 /** Что утоляет каждое действие, когда начинается. */
 const SATISFIES: Partial<Record<ActivityId, readonly [Drive, number]>> = {
+  trail: ["restless", 0.6],
   chat: ["social", 0.7],
   poke: ["curiosity", 0.7],
   hop: ["curiosity", 0.5],
@@ -56,6 +65,8 @@ export class Mind {
   readonly #desktop = new Fact(1.5, 1);
   #decideAt = -Infinity;
   #last: number | null = null;
+  /** Картина мира последней оценки — для чек-листа (кто сколько баллов набирает). */
+  #context: MindContext | null = null;
 
   constructor(random: () => number = Math.random) {
     this.#arbiter = new Arbiter(ACTIVITIES, random);
@@ -119,10 +130,24 @@ export class Mind {
       calm: senses.calm,
       play: this.#stimuli.level("play", now),
     };
+    this.#context = context;
     const choice = this.#arbiter.choose(context, now);
     if (!choice.changed || !isActivity(choice.id)) return null;
     this.#enter(choice.id);
     return { ...choice, id: choice.id };
+  }
+
+  /** Баллы всех действий по последней картине мира (чек-лист): 0…1 и можно ли начать сейчас. */
+  ranking(now: number): Ranked[] {
+    const context = this.#context;
+    if (context === null) return [];
+    return this.#arbiter.rank(context, now).filter((one): one is Ranked => isActivity(one.id));
+  }
+
+  /** Сглаженные факты «Разума» (чек-лист): видео, полный экран без видео, рабочий стол. */
+  get facts(): { video: boolean; hush: boolean; desktop: boolean } | null {
+    const c = this.#context;
+    return c === null ? null : { video: c.video, hush: c.hush, desktop: c.desktop };
   }
 
   #enter(id: ActivityId): void {

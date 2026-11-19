@@ -6,7 +6,17 @@ import type { Activity } from "./arbiter";
 import { need } from "./curves";
 
 export type ActivityId =
-  "idle" | "sing" | "watch" | "hush" | "follow" | "chat" | "poke" | "hop" | "wander" | "play";
+  | "idle"
+  | "sing"
+  | "watch"
+  | "hush"
+  | "follow"
+  | "trail"
+  | "chat"
+  | "poke"
+  | "hop"
+  | "wander"
+  | "play";
 
 /** Что арбитр знает о мире в момент оценки (сглаженное, MIND §3.1–3.3). */
 export interface MindContext {
@@ -89,6 +99,18 @@ export const ACTIVITIES: readonly Spec[] = [
     boredom: 0,
     oneShot: true,
     score: (c) => (c.behavior === "follow" ? free(c) * c.focus * 0.8 : 0),
+  },
+  {
+    // За курсором (режим «следовать»): раньше шёл за мышью всё время — слишком часто (жалоба
+    // 2026-11-18). Теперь это выходка с баллами: ~8 с погони, потом скучно, пауза не меньше минуты.
+    id: "trail",
+    band: 1,
+    minS: 8,
+    cooldownS: 60,
+    boredom: 1 / 10,
+    oneShot: false,
+    score: (c) =>
+      c.behavior === "follow" && !c.calm ? free(c) * (0.2 + need(c.restless) * 0.4) : 0,
   },
   {
     id: "chat",

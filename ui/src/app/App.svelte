@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { locale } from "../core";
+  import { APP_VERSION, locale, startupMark } from "../core";
   // Окно: чат слева, сцена с аватаром справа (FR-01), настройки под ней, панели — кнопками (FR-15). Голос: плеер из фичи audio, его громкость — рот аватара (ADR-0003, R-63).
   import { isTauri } from "@tauri-apps/api/core";
   import { onMount } from "svelte";
@@ -22,7 +22,12 @@
   import { MemoryPanel } from "../features/memory";
   import { SkillsPanel } from "../features/skills";
   import { ThemePanel } from "../features/theme";
-  import { CompanionMenu, CompanionReturn, startFeed } from "../features/companion";
+  import {
+    ChecklistButton,
+    CompanionMenu,
+    CompanionReturn,
+    startFeed,
+  } from "../features/companion";
   import { Onboarding } from "../features/onboarding";
   import { listenRadioCommands, RadioControl, RadioPlayer } from "../features/radio";
   import { ResourcesPanel } from "../features/resources";
@@ -53,6 +58,14 @@
   const desktopApp = isTauri();
   // Не реактивен: рот опрашивается каждый кадр из цикла аватара, а не через Svelte (R-66).
   let player: VoicePlayer | null = null;
+
+  // Хронометраж запуска (core/startup.ts): ядро на связи и бэкенды готовы — один раз за запуск.
+  $effect(() => {
+    if (client.store.connection === "open") startupMark("core online");
+    for (const [name, state] of Object.entries(client.store.backends)) {
+      if (state === "ready") startupMark(`${name.toUpperCase()} ready`);
+    }
+  });
 
   onMount(() => {
     // Режим «поверх стола» удалён (просьба пользователя 2026-11-18): окно, оставшееся без рамки, — обычным.
@@ -160,6 +173,7 @@
 <svelte:window {onkeydown} onpointerdown={unlockAudio} />
 
 <main class="app">
+  <p class="version" title={locale.t.app.version}>{APP_VERSION}</p>
   <div class="workspace">
     <ChatSidebar {client} storage={layoutStorage() ?? null} />
     <SplitLayout storage={layoutStorage()}>
@@ -204,6 +218,7 @@
             >
               {#if desktopApp}
                 <CompanionReturn />
+                <ChecklistButton />
               {/if}
             </StageBadges>
           </section>
@@ -297,9 +312,19 @@
     color: var(--text);
   }
 
+  /* Версия сверху (просьба 2026-11-18): видно, какой код запущен. */
+  .version {
+    margin: 0;
+    padding: 2px 10px;
+    color: var(--title);
+    font: 11px var(--font);
+    text-align: right;
+    opacity: 0.75;
+  }
+
   .app {
     display: grid;
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     height: 100vh;
   }
 

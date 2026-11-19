@@ -1,4 +1,6 @@
 // Публичный API core: фичи импортируют отсюда, а не из модулей пакета (R-63).
+export { APP_VERSION } from "./version";
+export { startupMark } from "./startup";
 export { CoreClient, type AudioSink, type CancelSink, type CoreClientOptions } from "./client";
 export { type AudioFrame } from "./frames";
 export { FIRST_AUDIO_SPAN, FIRST_CHAR_SPAN } from "./probe";

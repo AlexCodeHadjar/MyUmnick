@@ -3,6 +3,7 @@
  * загрузил свои картинки. По ним видно, какая поза где включается; рисуются в коде — файлов нет.
  */
 import type { Pose } from "../space";
+import type { ScenePose } from "./scenePoses";
 
 type Joint = readonly [number, number];
 
@@ -59,6 +60,30 @@ const SIT: Figure = {
     [320, 900],
     [360, 900],
   ],
+};
+
+/** Силуэты сцен FRAMES-6 — стоя (у сцен свои кадры; силуэт нужен только до загрузки пакета). */
+const SCENE_FIGURES: Record<ScenePose, Figure> = {
+  purr: STAND,
+  knock: STAND,
+  carry_box: STAND,
+  stamp: STAND,
+  hug_paper: STAND,
+  flinch: STAND,
+  blown: STAND,
+  read: STAND,
+  draw: STAND,
+  juggle: STAND,
+  trip: STAND,
+  chase: STAND,
+  inspect: STAND,
+  pocket: STAND,
+  put_back: STAND,
+  throw: STAND,
+  dust_hands: STAND,
+  build: STAND,
+  note_put: STAND,
+  note_take: STAND,
 };
 
 const FIGURES: Record<Pose, Figure> = {
@@ -206,6 +231,7 @@ const FIGURES: Record<Pose, Figure> = {
     ],
   },
   pet: STAND,
+  reach: STAND,
   sing: STAND,
   radio_idle: STAND,
   dizzy: STAND,
@@ -215,6 +241,8 @@ const FIGURES: Record<Pose, Figure> = {
   watch: STAND,
   jukebox: STAND,
   peek: STAND,
+  // Сцены FRAMES-6: силуэт стоя; рисуется, только пока пакет не загрузился.
+  ...SCENE_FIGURES,
   // Силуэт «лезет» не рисуется: пока нет кадров, берётся силуэт `hang_side` (FALLBACK).
   climb: STAND,
   poke: {

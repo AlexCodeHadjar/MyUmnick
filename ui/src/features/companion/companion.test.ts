@@ -338,14 +338,14 @@ describe("поглаживание", () => {
     brain.place(floor);
     brain.pet();
     const body = brain.body();
-    expect(body.pose).toBe("pet");
+    expect(body.pose).toBe("purr");
     expect(body.petting).toBe(1);
     expect(body.effects.map((e) => e.kind)).toContain("hearts");
     settle(brain, 1.5);
     expect([brain.body().pose, brain.body().petting]).toEqual(["stand", 0]);
     // Без кадра «довольный» рисуется «стоит» с закрытыми глазами.
     const have = new Set(["stand", "stand_blink"]);
-    expect(pickFrame("pet", { time: 0, mouth: 0, speaking: false, blink: 0.5 }, have)).toBe(
+    expect(pickFrame("purr", { time: 0, mouth: 0, speaking: false, blink: 0.5 }, have)).toBe(
       "stand_blink",
     );
   });

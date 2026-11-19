@@ -10,6 +10,8 @@ mod desktop;
 mod ghost;
 mod launcher;
 mod media;
+mod recent;
+mod startup;
 mod system_audio;
 mod typing;
 mod uia;
@@ -117,6 +119,7 @@ fn restart_app(app: tauri::AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    startup::begin();
     tauri::Builder::default()
         .manage(system_audio::SystemAudio::default())
         .invoke_handler(tauri::generate_handler![
@@ -129,11 +132,13 @@ pub fn run() {
             companion::companion_set,
             companion::companion_hit,
             companion::companion_attach,
+            recent::companion_recent,
             companion::companion_world,
             companion::companion_targets,
             companion::companion_media,
             launcher::launcher_load,
             launcher::launcher_save,
+            startup::startup_mark,
             system_audio::system_audio_start,
             system_audio::system_audio_stop
         ])
@@ -147,6 +152,7 @@ pub fn run() {
             }
         })
         .setup(|app| {
+            startup::mark(app.handle(), "shell setup");
             #[cfg(not(debug_assertions))]
             core_process::manage(app);
             background::tray(app)?;

@@ -165,3 +165,26 @@ describe("игра с курсором", () => {
     expect(played).toBe(true);
   });
 });
+
+describe("погоня за курсором (trail)", () => {
+  it("в режиме «следовать» — короткими заходами, а не всё время", () => {
+    const mind = new Mind(() => 0.5);
+    let trailS = 0;
+    for (let t = 0; t < 300; t += 0.5) {
+      mind.update(t, calm);
+      if (mind.activity === "trail") trailS += 0.5;
+    }
+    expect(trailS).toBeGreaterThan(0);
+    // ~8 с погони и минута паузы: меньше трети времени.
+    expect(trailS).toBeLessThan(100);
+    expect(mind.ranking(300).some((one) => one.id === "trail")).toBe(true);
+  });
+
+  it("в режиме «стоять» не гоняется", () => {
+    const mind = new Mind(() => 0.5);
+    for (let t = 0; t < 120; t += 0.5) {
+      mind.update(t, { ...calm, behavior: "stay" });
+      expect(mind.activity).not.toBe("trail");
+    }
+  });
+});

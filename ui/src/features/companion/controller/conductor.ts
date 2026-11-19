@@ -53,7 +53,6 @@ export class Conductor {
   #lastPhase = "hidden";
   #lastLine = "";
   #watchSince = 0;
-  #behavior: Senses["behavior"] = "follow";
 
   constructor(parts: ConductorParts, speak: Speak) {
     this.#p = parts;
@@ -64,7 +63,7 @@ export class Conductor {
   update(now: number, situation: Situation): void {
     const { brain, mind } = this.#p;
     this.#lastLine = situation.lastLine;
-    this.#behavior = situation.behavior;
+    if (brain.music !== "off") return;
     // За курсором и прочь от поля ввода (2026-11-18) — до «Разума»: это ответ на действия пользователя.
     const free =
       this.#p.presence.shown &&
@@ -72,9 +71,9 @@ export class Conductor {
       !situation.holding &&
       !this.poking &&
       !brain.watching &&
-      !brain.quiet &&
-      brain.music !== "playing";
-    this.#p.escort.update(now, { follow: situation.behavior === "follow", free });
+      !brain.quiet;
+    // Погоня за курсором — только пока «Разум» выбрал её (`trail`): у неё баллы и пауза.
+    this.#p.escort.update(now, { follow: mind.activity === "trail", free });
     const choice = mind.update(now / 1000, this.#senses(now, situation));
     if (choice !== null) this.#act(choice.id, choice.previous, now);
     if (this.#cornerPending && brain.phase === "rest" && !situation.holding) {
@@ -86,6 +85,10 @@ export class Conductor {
       this.#watchLineAt = now + (480 + Math.random() * 360) * 1000;
       this.#speak(pickOne(watchPhrases(locale.lang).during), "ambient", true);
     }
+    // Сняли с места во время фильма (перетащили, уронили) — возвращается в угол и снова садится с
+    // попкорном, а не остаётся где бросили (жалоба 2026-11-18: «после перетаскивания мельтешит»).
+    const dropped = this.#lastPhase === "held" || this.#lastPhase === "fall";
+    if (brain.watching && brain.phase === "rest" && dropped) this.#cornerPending = true;
     // Дошёл, допрыгнул, долез — 2–4 с «осматривается» (MIND §3.4).
     if (brain.phase === "rest" && this.#lastPhase !== "rest" && this.#lastPhase !== "hidden") {
       mind.settle(now / 1000, 2 + Math.random() * 2);
@@ -166,18 +169,12 @@ export class Conductor {
   }
 
   /**
-   * «Следовать»: в режиме «следовать за мной» — к курсору, иначе к активному окну; `always` — даже если
-   * уже там (вернуться из угла).
+   * Перейти к активному окну; `always` — вернуться из угла даже на ту же опору.
    */
   #follow(always = false): void {
-    const { brain, presence, escort } = this.#p;
+    const { brain, presence } = this.#p;
     const world = presence.world;
     if (world === null) return;
-    const near = this.#behavior === "follow" ? escort.target() : null;
-    if (near !== null) {
-      brain.goTo(near);
-      return;
-    }
     const spot = followSpot(world, brain.surfaceList, world.focus);
     if (spot !== null && (always || hostOf(spot) !== hostOf(brain.spot))) brain.goTo(spot);
   }

@@ -6,7 +6,13 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
-import { DEFAULT_LAUNCHER, parseLauncher, type EditionId, type LauncherState } from "./editions";
+import {
+  DEFAULT_LAUNCHER,
+  launcherJson,
+  parseLauncher,
+  type EditionId,
+  type LauncherState,
+} from "./editions";
 
 export interface LauncherPort {
   load(): Promise<LauncherState>;
@@ -35,7 +41,7 @@ class TauriLauncher implements LauncherPort {
   }
 
   async save(state: LauncherState): Promise<void> {
-    await invoke("launcher_save", { json: JSON.stringify(state) });
+    await invoke("launcher_save", { json: launcherJson(state) });
   }
 
   async startCore(edition: EditionId): Promise<void> {
@@ -77,7 +83,7 @@ class BrowserLauncher implements LauncherPort {
 
   save(state: LauncherState): Promise<void> {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEY, launcherJson(state));
     } catch {
       // Хранилище недоступно (приватный режим WebView) — выбор просто не запомнится.
     }

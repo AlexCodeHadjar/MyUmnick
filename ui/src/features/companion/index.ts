@@ -2,6 +2,7 @@
 export { default as Companion } from "./Companion.svelte";
 export { default as CompanionMenu } from "./CompanionMenu.svelte";
 export { default as CompanionReturn } from "./CompanionReturn.svelte";
+export { default as ChecklistButton } from "./ChecklistButton.svelte";
 export { startFeed } from "./feed";
 export {
   loadSettings as loadCompanion,

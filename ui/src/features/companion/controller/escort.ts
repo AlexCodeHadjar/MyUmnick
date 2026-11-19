@@ -42,8 +42,8 @@ export class Escort {
     return state.follow && this.#track(now);
   }
 
-  /** Место рядом с курсором — для действия «следовать» «Разума». */
-  target(): ReturnType<typeof cursorSpot> {
+  /** Место рядом с курсором во время погони. */
+  #target(): ReturnType<typeof cursorSpot> {
     const world = this.#presence.world;
     const brain = this.#brain;
     if (this.cursor === null || world === null) return null;
@@ -67,7 +67,7 @@ export class Escort {
     const chest = { x: brain.x, y: brain.y - brain.chest };
     if (Math.hypot(this.cursor.x - chest.x, this.cursor.y - chest.y) < brain.figure * NEAR)
       return false;
-    const spot = this.target();
+    const spot = this.#target();
     if (spot === null || !worthMoving(brain.spot, spot)) return false;
     brain.goTo(spot);
     return true;

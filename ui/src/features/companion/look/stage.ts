@@ -17,9 +17,12 @@ const SLOW_TRANSITION: ReadonlyMap<string, number> = new Map([
 ]);
 /** Последний кадр перехода держится чуть дольше: подъём «доходит» (критик, раунд 4). */
 const TRANSITION_HOLD_S = 0.04;
+import type { Scene } from "../behavior/diversions";
+import { drawDiversion, poseScene } from "./diversions";
 import { Motion } from "./motion";
 import { drawPanel, panelRect } from "./panel";
 import { placeholderPose } from "./placeholder";
+import { placement, tallness } from "./placement";
 import type { Rect } from "../space";
 
 const POSES: readonly Pose[] = [
@@ -36,6 +39,8 @@ const POSES: readonly Pose[] = [
   "float",
 ];
 const BLINK_EVERY_S = 4.2;
+/** Силуэт без кадра (портал до загрузки пакета): ширина к высоте. */
+const PLACEHOLDER_ASPECT = 0.55;
 /** Моргание с полуприкрытыми кадрами чуть дольше: 0,2 с. */
 const BLINK_S = 0.2;
 
@@ -67,6 +72,14 @@ export class CompanionStage {
   #portalAt: [number, number] | null = null;
   /** Где персонаж сейчас нарисован (CSS-пиксели): для кликов и облачка. */
   bounds: Rect | null = null;
+  radioControls: Rect | null = null;
+  /**
+   * Высота обычного кадра в пикселях растра (рост × CANVAS_RATIO × devicePixelRatio, как в `pack.ts`): по ней
+   * узнаются высокие кадры (placement.ts). Не по кадру `stand`: он сам может быть высоким (рожки).
+   */
+  #unit: number | null = null;
+  /** Когда началась текущая поза: одноразовые сцены идут кадр за кадром от неё. */
+  #poseStart = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext("2d");
@@ -84,6 +97,7 @@ export class CompanionStage {
     ]);
     this.#poses = poses;
     this.#keys = new Set(poses.keys());
+    this.#unit = Math.round(height * CANVAS_RATIO * devicePixelRatio);
     this.#placeholders = new Map(placeholders);
   }
 
@@ -93,6 +107,20 @@ export class CompanionStage {
     this.#canvas.height = Math.round(height * ratio);
     this.#ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     this.#dirty = null;
+  }
+
+  /** Эффект поверх персонажа может выходить за рамку кадра; очистить его перед следующей отрисовкой. */
+  includePainted(rect: Rect): void {
+    const dirty = this.#dirty;
+    if (dirty === null) {
+      this.#dirty = grow(rect, 2);
+      return;
+    }
+    const x = Math.min(dirty.x, rect.x);
+    const y = Math.min(dirty.y, rect.y);
+    const w = Math.max(dirty.x + dirty.w, rect.x + rect.w) - x;
+    const h = Math.max(dirty.y + dirty.h, rect.y + rect.h) - y;
+    this.#dirty = grow({ x, y, w, h }, 2);
   }
 
   /** Имя кадра, нарисованного последним: табло — только у кадров `jukebox*`. */
@@ -116,6 +144,7 @@ export class CompanionStage {
       mouth: look.mouth,
       speaking: look.speaking && !sleeping && petting === 0,
       blink,
+      since: this.#time - this.#poseStart,
     };
     const key = this.#transitionKey() ?? pickFrame(pose, state, this.#keys);
     this.#frameKey = key;
@@ -139,7 +168,8 @@ export class CompanionStage {
   /** Показанное свечение — плавно догоняет `look.attention`. */
   #glow = 0;
 
-  draw(body: Body, look: Look, dt: number): void {
+  draw(body: Body, look: Look, dt: number, scene: Scene | null = null): void {
+    if (scene) poseScene(body, scene, this.#height);
     this.#time += dt;
     this.#lastDt = dt;
     this.#transit(body.pose, dt);
@@ -148,9 +178,25 @@ export class CompanionStage {
     const dirty = this.#dirty;
     if (dirty !== null) ctx.clearRect(dirty.x, dirty.y, dirty.w, dirty.h);
     this.bounds = null;
+    this.radioControls = null;
     let area: Rect | null = null;
     this.#drewPrevious = false;
-    if (body.phase !== "hidden" && body.scale > 0.01) area = this.#figure(body, look);
+    if (scene?.kind === "peek") {
+      const lip = body.y;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, this.#canvas.width, Math.max(0, lip));
+      ctx.clip();
+      body.y += this.#height * 0.4 * Math.sin(Math.PI * scene.progress);
+      area = this.#figure(body, look);
+      body.y = lip;
+      ctx.restore();
+      if (area) this.bounds = { ...area, h: Math.max(0, lip - area.y) };
+    } else if (body.phase !== "hidden" && body.scale > 0.01) area = this.#figure(body, look);
+    if (scene && area) {
+      drawDiversion(ctx, body, scene, this.#height);
+      area = grow(area, this.#height * 0.45);
+    }
     if (body.phase === "portal_out" || body.phase === "portal_in") {
       this.#portalAt = this.#centerOf(body, look);
     }
@@ -182,6 +228,7 @@ export class CompanionStage {
     if (pose === this.#lastPose) return;
     const from = this.#lastPose;
     this.#lastPose = pose;
+    this.#poseStart = this.#time;
     if (from === null) return;
     // Прямого перехода нет — через стойку (критик: «потягивается → машет» без перехода).
     const direct = this.#path(from, pose);
@@ -215,35 +262,36 @@ export class CompanionStage {
   }
 
   /** Нарисовать кадр позы `pose` высотой `h` относительно уже сдвинутой в точку опоры системы. */
-  #drawAt(image: ImageBitmap, pose: Pose, h: number): void {
+  #drawAt(image: ImageBitmap, pose: Pose, scale: number): void {
+    const at = this.#place(image, pose);
+    const [w, h] = [at.w * scale, at.h * scale];
+    this.#ctx.drawImage(image, at.cx - w / 2, at.cy - h / 2, w, h);
+  }
+
+  /** Размер и сдвиг кадра при полном росте; высокий кадр — в том же масштабе (placement.ts). */
+  #place(image: ImageBitmap, pose: Pose): ReturnType<typeof placement> {
     const H = this.#height * CANVAS_RATIO;
-    const aspect = image.width / image.height;
-    const [ax, ay] = ANCHORS[pose];
-    const cx = (0.5 - ax) * aspect * H;
-    const cy = (0.5 - ay) * H;
-    this.#ctx.drawImage(image, cx - (aspect * h) / 2, cy - h / 2, aspect * h, h);
+    return placement(image.width / image.height, ANCHORS[pose], H, tallness(image, this.#unit));
   }
 
   /** Центр фигуры в полный рост (CSS-пиксели): из него растёт персонаж в портале. */
   #centerOf(body: Body, look: Look): [number, number] {
     const image = this.#image(body.pose, look, body.petting);
     const H = this.#height * CANVAS_RATIO;
-    const W = image === null ? H * 0.55 : (image.width / image.height) * H;
-    const [ax, ay] = ANCHORS[body.pose];
-    return [body.x + body.facing * (0.5 - ax) * W, body.y + (0.5 - ay) * H];
+    const at =
+      image === null
+        ? placement(PLACEHOLDER_ASPECT, ANCHORS[body.pose], H, 1)
+        : this.#place(image, body.pose);
+    return [body.x + body.facing * at.cx, body.y + at.cy];
   }
 
   #figure(body: Body, look: Look): Rect | null {
     const image = this.#image(body.pose, look, body.petting);
     if (image === null) return null;
-    const H = this.#height * CANVAS_RATIO;
-    const W = (image.width / image.height) * H;
     // В портале фигура масштабируется вокруг своего центра; в полный рост — та же точка опоры.
+    const { w: W, h: H, cx, cy } = this.#place(image, body.pose);
     const h = H * body.scale;
     const w = W * body.scale;
-    const [ax, ay] = ANCHORS[body.pose];
-    const cx = (0.5 - ax) * W;
-    const cy = (0.5 - ay) * H;
     const breath = body.phase === "rest" ? Math.sin(this.#time * 1.8) * 0.008 : 0;
     // Подскок: в такт речи и маленький прыжок радости, когда гладят.
     const hop = body.petting > 0 ? Math.abs(Math.sin(body.petting * Math.PI * 3)) * 10 : 0;
@@ -271,7 +319,7 @@ export class CompanionStage {
     if (swap?.phase === "out" && previous !== null) {
       // Смена позы, «выдох»: старая поза приседает и гаснет (своя точка опоры), новой ещё нет.
       ctx.scale(1, 1 - 0.08 * swap.k);
-      this.#drawAt(previous, this.#motion.previousPose ?? body.pose, H * body.scale);
+      this.#drawAt(previous, this.#motion.previousPose ?? body.pose, body.scale);
     } else {
       // «Вдох»: новая поза проявляется с лёгкой растяжкой; иначе — обычный кадр.
       if (swap?.phase === "in")
@@ -281,7 +329,7 @@ export class CompanionStage {
       const left = previous === null || swap !== null ? 0 : this.#motion.fadeLeft;
       if (previous !== null && left > 0.01) {
         ctx.globalAlpha = left;
-        this.#drawAt(previous, body.pose, H * body.scale);
+        this.#drawAt(previous, body.pose, body.scale);
       }
     }
     ctx.globalAlpha = 1;
@@ -294,7 +342,14 @@ export class CompanionStage {
     };
     // Табло по центру кадра — отражение не мешает; текст пишется прямо, а не зеркально.
     if (look.panel !== null && this.#frameKey?.startsWith("jukebox") === true) {
-      drawPanel(ctx, panelRect(box), look.panel, this.#time);
+      const screen = panelRect(box);
+      drawPanel(ctx, screen, look.panel, this.#time);
+      this.radioControls = {
+        x: screen.x,
+        y: box.y + box.h * 0.826,
+        w: screen.w,
+        h: box.h * 0.092,
+      };
     }
     this.bounds = box;
     return box;

@@ -194,12 +194,26 @@ unsafe extern "system" fn collect(hwnd: HWND, data: LPARAM) -> BOOL {
     1
 }
 
-/// Окна верхнего уровня сверху вниз по z-порядку.
+/// Окна верхнего уровня сверху вниз по z-порядку — до видимого слоя рабочего стола.
+///
+/// Обычно рабочий стол (`Progman`/`WorkerW`) — в самом низу, и обрезка ничего не меняет. Win+D окна не
+/// сворачивает, а поднимает рабочий стол над ними: всё ниже него не видно и опорой быть не может
+/// (жалоба 2026-11-18: после Win+D персонаж остался сидеть в воздухе на краю скрытого окна).
 fn top_level() -> Vec<HWND> {
     let mut list: Vec<HWND> = Vec::new();
     // SAFETY: обратный вызов пишет только в `list`, который живёт до конца вызова.
     unsafe { EnumWindows(Some(collect), &mut list as *mut Vec<HWND> as LPARAM) };
+    if let Some(desk) = list.iter().position(|&h| desktop_layer(h)) {
+        list.truncate(desk);
+    }
     list
+}
+
+/// Видимый слой рабочего стола: под ним окна скрыты.
+fn desktop_layer(hwnd: HWND) -> bool {
+    // SAFETY: только запрос видимости окна.
+    let visible = unsafe { IsWindowVisible(hwnd) } != 0;
+    visible && !cloaked(hwnd) && matches!(class_of(hwnd).as_str(), "Progman" | "WorkerW")
 }
 
 /// Рамки окон выше окна `hwnd` по z-порядку, а для рабочего стола (`None`) — всех окон: то, что заслоняет
@@ -328,6 +342,11 @@ pub fn exe_of(pid: u32) -> String {
     file.trim_end_matches(".exe")
         .trim_end_matches(".EXE")
         .to_lowercase()
+}
+
+pub(super) fn desktop_foreground() -> bool {
+    let hwnd = unsafe { GetForegroundWindow() };
+    !hwnd.is_null() && DESKTOP.contains(&class_of(hwnd).as_str())
 }
 
 fn focus_of(hwnd: Option<HWND>, seats: &[Seat], monitor: &Rect, own: u32) -> Focus {

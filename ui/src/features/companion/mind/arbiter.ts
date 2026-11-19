@@ -103,6 +103,19 @@ export class Arbiter<C> {
     return { id: best.id, changed: true, previous: current.id };
   }
 
+  /** Баллы всех действий для показа (чек-лист): без выбора и без побочных эффектов. */
+  rank(
+    context: C,
+    now: number,
+  ): { id: string; score: number; available: boolean; current: boolean }[] {
+    return this.#list.map((one) => ({
+      id: one.id,
+      score: this.#score(one, context, now),
+      available: this.#available(one, now),
+      current: one === this.#current,
+    }));
+  }
+
   #available(one: Activity<C>, now: number): boolean {
     const ended = this.#ended.get(one.id);
     if (ended !== undefined && now - ended < one.cooldownS) return false;

@@ -17,7 +17,56 @@ export interface CompanionSettings {
   calm: boolean;
 }
 
+export const DESKTOP_REACTIONS = {
+  duration: 1800,
+  download: { chance: 0.65, cooldown: 45_000 },
+  // Ctrl+S и Win+D — действия, на которые пользователь ждёт ответа: почти всегда (просьба 2026-11-18).
+  paste: { chance: 1, cooldown: 2500 },
+  copy: { chance: 1, cooldown: 2500 },
+  screenshot: { chance: 0.65, cooldown: 45_000 },
+  close: { chance: 1, cooldown: 2500 },
+  desktop: { chance: 1, cooldown: 2500 },
+  /** Win+D уносит окно из-под ног — реакция ждёт приземления, мс. */
+  landWaitMs: 5000,
+};
+
+export const KEEPSAKE_TIMING = {
+  findMs: 160_000,
+  findChance: 0.45,
+  recallChance: 0.25,
+  inspectMs: 4000,
+  /** Последняя секунда находки — финал: в карман, обратно или в корзину (кадры FRAMES-6). */
+  endingMs: 1000,
+  /** Бросил в корзину — потом отряхивает руки. */
+  throwMs: 700,
+  dustMs: 900,
+  /** Сцены постройки и записок (`build_1…4`, `note_put_1…3`, `note_take_1…3`), секунды. */
+  buildS: 2.2,
+  noteS: 1.4,
+  noteMs: 30 * 60_000,
+  noteChance: 0.45,
+  accountMs: 10000,
+  activeMs: 60000,
+  stepSecs: 900,
+};
+
 export const COMPANION_KEY = "vtuber.companion";
+export const DIVERSION = {
+  idleMs: 30000,
+  cooldown: 65000,
+  chance: 0.6,
+  tripChance: 0.015,
+  /** Споткнулся, упал, сел (`trip_1…4`, FRAMES-6): кадры по разу и пауза на последнем. */
+  tripMs: 1600,
+} as const;
+export const TOUCH = {
+  gapMs: 350,
+  windowMs: 1300,
+  turns: 3,
+  petCooldown: 3500,
+  reachCooldown: 14000,
+  reachChance: 0.55,
+} as const;
 export const HEIGHTS: readonly number[] = [200, 280, 380];
 export const DEFAULT_SETTINGS: CompanionSettings = {
   when: "minimized",

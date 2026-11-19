@@ -52,3 +52,8 @@ ui/.env*.local
 
 packaging/build/
 packaging/dist/
+
+# Риг персонажа: рабочие файлы редакторов тяжёлые — в git только экспортированные PNG-слои
+rig/work/
+rig/**/*.kra
+rig/**/*.psd

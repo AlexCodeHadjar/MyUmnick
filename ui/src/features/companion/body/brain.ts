@@ -126,6 +126,15 @@ export class Brain {
     this.#idle = 0;
   }
 
+  /** Остановиться на опоре, чтобы падение и посадка успели проиграться целиком. */
+  stopForPose(pose: Pose, seconds: number): boolean {
+    const spot = this.#spot;
+    if (this.phase !== "walk" || spot === null) return false;
+    this.#rest({ ...spot, x: this.x, y: this.y, facing: this.facing });
+    this.emote(pose, seconds);
+    return true;
+  }
+
   get spot(): Spot | null {
     return this.#spot;
   }
@@ -556,9 +565,10 @@ export class Brain {
 
   #tickRest(dt: number): void {
     // Поёт или смотрит — не скучает и не засыпает.
-    if (this.music === "playing" || this.watching) {
+    if (this.music !== "off" || this.watching) {
       this.#idle = 0;
-      if (this.watching && this.#spot?.pose === "sit_corner") this.#munch(dt);
+      if (this.music === "off" && this.watching && this.#spot?.pose === "sit_corner")
+        this.#munch(dt);
       return;
     }
     if (this.quiet) return;
