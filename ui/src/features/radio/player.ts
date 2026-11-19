@@ -18,6 +18,13 @@ import {
 
 const START_TIMEOUT_MS = 12_000;
 
+/** Остановить элемент и отпустить поток: без `src` браузер закрывает соединение со станцией. */
+function silence(audio: HTMLAudioElement): void {
+  audio.pause();
+  audio.removeAttribute("src");
+  audio.load();
+}
+
 export class RadioPlayer {
   readonly #storage: Storage | undefined;
   #settings: RadioSettings;
@@ -103,7 +110,11 @@ export class RadioPlayer {
     const attempt = ++this.#attempt;
     this.#stopAudio();
     this.#set("loading");
-    const played = (await this.#start(chosen.url, true)) || (await this.#start(chosen.url, false));
+    // Между попытками (с анализом и без) станцию могли сменить: старая попытка второй поток не заводит
+    // (баг 2026-11-19: при быстром переключении две станции играли сразу, и вторую нельзя было остановить).
+    const played =
+      (await this.#start(chosen.url, true, attempt)) ||
+      (attempt === this.#attempt && (await this.#start(chosen.url, false, attempt)));
     if (attempt !== this.#attempt) return;
     this.#set(played ? "playing" : "failed");
   }
@@ -143,7 +154,7 @@ export class RadioPlayer {
     this.#ctx = null;
   }
 
-  async #start(url: string, cors: boolean): Promise<boolean> {
+  async #start(url: string, cors: boolean, attempt: number): Promise<boolean> {
     const audio = new Audio();
     audio.preload = "none";
     audio.volume = this.#settings.volume;
@@ -160,6 +171,12 @@ export class RadioPlayer {
       ),
       timeout,
     ]);
+    // Пока поток заводился, выбрали другую станцию или выключили: этот элемент — ничей, глушим его.
+    if (attempt !== this.#attempt) {
+      silence(audio);
+      if (this.#audio === audio) this.#audio = null;
+      return false;
+    }
     if (!started && this.#audio === audio) this.#stopAudio();
     return started;
   }
@@ -180,9 +197,7 @@ export class RadioPlayer {
   #stopAudio(): void {
     const audio = this.#audio;
     if (audio === null) return;
-    audio.pause();
-    audio.removeAttribute("src");
-    audio.load();
+    silence(audio);
     this.#audio = null;
     this.#analyser = null;
   }

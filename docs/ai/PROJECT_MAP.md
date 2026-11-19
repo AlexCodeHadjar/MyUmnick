@@ -1226,7 +1226,7 @@
 
 - `listenRadioCommands` — `ui/src/features/radio/commands.ts:12` — Главное окно: выполнять команды спутника.
 - `sendRadioCommand` — `ui/src/features/radio/commands.ts:19` — Спутник: отправить команду главному окну.
-- `RadioPlayer` — `ui/src/features/radio/player.ts:21` — —
+- `RadioPlayer` — `ui/src/features/radio/player.ts:28` — —
 - `RadioControl.svelte` — `ui/src/features/radio/RadioControl.svelte:1` — Радио в окне настроек (ADR-0049): включить, ⏮ ⏯ ⏭, станция, громкость, своя станция.
 - `Station` — `ui/src/features/radio/stations.ts:5` — Станции и настройки радио (ADR-0049, BEHAVIOR §8): список по умолчанию, свои станции пользователя,
 - `DEFAULT_STATIONS` — `ui/src/features/radio/stations.ts:11` — Проверены 2026-11-17: отвечают браузеру потоком MP3/AAC.
